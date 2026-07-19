@@ -144,10 +144,11 @@ Alle Tests liefen gegen die echte Produktions-Postgres-Instanz und echte RSS-/Op
 | `10` Report- und Prüfagent | ✅ bestanden | Beide KI-Agenten laufen, Prüf-Agent lehnt inhaltlich begründet ab (`quality_score` 14→47 nach Fixes) |
 | `06` Empfehlungswatchlist | ✅ bestanden | Läuft durch, 0 Treffer diesmal (korrekt bei aktueller Datenlage) |
 | `00` Tagesabschluss-Orchestrator | ✅ bestanden | Kompletter Durchlauf 02b→02→06→10→(Ablehnung)→Matrix-Warnung, keine Duplikate mehr |
-| `03a`, `09`, `07` | ⏳ noch nicht live getestet | `03a` mangels `wirkungsebene='unklar'`-Fällen, `09` mangels `completed`-Wirkungsanalysen, `07` zurückgestellt |
+| `03a` News-Recherche-Agent | ✅ bestanden | Künstlicher `wirkungsebene='unklar'`-Fall (News 71) lief durch kompletten Zweitpass (Artikel laden, ähnliche News, Ticker-Historie, KI-Bewertung, Persistierung) — SQL-Bug im Werkzeug „Frühere Meldungen zum Ticker lesen" dabei gefunden und behoben |
+| `09`, `07` | ⏳ noch nicht live getestet | `09` mangels `completed`-Wirkungsanalysen, `07` mangels Webhook-Token-Credential |
 | `05` echter Versandpfad | ⏳ noch nie erreicht | Der Prüf-Agent hat in allen Testläufen korrekt abgelehnt — der `approved=true`-Pfad (05 wird tatsächlich aufgerufen, Matrix+E-Mail gehen raus) ist dadurch noch nie durchlaufen worden |
 
-## Neun echte Bugs beim Live-Testen gefunden und behoben
+## Zehn echte Bugs beim Live-Testen gefunden und behoben
 
 Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den jeweiligen Commit-Messages (`git log`), Kurzfassung:
 
@@ -160,13 +161,14 @@ Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den j
 7. **Prüf-Agent bekam nur Datensatz-Anzahlen statt der Werte selbst** — konnte dadurch nichts wirklich gegenprüfen und lehnte pauschal alles als „nicht verifizierbar" ab.
 8. **`run_id` kam als NULL an, wenn 10 als Sub-Workflow aufgerufen wurde** — drei Fixversuche (`.all()[0]`, expliziter Merge-Zweig, schließlich lokale Erzeugung); der zugrunde liegende `workflowInputs`-Übergabemechanismus zwischen Execute Workflow und Execute Workflow Trigger verhielt sich anders als erwartet.
 9. **Doppel-Ausführung bei rohen Mehrfachverbindungen** — zwei „main"-Verbindungen auf denselben Node erzeugen in n8n zwei separate Ausführungen, keine kombinierte; betraf sowohl das Dedup-Verhalten nach `alwaysOutputData` als auch grundsätzlich jede Stelle mit zwei Roh-Verbindungen auf ein Ziel.
+10. **SQL-Injection-artiger Quoting-Fehler in 03a** — `JSON.stringify(...)` wurde als n8n-Expression direkt ins SQL eingesetzt (`@> [...]::jsonb` statt `@> '[...]'::jsonb`), da dieser eine Node (anders als der Rest der Architektur) nicht über den zentralen `pgJson`-Helfer, sondern direkt per n8n-Expression im Postgres-Node gebaut wurde — schlug live bei allen 4 Testkandidaten mit Syntaxfehler fehl, Werkzeugergebnis blieb leer statt frühere Meldungen zum Ticker zu liefern.
 
 ## Testreihenfolge für die verbleibenden Workflows
 
-1. `03a` — künstlich eine `news_assessments`-Zeile auf `wirkungsebene='unklar'` setzen, dann ausführen.
-2. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben (braucht mehrere Tage `02`/`02b`-Historie). Bis dahin liefert der Bericht mangels Fallzahl leer/fast leer — das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
-3. `07` — Status-Webhook-Token-Credential anlegen, dann testen.
-4. Den echten Versandpfad von `05` einmal gezielt erzwingen (z. B. testweise die `quality_score`-Schwelle in `10` lokal senken oder eine Testdaten-Konstellation bauen, die der Prüf-Agent freigibt), um Matrix+E-Mail-Versand mindestens einmal live zu verifizieren.
+1. `07` — Status-Webhook-Token-Credential anlegen, dann testen.
+2. Den echten Versandpfad von `05` einmal gezielt erzwingen (z. B. testweise die `quality_score`-Schwelle in `10` lokal senken oder eine Testdaten-Konstellation bauen, die der Prüf-Agent freigibt), um Matrix+E-Mail-Versand mindestens einmal live zu verifizieren.
+3. `04` — sobald genügend alte Testdaten vorhanden sind, gegen die Retention-Regeln testen.
+4. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben (braucht mehrere Tage `02`/`02b`-Historie). Bis dahin liefert der Bericht mangels Fallzahl leer/fast leer — das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
 
 ## Rollback-Anleitung
 
