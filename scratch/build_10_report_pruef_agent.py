@@ -124,6 +124,23 @@ b.link(n_m4, n_m5, dst_index=0); b.link(n_learn, n_m5, dst_index=1)
 n_m6 = b.add({"parameters": {}, "name": "Merge Grunddaten 6", "type": "n8n-nodes-base.merge", "typeVersion": 3, "position": [-1800, 720]})
 b.link(n_m5, n_m6, dst_index=0); b.link(n_pipeline, n_m6, dst_index=1)
 
+# run_id/business_date als expliziter 7. Merge-Zweig statt spaeter per
+# $('Execute Workflow Trigger') aus der Ferne referenziert: named-node-
+# Referenzen auf einen GEMEINSAMEN Vorfahren vor einer 6-fachen Verzweigung
+# loesen sich nach der Merge-Kette nicht zuverlaessig auf (live bestaetigt:
+# lieferte NULL trotz .all()[0]-Fix), waehrend Referenzen auf Nodes, die
+# selbst Teil der Merge-Kette sind, nachweislich funktionieren.
+n_trigger_passthrough = b.add({
+    "parameters": {"jsCode": "return [{ json: { _run_id: $json.run_id, _business_date: $json.business_date } }];"},
+    "name": "Trigger-Werte fuer Merge-Kette",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [-3000, 880]
+})
+b.link(n_trigger, n_trigger_passthrough)
+n_m7 = b.add({"parameters": {}, "name": "Merge Grunddaten 7", "type": "n8n-nodes-base.merge", "typeVersion": 3, "position": [-1700, 880]})
+b.link(n_m6, n_m7, dst_index=0); b.link(n_trigger_passthrough, n_m7, dst_index=1)
+
 n_build_data = b.add({
     "parameters": {
         "jsCode": GET_BUSINESS_DATE_JS + """
@@ -239,9 +256,10 @@ const empfehlungswatchlist = {
 // der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als
 // NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,
 // unabhaengig von der pairedItem-Kette.
-const trigger = $('Execute Workflow Trigger').all()[0];
+const triggerVals = safeAll('Trigger-Werte fuer Merge-Kette');
+const triggerRunId = triggerVals.length > 0 ? triggerVals[0]._run_id : null;
 return [{ json: {
-  run_id: (trigger && trigger.json && trigger.json.run_id) || ('standalone-' + Date.now()),
+  run_id: triggerRunId || ('standalone-' + Date.now()),
   business_date: heute,
   datum: new Date().toLocaleDateString('de-DE'),
   uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
@@ -268,7 +286,7 @@ return [{ json: {
     "typeVersion": 2,
     "position": [-1600, 240]
 })
-b.link(n_m6, n_build_data)
+b.link(n_m7, n_build_data)
 
 # ---------------------------------------------------------------------------
 # 4. Report-Agent: interpretiert, berechnet keine Indikatoren neu (Prompt-
