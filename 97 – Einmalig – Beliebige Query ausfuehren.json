@@ -1,0 +1,54 @@
+{
+  "name": "97 – Einmalig – Beliebige Query ausfuehren",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "30000000-0000-4000-8000-000000000001",
+      "name": "Manueller Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT 1 AS platzhalter;",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000002",
+      "name": "Query ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -176,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
