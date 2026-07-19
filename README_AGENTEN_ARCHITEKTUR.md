@@ -75,17 +75,17 @@ sql/001_agenten_architektur.sql
 
 Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zusätzlich unverändert im ersten Commit des `agenten-modernisierung`-Branches.
 
-## Benötigte n8n Credentials
+## Benötigte n8n Credentials — Stand: Postgres bereits angelegt und überall zugewiesen
 
-| Credential-Name (Platzhalter im Workflow) | Typ | Verwendung |
-|---|---|---|
-| `Postgres – Trading (TODO Credential zuweisen)` | Postgres | Alle neuen `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 99 |
-| `Status-Webhook Token (TODO Credential zuweisen)` | Header Auth | Absicherung des Status-Webhooks in 07 |
-| `Header Auth account` (bereits vorhanden, ID `od1pN1F5wy2irSDs`) | Header Auth | Alle Matrix-Sends (unverändert aus den Originalen übernommen) |
-| `OpenAI account` (bereits vorhanden, ID `RiT1gwJpQWzSo6NO`) | OpenAI API | Alle neuen KI-Nodes (03, 03a, 09, 10) |
-| `SMTP account` (bereits vorhanden, ID `9z1hWYlOfxcO8avw`) | SMTP | E-Mail-Versand in 05 (unverändert) |
+| Credential-Name | Typ | Verwendung | Status |
+|---|---|---|---|
+| `Postgres account` (ID `NWckNyl8ZfwVVJCd`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen 49 betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
+| `Status-Webhook Token (TODO Credential zuweisen)` | Header Auth | Absicherung des Status-Webhooks in 07 | Noch offen — 07 wurde in dieser Session nicht live getestet |
+| `Header Auth account` (ID `od1pN1F5wy2irSDs`) | Header Auth | Alle Matrix-Sends | Bereits vorhanden, unverändert aus den Originalen übernommen |
+| `OpenAI account` (ID `RiT1gwJpQWzSo6NO`) | OpenAI API | Alle KI-Nodes (03, 03a, 09, 10) | Bereits vorhanden, live bestätigt funktionsfähig |
+| `SMTP account` (ID `9z1hWYlOfxcO8avw`) | SMTP | E-Mail-Versand in 05 | Bereits vorhanden, noch nicht live getestet (05 wurde in den Orchestrator-Testläufen nie mit `approved=true` erreicht) |
 
-**Kein Zugangsdatenwert steht in irgendeiner Workflow-Datei.** Die beiden neuen Credentials (Postgres, Status-Webhook-Token) müssen einmalig in n8n angelegt und in jedem betroffenen Node manuell zugewiesen werden (n8n ersetzt Platzhalter-Credential-IDs beim Import nicht automatisch).
+**Kein Zugangsdatenwert steht in irgendeiner Workflow-Datei oder in Git.** Die Postgres-Credential wurde ausschließlich in der n8n-UI angelegt und danach per API-Referenz (Name+ID, kein Passwort) den Nodes zugewiesen.
 
 ## Benötigte Umgebungsvariablen / offene Platzhalter
 
@@ -93,12 +93,11 @@ Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zus�
 - **`DRY_RUN`**: wird als Execute-Workflow-Input-Parameter durchgereicht (00 → 06, 00 → 05), Default `false`. Für einen produktionsnahen Test ohne echten Matrix-/E-Mail-Versand `DRY_RUN=true` beim manuellen Start von `00` setzen.
 - **`REQUIRE_CONFIRMATION`** (06): aktuell als Konstante `false` im Code gesetzt (siehe „Trigger-Eingabe normalisieren“-Node in 06) — kann bei Bedarf zu einem echten Konfigurationswert gemacht werden (z. B. Zeile in `trading.stock_instruments.metadata_json` oder eine eigene Einstellungstabelle), war im Auftrag nur als „optional“ gefordert.
 
-## Datenbankmigration
+## Datenbankmigration — ERLEDIGT und live verifiziert
 
-1. `sql/001_agenten_architektur.sql` ist idempotent (`CREATE ... IF NOT EXISTS` durchgehend) — kann gefahrlos mehrfach laufen.
-2. Ausführung: `99 – Einmalig – SQL-Migration ausfuehren.json` einmalig importieren, Postgres-Credential zuweisen, „Test workflow“ ausführen. Danach löschbar (oder als Referenz behalten, schadet nicht — der Migrationslauf selbst ist idempotent, könnte auch stehen bleiben und erneut ausgeführt werden).
-3. **Nur statisch geprüft** — kein Testlauf gegen eine echte Datenbank, da kein bestätigter Zugang vorlag. Vor Produktivbetrieb einmal manuell verifizieren.
-4. `stock_price_history` (n8n Data Table) bleibt unverändert bestehen; die neue Wirkungsanalyse (08) nutzt stattdessen `stock_technical_signals`/`stock_market_context` als Kursquelle (siehe MIGRATIONSPLAN_AGENTEN.md, „Offener Klärungspunkt vor Phase 6“ — durch die tatsächliche Umsetzung bereits aufgelöst, dort aber aus Nachvollziehbarkeit stehen gelassen).
+1. `sql/001_agenten_architektur.sql` wurde über `99 – Einmalig – SQL-Migration ausfuehren` live ausgeführt — Schema `trading` mit allen 9 Tabellen existiert und wurde per Kontrollabfrage bestätigt (`information_schema.schemata`).
+2. `sql/002_seed_stock_instruments.sql` (neu, während des Testens ergänzt) wurde ebenfalls live ausgeführt — `trading.stock_instruments` enthält alle 15 Ticker mit Name/Sektor (aus der bereits produktiven `stock_technical_signals` übernommen) und Aliasen/Ausschlussmustern (aus dem RSS-Vorfilter in 03 übernommen). War zwingend nötig, nicht optional: ohne diese Daten läuft 08s Benchmark-Zuordnung ins Leere.
+3. `stock_price_history` (n8n Data Table) bleibt unverändert bestehen; 08 nutzt `stock_technical_signals`/`stock_market_context` als Kursquelle — live bestätigt funktionsfähig (89 Tracking-Zeilen korrekt angelegt im Test).
 
 ## Importreihenfolge — bereits erledigt (Stand 2026-07-19)
 
@@ -121,25 +120,53 @@ Alle 15 Workflows wurden bereits über die n8n REST API als **neue, separate, in
 | `98 – Einmalig – Postgres-Verbindungstest` | `rp35CZNrjp4BLrR6` |
 | `99 – Einmalig – SQL-Migration ausfuehren` | `8PHV9RfaXjfTo3ZK` |
 
-Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten IDs (in den Git-Dateien nachgetragen). Verbleibende manuelle Schritte in n8n selbst:
+Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten IDs (in den Git-Dateien nachgetragen). Stand der ursprünglich geplanten manuellen Schritte:
 
-1. Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` anlegen und verifizieren.
-2. Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zuweisen (n8n zeigt sie bis dahin mit fehlender Credential als Fehler an — erwartet).
-3. `99 – Einmalig – SQL-Migration ausfuehren` einmal ausführen.
-4. Status-Webhook-Token-Credential anlegen und in `07` zuweisen.
-5. Jeden Workflow einzeln testen (siehe Testreihenfolge unten), erst danach aktivieren.
-6. Alte Schedule-Trigger in den Original-Workflows `02b`/`02`/`05`/`06` bewusst weiterlaufen lassen, bis die neuen Versionen erfolgreich getestet sind — dann dort deaktivieren, um Doppelläufe zu vermeiden.
+1. ✅ Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` angelegt und verifiziert.
+2. ✅ Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zugewiesen (per API, `scratch/assign_postgres_credential.py` — muss nach jedem vollständigen PUT-Push erneut laufen, da PUT die Credential sonst auf den Platzhalter zurücksetzt).
+3. ✅ `99 – Einmalig – SQL-Migration ausfuehren` ausgeführt.
+4. ⏳ Status-Webhook-Token-Credential noch nicht angelegt, `07` noch nicht getestet.
+5. ⏳ Teilweise erledigt — `00`, `03`, `06`, `08`, `10` erfolgreich einzeln und im Gesamtlauf getestet (siehe Live-Testergebnisse unten), `03a`/`04`/`07`/`09` sowie der echte `05`-Versandpfad noch offen. Noch kein Workflow wurde aktiviert (bewusst — Aktivierung erst nach vollständigem Testdurchlauf).
+6. ⏳ Alte Schedule-Trigger in `02b`/`02`/`05`/`06` laufen bewusst weiter unverändert, bis alle neuen Versionen getestet und aktiviert sind.
 
 **Bekannte Einschränkung beim Live-Push:** die strikte Workflow-Create-API akzeptiert kein node-level `"settings"`-Feld (z. B. `retryOnFail`/`maxTries` an einzelnen `httpRequest`-Nodes), obwohl das UI-Export-Format es enthält — dieses Feld wurde nur für den API-Push entfernt, die Git-Dateien selbst enthalten es unverändert. Betroffene Nodes haben dadurch in der jetzt live angelegten Version keine node-eigene Retry-Konfiguration (ihre `neverError`/Fehlerbehandlung auf HTTP-Ebene bleibt aber erhalten) — bei Bedarf in der n8n-UI manuell nachtragen.
 
-## Testreihenfolge
+## Live-Testergebnisse (Stand 2026-07-19, Abend)
 
-Siehe `TESTPLAN_AGENTEN.md` für alle Einzelfälle. Empfohlene Grobreihenfolge:
-1. `03` isoliert testen (RSS→Dedup→Insert→KI→Assessment), dann `03a` mit einem künstlich auf `wirkungsebene='unklar'` gesetzten Datensatz.
-2. `08` mit mindestens 2-3 Handelstagen realer `stock_technical_signals`-Historie testen (D+1 sollte dann befüllbar sein).
-3. `09` erst sinnvoll testbar, sobald mindestens einige `news_impact_tracking`-Zeilen `status='completed'` erreicht haben — in der Anfangsphase wird der Bericht mangels Fallzahl leer/fast leer sein, das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
-4. `10` isoliert mit einem manuell gesetzten `run_id` testen, dann `06`, dann den kompletten `00`-Durchlauf.
-5. `07` zuletzt, da es von allen anderen Tabellen liest.
+Alle Tests liefen gegen die echte Produktions-Postgres-Instanz und echte RSS-/OpenAI-Aufrufe (nicht simuliert). Verifikation lief über die n8n Executions-API (`GET /api/v1/executions/{id}?includeData=true`) plus Kontrollabfragen über den eigens gebauten Workflow `97 – Einmalig – Beliebige Query ausfuehren`.
+
+| Workflow | Status | Ergebnis |
+|---|---|---|
+| `98` Postgres-Verbindungstest | ✅ bestanden | Credential angelegt, Verbindung bestätigt |
+| `99` SQL-Migration | ✅ bestanden | Schema `trading` mit 9 Tabellen live erstellt |
+| `03` News Ingestion | ✅ bestanden | 72 RSS-Artikel verarbeitet → 58 evaluated, 14 discarded, 0 hängengeblieben |
+| `08` News-Wirkungsanalyse | ✅ bestanden | 89 `news_impact_tracking`-Zeilen korrekt angelegt (alle `waiting_d1`, da nur 1 Tag Kurshistorie vorliegt — erwartet) |
+| `10` Report- und Prüfagent | ✅ bestanden | Beide KI-Agenten laufen, Prüf-Agent lehnt inhaltlich begründet ab (`quality_score` 14→47 nach Fixes) |
+| `06` Empfehlungswatchlist | ✅ bestanden | Läuft durch, 0 Treffer diesmal (korrekt bei aktueller Datenlage) |
+| `00` Tagesabschluss-Orchestrator | ✅ bestanden | Kompletter Durchlauf 02b→02→06→10→(Ablehnung)→Matrix-Warnung, keine Duplikate mehr |
+| `03a`, `09`, `07` | ⏳ noch nicht live getestet | `03a` mangels `wirkungsebene='unklar'`-Fällen, `09` mangels `completed`-Wirkungsanalysen, `07` zurückgestellt |
+| `05` echter Versandpfad | ⏳ noch nie erreicht | Der Prüf-Agent hat in allen Testläufen korrekt abgelehnt — der `approved=true`-Pfad (05 wird tatsächlich aufgerufen, Matrix+E-Mail gehen raus) ist dadurch noch nie durchlaufen worden |
+
+## Neun echte Bugs beim Live-Testen gefunden und behoben
+
+Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den jeweiligen Commit-Messages (`git log`), Kurzfassung:
+
+1. **Postgres-Schreib-Nodes verarbeiteten nur 1 statt N Items** — der zentrale SQL-Bau-Helfer erstellte Code-Nodes ohne `mode: runOnceForEachItem` (n8n-Default ist „einmal für alle Items“), wodurch bei mehreren Items stillschweigend nur das erste verarbeitet wurde. Betraf praktisch jeden Postgres-Write in der gesamten Architektur.
+2. **SplitInBatches-Verdrahtung invertiert** — Ausgang 0 ist „fertig", Ausgang 1 ist „aktueller Batch" (umgekehrt zur ursprünglichen Annahme, kein lokales Beispiel dieses Node-Typs vorhanden).
+3. **Retry-Verarbeitung blockierte sich selbst** — wenn ein stündlicher Lauf 0 neue News fand, lief der komplette Batch-Verarbeitungszweig gar nicht erst an, da er hinter dem Insert-Ergebnis statt unabhängig davon hing.
+4. **`news_key` fehlte** beim Aufbau neuer Wirkungsanalyse-Zeilen (in der DB-Query selektiert, aber im JS-Code nie durchgereicht) → NOT-NULL-Verletzung.
+5. **`trading.stock_instruments` war leer** — ohne Seed-Daten schlug die Benchmark-Zuordnung in 08 fehl.
+6. **`alwaysOutputData` ging beim API-Push verloren** — die node-level `settings`-Bereinigung (nötig, da die API dieses Feld sonst ablehnt) hat dieses Verhaltens-Flag mitgelöscht, nicht nur kosmetische Retry-Einstellungen.
+7. **Prüf-Agent bekam nur Datensatz-Anzahlen statt der Werte selbst** — konnte dadurch nichts wirklich gegenprüfen und lehnte pauschal alles als „nicht verifizierbar" ab.
+8. **`run_id` kam als NULL an, wenn 10 als Sub-Workflow aufgerufen wurde** — drei Fixversuche (`.all()[0]`, expliziter Merge-Zweig, schließlich lokale Erzeugung); der zugrunde liegende `workflowInputs`-Übergabemechanismus zwischen Execute Workflow und Execute Workflow Trigger verhielt sich anders als erwartet.
+9. **Doppel-Ausführung bei rohen Mehrfachverbindungen** — zwei „main"-Verbindungen auf denselben Node erzeugen in n8n zwei separate Ausführungen, keine kombinierte; betraf sowohl das Dedup-Verhalten nach `alwaysOutputData` als auch grundsätzlich jede Stelle mit zwei Roh-Verbindungen auf ein Ziel.
+
+## Testreihenfolge für die verbleibenden Workflows
+
+1. `03a` — künstlich eine `news_assessments`-Zeile auf `wirkungsebene='unklar'` setzen, dann ausführen.
+2. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben (braucht mehrere Tage `02`/`02b`-Historie). Bis dahin liefert der Bericht mangels Fallzahl leer/fast leer — das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
+3. `07` — Status-Webhook-Token-Credential anlegen, dann testen.
+4. Den echten Versandpfad von `05` einmal gezielt erzwingen (z. B. testweise die `quality_score`-Schwelle in `10` lokal senken oder eine Testdaten-Konstellation bauen, die der Prüf-Agent freigibt), um Matrix+E-Mail-Versand mindestens einmal live zu verifizieren.
 
 ## Rollback-Anleitung
 
@@ -149,17 +176,20 @@ Siehe `TESTPLAN_AGENTEN.md` für alle Einzelfälle. Empfohlene Grobreihenfolge:
 
 ## Offene manuelle Schritte (Zusammenfassung)
 
-1. Postgres-Credential + Status-Webhook-Token-Credential in n8n anlegen.
-2. `sql/001_agenten_architektur.sql` einmalig ausführen und verifizieren.
-3. Echte Workflow-ID von `10` in `00` und `05` eintragen (Platzhalter ersetzen).
-4. Nach erfolgreichem Test: alte Schedule-Trigger in den „– Orchestriert“/„– Agent V1“-Dateien deaktivieren, um Doppelläufe zu vermeiden.
-5. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen.
-6. Alle Punkte aus `TESTPLAN_AGENTEN.md` einmal gegen echte Daten durchspielen (bisher nur statisch geprüft).
+1. Status-Webhook-Token-Credential in n8n anlegen und `07` zuweisen.
+2. `03a`, `04`, `07`, `09` live testen (siehe „Testreihenfolge für die verbleibenden Workflows" oben) — bisher nur `00`, `03`, `06`, `08`, `10` live bestätigt.
+3. Den echten `05`-Versandpfad (`approved=true`) mindestens einmal gezielt erzwingen und verifizieren — bisher hat der Prüf-Agent in jedem Testlauf korrekt abgelehnt, wodurch dieser Pfad nie durchlaufen wurde.
+4. Nach erfolgreichem Test aller Stufen: alte Schedule-Trigger in den Original-Workflows `02b`/`02`/`05`/`06` deaktivieren, um Doppelläufe zu vermeiden — bewusst noch nicht geschehen.
+5. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen (im Auftrag nur als optional gefordert).
+6. Erst nach Punkt 2+3: alle 15 Workflows aktivieren.
 
-## Punkte, die wegen fehlender Laufzeitumgebung nur statisch geprüft werden konnten
+## Punkte, die weiterhin nur statisch geprüft sind (nicht live getestet)
 
-- Sämtliche neuen `n8n-nodes-base.postgres`-Nodes: Verwendung der `executeQuery`-Operation ist als einzige Postgres-Operation real bestätigt (über den Migrations-Runner-Workflow selbst), aber kein tatsächlicher Lauf gegen eine echte Datenbank fand statt.
-- `n8n-nodes-base.executeWorkflowTrigger` und `n8n-nodes-base.executeWorkflow` (Orchestrator-Mechanik): Standard-n8n-Funktionalität, aber nicht live gegen diese konkrete n8n-Instanz getestet — insbesondere die genaue Struktur des von `Execute Workflow` zurückgegebenen Objekts (`error`-Feld bei Fehlschlag) basiert auf allgemeinem n8n-Wissen, nicht auf einem lokalen Beispiel aus den 8 Original-Workflows (die alle nie Execute-Workflow verwenden).
-- `n8n-nodes-base.webhook` mit `authentication: headerAuth`: Standard-n8n-Feature, aber kein lokales Beispiel eines bereits authentifizierten Webhooks in diesem Projekt zum Abgleich vorhanden.
-- Alle KI-Prompts (03, 03a, 09, 10): Format-Erwartungen (JSON-Schema-Konformität der Modellantworten) sind nur anhand der bereits produktiv bewährten Prompt-Struktur aus den Originalen abgeleitet, nicht mit echten Modellaufrufen verifiziert.
-- Die komplette Handelstage-Zählung in 08 (D+1..D+20 über tatsächlich vorhandene `stock_technical_signals`-Zeilen) wurde nur gegen die Codelogik durchdacht, nicht gegen reale mehrtägige Kursverlaufsdaten getestet.
+Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/06/08/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung) und 10 (Report- + Prüf-Agent), sowie die D+1-Zeile der Handelstage-Zählung in 08.
+
+Noch offen:
+- `n8n-nodes-base.webhook` mit `authentication: headerAuth` in `07`: Standard-n8n-Feature, aber noch keine Credential angelegt und kein Testlauf erfolgt.
+- Die KI-Prompts in `03a` (Recherche-Agent) und `09` (Lernagent): Format-Erwartungen nur aus der Prompt-Struktur der bereits bestätigten Agenten (03/10) abgeleitet, nicht selbst mit echten Modellaufrufen verifiziert.
+- Die D+3/D+5/D+10/D+20-Zweige der Handelstage-Zählung in 08: nur D+1 wurde bisher tatsächlich erreicht (es liegt erst 1 Tag Kurshistorie seit der Migration vor), die späteren Zeitfenster sind weiterhin nur gegen die Codelogik durchdacht.
+- Der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`): nie erreicht, da der Prüf-Agent in allen bisherigen Testläufen korrekt ablehnte.
+- `04` (Cleanup) und dessen Retention-Regeln gegen echte, ausreichend alte Datensätze — die Testdaten sind dafür noch zu jung.
