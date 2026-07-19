@@ -1,0 +1,435 @@
+{
+  "name": "05 – Tagesreport – Agent V1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 30 18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "e0a6b1c1-fa5b-484e-9902-bebe1eecf877",
+      "name": "Trigger: Tagesreport (18:30)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3600,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "run_id"
+            },
+            {
+              "name": "report_markdown"
+            },
+            {
+              "name": "approved"
+            },
+            {
+              "name": "DRY_RUN"
+            }
+          ]
+        }
+      },
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3600,
+        200
+      ],
+      "id": "n-00000001-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "PLACEHOLDER_10_REPORT_PRUEF_AGENT",
+          "mode": "list",
+          "cachedResultName": "10 – Report- und Prüfagent (TODO: id nach Import korrigieren)"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "run_id": "={{ 'standalone-' + Date.now() }}",
+            "business_date": ""
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "name": "Ausfuehren: Report- und Pruefagent (10, standalone)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -3400,
+        -200
+      ],
+      "onError": "continueErrorOutput",
+      "id": "n-00000002-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Vereinheitlicht beide Einstiegspfade auf ein gemeinsames Item.\nconst j = $json || {};\nreturn [{ json: {\n  run_id: j.run_id || 'unbekannt',\n  report_markdown: j.report_markdown || '',\n  approved: j.approved === true || j.approved === 'true',\n  quality_score: j.quality_score,\n  required_corrections: j.required_corrections || [],\n  missing_warnings: j.missing_warnings || [],\n  technische_signale: j.technische_signale || [],\n  empfehlungswatchlist: j.empfehlungswatchlist || {},\n  datenqualitaet: j.datenqualitaet || {},\n  DRY_RUN: j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
+      },
+      "name": "Eingabe normalisieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        0
+      ],
+      "id": "n-00000003-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF: Freigegeben?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3000,
+        0
+      ],
+      "id": "n-00000004-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "const ki = $input.item.json;\n\nfunction extractReportText(obj) {\n  // Neue OpenAI Responses-Struktur in n8n\n  if (typeof obj.output_text === 'string' && obj.output_text.trim()) {\n    return obj.output_text.trim();\n  }\n\n  if (Array.isArray(obj.output)) {\n    for (const msg of obj.output) {\n      if (Array.isArray(msg.content)) {\n        for (const c of msg.content) {\n          if (typeof c.text === 'string' && c.text.trim()) {\n            return c.text.trim();\n          }\n        }\n      }\n    }\n  }\n\n  // Alte Chat-Completions-Struktur\n  if (typeof obj.text === 'string' && obj.text.trim()) {\n    return obj.text.trim();\n  }\n\n  if (typeof obj.message?.content === 'string' && obj.message.content.trim()) {\n    return obj.message.content.trim();\n  }\n\n  if (typeof obj.choices?.[0]?.message?.content === 'string' && obj.choices[0].message.content.trim()) {\n    return obj.choices[0].message.content.trim();\n  }\n\n  return JSON.stringify(obj, null, 2);\n}\n\nfunction escapeHtml(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;');\n}\n\nfunction markdownToSimpleHtml(markdown) {\n  let html = escapeHtml(markdown);\n\n  // Überschriften\n  html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');\n  html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');\n  html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');\n\n  // Fett\n  html = html.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');\n\n  // Kursiv (erst NACH Fett, damit ** nicht als zwei einzelne * erkannt wird)\n  html = html.replace(/\\*([^*\\n]+)\\*/g, '<em>$1</em>');\n\n  // Inline-Code\n  html = html.replace(/`([^`\\n]+)`/g, '<code>$1</code>');\n\n  // Aufzählungen: nur fuehrende Leerzeichen/Tabs erlauben (kein \\s, das wuerde\n  // Zeilenumbrueche/Leerzeilen verschlucken und mehrere Listen verschmelzen)\n  html = html.replace(/^[ \\t]*-\\s+(.*)$/gm, '<li>$1</li>');\n  // jeden zusammenhaengenden Block aus <li>-Zeilen einzeln in <ul> wrappen,\n  // statt alle <li> im Dokument in ein einziges <ul> zu packen\n  html = html.replace(/(?:^<li>.*<\\/li>$\\n?)+/gm, (block) => `<ul>\\n${block.trim()}\\n</ul>\\n`);\n\n  // Absätze / Zeilenumbrüche\n  html = html\n    .split(/\\n{2,}/)\n    .map(block => {\n      const trimmed = block.trim();\n      if (!trimmed) return '';\n      if (\n        trimmed.startsWith('<h1>') ||\n        trimmed.startsWith('<h2>') ||\n        trimmed.startsWith('<h3>') ||\n        trimmed.startsWith('<ul>')\n      ) {\n        return trimmed;\n      }\n      return `<p>${trimmed.replace(/\\n/g, '<br>')}</p>`;\n    })\n    .join('\\n');\n\n  return html;\n}\n\nfunction buildEmpfehlungsMarkdown() {\n  let ew;\n  try {\n    ew = $('Eingabe normalisieren').item.json.empfehlungswatchlist;\n  } catch (e) {\n    ew = null;\n  }\n  if (!ew) return '';\n\n  let md = '\\n\\n## 11. Empfehlungs-Watchlist (News + Signal, hypothetisch)\\n\\n';\n  md += `Offene Positionen: ${ew.anzahl_offen} | Geschlossene Positionen: ${ew.anzahl_geschlossen}\\n\\n`;\n  if (ew.durchschnitt_performance_geschlossen !== null) {\n    md += `Durchschnittliche Performance geschlossener Positionen: ${ew.durchschnitt_performance_geschlossen}%\\n`;\n    md += `Trefferquote (positive Positionen): ${ew.trefferquote_geschlossen}%\\n\\n`;\n  }\n  if (ew.offen && ew.offen.length > 0) {\n    md += '**Offen:**\\n';\n    for (const p of ew.offen) {\n      md += `- ${p.ticker} (${p.richtung}), Entry ${p.entry_kurs} am ${p.entry_datum}, aktuelle Performance: ${p.live_performance_pct ?? 'n/a'}%\\n`;\n      if (p.onvista_link) {\n        md += `  Hebelprodukt-Suche (Hebel 3-4, ${p.richtung === 'kauf' ? 'Long' : 'Short'} filtern): ${p.onvista_link}\\n`;\n      }\n    }\n    md += '\\n';\n  }\n  if (ew.geschlossen && ew.geschlossen.length > 0) {\n    md += '**Zuletzt geschlossen:**\\n';\n    for (const p of ew.geschlossen.slice(-5)) {\n      md += `- ${p.ticker} (${p.richtung}), ${p.entry_datum} bis ${p.exit_datum}, Performance: ${p.performance_pct ?? 'n/a'}%\\n`;\n    }\n    md += '\\n';\n  }\n  md += 'Hinweis: rein hypothetische Watchlist basierend auf kombinierten News- und Signal-Treffern (automatisch erzeugt). Keine echten Trades, keine Anlageberatung.\\n';\n  return md;\n}\n\nfunction buildSignalUebersicht() {\n  let daten;\n  try {\n    daten = $('Eingabe normalisieren').item.json;\n  } catch (e) {\n    return '';\n  }\n  const signale = daten.technische_signale || [];\n  if (signale.length === 0) return '';\n\n  const dq = daten.datenqualitaet || {};\n  let md = '## Signal-Übersicht (auf einen Blick)\\n\\n';\n  if (dq.tech_signale_stale) {\n    md += `⚠️ Diese Signale sind vom ${dq.tech_signale_stale_datum}, nicht von heute.\\n\\n`;\n  }\n\n  const kandidaten = signale.filter(s => s.handels_status === 'handelskandidat');\n  const beobachten = signale.filter(s => s.handels_status === 'beobachten');\n  const rest = signale.length - kandidaten.length - beobachten.length;\n\n  function zeile(s) {\n    const rsiTxt = s.rsi != null && s.rsi !== '' ? `RSI ${s.rsi} (${s.rsi_signal || 'n/a'})` : 'RSI n/a';\n    const macdTxt = s.macd_signal || 'n/a';\n    const richtungTxt = s.richtung || 'n/a';\n    return `- ${s.handels_status_text || ''} ${s.ticker} (${s.sektor || 'n/a'}): ${rsiTxt} | MACD ${macdTxt} | Richtung: ${richtungTxt}`;\n  }\n\n  if (kandidaten.length > 0) {\n    md += '**Handelskandidaten:**\\n' + kandidaten.map(zeile).join('\\n') + '\\n\\n';\n  } else {\n    md += '**Handelskandidaten:** keine heute.\\n\\n';\n  }\n\n  if (beobachten.length > 0) {\n    md += '**Beobachten:**\\n' + beobachten.map(zeile).join('\\n') + '\\n\\n';\n  }\n\n  if (rest > 0) {\n    md += `_${rest} weitere Aktie(n) ohne auffälliges Signal (nur_info/ignorieren)._\\n\\n`;\n  }\n\n  md += '---\\n';\n  return md;\n}\n\nconst report_text = buildSignalUebersicht() + (ki.report_markdown || extractReportText(ki)) + buildEmpfehlungsMarkdown();\n\nconst matrix_text = report_text.length > 15000\n  ? report_text.substring(0, 14800) + '\\n\\n[Bericht gekürzt - vollständige Version per E-Mail]'\n  : report_text;\n\nconst matrix_html = markdownToSimpleHtml(matrix_text);\nconst report_html = markdownToSimpleHtml(report_text);\n\nconst email_html = `\n<html>\n<body style=\"font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:24px;color:#222;line-height:1.6\">\n  <h1 style=\"color:#1a1a2e;margin-bottom:4px;\">📊 Aktien-Tagesreport</h1>\n  <p style=\"color:#666;margin-top:0;\">\n    ${new Date().toLocaleDateString('de-DE', {\n      weekday: 'long',\n      year: 'numeric',\n      month: 'long',\n      day: 'numeric'\n    })}\n  </p>\n\n  <div style=\"background:#f8f9fa;padding:22px;border-radius:10px;border:1px solid #e5e5e5;font-size:15px;\">\n    ${report_html}\n  </div>\n\n  <hr style=\"margin-top:28px;border:none;border-top:1px solid #ddd;\">\n  <p style=\"color:#999;font-size:12px;\">\n    Automatisch generiert. Keine Anlageberatung, nur automatisierte Markt- und Aktienbeobachtung.\n  </p>\n</body>\n</html>`;\n\nreturn [\n  {\n    json: {\n      report_text,\n      matrix_text,\n      matrix_html,\n      email_html,\n      zeitstempel: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "name": "Report aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        -120
+      ],
+      "id": "n-00000005-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ !$('Eingabe normalisieren').item.json.DRY_RUN }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF: DRY_RUN? (Versand)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2600,
+        -120
+      ],
+      "id": "n-00000006-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-report-{{ Date.now() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "msgtype",
+              "value": "m.text"
+            },
+            {
+              "name": "format",
+              "value": "org.matrix.custom.html"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.matrix_text }}"
+            },
+            {
+              "name": "formatted_body",
+              "value": "={{ $json.matrix_html }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "009c7c1a-8bd5-4c4e-8d30-2dcb9f55925f",
+      "name": "Matrix: Tagesreport senden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -2400,
+        -200
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "trading@golietz.de",
+        "toEmail": "oliver.lietz@golietz.de",
+        "subject": "=📊 Aktien-Tagesreport {{ new Date().toLocaleDateString('de-DE') }}",
+        "html": "={{ $json.email_html }}",
+        "options": {}
+      },
+      "id": "4cfea96c-a141-4ae6-8b55-f70a09f7e62b",
+      "name": "E-Mail Report senden",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -2400,
+        -40
+      ],
+      "webhookId": "73f48d44-e086-44c1-b79a-9596d953f87f",
+      "credentials": {
+        "smtp": {
+          "id": "9z1hWYlOfxcO8avw",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// DRY_RUN=true: kein produktiver Versand, nur Protokollierung.\nreturn [{ json: { ...$json, _dry_run_skip: 'Versand uebersprungen (DRY_RUN)' } }];"
+      },
+      "name": "DRY_RUN: Versand uebersprungen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        40
+      ],
+      "id": "n-00000007-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $json;\nconst warns = [\n  ...(j.missing_warnings || []),\n  ...(j.required_corrections || []).map(c => 'Pruef-Agent-Korrektur: ' + c)\n];\nif (warns.length === 0) warns.push('Pruef-Agent hat den Bericht abgelehnt (quality_score ' + j.quality_score + '), keine Details verfuegbar.');\n\nconst body = '⚠️ Tagesreport NICHT versendet (run_id ' + j.run_id + ', quality_score ' + j.quality_score + ')\\n\\n• ' + warns.join('\\n• ');\nconst formatted_body = '<b>⚠️ Tagesreport NICHT versendet</b> (run_id ' + j.run_id + ', quality_score ' + j.quality_score + ')<br><ul>' + warns.map(w => '<li>' + w + '</li>').join('') + '</ul>';\n\nreturn [{ json: { ...j, _warn_body: body, _warn_formatted_body: formatted_body } }];\n"
+      },
+      "name": "Ablehnungs-Warnung bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        160
+      ],
+      "id": "n-00000008-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-fehler-{{ Date.now() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "msgtype",
+              "value": "m.text"
+            },
+            {
+              "name": "format",
+              "value": "org.matrix.custom.html"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json._warn_body }}"
+            },
+            {
+              "name": "formatted_body",
+              "value": "={{ $json._warn_formatted_body }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Matrix: Fehler-Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -2600,
+        160
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      },
+      "id": "n-00000009-0000-4000-8000-0000000000"
+    }
+  ],
+  "connections": {
+    "Trigger: Tagesreport (18:30)": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Report- und Pruefagent (10, standalone)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Report- und Pruefagent (10, standalone)": {
+      "main": [
+        [
+          {
+            "node": "Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eingabe normalisieren": {
+      "main": [
+        [
+          {
+            "node": "IF: Freigegeben?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Freigegeben?": {
+      "main": [
+        [
+          {
+            "node": "Report aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ablehnungs-Warnung bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "IF: DRY_RUN? (Versand)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: DRY_RUN? (Versand)": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Tagesreport senden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "E-Mail Report senden",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DRY_RUN: Versand uebersprungen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ablehnungs-Warnung bauen": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Fehler-Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

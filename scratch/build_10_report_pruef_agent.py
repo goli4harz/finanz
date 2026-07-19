@@ -473,7 +473,13 @@ return [{ json: {
   contradictions: verdict.contradictions || [],
   stale_data: verdict.stale_data || [],
   missing_warnings: verdict.missing_warnings || [],
-  required_corrections: verdict.required_corrections || []
+  required_corrections: verdict.required_corrections || [],
+  // Fuer 05s deterministische Zusatzabschnitte (Signal-Uebersicht,
+  // Empfehlungs-Watchlist), die NICHT vom Report-Agenten frei formuliert
+  // werden, sondern unveraendert aus dem Original-05-Muster uebernommen sind.
+  technische_signale: base.technische_signale || [],
+  empfehlungswatchlist: base.empfehlungswatchlist || {},
+  datenqualitaet: base.datenqualitaet || {}
 } }];
 """
     },
