@@ -101,6 +101,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-000000000001",
+      "name": "Marktumfeld: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1780,
+        -160
+      ]
+    },
+    {
+      "parameters": {
         "conditions": {
           "options": {
             "caseSensitive": true,
@@ -195,6 +208,19 @@
           "name": "Postgres – Trading (TODO Credential zuweisen)"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-000000000002",
+      "name": "Technische Signale: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -160
+      ]
     },
     {
       "parameters": {
@@ -438,6 +464,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-000000000003",
+      "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -160
+      ]
+    },
+    {
+      "parameters": {
         "source": "database",
         "workflowId": {
           "__rl": true,
@@ -501,6 +540,19 @@
           "name": "Postgres – Trading (TODO Credential zuweisen)"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-000000000004",
+      "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -160
+      ]
     },
     {
       "parameters": {
@@ -601,6 +653,19 @@
           "name": "Postgres – Trading (TODO Credential zuweisen)"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-000000000005",
+      "name": "Versand: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -280
+      ]
     },
     {
       "parameters": {
@@ -754,11 +819,22 @@
       "main": [
         [
           {
-            "node": "Log Marktumfeld (SQL bauen)",
+            "node": "Marktumfeld: Ergebnis entduplizieren",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Marktumfeld: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktumfeld: Ergebnis entduplizieren": {
+      "main": [
         [
           {
             "node": "Log Marktumfeld (SQL bauen)",
@@ -812,11 +888,22 @@
       "main": [
         [
           {
-            "node": "Log Technische Signale (SQL bauen)",
+            "node": "Technische Signale: Ergebnis entduplizieren",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Technische Signale: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Technische Signale: Ergebnis entduplizieren": {
+      "main": [
         [
           {
             "node": "Log Technische Signale (SQL bauen)",
@@ -959,11 +1046,22 @@
       "main": [
         [
           {
-            "node": "Log Empfehlungswatchlist (SQL bauen)",
+            "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empfehlungswatchlist: Ergebnis entduplizieren": {
+      "main": [
         [
           {
             "node": "Log Empfehlungswatchlist (SQL bauen)",
@@ -999,11 +1097,22 @@
       "main": [
         [
           {
-            "node": "Log Report-Pruef-Agent (SQL bauen)",
+            "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report-Pruef-Agent: Ergebnis entduplizieren": {
+      "main": [
         [
           {
             "node": "Log Report-Pruef-Agent (SQL bauen)",
@@ -1057,11 +1166,22 @@
       "main": [
         [
           {
-            "node": "Log Versand (SQL bauen)",
+            "node": "Versand: Ergebnis entduplizieren",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Versand: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Versand: Ergebnis entduplizieren": {
+      "main": [
         [
           {
             "node": "Log Versand (SQL bauen)",
