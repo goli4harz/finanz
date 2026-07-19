@@ -167,11 +167,19 @@ b.link(n_if_neu, n_save_new_in, src_index=0)
 
 # ---------------------------------------------------------------------------
 # 8. Faellige News fuer DIESEN Lauf laden (pending ODER retry mit
-#    faelligem next_retry_at) -- laeuft erst NACH den Neu-Inserts (n8n
-#    wartet je Node auf alle Input-Items, bevor der naechste Node startet),
-#    damit auch in diesem Lauf frisch eingefuegte News direkt mit bewertet
-#    werden. Zusaetzlich per Einmal-Trigger auf genau 1 Ausfuehrung reduziert,
-#    da 'Neue News speichern' pro Item durchlaeuft.
+#    faelligem next_retry_at). MUSS in JEDEM Lauf GENAU EINMAL feuern, auch
+#    wenn diese Stunde 0 neue News gefunden wurden (sonst wuerde der ganze
+#    Retry-Mechanismus aus Phase 4 zum Stillstand kommen, sobald ein Lauf
+#    mal keine echte Neuigkeit findet) -- Bug, der beim ersten Live-Test
+#    gefunden wurde: urspruenglich nur an 'Neue News speichern' gehaengt,
+#    lief dadurch NICHT wenn IF:News-neu? 0 Items in den True-Zweig gab.
+#    Fix: unabhaengig vom Dedup-/Insert-Ergebnis direkt vom ERSTEN Einmal-
+#    Trigger abgezweigt (parallel zum Dedup-Zweig, nicht danach) -- garantiert
+#    genau 1 Ausfuehrung pro Lauf, unabhaengig davon wie viele/wenige News
+#    neu waren. Trade-off bewusst in Kauf genommen: brandneue News werden
+#    dadurch nicht mehr zwingend im selben Lauf mitbewertet, sondern
+#    spaetestens im naechsten stuendlichen Lauf (siehe DB: Faellige News
+#    laden, holt ohnehin alle status='pending').
 # ---------------------------------------------------------------------------
 n_once2 = b.add({
     "parameters": {"jsCode": "return [{ json: { _trigger: true } }];"},
@@ -180,7 +188,7 @@ n_once2 = b.add({
     "typeVersion": 2,
     "position": [-2600, 1450]
 })
-b.link(n_save_new_out, n_once2)
+b.link(n_once, n_once2)
 
 n_due_load = b.add({
     "parameters": {
