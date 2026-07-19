@@ -444,7 +444,7 @@ n_check_ki = b.add({
             {"content": "={{ $json.checkUserPrompt }}"}
         ]},
         "builtInTools": {},
-        "options": {"maxTokens": 1500}
+        "options": {"maxTokens": 4000}
     },
     "name": "KI: Pruef-Agent",
     "type": "@n8n/n8n-nodes-langchain.openAi",

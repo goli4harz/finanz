@@ -353,7 +353,7 @@
         },
         "builtInTools": {},
         "options": {
-          "maxTokens": 1500
+          "maxTokens": 4000
         }
       },
       "name": "KI: Pruef-Agent",
