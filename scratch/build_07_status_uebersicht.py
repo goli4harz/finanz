@@ -180,10 +180,33 @@ n_learn_open = b.add({
 })
 b.link(n_webhook, n_learn_open)
 
+# Trefferquote je Quelle -- Datengrundlage fuer den Balkendiagramm-Abschnitt
+# unten (gleiche Gruppierung/Filter wie 09s "SQL: Je Quelle", ohne
+# proposal_eligible-Schwellenwerte -- hier nur zur Visualisierung).
+n_trefferquote_quelle = b.add({
+    "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT source AS value, count(*) AS sample_size,\n"
+                 "  round(100.0 * count(*) FILTER (WHERE direction_correct = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct IS NOT NULL), 0), 1) AS trefferquote\n"
+                 "FROM trading.news_impact_tracking\n"
+                 "WHERE status = 'completed' AND confounded = FALSE AND source IS NOT NULL\n"
+                 "  AND created_at >= now() - interval '90 days'\n"
+                 "GROUP BY source ORDER BY sample_size DESC LIMIT 10;",
+        "options": {}
+    },
+    "name": "DB: Trefferquote je Quelle",
+    "type": "n8n-nodes-base.postgres",
+    "typeVersion": 2.5,
+    "position": [-3400, 1600],
+    "onError": "continueRegularOutput",
+    "credentials": {"postgres": PG_CRED}
+})
+b.link(n_webhook, n_trefferquote_quelle)
+
 # ---------------------------------------------------------------------------
 # 3. Alles zusammenfuehren (append-Merge-Kette wie im Original)
 # ---------------------------------------------------------------------------
-sources = [n_fund, n_markt, n_tech, n_empf, n_kurse, n_news, n_pipeline, n_pipeline_success, n_agent_runs, n_news_state, n_impact, n_learn_open]
+sources = [n_fund, n_markt, n_tech, n_empf, n_kurse, n_news, n_pipeline, n_pipeline_success, n_agent_runs, n_news_state, n_impact, n_learn_open, n_trefferquote_quelle]
 prev = sources[0]
 for i, src in enumerate(sources[1:], start=1):
     m = b.add({"parameters": {}, "name": f"Merge Status {i}", "type": "n8n-nodes-base.merge", "typeVersion": 3, "position": [-3200 + i * 40, i * 30]})
@@ -241,6 +264,53 @@ function agentZeile(a) {
 }
 const agentHtml = agentLaeufe.length > 0 ? agentLaeufe.map(agentZeile).join('') : '<tr><td colspan="6" class="empty">noch keine Agentenlaeufe protokolliert</td></tr>';
 
+const trefferquoteJeQuelle = rows('DB: Trefferquote je Quelle');
+
+// ─── Einfache horizontale Balkendiagramme, reines SVG, kein externer Dienst ──
+function escSvg(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function svgBarChart(rowsIn, opts) {
+  opts = opts || {};
+  const width = opts.width || 640;
+  const barHeight = 20;
+  const gap = 10;
+  const labelWidth = opts.labelWidth || 170;
+  const chartWidth = width - labelWidth - 60;
+  const maxVal = opts.maxValue || Math.max(1, ...rowsIn.map(r => Number(r.value) || 0));
+  const height = rowsIn.length * (barHeight + gap) + gap;
+  let svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" width="100%" style="max-width:' + width + 'px;height:auto" xmlns="http://www.w3.org/2000/svg">';
+  rowsIn.forEach((r, i) => {
+    const y = gap + i * (barHeight + gap);
+    const val = Number(r.value) || 0;
+    const barW = Math.max(2, (val / maxVal) * chartWidth);
+    const color = r.color || '#6bcf8e';
+    svg += '<text x="0" y="' + (y + barHeight / 2 + 4) + '" fill="#9aa0a6" font-size="12">' + escSvg(r.label) + '</text>';
+    svg += '<rect x="' + labelWidth + '" y="' + y + '" width="' + barW + '" height="' + barHeight + '" rx="4" fill="' + color + '"/>';
+    svg += '<text x="' + (labelWidth + barW + 8) + '" y="' + (y + barHeight / 2 + 4) + '" fill="#e6e6e6" font-size="12">' + escSvg(r.valueText != null ? r.valueText : r.value) + '</text>';
+  });
+  svg += '</svg>';
+  return svg;
+}
+function trefferquoteColor(pct) {
+  if (pct === null || pct === undefined) return '#5f6368';
+  if (pct >= 60) return '#6bcf8e';
+  if (pct >= 40) return '#e0a854';
+  return '#e0665a';
+}
+
+const wirkungsChartRows = wirkungsFortschritt
+  .filter(w => Number(w.anzahl) > 0)
+  .map(w => ({ label: w.status, value: Number(w.anzahl), valueText: w.anzahl, color: w.status === 'completed' ? '#6bcf8e' : (w.status === 'confounded' ? '#e0665a' : '#4a90d9') }));
+const wirkungsChartHtml = wirkungsChartRows.length > 0
+  ? svgBarChart(wirkungsChartRows, {})
+  : '<p class="empty">noch keine Wirkungsanalyse-Daten</p>';
+
+const trefferquoteChartRows = trefferquoteJeQuelle
+  .filter(q => q.trefferquote !== null && q.trefferquote !== undefined)
+  .map(q => ({ label: q.value + ' (n=' + q.sample_size + ')', value: Number(q.trefferquote), valueText: q.trefferquote + '%', color: trefferquoteColor(Number(q.trefferquote)) }));
+const trefferquoteChartHtml = trefferquoteChartRows.length > 0
+  ? svgBarChart(trefferquoteChartRows, { maxValue: 100 })
+  : '<p class="empty">noch keine abgeschlossenen Wirkungsanalysen je Quelle (mindestens 1 abgeschlossener Fall noetig)</p>';
+
 const newsZustandMap = {};
 for (const z of newsZustand) newsZustandMap[z.status] = Number(z.anzahl);
 const newsOffenRetry = (newsZustandMap.pending || 0) + (newsZustandMap.retry || 0);
@@ -268,6 +338,10 @@ const zusatzHtml =
 '    <div class="stat"><div class="label">Trefferquote (sauber)</div><div class="value">' + (impactCompleted.trefferquote !== null && impactCompleted.trefferquote !== undefined ? impactCompleted.trefferquote + '%' : '—') + '</div></div>' +
 '    <div class="stat"><div class="label">Konfundierte Faelle</div><div class="value">' + impactConfounded + '</div></div>' +
 '  </div>' +
+'  <h2>Wirkungsanalyse -- Status-Verteilung</h2>' +
+'  <div style="background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto">' + wirkungsChartHtml + '</div>' +
+'  <h2>Trefferquote je Quelle (abgeschlossene, unverunreinigte Faelle)</h2>' +
+'  <div style="background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto">' + trefferquoteChartHtml + '</div>' +
 '  <h2>Lernagent</h2>' +
 '  <div class="summary">' +
 '    <div class="stat"><div class="label">Offene Lernvorschlaege</div><div class="value">' + (lernVorschlaege.offene_vorschlaege || 0) + '</div></div>' +

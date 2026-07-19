@@ -187,14 +187,17 @@ oder neu berechnen, nur interpretieren und in Worte fassen.
 Regeln:
 - Du erstellst AUSSCHLIESSLICH Vorschlaege (status wird spaeter separat auf 'proposed' gesetzt), niemals Aktivierungen.
 - Ein proposal darf sich NUR auf ein Finding aus der Liste 'proposal_candidates' stuetzen (sample_size bereits >=30 geprueft).
-- current_value fuer proposal_type='source_weight' ist immer 1.0 (Standardgewichtung, sofern keine andere bekannt ist).
+- Jeder proposal MUSS "dimension" exakt aus dem Finding uebernehmen (news_category, source, ticker oder konfidenz_bucket)
+  UND "target" exakt aus dessen "value" -- dimension+target zusammen muessen eindeutig ein Finding aus 'proposal_candidates'
+  identifizieren. Erfinde niemals eine dimension, die im Finding nicht so steht.
+- current_value ist immer 1.0 (Standardgewichtung, sofern keine andere bekannt ist).
 - proposed_value soll die Richtung der beobachteten Abweichung widerspiegeln (z.B. Gewicht senken bei <50% Trefferquote,
   Gewicht anheben bei >=80% Trefferquote), aber moderat bleiben (Aenderungen typischerweise 0.1-0.3, nie mehr als 0.5).
 - reason muss die tatsaechliche Fallzahl und Trefferquote nennen.
 - Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:
 {
   "findings": [ { "dimension": "", "value": "", "sample_size": 0, "direction_accuracy": 0, "observation": "", "confidence_level": "" } ],
-  "proposals": [ { "proposal_type": "source_weight", "target": "", "current_value": 1.0, "proposed_value": 0.8, "sample_size": 0, "reason": "", "requires_approval": true } ]
+  "proposals": [ { "proposal_type": "weight_adjustment", "dimension": "", "target": "", "current_value": 1.0, "proposed_value": 0.8, "sample_size": 0, "reason": "", "requires_approval": true } ]
 }`;
 
 const userPrompt = `Zeitraum: ${d.analysis_from} bis ${d.analysis_to}
@@ -265,19 +268,23 @@ const parsed = parseObj(getAiText($json)) || { findings: [], proposals: [] };
 // Sicherheitsnetz: jeder Vorschlag wird GEGEN die deterministisch berechneten
 // proposal_eligible-Findings validiert -- ein Vorschlag, der auf keinen
 // bekannten Kandidaten (dimension+value) mit ausreichender Fallzahl passt,
-// wird verworfen, egal was die KI behauptet.
+// wird verworfen, egal was die KI behauptet. Der Match erfolgt STRIKT ueber
+// dimension+value zusammen (kein wertbasierter Fallback ueber alle
+// Dimensionen hinweg -- das haette frueher z.B. einen Ticker-Fund
+// faelschlich als "source"-Vorschlag durchgelassen, wenn der Ticker-Wert
+// zufaellig eindeutig war).
 const eligibleMap = new Map(
   base.findings.filter(f => f.proposal_eligible).map(f => [f.dimension + '|' + f.value, f])
 );
 
 const safeProposals = [];
 for (const p of (Array.isArray(parsed.proposals) ? parsed.proposals : [])) {
-  const key = (p.proposal_type === 'source_weight' ? 'source' : p.proposal_type) + '|' + p.target;
-  const match = eligibleMap.get(key) || [...eligibleMap.values()].find(f => f.value === p.target);
+  const key = String(p.dimension) + '|' + String(p.target);
+  const match = eligibleMap.get(key);
   if (!match) continue; // kein belastbarer Kandidat -> Vorschlag verworfen
   safeProposals.push({
-    proposal_type: p.proposal_type || 'source_weight',
-    target_type: p.proposal_type === 'source_weight' ? 'source' : 'unbekannt',
+    proposal_type: p.proposal_type || 'weight_adjustment',
+    target_type: match.dimension,
     target: String(p.target),
     current_value: p.current_value ?? 1.0,
     proposed_value: p.proposed_value,

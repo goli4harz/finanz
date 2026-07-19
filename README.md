@@ -24,7 +24,7 @@ Dieses Dokument beschreibt den Zielzustand nach dem Umbau auf `agenten-modernisi
 09 – Lernagent Newswirkung (Samstag 08:00)
    → trading.learning_rule_proposals (nur status='proposed')
 
-07 – Status-Uebersicht – Agent V1 (Webhook, jetzt mit Header-Token)
+07 – Status-Uebersicht – Agent V1 (Webhook, jetzt mit Header-Token; inkl. SVG-Diagramme fuer Wirkungsanalyse-Status und Trefferquote je Quelle)
 01 – Fundamentaldaten täglich (06:00, unverändert — rein deterministisch, kein Agentenbedarf)
 ```
 
@@ -148,10 +148,9 @@ Alle Tests liefen gegen die echte Produktions-Postgres-Instanz und echte RSS-/Op
 | `07` Status-Uebersicht | ✅ bestanden | Webhook mit Header-Auth angelegt und live getestet (korrekte Statusseite mit Header, `403` ohne) — Webhook-Pfad kollidiert mit dem noch aktiven Original-Workflow, daher nur kurzzeitig unter Test-Pfad aktiviert, danach wieder deaktiviert |
 | `05` echter Versandpfad | ✅ bestanden | `approved=true` per gepinnten Testdaten auf dem `Execute Workflow Trigger`-Node erzwungen (klar als TEST-VERSAND markiert): Matrix-Nachricht real zugestellt (`event_id` erhalten), E-Mail vom Mailserver angenommen (`250 Ok`), kein Fehler in der Kette — Pin-Daten danach wieder entfernt |
 | `04` Cleanup | ✅ bestanden | 6 künstlich zeitversetzte Test-News (klar als `TEST-04\|...` markiert) deckten alle 4 Zweige ab: alte `discarded`/`failed`-Zeilen korrekt gelöscht, zu junge `discarded`-Zeile korrekt behalten, alte `evaluated`-Zeile ohne Wirkungsdaten korrekt gelöscht, dieselbe MIT Wirkungsdaten korrekt geschützt (zentraler „Lerndaten nicht vorzeitig löschen"-Schutz greift), Zeile ohne Veröffentlichungsdatum korrekt markiert — Testzeilen danach wieder entfernt |
-| `09` | ⏳ noch nicht live getestet | Mangels `completed`-Wirkungsanalysen (braucht mehrtägige Historie) |
-| `05` echter Versandpfad | ⏳ noch nie erreicht | Der Prüf-Agent hat in allen Testläufen korrekt abgelehnt — der `approved=true`-Pfad (05 wird tatsächlich aufgerufen, Matrix+E-Mail gehen raus) ist dadurch noch nie durchlaufen worden |
+| `09` Lernagent | ✅ bestanden | 55 künstliche `completed`-Wirkungsanalyse-Zeilen in 3 Gruppen (35/15/5, klar als `TEST-09\|...` markiert) deckten alle Mindestfallzahl-Stufen ab: <10 korrekt komplett ausgeschlossen, 10-29 korrekt als „niedrig"/nicht vorschlagsfähig, ≥30 korrekt als „mittel"/vorschlagsfähig — dabei einen echten Bug gefunden und behoben (siehe unten). Alle 4 Dimensionen (news_category/source/ticker/konfidenz_bucket) korrekt ausgewertet, Vorschläge korrekt nur mit `status='proposed'` gespeichert, Matrix-Bericht real zugestellt. Testzeilen danach wieder entfernt |
 
-## Zehn echte Bugs beim Live-Testen gefunden und behoben
+## Zwölf echte Bugs beim Live-Testen gefunden und behoben
 
 Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den jeweiligen Commit-Messages (`git log`), Kurzfassung:
 
@@ -165,16 +164,20 @@ Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den j
 8. **`run_id` kam als NULL an, wenn 10 als Sub-Workflow aufgerufen wurde** — drei Fixversuche (`.all()[0]`, expliziter Merge-Zweig, schließlich lokale Erzeugung); der zugrunde liegende `workflowInputs`-Übergabemechanismus zwischen Execute Workflow und Execute Workflow Trigger verhielt sich anders als erwartet.
 9. **Doppel-Ausführung bei rohen Mehrfachverbindungen** — zwei „main"-Verbindungen auf denselben Node erzeugen in n8n zwei separate Ausführungen, keine kombinierte; betraf sowohl das Dedup-Verhalten nach `alwaysOutputData` als auch grundsätzlich jede Stelle mit zwei Roh-Verbindungen auf ein Ziel.
 10. **SQL-Injection-artiger Quoting-Fehler in 03a** — `JSON.stringify(...)` wurde als n8n-Expression direkt ins SQL eingesetzt (`@> [...]::jsonb` statt `@> '[...]'::jsonb`), da dieser eine Node (anders als der Rest der Architektur) nicht über den zentralen `pgJson`-Helfer, sondern direkt per n8n-Expression im Postgres-Node gebaut wurde — schlug live bei allen 4 Testkandidaten mit Syntaxfehler fehl, Werkzeugergebnis blieb leer statt frühere Meldungen zum Ticker zu liefern.
+11. **Lernvorschläge bekamen die falsche `target_type`-Dimension zugewiesen** — das KI-Prompt-Schema in 09 fragte keine Dimension (news_category/source/ticker/konfidenz_bucket) je Vorschlag ab, nur `proposal_type='source_weight'`. Die Validierung setzte `target_type` deshalb blind auf `'source'` und nutzte als Fallback eine reine Werte-Suche über ALLE Dimensionen hinweg — dadurch wurde live ein Ticker-Fund (`TEST9A.DE`) als `target_type='source'`-Vorschlag gespeichert. Fix: KI muss `dimension` explizit mitliefern, Validierung matcht strikt über `dimension+value`, `target_type` kommt aus dem getroffenen Finding, kein Fallback mehr. Nach dem Fix bekamen alle 4 vorschlagsfähigen Funde live korrekt ihre jeweilige Dimension zugewiesen.
+12. **Workflow „97" hatte einen doppelt-kodierten Namen** (`â€"` statt `–`) — vermutlich aus einer frühen Erstellung dieser Session ohne durchgängige `encoding='utf-8'`-Disziplin, entdeckt am n8n-UI-Anzeigefehler. Alle 15 live angelegten Workflow-Namen per Byte-Vergleich geprüft — nur dieser eine betroffen, korrigiert per API.
 
 ## Testreihenfolge für die verbleibenden Workflows
 
-1. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben. Analog zum `04`-Test (siehe Hinweis unten) lässt sich das auch mit künstlichen, klar markierten Testzeilen vorziehen, statt auf echte mehrtägige Historie zu warten.
+Alle 13 neuen/geänderten Workflows (00, 02/02b-Orchestriert, 03, 03a, 04, 05, 06, 07, 08, 09, 10) sind inzwischen live getestet — siehe „Live-Testergebnisse" oben. Kein Workflow mehr offen; verbleibt nur noch die Aktivierung nach dem letzten manuellen Schritt (siehe „Offene manuelle Schritte" unten).
 
 **Hinweis zum Testen webhook-basierter Workflows (aus dem 07-Test gelernt):** „Listen for test event" im n8n-Editor fängt bei `responseMode: responseNode` nur den Trigger-Aufruf ab und pinnt die Daten, führt aber NICHT automatisch die nachgelagerte Kette aus. Für einen echten End-to-End-Test muss der Workflow aktiviert und die Produktions-URL aufgerufen werden. Da `07`s Webhook-Pfad (`aktien-status`) mit dem noch aktiven Original-Workflow kollidiert, wurde für den Test kurzzeitig ein abweichender Pfad gesetzt, aktiviert, getestet und danach Pfad+Aktivierung wieder zurückgesetzt — bei der eigentlichen Umstellung muss der Original-Workflow zuerst deaktiviert werden, bevor die neue `07`-Version unter dem echten Pfad aktiviert werden kann.
 
 **Hinweis zum Testen von `Execute Workflow Trigger`-Einstiegspunkten (aus dem 05-Test gelernt):** dieser Node-Typ bietet keine eigene "Testdaten eingeben"-Maske im Editor (die Parameter-Ansicht definiert nur das Input-Schema, nicht Testwerte) — er erwartet Werte ausschließlich von einem echten aufrufenden `Execute Workflow`-Node. Um ihn isoliert zu testen, per API `pinData` auf den Node setzen (`{"<Node-Name>": [{"json": {...}}]}` im PUT-Payload), danach im Editor auf „Execute workflow" klicken — läuft dann mit den gepinnten Werten durch die komplette nachgelagerte Kette. Pin-Daten nach dem Test wieder auf `{}` zurücksetzen, damit sie nicht versehentlich bei einem echten Aufruf greifen.
 
-**Hinweis zum Testen zeitabhängiger Logik wie Retention-Regeln (aus dem 04-Test gelernt):** statt auf echte mehrtägige/-jährige Datenhistorie zu warten, künstliche Zeilen mit zurückdatiertem `created_at` (z. B. `now() - interval '400 days'`) direkt per SQL über `97 – Einmalig – Beliebige Query ausfuehren` einfügen, klar erkennbar markiert (z. B. `news_key` mit `TEST-<Workflow>|`-Präfix), den zu testenden Workflow ausführen, Ergebnis prüfen, Testzeilen danach wieder löschen. Deckt so auch Grenzfälle ab (z. B. "gerade noch zu jung" vs. "gerade alt genug"), die mit echten Daten Tage bis Monate zum natürlichen Auftreten bräuchten.
+**Hinweis zum Testen zeitabhängiger Logik wie Retention-Regeln (aus dem 04-Test gelernt):** statt auf echte mehrtägige/-jährige Datenhistorie zu warten, künstliche Zeilen mit zurückdatiertem `created_at` (z. B. `now() - interval '400 days'`) direkt per SQL über `97 – Einmalig – Beliebige Query ausfuehren` einfügen, klar erkennbar markiert (z. B. `news_key` mit `TEST-<Workflow>|`-Präfix), den zu testenden Workflow ausführen, Ergebnis prüfen, Testzeilen danach wieder löschen. Deckt so auch Grenzfälle ab (z. B. "gerade noch zu jung" vs. "gerade alt genug"), die mit echten Daten Tage bis Monate zum natürlichen Auftreten bräuchten. Beim Aufräumen alle Filterspalten bedenken, nicht nur eine (im 09-Test wurde eine Testzeile übersehen, weil sie über `target_value` statt über den erwarteten `TEST-`-Präfix identifiziert werden musste — Kontrollabfrage nach dem Löschen ist Pflicht, nicht nur "sollte 0 sein").
+
+**Hinweis zu doppelt-kodierten Workflow-Namen (aus dem 97-Namensfund gelernt):** n8n-UI zeigt `â€"` statt `–` an, wenn der Name-String beim Erzeugen ohne explizites `encoding='utf-8'` gelesen/geschrieben wurde (Windows-Python-Default ist cp1252). Bei Verdacht: `name.encode('utf-8')[:6].hex()` prüfen — korrekt beginnt ein Gedankenstrich nach einem Leerzeichen mit `20e28093`, korrupt mit `20c3a2e2` o.ä. Bei diesem Projekt wurde dadurch nur der Name eines einzelnen Wegwerf-Workflows beschädigt, keine Inhalte.
 
 ## Rollback-Anleitung
 
@@ -184,15 +187,15 @@ Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den j
 
 ## Offene manuelle Schritte (Zusammenfassung)
 
-1. `09` live testen (siehe „Testreihenfolge für die verbleibenden Workflows" oben) — `00`, `03`, `03a`, `04`, `05`, `06`, `07`, `08`, `10` bereits live bestätigt.
-2. Nach erfolgreichem Test aller Stufen: alte Schedule-Trigger in `02b`/`02`/`05`/`06` UND den alten Webhook-Pfad-Inhaber `07 – Status-Uebersicht` (Original) deaktivieren, um Doppelläufe bzw. Pfadkollisionen zu vermeiden — bewusst noch nicht geschehen.
+1. Alle 13 neuen/geänderten Workflows sind live getestet (siehe oben) — keine offenen Einzeltests mehr.
+2. Alte Schedule-Trigger in `02b`/`02`/`05`/`06` UND den alten Webhook-Pfad-Inhaber `07 – Status-Uebersicht` (Original) deaktivieren, um Doppelläufe bzw. Pfadkollisionen zu vermeiden — bewusst noch nicht geschehen.
 3. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen (im Auftrag nur als optional gefordert).
 4. Erst nach Punkt 2: alle 15 Workflows aktivieren.
 
 ## Punkte, die weiterhin nur statisch geprüft sind (nicht live getestet)
 
-Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/03a/04/06/07/08/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung), 03a (Recherche-Agent) und 10 (Report- + Prüf-Agent), `n8n-nodes-base.webhook` mit `authentication: headerAuth` in 07, der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`, per gepinnten Testdaten erzwungen), `04`s vier Retention-Zweige (per künstlich zurückdatierten Testzeilen, inkl. des kritischen "Lerndaten nicht vorzeitig löschen"-Schutzes), sowie die D+1-Zeile der Handelstage-Zählung in 08.
+Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/03a/04/06/07/08/09/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung), 03a (Recherche-Agent), 09 (Lernagent) und 10 (Report- + Prüf-Agent), `n8n-nodes-base.webhook` mit `authentication: headerAuth` in 07, der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`, per gepinnten Testdaten erzwungen), `04`s vier Retention-Zweige und `09`s Mindestfallzahl-Stufen (beide per künstlich zurückdatierten/erzeugten Testzeilen), sowie die D+1-Zeile der Handelstage-Zählung in 08.
 
 Noch offen:
-- Die KI-Prompts in `09` (Lernagent): Format-Erwartungen nur aus der Prompt-Struktur der bereits bestätigten Agenten (03/03a/10) abgeleitet, nicht selbst mit echten Modellaufrufen verifiziert.
 - Die D+3/D+5/D+10/D+20-Zweige der Handelstage-Zählung in 08: nur D+1 wurde bisher tatsächlich erreicht (es liegt erst 1 Tag Kurshistorie seit der Migration vor), die späteren Zeitfenster sind weiterhin nur gegen die Codelogik durchdacht.
+- Der komplette Aktivierungs-/Produktionsbetrieb (alle 15 Workflows gleichzeitig über Tage/Wochen aktiv, echte Cron-Zeitplan-Kaskade statt Einzeltests): jeder Workflow wurde einzeln getestet, aber noch nicht im Dauerbetrieb nebeneinander.
