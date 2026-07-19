@@ -87,6 +87,7 @@ for (const r of rows) {
       predicted_strength: r.wirkung_staerke,
       prediction_confidence: r.konfidenz,
       news_category: r.news_kategorie,
+      source: r.source,
       baseline_case: baselineCase
     } });
   }
@@ -346,6 +347,7 @@ for (const row of rows) {
     predicted_strength: isNew ? row.predicted_strength : row.predicted_strength,
     prediction_confidence: isNew ? row.prediction_confidence : row.prediction_confidence,
     news_category: isNew ? row.news_category : row.news_category,
+    source: isNew ? row.source : row.source,
     baseline_price: baselinePrice,
     baseline_timestamp: baselineTs,
     benchmark_symbol: benchmarkSymbol,
@@ -458,7 +460,7 @@ const cols = {
   news_date: pgStr(j.news_date), publication_timestamp: j.publication_timestamp ? pgStr(j.publication_timestamp) : 'NULL',
   first_trading_date: j.first_trading_date ? pgStr(j.first_trading_date) : 'NULL',
   predicted_direction: pgStr(j.predicted_direction), predicted_strength: pgStr(j.predicted_strength),
-  prediction_confidence: num(j.prediction_confidence), news_category: pgStr(j.news_category),
+  prediction_confidence: num(j.prediction_confidence), news_category: pgStr(j.news_category), source: pgStr(j.source),
   baseline_price: num(j.baseline_price), baseline_timestamp: j.baseline_timestamp ? pgStr(j.baseline_timestamp) : 'NULL',
   benchmark_symbol: pgStr(j.benchmark_symbol), benchmark_baseline_price: num(j.benchmark_baseline_price),
   price_d1: num(j.price_d1), price_d3: num(j.price_d3), price_d5: num(j.price_d5), price_d10: num(j.price_d10), price_d20: num(j.price_d20),
