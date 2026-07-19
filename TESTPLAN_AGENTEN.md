@@ -1,0 +1,64 @@
+# Testplan: Agentenarchitektur Aktienanalyse-System
+
+Alle Fälle unten sind **nur statisch geprüft** (Code-Review + `json.load`-Validierung aller Workflow-Dateien, siehe Validierungs-Output jedes Build-Skripts unter `scratch/build_*.py`) — es lag zum Zeitpunkt dieser Migration kein bestätigter n8n-/Postgres-Zugang für eine echte Ausführung vor. Jeder Fall nennt explizit, welcher Workflow/Node ihn behandelt, damit er beim ersten echten Testlauf gezielt nachvollzogen werden kann.
+
+## News
+
+| # | Fall | Erwartetes Verhalten | Zuständiger Workflow/Node |
+|---|---|---|---|
+| 1 | Neue relevante Aktiennews (RSS liefert bisher unbekannten Artikel zu einem Watchlist-Ticker) | `news_key` neu → `IF: News neu?` true → `trading.news_items` INSERT mit `status='pending'` → im selben oder nächsten Lauf von `DB: Faellige News laden` erfasst → Batch-KI-Bewertung → bei `relevanz≠irrelevant` `status='evaluated'` + Zeile in `trading.news_assessments` | 03, Nodes „News: news_key erzeugen“ → „Neue News speichern“ → „DB: Faellige News laden“ → „KI-Bewertung aufbereiten“ → „Ergebnis persistieren“ |
+| 2 | Irrelevante News | KI liefert `relevanz='irrelevant'` → `relevant=false` im Assessment, `status='discarded'` | 03, „KI-Bewertung aufbereiten“ |
+| 3 | Namensgleichheit (z.B. „RWE“ im Fußballkontext, „Bayer“ vs. „Bayern“) | Vorfilter-Regex in „RSS-Feeds laden & filtern“ mit `excludePatterns` je Ticker (unverändert aus Original übernommen) filtert diese vor der KI-Stufe heraus; für Zweifelsfälle greift zusätzlich der Recherche-Agent (03a) mit Instrumenten-Alias-/Ausschlussmuster-Kontext | 03, „RSS-Feeds laden & filtern“; 03a bei `wirkungsebene='unklar'` |
+| 4 | Doppelte News (identischer Artikel erneut im Feed) | Exakter `news_key`/Link-Match ODER Jaccard-Titel-Ähnlichkeit ≥0.6 gegen die letzten 35 Tage aus `trading.news_items` → `IF: News neu?` false → verworfen, kein neuer Insert | 03, „News: Duplikat-Check“ |
+| 5 | Fehlgeschlagener Modellaufruf (KI-Timeout/Fehler) | n8n-eigener `retryOnFail` (3×) greift zuerst; bei endgültigem Fehlschlag bricht der Node-Ast ab, betroffene News bleiben `status='pending'`, werden im nächsten Lauf erneut in „DB: Faellige News laden“ erfasst (kein manuelles Eingreifen nötig) | 03, „KI: Nachricht bewerten“ (n8n-Retry) |
+| 6 | Ungültiges JSON in der KI-Antwort | `parseKiArray()` scheitert → alle News dieses Batches bekommen `_action='retry'` → `status='retry'`, `retry_count+=1`, `next_retry_at=now()+retry_count*15min` | 03, „KI-Bewertung aufbereiten“ → „Ergebnis persistieren“ |
+| 7 | Erneuter Retry | Beim nächsten stündlichen Lauf wählt „DB: Faellige News laden“ automatisch `status='retry' AND next_retry_at<=now()` mit aus — **das ist der zentrale Bugfix**: die alte Duplikatprüfung hätte dieselbe News beim erneuten RSS-Fund als „bereits bekannt“ verworfen; jetzt läuft der Retry unabhängig vom RSS-Fund über den bestehenden DB-Datensatz | 03, „DB: Faellige News laden“ |
+| 8 | Mehrere Ticker in einer News | `betroffene_ticker` (KI-Feld) wird als Array in `betroffene_ticker_json` gespeichert; in 08 entsteht **eine eigene `news_impact_tracking`-Zeile pro Ticker** (ein Ereignis pro News+Ticker, wie gefordert) | 03 (Assessment), 08 „Baseline-Fall je (News,Ticker) bestimmen“ |
+| 9 | News ohne Veröffentlichungszeit | `published_at` bleibt NULL beim Insert (kein Pflichtfeld); 08 nutzt dann `created_at` als Fallback für die Baseline-Bestimmung; Cleanup (04) markiert solche Zeilen mit `datenqualitaet_hinweis` statt sie zu löschen | 03 „Neue News speichern“; 08 „Baseline-Fall...“; 04 „Markiere News ohne Veroeffentlichungsdatum“ |
+
+## Wirkungsanalyse (08)
+
+| # | Fall | Erwartetes Verhalten | Zuständiger Node |
+|---|---|---|---|
+| 1 | News vor Börsenbeginn (<9:00 Berlin) | `baseline_case='vor_handelsbeginn'` → Baseline = Schlusskurs des letzten Handelstags **vor** dem Veröffentlichungstag | „Baseline-Fall je (News,Ticker) bestimmen“, `findBaselineAndHorizons` |
+| 2 | News während der Börsenzeit (9:00–17:00 Berlin, vereinfacht) | `baseline_case='waehrend_handelszeit'` → Baseline = Vortagesschluss (wie im Auftrag vorgesehen, Intraday-Ergänzung als offener Punkt dokumentiert) | dito |
+| 3 | News nach Börsenschluss (≥17:00 Berlin) | `baseline_case='nach_handelsende'` → Baseline = Schlusskurs des Veröffentlichungstags selbst, `first_trading_date` = nächster vorhandener Handelstag danach | dito |
+| 4 | Wochenende | Kein Handelstag-Eintrag in `stock_technical_signals` für Sa/So → `findBaselineAndHorizons` findet den nächsten VORHERIGEN Handelstag (Freitag) als Baseline bzw. überspringt beim Vorwärtszählen automatisch, da nur tatsächlich vorhandene Zeilen gezählt werden (Handelstage, nicht Kalendertage) | „D+1..D+20 berechnen“, Index-basiertes Vorwärtszählen in `verlauf[]` |
+| 5 | Feiertag | Gleiche Behandlung wie Wochenende — es existiert schlicht keine Kurszeile für diesen Tag, wird beim Handelstage-Zählen automatisch übersprungen | dito |
+| 6 | Fehlender D+3-Kurs (noch keine 3 Handelstage seit Baseline vergangen) | `verlauf[baselineIdx+3]` ist `undefined` → `price_d3=null`, Status bleibt `waiting_d3` bis zum entsprechenden späteren Lauf | dito |
+| 7 | Fehlende Benchmarkdaten | `bverlauf[bBaselineIdx+h]` fehlt → `benchmark_return_dN=null`, `abnormal_return_dN=null`, Aktienrendite selbst bleibt trotzdem berechnet (kein Totalausfall der Zeile) | dito |
+| 8 | Weitere starke News im Beobachtungsfenster | Aktuell implementiert als starke-Benchmark-Bewegung-Heuristik (>2% an einem D+N-Tag) → `confounded=true`; die im Auftrag zusätzlich genannten Kategorien (Quartalszahlen etc.) sind als Schlüsselwortliste vorbereitet, aber mangels Fundamentaldaten-Kalender **nicht aktiv ausgewertet** — als Einschränkung im MIGRATIONSPLAN dokumentiert, kein stiller Blindfleck | „D+1..D+20 berechnen + Stoerfaktoren“ |
+| 9 | Positive Aktie bei noch stärker positivem DAX | `return_dN` positiv, aber `abnormal_return_dN = return_dN - benchmark_return_dN` kann trotzdem negativ werden → `observed_direction` korrekt relativ zur Benchmark, nicht zur absoluten Kursbewegung | dito, `abnormal_return_d*`-Berechnung |
+| 10 | Negative Aktie bei negativem DAX | Analog: abnormale Rendite kann trotz fallendem Kurs positiv sein (Aktie fällt weniger stark als der Markt) | dito |
+
+## Lernagent (09)
+
+| # | Fall | Erwartetes Verhalten | Zuständiger Node |
+|---|---|---|---|
+| 1 | Weniger als 10 Fälle in einer Dimension | `confidenceLevel()` gibt `null` zurück → Finding wird komplett aus der Liste entfernt, taucht nicht im Bericht auf | „Mindestfallzahlen klassifizieren“ |
+| 2 | 10–29 Fälle | `confidence_level='niedrig'`, `proposal_eligible=false` (Schwelle liegt bei ≥30) → erscheint als Finding mit Beobachtung, aber nie als Vorschlag | dito |
+| 3 | Mehr als 30 Fälle | `confidence_level='mittel'` (30–99) bzw. `'hoch'` (≥100); `proposal_eligible=true`, wenn zusätzlich Trefferquote <50% oder ≥80% | dito |
+| 4 | Überwiegend konfundierte Fälle | `clean_events` (Nenner für Trefferquote-Berechnung in SQL) filtert `confounded=FALSE` bereits auf DB-Ebene heraus — konfundierte Fälle fließen nur in `total_events`/`confounded_events`, nie in die Trefferquote-Statistik selbst ein | „SQL: Gesamtkennzahlen“, `WHERE ... confounded = FALSE` |
+| 5 | Quelle mit schlechter Trefferquote | Bei sample_size≥30 und accuracy<50% → `proposal_eligible=true` → KI darf einen `source_weight`-Vorschlag mit `proposed_value<1.0` formulieren | „SQL: Je Quelle“, „Baue Lernagent-Prompt“ |
+| 6 | Newsart mit hoher Trefferquote | Analog bei accuracy≥80% → Vorschlag mit `proposed_value>1.0` möglich | dito |
+| 7 | Vorschlag wird abgelehnt | Menschliche/Matrix-Freigabe (außerhalb dieses Workflows) setzt `status='rejected'` in `trading.learning_rule_proposals` — dieser Workflow selbst schreibt nie etwas anderes als `'proposed'` | Tabellen-Constraint `chk_learning_rule_proposals_status`, kein Code-Pfad in 09 der `rejected` setzt |
+| 8 | Vorschlag wird freigegeben | Setzt `status='approved'` — ebenfalls außerhalb von 09; ein separater, hier nicht gebauter deterministischer Aktivierungs-Workflow müsste `status='activated'` setzen und `trading.scoring_weights` aktualisieren (als offener Punkt im Abschlussbericht vermerkt, da im Auftrag nicht explizit als eigene Datei gefordert) | — |
+| 9 | Keine automatische Aktivierung | 09 hat **keinen** Schreibzugriff/Node für `trading.scoring_weights` oder `trading.prompt_versions` — strukturell unmöglich, nicht nur Prompt-Regel; zusätzlich validiert „Vorschlaege gegen Fallzahlen validieren“ jeden KI-Vorschlag gegen die deterministisch vorberechnete Kandidatenliste, bevor er überhaupt gespeichert wird | „Vorschlaege gegen Fallzahlen validieren“ |
+
+## Orchestrator (00)
+
+| # | Fall | Erwartetes Verhalten | Zuständiger Node |
+|---|---|---|---|
+| 1 | Alle Subworkflows erfolgreich | Jede Stufe loggt `status='success'` in `trading.pipeline_runs`, alle `IF`-Gates lassen den Haupt-Zweig passieren, `05` wird mit `approved=true` aufgerufen, `Lauf abschliessen (Erfolg)` setzt `final_status='success'` | Gesamter Hauptpfad |
+| 2 | Marktumfeld fehlgeschlagen | „Ausfuehren: Marktumfeld (02b)“ liefert Error-Output → „Log Marktumfeld“ schreibt `status='failed'` → „IF: Marktumfeld ok?“ false-Zweig → „Baue technische Warnung“ nennt den Fehler namentlich → Matrix-Warnung statt Normalversand, `05` wird **nicht** aufgerufen | „IF: Marktumfeld ok?“ false-Branch |
+| 3 | Technische Signale veraltet (keine Zeilen für `business_date` in `stock_technical_signals`) | „Pruefe Datenqualitaet“ setzt `signale_ok=false` → `datenqualitaet_ok=false` → „IF: Datenqualitaet ok?“ false → Warnung statt Versand | „Pruefe Datenqualitaet“, „IF: Datenqualitaet ok?“ |
+| 4 | Newsprozess mit Warnung (0 News heute) | `news_ok=false`, aber `datenqualitaet_ok` hängt **nur** von `signale_ok` ab (bewusst: 0 News an ruhigen Tagen ist normal, siehe Kommentar im Code) → Lauf läuft trotzdem weiter, `news_count` wird aber in `metadata_json` des Datenqualitäts-Log-Eintrags sichtbar dokumentiert | „Pruefe Datenqualitaet“ |
+| 5 | Report-Agent erfolgreich, Prüf-Agent lehnt ab | „Ausfuehren: Report- und Pruefagent (10)“ liefert `approved=false` → „Log Report-Pruef-Stufe“ schreibt `status='warning'` → „IF: Freigegeben?“ false → „Baue technische Warnung“ nennt `required_corrections` aus 10 → Matrix-Warnung, `05` wird nicht mit `approved=true` aufgerufen | „IF: Freigegeben?“ false-Branch |
+| 6 | Prüf-Agent lehnt ab (Detailfall in 10 selbst) | `approved=false, quality_score<60` oder nicht-leere `unsupported_claims`/`contradictions` gemäß Prompt-Regel in „Pruef-Prompt aufbauen“; bei nicht-parsebarer Prüf-Agent-Antwort greift der Fallback `{approved:false, missing_warnings:['Pruef-Agent-Antwort nicht parsebar']}` — fail-safe, nie stillschweigend `approved=true` bei Parse-Fehler | 10, „Endergebnis zusammenstellen“ |
+| 7 | Erneuter idempotenter Lauf (z.B. manueller Retrigger am selben Tag) | Jeder Lauf bekommt eine neue, eindeutige `run_id` (Zeitstempel-basiert) → `trading.pipeline_runs`/`agent_runs` bekommen neue Zeilen statt Duplikate zu überschreiben (Log-Tabellen sind bewusst additiv, keine Upsert-Logik nötig); `trading.news_impact_tracking` und `trading.stock_empfehlungen`-Writes sind über `UNIQUE`-Constraints/ON-CONFLICT idempotent, ein zweiter Lauf am selben Tag erzeugt keine Doppel-Positionen oder Doppel-Tracking-Zeilen | `pipeline_runs`/`agent_runs` (additiv), `news_impact_tracking` (`ON CONFLICT (news_id,ticker)`), `stock_empfehlungen` (kein Duplikat, da „IF: Aktion = schliessen?“ nur auf tatsächlich neue Kombinationen aus News+Signal reagiert) |
+
+## Zusätzliche, im Auftrag nicht explizit als Tabelle geforderte, aber während des Baus identifizierte Testfälle
+
+- **06 Empfehlungswatchlist, REQUIRE_CONFIRMATION=true**: „DB: Empfehlung öffnen“ wird übersprungen, „Als Vorschlag markieren“ liefert `id=null`, „Schreiberfolg verifizieren“ lässt den Vorschlag trotzdem durch (da `_aktion='vorschlag_ungespeichert'` explizit als Ausnahme behandelt wird), Matrix zeigt ihn im eigenen „Vorschläge“-Abschnitt.
+- **06, fehlgeschlagener DB-Write**: „Schreiberfolg verifizieren“ filtert eine Zeile ohne `id` und ohne `vorschlag_ungespeichert`-Markierung heraus — sie erscheint **nicht** in der Matrix-Nachricht (behebt den Bestand-Bug, bei dem Matrix unabhängig vom Schreiberfolg lief).
+- **04 Cleanup, evaluierte News mit noch laufender Wirkungsanalyse**: `NOT EXISTS`-Unterabfrage gegen `trading.news_impact_tracking` verhindert Löschung, auch wenn die 365-Tage-Frist bereits erreicht ist.

@@ -9,13 +9,11 @@ Basis: `ARCHITEKTUR_BESTAND.md`. Dieser Plan setzt die dort dokumentierten Befun
 3. **Jede neue Data-Table-Abhängigkeit ist ein Zwischenschritt, kein Big-Bang**: die zentrale `stock_instruments`-Tabelle wird eingeführt, aber 01/02/02b/03/06 lesen ihre bisherige hartkodierte Watchlist so lange weiter, bis der jeweilige `– Agent V1`-Workflow einzeln getestet und übernommen ist (Phase 3, „schrittweise Migration“ wie im Auftrag verlangt).
 4. **DRY_RUN als Standardparameter** in jedem neuen Workflow von Anfang an, nicht nachträglich ergänzt.
 
-## Offener Klärungspunkt vor Phase 6
+## Klärungspunkt vor Phase 6 — GELÖST bei der Umsetzung
 
-`stock_price_history` wird laut Bestandsanalyse von keinem der 8 Workflows beschrieben, aber von `07 – Status-Uebersicht` gelesen. Phase 6 (News-Wirkungsanalyse) braucht historische Tages-Schlusskurse für D+1/D+3/D+5/D+10/D+20 je Ticker und Benchmark. Zwei Optionen, beide werden vorbereitet:
-- **Falls `stock_price_history` bereits produktiv von einem hier nicht vorliegenden Prozess befüllt wird**: 08 liest direkt daraus.
-- **Falls nicht**: 08 muss selbst Kursdaten über den bereits vorhandenen lokalen FastAPI-Endpunkt (`172.16.1.14:8099/chart/{ticker}`, wie in 01/02/02b) nachladen und in `stock_price_history` (oder einer neuen `trading`-Tabelle) ablegen.
+`stock_price_history` wird laut Bestandsanalyse von keinem der 8 Workflows beschrieben, aber von `07 – Status-Uebersicht` gelesen — Herkunft der Daten dort bleibt ungeklärt. Phase 6 (News-Wirkungsanalyse) braucht historische Tages-Schlusskurse für D+1/D+3/D+5/D+10/D+20 je Ticker und Benchmark.
 
-Der neue Workflow 08 ist so gebaut, dass er zuerst `stock_price_history` prüft und nur bei fehlenden Daten selbst nachlädt — funktioniert in beiden Fällen ohne Änderung.
+**Tatsächliche Lösung (kein neuer FastAPI-Nachlade-Mechanismus nötig):** `stock_technical_signals` (täglich von `02` geschrieben, `aktueller_kurs`+`datum` je Ticker) und `stock_market_context` (täglich von `02b` geschrieben, `aktueller_kurs`+`datum` je Benchmark-Symbol) akkumulieren durch ihren normalen täglichen Betrieb bereits automatisch genau die Tages-Schlusskurshistorie, die 08 braucht — ohne dass eine neue Datenquelle erfunden werden musste. `08 – News-Wirkungsanalyse.json` liest beide gefiltert (je Ticker/Symbol, nicht als volle Tabellenladung). `stock_price_history` bleibt unangetastet und wird von dieser Migration nicht befüllt — falls es produktiv von einem hier nicht vorliegenden Prozess gespeist wird, bleibt das unverändert bestehen, ist für 08 aber nicht mehr erforderlich.
 
 ## Offener Klärungspunkt: PostgreSQL-Zugang
 
