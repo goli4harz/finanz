@@ -159,6 +159,7 @@ n_ex_marktumfeld = add({
     "id": "00000000-0000-4000-8000-000000000003",
     "name": "Ausfuehren: Marktumfeld (02b)",
     "type": "n8n-nodes-base.executeWorkflow",
+    "alwaysOutputData": True,
     "typeVersion": 1.2,
     "position": [-1952, 0],
     "onError": "continueErrorOutput"
@@ -206,6 +207,7 @@ n_ex_signale = add({
     "id": "00000000-0000-4000-8000-000000000006",
     "name": "Ausfuehren: Technische Signale (02)",
     "type": "n8n-nodes-base.executeWorkflow",
+    "alwaysOutputData": True,
     "typeVersion": 1.2,
     "position": [-1280, 0],
     "onError": "continueErrorOutput"
@@ -361,6 +363,7 @@ n_ex_empf = add({
     "id": "0000000f-0000-4000-8000-00000000000f",
     "name": "Ausfuehren: Empfehlungswatchlist (06)",
     "type": "n8n-nodes-base.executeWorkflow",
+    "alwaysOutputData": True,
     "typeVersion": 1.2,
     "position": [512, 0],
     "onError": "continueErrorOutput"
@@ -390,6 +393,7 @@ n_ex_report = add({
     "id": "00000011-0000-4000-8000-000000000011",
     "name": "Ausfuehren: Report- und Pruefagent (10)",
     "type": "n8n-nodes-base.executeWorkflow",
+    "alwaysOutputData": True,
     "typeVersion": 1.2,
     "position": [960, 0],
     "onError": "continueErrorOutput"
@@ -442,6 +446,7 @@ n_ex_versand = add({
     "id": "00000014-0000-4000-8000-000000000014",
     "name": "Ausfuehren: Tagesreport-Versand (05)",
     "type": "n8n-nodes-base.executeWorkflow",
+    "alwaysOutputData": True,
     "typeVersion": 1.2,
     "position": [1632, -120],
     "onError": "continueErrorOutput"
