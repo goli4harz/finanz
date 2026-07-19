@@ -273,11 +273,11 @@ n_dq_news = add({
 link(n_if_signale, n_dq_news, src_index=0)
 
 n_dq_merge = add({
-    "parameters": {"mode": "combine", "combineBy": "combineAll", "options": {}},
+    "parameters": {},
     "id": "0000000b-0000-4000-8000-00000000000b",
     "name": "Merge: Datenqualitaet",
     "type": "n8n-nodes-base.merge",
-    "typeVersion": 3.1,
+    "typeVersion": 3,
     "position": [-384, 0]
 })
 link(n_dq_signale, n_dq_merge, dst_index=0)

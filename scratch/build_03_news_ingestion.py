@@ -132,10 +132,10 @@ n_known_build = b.add({
 b.link(n_dedup_load, n_known_build)
 
 n_dedup_merge = b.add({
-    "parameters": {"mode": "combine", "combineBy": "combineAll", "options": {}},
+    "parameters": {},
     "name": "Dedup: News + Keys sync",
     "type": "n8n-nodes-base.merge",
-    "typeVersion": 3.1,
+    "typeVersion": 3,
     "position": [-3400, 1450]
 })
 b.link(n_newskey, n_dedup_merge, dst_index=0)

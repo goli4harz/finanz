@@ -222,14 +222,10 @@
       "id": "n-00000004-0000-4000-8000-0000000000"
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Dedup: News + Keys sync",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.1,
+      "typeVersion": 3,
       "position": [
         -3400,
         1450

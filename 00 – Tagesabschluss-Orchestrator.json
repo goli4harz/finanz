@@ -278,15 +278,11 @@
       }
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "id": "0000000b-0000-4000-8000-00000000000b",
       "name": "Merge: Datenqualitaet",
       "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.1,
+      "typeVersion": 3,
       "position": [
         -384,
         0
