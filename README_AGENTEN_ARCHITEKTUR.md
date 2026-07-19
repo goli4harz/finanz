@@ -100,17 +100,37 @@ Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zus�
 3. **Nur statisch geprüft** — kein Testlauf gegen eine echte Datenbank, da kein bestätigter Zugang vorlag. Vor Produktivbetrieb einmal manuell verifizieren.
 4. `stock_price_history` (n8n Data Table) bleibt unverändert bestehen; die neue Wirkungsanalyse (08) nutzt stattdessen `stock_technical_signals`/`stock_market_context` als Kursquelle (siehe MIGRATIONSPLAN_AGENTEN.md, „Offener Klärungspunkt vor Phase 6“ — durch die tatsächliche Umsetzung bereits aufgelöst, dort aber aus Nachvollziehbarkeit stehen gelassen).
 
-## Importreihenfolge (empfohlen)
+## Importreihenfolge — bereits erledigt (Stand 2026-07-19)
 
-1. `sql/001_agenten_architektur.sql` über `99 – Einmalig – SQL-Migration ausfuehren.json` ausführen.
-2. Postgres-Credential + Status-Webhook-Token-Credential in n8n anlegen.
-3. Neue eigenständige Workflows importieren, in beliebiger Reihenfolge, aber **vor** dem Orchestrator: `03 – News Ingestion stündlich – Agent V1`, `03a – News-Recherche-Agent`, `04 – Cleanup News-Tabellen – Agent V1`, `08 – News-Wirkungsanalyse`, `09 – Lernagent Newswirkung`, `10 – Report- und Prüfagent`.
-4. Für jeden importierten Workflow: Postgres-Credential in allen `executeQuery`-Nodes zuweisen (n8n zeigt importierte Nodes mit fehlender Credential als Fehler an — das ist erwartet und der Punkt, an dem die echte Zuweisung erfolgt).
-5. `05 – Tagesreport – Agent V1` und `06 – Empfehlungswatchlist – Agent V1` importieren; in `05`s Node „Ausfuehren: Report- und Pruefagent (10, standalone)“ und in `00`s Node „Ausfuehren: Report- und Pruefagent (10)“ die **echte** n8n-Workflow-ID von `10` eintragen (aktuell Platzhalter `PLACEHOLDER_10_REPORT_PRUEF_AGENT`, da `10` vor diesem Schritt noch keine reale ID hatte).
-6. `02b – Marktumfeld täglich – Orchestriert` und `02 – Technische Signale täglich – Orchestriert` importieren (ersetzen NICHT automatisch die alten Versionen — siehe Rollback-Hinweis unten zur bewussten Übergangsphase).
-7. `07 – Status-Uebersicht – Agent V1` importieren, Postgres- + Webhook-Token-Credential zuweisen.
-8. Zuletzt `00 – Tagesabschluss-Orchestrator` importieren. In den `Execute Workflow`-Nodes die Workflow-IDs von `02b`/`02`/`06`/`10`/`05` gegen die tatsächlichen, nach Import von n8n vergebenen IDs prüfen (für `02b`/`02`/`06`/`05` wurden die IDs der Originaldateien 1:1 übernommen — stimmen nur, wenn n8n diese Dateien als „Update“ des bestehenden Workflows importiert, nicht als komplett neuen).
-9. Nach erfolgreichem Test: alte Schedule-Trigger in `02b – Marktumfeld täglich – Orchestriert` und `02 – Technische Signale täglich – Orchestriert` **deaktivieren** (nicht löschen), damit sie nicht parallel zum Orchestrator-Aufruf auch noch eigenständig feuern und doppelte Läufe erzeugen. Gleiches gilt für `06`s und `05`s eigene Schedule-Trigger, sobald der Orchestrator zuverlässig läuft — bis dahin bewusst als Fallback aktiv gelassen.
+Alle 15 Workflows wurden bereits über die n8n REST API als **neue, separate, inaktive** Workflows angelegt (nicht als Ersatz der laufenden Originale). Reale n8n-Workflow-IDs:
+
+| Datei | n8n-ID |
+|---|---|
+| `00 – Tagesabschluss-Orchestrator` | `ncMZzkqDHpSiDGPm` |
+| `02b – Marktumfeld täglich – Orchestriert` | `9zO3uZeZeakTnLnX` |
+| `02 – Technische Signale täglich – Orchestriert` | `vgT6IrPp3ATaJg8s` |
+| `03 – News Ingestion stündlich – Agent V1` | `kXfFAy97N6xgRgQ5` |
+| `03a – News-Recherche-Agent` | `SUNb1rfSUTQGUTPN` |
+| `04 – Cleanup News-Tabellen – Agent V1` | `3aeFh4tfDrCi4dUm` |
+| `05 – Tagesreport – Agent V1` | `VRr5jIHj7G7dsMwi` |
+| `06 – Empfehlungswatchlist – Agent V1` | `aguWZUolRizBnsj4` |
+| `07 – Status-Uebersicht – Agent V1` | `7hQ3t6KrSo9uDNML` |
+| `08 – News-Wirkungsanalyse` | `EvJKlqkuSIu9CHmR` |
+| `09 – Lernagent Newswirkung` | `LjZHC5g7thqcCElo` |
+| `10 – Report- und Prüfagent` | `BFlxfLyarzR2xbBT` |
+| `98 – Einmalig – Postgres-Verbindungstest` | `rp35CZNrjp4BLrR6` |
+| `99 – Einmalig – SQL-Migration ausfuehren` | `8PHV9RfaXjfTo3ZK` |
+
+Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten IDs (in den Git-Dateien nachgetragen). Verbleibende manuelle Schritte in n8n selbst:
+
+1. Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` anlegen und verifizieren.
+2. Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zuweisen (n8n zeigt sie bis dahin mit fehlender Credential als Fehler an — erwartet).
+3. `99 – Einmalig – SQL-Migration ausfuehren` einmal ausführen.
+4. Status-Webhook-Token-Credential anlegen und in `07` zuweisen.
+5. Jeden Workflow einzeln testen (siehe Testreihenfolge unten), erst danach aktivieren.
+6. Alte Schedule-Trigger in den Original-Workflows `02b`/`02`/`05`/`06` bewusst weiterlaufen lassen, bis die neuen Versionen erfolgreich getestet sind — dann dort deaktivieren, um Doppelläufe zu vermeiden.
+
+**Bekannte Einschränkung beim Live-Push:** die strikte Workflow-Create-API akzeptiert kein node-level `"settings"`-Feld (z. B. `retryOnFail`/`maxTries` an einzelnen `httpRequest`-Nodes), obwohl das UI-Export-Format es enthält — dieses Feld wurde nur für den API-Push entfernt, die Git-Dateien selbst enthalten es unverändert. Betroffene Nodes haben dadurch in der jetzt live angelegten Version keine node-eigene Retry-Konfiguration (ihre `neverError`/Fehlerbehandlung auf HTTP-Ebene bleibt aber erhalten) — bei Bedarf in der n8n-UI manuell nachtragen.
 
 ## Testreihenfolge
 
