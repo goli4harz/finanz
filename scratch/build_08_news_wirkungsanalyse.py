@@ -80,6 +80,7 @@ for (const r of rows) {
   for (const ticker of tickers) {
     out.push({ json: {
       news_id: r.news_id,
+      news_key: r.news_key,
       ticker: String(ticker).trim(),
       news_date: newsDate,
       publication_timestamp: pubIso,
