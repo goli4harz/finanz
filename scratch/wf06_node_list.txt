@@ -1,0 +1,103 @@
+Trigger: Empfehlungswatchlist (18:10) | n8n-nodes-base.scheduleTrigger
+DB: Technische Signale laden (Empf.) | n8n-nodes-base.dataTable
+DB: News laden (Empf.) | n8n-nodes-base.dataTable
+DB: Bestehende Empfehlungen laden | n8n-nodes-base.dataTable
+Empfehlungen: Abgleich berechnen | n8n-nodes-base.code
+IF: Aktion = schließen? | n8n-nodes-base.if
+DB: Empfehlung schließen | n8n-nodes-base.dataTable
+DB: Empfehlung öffnen | n8n-nodes-base.dataTable
+Matrix: Zusammenfassung bauen | n8n-nodes-base.code
+Matrix: Empfehlungs-Update senden | n8n-nodes-base.httpRequest
+
+--- CONNECTIONS ---
+{
+ "Trigger: Empfehlungswatchlist (18:10)": {
+  "main": [
+   [
+    {
+     "node": "DB: Technische Signale laden (Empf.)",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Technische Signale laden (Empf.)": {
+  "main": [
+   [
+    {
+     "node": "DB: News laden (Empf.)",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: News laden (Empf.)": {
+  "main": [
+   [
+    {
+     "node": "DB: Bestehende Empfehlungen laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Bestehende Empfehlungen laden": {
+  "main": [
+   [
+    {
+     "node": "Empfehlungen: Abgleich berechnen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Empfehlungen: Abgleich berechnen": {
+  "main": [
+   [
+    {
+     "node": "IF: Aktion = schließen?",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "Matrix: Zusammenfassung bauen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "IF: Aktion = schließen?": {
+  "main": [
+   [
+    {
+     "node": "DB: Empfehlung schließen",
+     "type": "main",
+     "index": 0
+    }
+   ],
+   [
+    {
+     "node": "DB: Empfehlung öffnen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Matrix: Zusammenfassung bauen": {
+  "main": [
+   [
+    {
+     "node": "Matrix: Empfehlungs-Update senden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ }
+}

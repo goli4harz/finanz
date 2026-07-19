@@ -1,0 +1,101 @@
+Webhook Status-Uebersicht | n8n-nodes-base.webhook
+DB: Fundamentaldaten laden | n8n-nodes-base.dataTable
+DB: Marktumfeld laden | n8n-nodes-base.dataTable
+DB: Technische Signale laden | n8n-nodes-base.dataTable
+DB: News laden | n8n-nodes-base.dataTable
+DB: Empfehlungen laden | n8n-nodes-base.dataTable
+DB: Kursverlauf laden | n8n-nodes-base.dataTable
+Baue Uebersicht | n8n-nodes-base.code
+Antwort mit HTML | n8n-nodes-base.respondToWebhook
+
+--- CONNECTIONS ---
+{
+ "Webhook Status-Uebersicht": {
+  "main": [
+   [
+    {
+     "node": "DB: Fundamentaldaten laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Fundamentaldaten laden": {
+  "main": [
+   [
+    {
+     "node": "DB: Marktumfeld laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Marktumfeld laden": {
+  "main": [
+   [
+    {
+     "node": "DB: Technische Signale laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Technische Signale laden": {
+  "main": [
+   [
+    {
+     "node": "DB: News laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: News laden": {
+  "main": [
+   [
+    {
+     "node": "DB: Empfehlungen laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Empfehlungen laden": {
+  "main": [
+   [
+    {
+     "node": "DB: Kursverlauf laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Kursverlauf laden": {
+  "main": [
+   [
+    {
+     "node": "Baue Uebersicht",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Baue Uebersicht": {
+  "main": [
+   [
+    {
+     "node": "Antwort mit HTML",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ }
+}

@@ -1,0 +1,446 @@
+{
+  "DB: Technische Signale laden (Empf.)": {
+    "parameters": {
+      "operation": "get",
+      "dataTableId": {
+        "__rl": true,
+        "value": "GDMAKrvQovPcBItA",
+        "mode": "list",
+        "cachedResultName": "stock_technical_signals",
+        "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/GDMAKrvQovPcBItA"
+      },
+      "returnAll": true
+    },
+    "id": "2d328670-2134-4ae4-877f-9af986555e5e",
+    "name": "DB: Technische Signale laden (Empf.)",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+      -3616,
+      416
+    ],
+    "settings": {
+      "alwaysOutputData": true
+    }
+  },
+  "DB: News laden (Empf.)": {
+    "parameters": {
+      "operation": "get",
+      "dataTableId": {
+        "__rl": true,
+        "value": "0mPlpPLztuDYz0Ee",
+        "mode": "list",
+        "cachedResultName": "stock_news_evaluated",
+        "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+      },
+      "returnAll": true
+    },
+    "id": "55126f07-0fa0-47e4-88bd-dd60346460e2",
+    "name": "DB: News laden (Empf.)",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+      -3392,
+      416
+    ],
+    "settings": {
+      "alwaysOutputData": true
+    }
+  },
+  "DB: Bestehende Empfehlungen laden": {
+    "parameters": {
+      "operation": "get",
+      "dataTableId": {
+        "__rl": true,
+        "value": "TJgigfIfzXm7c7Ob",
+        "mode": "list",
+        "cachedResultName": "stock_empfehlungen",
+        "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
+      },
+      "returnAll": true
+    },
+    "id": "b5a8336a-587b-4f8c-bc7a-0ca8d8bc7910",
+    "name": "DB: Bestehende Empfehlungen laden",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+      -3168,
+      416
+    ],
+    "settings": {
+      "alwaysOutputData": true
+    },
+    "onError": "continueRegularOutput"
+  },
+  "Empfehlungen: Abgleich berechnen": {
+    "parameters": {
+      "jsCode": "// EMPFEHLUNGEN: NEWS+SIGNAL-ABGLEICH – Run Once for All Items\n// Kombiniert starke News (wirkung_staerke=hoch) mit gleichgerichtetem technischem Signal.\n// Bestehende offene Position + Gegensignal -> schliessen und ggf. neue Gegenrichtung oeffnen.\n// Bestehende offene Position + gleiches Signal oder kein Signal -> keine Aktion.\n\nconst heute = new Date().toISOString().substring(0, 10);\nconst zeitstempel = new Date().toISOString();\n\nconst techRows = $('DB: Technische Signale laden (Empf.)').all().map(i => i.json || {});\nconst newsRows = $('DB: News laden (Empf.)').all().map(i => i.json || {});\nconst empfehlungRows = $input.all().map(i => i.json || {});\n\n// Ticker->Sektor + heutige Signale\nconst tickerSektorMap = {};\nconst signalByTicker = {};\nfor (const s of techRows) {\n  if (!s.ticker) continue;\n  if (s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n  if (String(s.datum || '').startsWith(heute)) {\n    signalByTicker[String(s.ticker).trim()] = {\n      ticker: String(s.ticker).trim(),\n      name: s.name || '',\n      sektor: s.sektor || '',\n      aktueller_kurs: s.aktueller_kurs,\n      handels_status: s.handels_status || '',\n      richtung: s.richtung || ''\n    };\n  }\n}\n\n// Sektor-Schluesselwoerter (gleiche Liste wie im Tagesreport)\nconst SEKTOR_KEYWORDS = {\n  'Auto':         ['auto', 'automobil', 'fahrzeug', 'e-auto', 'elektroauto', 'zulieferer', 'pkw'],\n  'Energie':      ['energie', 'strom', 'gas', 'öl', 'ölpreis', 'kraftwerk', 'erneuerbare'],\n  'Chemie':       ['chemie', 'chemiekonzern', 'chemieindustrie'],\n  'Banken':       ['bank', 'banken', 'zins', 'zinsen', 'ezb', 'kredit', 'finanzsektor'],\n  'Pharma':       ['pharma', 'medikament', 'arznei', 'biotech', 'arzneimittel'],\n  'Telekom':      ['telekom', 'mobilfunk', '5g', 'netzausbau', 'glasfaser'],\n  'Versicherung': ['versicherung', 'versicherer'],\n  'Technologie':  ['software', 'chip', 'halbleiter', ' ki ', 'cloud', 'tech-branche'],\n  'Industrie':    ['industrie', 'maschinenbau', 'anlagenbau', 'industriekonzern'],\n  'Sport':        ['sportartikel', 'sportbekleidung'],\n  'Konsumgüter':  ['konsumgüter', 'konsumgüterkonzern'],\n  'Gesundheit':   ['gesundheitswesen', 'klinik', 'medizintechnik']\n};\n\nfunction sektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS)\n    .filter(([, keywords]) => keywords.some(k => t.includes(k)))\n    .map(([sektor]) => sektor);\n}\n\nfunction tickerAusNews(n) {\n  const genannt = Array.isArray(n.betroffene_ticker)\n    ? n.betroffene_ticker\n    : String(n.betroffene_ticker || '').split(',').map(t => t.trim()).filter(Boolean);\n\n  if (n.wirkungsebene !== 'sektor') return genannt;\n\n  const matchText = [n.titel, n.begruendung, n.begruendung_tickerbezug].filter(Boolean).join(' ');\n  const sektoren = sektorenAusText(matchText);\n  const sektorTicker = Object.entries(tickerSektorMap)\n    .filter(([, sektor]) => sektoren.includes(sektor))\n    .map(([ticker]) => ticker);\n\n  return Array.from(new Set([...genannt, ...sektorTicker]));\n}\n\n// Starke News von heute je Ticker sammeln.\n// Bei widerspruechlichen starken News (positiv UND negativ am selben Tag) wird\n// der Ticker als uneindeutig behandelt und ignoriert, statt zu raten.\nconst newsRichtungByTicker = {};\nconst newsGrundByTicker = {};\nconst widerspruechlich = new Set();\n\nfor (const n of newsRows) {\n  const d = String(n.datum_iso || n.datum || '');\n  if (!d.startsWith(heute)) continue;\n  if (n.wirkung_staerke !== 'hoch') continue;\n  if (n.wirkungsrichtung !== 'positiv' && n.wirkungsrichtung !== 'negativ') continue;\n\n  const ticker = tickerAusNews(n);\n  for (const t of ticker) {\n    if (!signalByTicker[t]) continue;\n    const bisherige = newsRichtungByTicker[t];\n    if (bisherige && bisherige !== n.wirkungsrichtung) {\n      widerspruechlich.add(t);\n      continue;\n    }\n    newsRichtungByTicker[t] = n.wirkungsrichtung;\n    if (!newsGrundByTicker[t]) newsGrundByTicker[t] = [];\n    newsGrundByTicker[t].push(String(n.titel || '').slice(0, 120));\n  }\n}\n\n// Kombiniertes Signal je Ticker bestimmen\nconst kandidatenStatus = new Set(['handelskandidat', 'beobachten']);\nconst combinedByTicker = {};\n\nfor (const [ticker, newsRichtung] of Object.entries(newsRichtungByTicker)) {\n  if (widerspruechlich.has(ticker)) continue;\n  const signal = signalByTicker[ticker];\n  if (!signal || !kandidatenStatus.has(signal.handels_status)) continue;\n\n  if (newsRichtung === 'positiv' && signal.richtung === 'long') {\n    combinedByTicker[ticker] = 'kauf';\n  } else if (newsRichtung === 'negativ' && signal.richtung === 'short') {\n    combinedByTicker[ticker] = 'verkauf';\n  }\n}\n\n// Bestehende offene Positionen indexieren\nconst offenByTicker = {};\nfor (const row of empfehlungRows) {\n  if (row.status === 'offen' && row.ticker) {\n    offenByTicker[String(row.ticker).trim()] = row;\n  }\n}\n\n// Onvista-Slug je Ticker fuer den generischen Knock-Out-Finder-Link.\n// Manuell recherchiert 2026-07-14 (onvista.de/derivate/Knock-Outs/Knock-Outs-auf-{SLUG}) -\n// folgt keiner ableitbaren Regel aus Ticker/Firmenname, daher feste Zuordnung.\nconst ONVISTA_SLUGS = {\n  'SAP.DE': 'SAP',\n  'SIE.DE': 'Siemens',\n  'BASF.DE': 'BASF',\n  'ALV.DE': 'Allianz',\n  'MBG.DE': 'Mercedes-Benz-Group-Daimler',\n  'BMW.DE': 'BMW',\n  'VOW3.DE': 'Volkswagen-VZ',\n  'DBK.DE': 'Deutsche-Bank',\n  'DTE.DE': 'Deutsche-Telekom',\n  'RWE.DE': 'RWE',\n  'BAYN.DE': 'Bayer',\n  'EOAN.DE': 'EON',\n  'ADS.DE': 'Adidas',\n  'HEN3.DE': 'Henkel',\n  'FRE.DE': 'Fresenius'\n};\n\n// Hebelprodukt-Hinweis (Mini-Future, Hebel 3-4x) - reine Rechenwerte, kein echtes Produkt.\n// Formel: Hebel = Kurs / Abstand-zum-Basispreis, aufgeloest nach Basispreis.\nfunction hebelHinweis(ticker, aktuellerKurs, richtung) {\n  const kurs = Number(aktuellerKurs);\n  const slug = ONVISTA_SLUGS[ticker] || null;\n  const link = slug ? `https://www.onvista.de/derivate/Knock-Outs/Knock-Outs-auf-${slug}` : '';\n\n  if (isNaN(kurs) || kurs <= 0) {\n    return { typ: '', spanne: '', basis3: null, basis4: null, link, text: '' };\n  }\n  const typ = richtung === 'kauf' ? 'Long Mini-Future' : 'Short Mini-Future';\n  const basis3Raw = richtung === 'kauf' ? kurs * (1 - 1 / 3) : kurs * (1 + 1 / 3);\n  const basis4Raw = richtung === 'kauf' ? kurs * (1 - 1 / 4) : kurs * (1 + 1 / 4);\n  const basis3 = parseFloat(basis3Raw.toFixed(2));\n  const basis4 = parseFloat(basis4Raw.toFixed(2));\n  const linkHinweis = link\n    ? ` Passende Produktliste (bitte dort auf Hebel 3-4 und ${richtung === 'kauf' ? 'Long' : 'Short'} filtern): ${link}`\n    : '';\n  const text = `${typ}, Hebel 3-4x (nicht mehr). Rechnerischer Basispreis-Richtwert: ca. ${basis4} EUR (Hebel 4) bis ${basis3} EUR (Hebel 3). Kein konkretes Produkt -${linkHinweis} Emittent/Spread/Finanzierungskosten selbst pruefen.`;\n  return { typ, spanne: '3x-4x', basis3, basis4, link, text };\n}\n\n// Aktionen ableiten: oeffnen / schliessen+oeffnen (Gegensignal)\nconst output = [];\n\nfor (const [ticker, richtung] of Object.entries(combinedByTicker)) {\n  const signal = signalByTicker[ticker];\n  const offen = offenByTicker[ticker];\n  const grund = `Kombiniertes Signal (${heute}): News ${newsRichtungByTicker[ticker]} + technisches Signal ${signal.richtung}/${signal.handels_status}. Anlass: ${(newsGrundByTicker[ticker] || []).join(' | ')}`;\n  const hh = hebelHinweis(ticker, signal.aktueller_kurs, richtung);\n\n  if (!offen) {\n    output.push({ json: {\n      _aktion: 'oeffnen',\n      ticker, name: signal.name, sektor: signal.sektor,\n      richtung, entry_datum: heute, entry_kurs: signal.aktueller_kurs,\n      entry_grund: grund, letzte_aktualisierung: zeitstempel,\n      hebelprodukt_typ: hh.typ, hebel_spanne: hh.spanne,\n      basispreis_hebel_3: hh.basis3, basispreis_hebel_4: hh.basis4,\n      onvista_link: hh.link, hebelprodukt_hinweis: hh.text\n    }});\n    continue;\n  }\n\n  if (offen.richtung === richtung) {\n    continue;\n  }\n\n  const entryKurs = Number(offen.entry_kurs);\n  const exitKurs  = Number(signal.aktueller_kurs);\n  let performancePct = null;\n  if (!isNaN(entryKurs) && !isNaN(exitKurs) && entryKurs > 0) {\n    performancePct = offen.richtung === 'kauf'\n      ? ((exitKurs - entryKurs) / entryKurs) * 100\n      : ((entryKurs - exitKurs) / entryKurs) * 100;\n    performancePct = parseFloat(performancePct.toFixed(2));\n  }\n\n  output.push({ json: {\n    _aktion: 'schliessen',\n    _existing_id: offen.id,\n    exit_datum: heute, exit_kurs: signal.aktueller_kurs,\n    exit_grund: `Gegensignal: ${grund}`,\n    performance_pct: performancePct,\n    letzte_aktualisierung: zeitstempel\n  }});\n\n  output.push({ json: {\n    _aktion: 'oeffnen',\n    ticker, name: signal.name, sektor: signal.sektor,\n    richtung, entry_datum: heute, entry_kurs: signal.aktueller_kurs,\n    entry_grund: grund, letzte_aktualisierung: zeitstempel,\n    hebelprodukt_typ: hh.typ, hebel_spanne: hh.spanne,\n    basispreis_hebel_3: hh.basis3, basispreis_hebel_4: hh.basis4,\n    onvista_link: hh.link, hebelprodukt_hinweis: hh.text\n  }});\n}\n\nreturn output;"
+    },
+    "id": "4eb865f7-786b-4cac-9aa4-fe16ce0fcf64",
+    "name": "Empfehlungen: Abgleich berechnen",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -2944,
+      416
+    ]
+  },
+  "IF: Aktion = schließen?": {
+    "parameters": {
+      "conditions": {
+        "conditions": [
+          {
+            "id": "empf-aktion-schliessen",
+            "leftValue": "={{ $json._aktion }}",
+            "rightValue": "schliessen",
+            "operator": {
+              "type": "string",
+              "operation": "equals"
+            }
+          }
+        ],
+        "combinator": "and",
+        "options": {
+          "caseSensitive": true,
+          "leftValue": "",
+          "typeValidation": "strict",
+          "version": 1
+        }
+      },
+      "options": {}
+    },
+    "id": "72072d00-2259-43ae-9e07-0ebd95d5b2bd",
+    "name": "IF: Aktion = schließen?",
+    "type": "n8n-nodes-base.if",
+    "typeVersion": 2,
+    "position": [
+      -2720,
+      288
+    ]
+  },
+  "DB: Empfehlung schließen": {
+    "parameters": {
+      "operation": "update",
+      "dataTableId": {
+        "__rl": true,
+        "value": "TJgigfIfzXm7c7Ob",
+        "mode": "list",
+        "cachedResultName": "stock_empfehlungen",
+        "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
+      },
+      "filters": {
+        "conditions": [
+          {
+            "keyValue": "={{ $json._existing_id }}"
+          }
+        ]
+      },
+      "columns": {
+        "mappingMode": "defineBelow",
+        "value": {
+          "status": "geschlossen",
+          "exit_datum": "={{ $json.exit_datum }}",
+          "exit_kurs": "={{ $json.exit_kurs }}",
+          "exit_grund": "={{ $json.exit_grund }}",
+          "performance_pct": "={{ $json.performance_pct }}",
+          "letzte_aktualisierung": "={{ $json.letzte_aktualisierung }}"
+        },
+        "schema": [
+          {
+            "id": "status",
+            "displayName": "status",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "exit_datum",
+            "displayName": "exit_datum",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "exit_kurs",
+            "displayName": "exit_kurs",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "exit_grund",
+            "displayName": "exit_grund",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "performance_pct",
+            "displayName": "performance_pct",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "letzte_aktualisierung",
+            "displayName": "letzte_aktualisierung",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          }
+        ]
+      },
+      "options": {}
+    },
+    "id": "87b7c5ef-0fc0-49eb-ad43-90666b1b0618",
+    "name": "DB: Empfehlung schließen",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+      -2496,
+      192
+    ],
+    "onError": "continueRegularOutput"
+  },
+  "DB: Empfehlung öffnen": {
+    "parameters": {
+      "dataTableId": {
+        "__rl": true,
+        "value": "TJgigfIfzXm7c7Ob",
+        "mode": "list",
+        "cachedResultName": "stock_empfehlungen",
+        "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
+      },
+      "columns": {
+        "mappingMode": "defineBelow",
+        "value": {
+          "ticker": "={{ $json.ticker }}",
+          "name": "={{ $json.name }}",
+          "sektor": "={{ $json.sektor }}",
+          "richtung": "={{ $json.richtung }}",
+          "status": "offen",
+          "entry_datum": "={{ $json.entry_datum }}",
+          "entry_kurs": "={{ $json.entry_kurs }}",
+          "entry_grund": "={{ $json.entry_grund }}",
+          "letzte_aktualisierung": "={{ $json.letzte_aktualisierung }}",
+          "hebelprodukt_typ": "={{ $json.hebelprodukt_typ }}",
+          "hebel_spanne": "={{ $json.hebel_spanne }}",
+          "basispreis_hebel_3": "={{ $json.basispreis_hebel_3 }}",
+          "basispreis_hebel_4": "={{ $json.basispreis_hebel_4 }}",
+          "onvista_link": "={{ $json.onvista_link }}",
+          "hebelprodukt_hinweis": "={{ $json.hebelprodukt_hinweis }}"
+        },
+        "schema": [
+          {
+            "id": "ticker",
+            "displayName": "ticker",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "name",
+            "displayName": "name",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "sektor",
+            "displayName": "sektor",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "richtung",
+            "displayName": "richtung",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "status",
+            "displayName": "status",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "entry_datum",
+            "displayName": "entry_datum",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "entry_kurs",
+            "displayName": "entry_kurs",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "entry_grund",
+            "displayName": "entry_grund",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "letzte_aktualisierung",
+            "displayName": "letzte_aktualisierung",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "hebelprodukt_typ",
+            "displayName": "hebelprodukt_typ",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "hebel_spanne",
+            "displayName": "hebel_spanne",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "basispreis_hebel_3",
+            "displayName": "basispreis_hebel_3",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "basispreis_hebel_4",
+            "displayName": "basispreis_hebel_4",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "onvista_link",
+            "displayName": "onvista_link",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          },
+          {
+            "id": "hebelprodukt_hinweis",
+            "displayName": "hebelprodukt_hinweis",
+            "required": false,
+            "defaultMatch": false,
+            "display": true,
+            "type": "string",
+            "canBeUsedToMatch": false
+          }
+        ]
+      },
+      "options": {}
+    },
+    "id": "0c360997-ac2e-4cce-b5de-a870e83cc002",
+    "name": "DB: Empfehlung öffnen",
+    "type": "n8n-nodes-base.dataTable",
+    "typeVersion": 1,
+    "position": [
+      -2496,
+      448
+    ],
+    "onError": "continueRegularOutput"
+  },
+  "Matrix: Zusammenfassung bauen": {
+    "parameters": {
+      "jsCode": "const items = $input.all().map(i => i.json);\nif (items.length === 0) return [];\n\nconst geschlossen = items.filter(i => i._aktion === 'schliessen');\nconst geoeffnet = items.filter(i => i._aktion === 'oeffnen');\n\nlet text = `📋 Empfehlungs-Watchlist Update (${new Date().toLocaleDateString('de-DE')})\\n\\n`;\nif (geschlossen.length) {\n  text += 'Geschlossen:\\n' + geschlossen.map(g => `• Position beendet, Performance: ${g.performance_pct ?? 'n/a'}%`).join('\\n') + '\\n\\n';\n}\nif (geoeffnet.length) {\n  text += 'Neu eröffnet:\\n' + geoeffnet.map(o => `• ${o.ticker} (${o.richtung}) @ ${o.entry_kurs}\\n  ${o.hebelprodukt_hinweis || ''}`).join('\\n') + '\\n\\n';\n}\ntext += 'Hinweis: hypothetische Watchlist, keine echte Order, keine Anlageberatung.';\n\nreturn [{ json: { matrix_text: text } }];"
+    },
+    "id": "7b23e114-3991-4067-a75f-70181509672e",
+    "name": "Matrix: Zusammenfassung bauen",
+    "type": "n8n-nodes-base.code",
+    "typeVersion": 2,
+    "position": [
+      -2720,
+      640
+    ]
+  },
+  "Matrix: Empfehlungs-Update senden": {
+    "parameters": {
+      "method": "PUT",
+      "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-empf-{{ Date.now() }}",
+      "authentication": "genericCredentialType",
+      "genericAuthType": "httpHeaderAuth",
+      "sendBody": true,
+      "bodyParameters": {
+        "parameters": [
+          {
+            "name": "msgtype",
+            "value": "m.text"
+          },
+          {
+            "name": "body",
+            "value": "={{ $json.matrix_text }}"
+          }
+        ]
+      },
+      "options": {
+        "timeout": 10000
+      }
+    },
+    "id": "b8e5390a-8894-48e4-97d5-79c84888bc6c",
+    "name": "Matrix: Empfehlungs-Update senden",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.1,
+    "position": [
+      -2496,
+      640
+    ],
+    "credentials": {
+      "httpHeaderAuth": {
+        "id": "od1pN1F5wy2irSDs",
+        "name": "Header Auth account"
+      }
+    }
+  }
+}

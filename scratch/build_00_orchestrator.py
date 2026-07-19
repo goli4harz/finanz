@@ -2,11 +2,14 @@ import json, os
 
 OUT = r"C:\Users\olietz\Documents\finanz\00 – Tagesabschluss-Orchestrator.json"
 
-WF_02B = "EKxWwrP4SPLVUpNB"
-WF_02 = "W6Mko3fAJEyJudoD"
-WF_06_V1 = "zmedV73DsUArNquX"
-WF_10 = "PLACEHOLDER_10_REPORT_PRUEF_AGENT"
-WF_05_V1 = "7cbWfj6qlx0YmvIS"
+# Echte n8n-ids der am 2026-07-19 neu erstellten Workflows (nicht der
+# urspruenglichen Original-ids -- alles wurde bewusst additiv als NEUE,
+# separate, inaktive Workflows angelegt statt die Originale zu ersetzen).
+WF_02B = "9zO3uZeZeakTnLnX"   # 02b – Marktumfeld täglich – Orchestriert
+WF_02 = "vgT6IrPp3ATaJg8s"    # 02 – Technische Signale täglich – Orchestriert
+WF_06_V1 = "aguWZUolRizBnsj4" # 06 – Empfehlungswatchlist – Agent V1
+WF_10 = "BFlxfLyarzR2xbBT"    # 10 – Report- und Prüfagent
+WF_05_V1 = "VRr5jIHj7G7dsMwi" # 05 – Tagesreport – Agent V1
 
 PG_CRED = {"id": "PLACEHOLDER_POSTGRES_CRED", "name": "Postgres – Trading (TODO Credential zuweisen)"}
 MATRIX_CRED = {"id": "od1pN1F5wy2irSDs", "name": "Header Auth account"}
@@ -377,7 +380,7 @@ link(n_ex_empf, log_empf_in, src_index=1)
 n_ex_report = add({
     "parameters": {
         "source": "database",
-        "workflowId": {"__rl": True, "value": WF_10, "mode": "list", "cachedResultName": "10 – Report- und Prüfagent (TODO: id nach Import korrigieren)"},
+        "workflowId": {"__rl": True, "value": WF_10, "mode": "list", "cachedResultName": "10 – Report- und Prüfagent"},
         "workflowInputs": {"mappingMode": "defineBelow", "value": {
             "run_id": "={{ $('Run-ID erzeugen').item.json.run_id }}",
             "business_date": "={{ $('Run-ID erzeugen').item.json.business_date }}"

@@ -39,7 +39,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "EKxWwrP4SPLVUpNB",
+          "value": "9zO3uZeZeakTnLnX",
           "mode": "list",
           "cachedResultName": "02b – Marktumfeld täglich"
         },
@@ -135,7 +135,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "W6Mko3fAJEyJudoD",
+          "value": "vgT6IrPp3ATaJg8s",
           "mode": "list",
           "cachedResultName": "02 – Technische Signale täglich"
         },
@@ -373,7 +373,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "zmedV73DsUArNquX",
+          "value": "aguWZUolRizBnsj4",
           "mode": "list",
           "cachedResultName": "06 – Empfehlungswatchlist"
         },
@@ -438,9 +438,9 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "PLACEHOLDER_10_REPORT_PRUEF_AGENT",
+          "value": "BFlxfLyarzR2xbBT",
           "mode": "list",
-          "cachedResultName": "10 – Report- und Prüfagent (TODO: id nach Import korrigieren)"
+          "cachedResultName": "10 – Report- und Prüfagent"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -535,7 +535,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "7cbWfj6qlx0YmvIS",
+          "value": "VRr5jIHj7G7dsMwi",
           "mode": "list",
           "cachedResultName": "05 – Tagesreport"
         },

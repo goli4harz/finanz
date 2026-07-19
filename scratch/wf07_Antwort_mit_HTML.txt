@@ -1,0 +1,24 @@
+{
+  "parameters": {
+    "respondWith": "text",
+    "responseBody": "={{ $json.html }}",
+    "options": {
+      "responseHeaders": {
+        "entries": [
+          {
+            "name": "Content-Type",
+            "value": "text/html; charset=utf-8"
+          }
+        ]
+      }
+    }
+  },
+  "id": "104f65b6-454d-4a90-90f8-d38b8be57bc6",
+  "name": "Antwort mit HTML",
+  "type": "n8n-nodes-base.respondToWebhook",
+  "typeVersion": 1.4,
+  "position": [
+    1792,
+    0
+  ]
+}

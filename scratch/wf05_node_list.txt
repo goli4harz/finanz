@@ -1,0 +1,229 @@
+Trigger: Tagesreport (18:30) | n8n-nodes-base.scheduleTrigger
+DB: Fundamentaldaten laden | n8n-nodes-base.dataTable
+DB: Heutige News laden | n8n-nodes-base.dataTable
+DB: Technische Signale laden | n8n-nodes-base.dataTable
+DB: Marktumfeld laden | n8n-nodes-base.dataTable
+DB: Empfehlungen laden | n8n-nodes-base.dataTable
+Merge Report: + Empfehlungen | n8n-nodes-base.merge
+Merge Report: Fund + News | n8n-nodes-base.merge
+Merge Report: + Signale | n8n-nodes-base.merge
+Merge Report: + Marktumfeld | n8n-nodes-base.merge
+Report: Grunddaten + News bauen | n8n-nodes-base.code
+Report: Datenqualität prüfen | n8n-nodes-base.code
+IF: Warnungen vorhanden? | n8n-nodes-base.if
+Matrix: Fehler-Alert | n8n-nodes-base.httpRequest
+Tagesreport-Prompt aufbauen | n8n-nodes-base.code
+KI: Tagesreport erstellen | @n8n/n8n-nodes-langchain.openAi
+Report aufbereiten | n8n-nodes-base.code
+Matrix: Tagesreport senden | n8n-nodes-base.httpRequest
+E-Mail Report senden | n8n-nodes-base.emailSend
+
+--- CONNECTIONS ---
+{
+ "Trigger: Tagesreport (18:30)": {
+  "main": [
+   [
+    {
+     "node": "DB: Fundamentaldaten laden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "DB: Heutige News laden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "DB: Technische Signale laden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "DB: Marktumfeld laden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "DB: Empfehlungen laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Tagesreport-Prompt aufbauen": {
+  "main": [
+   [
+    {
+     "node": "KI: Tagesreport erstellen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Report aufbereiten": {
+  "main": [
+   [
+    {
+     "node": "Matrix: Tagesreport senden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "E-Mail Report senden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "KI: Tagesreport erstellen": {
+  "main": [
+   [
+    {
+     "node": "Report aufbereiten",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Heutige News laden": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: Fund + News",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "DB: Fundamentaldaten laden": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: Fund + News",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Report: Grunddaten + News bauen": {
+  "main": [
+   [
+    {
+     "node": "Report: Datenqualität prüfen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Report: Datenqualität prüfen": {
+  "main": [
+   [
+    {
+     "node": "Tagesreport-Prompt aufbauen",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "IF: Warnungen vorhanden?",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "IF: Warnungen vorhanden?": {
+  "main": [
+   [
+    {
+     "node": "Matrix: Fehler-Alert",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Merge Report: Fund + News": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Signale",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Technische Signale laden": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Signale",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "Merge Report: + Signale": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Marktumfeld",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Marktumfeld laden": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Marktumfeld",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "Merge Report: + Marktumfeld": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Empfehlungen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Empfehlungen laden": {
+  "main": [
+   [
+    {
+     "node": "Merge Report: + Empfehlungen",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "Merge Report: + Empfehlungen": {
+  "main": [
+   [
+    {
+     "node": "Report: Grunddaten + News bauen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ }
+}

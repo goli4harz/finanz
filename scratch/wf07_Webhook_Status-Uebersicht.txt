@@ -1,0 +1,16 @@
+{
+  "parameters": {
+    "path": "aktien-status",
+    "responseMode": "responseNode",
+    "options": {}
+  },
+  "id": "1af20d82-7aa5-4585-b42f-18b319617df2",
+  "name": "Webhook Status-Uebersicht",
+  "type": "n8n-nodes-base.webhook",
+  "typeVersion": 2,
+  "position": [
+    0,
+    0
+  ],
+  "webhookId": "eeeeeeee-0000-4000-8000-100000000001"
+}
