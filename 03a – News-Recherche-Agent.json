@@ -413,6 +413,7 @@
     },
     "Loop: 1 News pro Durchlauf": {
       "main": [
+        [],
         [
           {
             "node": "Nur echte Kandidaten weiterreichen",

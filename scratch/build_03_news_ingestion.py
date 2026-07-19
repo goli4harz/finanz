@@ -234,7 +234,12 @@ n_build_batch = b.add({
     "typeVersion": 2,
     "position": [-2000, 1450]
 })
-b.link(n_split, n_build_batch, src_index=0)
+# SplitInBatches-Ausgaenge: Index 0 = "fertig" (alle Batches durch), Index 1 =
+# "aktueller Batch" -- per Live-Test bestaetigt (00-Item-Ausgabe bei Index 0,
+# 15-Item-Batch bei Index 1 beim ersten Durchlauf), nicht wie urspruenglich
+# angenommen. Kein lokales Beispiel dieses Node-Typs in den 8 Original-
+# Workflows vorhanden, daher beim ersten Bau falsch geraten.
+b.link(n_split, n_build_batch, src_index=1)
 
 n_ki = b.add(dict(orig_nodes["KI: Nachricht bewerten"], position=[-1800, 1450]))
 b.link(n_build_batch, n_ki)

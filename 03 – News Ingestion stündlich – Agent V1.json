@@ -754,6 +754,7 @@
     },
     "Batch: 15 News pro KI-Aufruf": {
       "main": [
+        [],
         [
           {
             "node": "Baue Batch-Payload",

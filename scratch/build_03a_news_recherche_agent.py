@@ -128,7 +128,9 @@ n_route = b.add({
     "typeVersion": 2,
     "position": [-1400, 40]
 })
-b.link(n_split, n_route, src_index=0)
+# SplitInBatches: Index 0 = "fertig", Index 1 = "aktueller Batch" (siehe
+# Korrektur in build_03_news_ingestion.py, live-bestaetigt).
+b.link(n_split, n_route, src_index=1)
 
 n_fetch_article = b.add({
     "parameters": {
