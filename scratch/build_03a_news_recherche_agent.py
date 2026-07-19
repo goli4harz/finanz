@@ -173,7 +173,7 @@ n_ticker_history = b.add({
         "query": "=SELECT ni.title, na.wirkungsrichtung, na.created_at\n"
                  "FROM trading.news_assessments na\n"
                  "JOIN trading.news_items ni ON ni.id = na.news_id\n"
-                 "WHERE na.betroffene_ticker_json @> {{ JSON.stringify($('Nur echte Kandidaten weiterreichen').item.json.betroffene_ticker_json || []) }}::jsonb\n"
+                 "WHERE na.betroffene_ticker_json @> '{{ JSON.stringify($('Nur echte Kandidaten weiterreichen').item.json.betroffene_ticker_json || []).replace(/'/g, \"''\") }}'::jsonb\n"
                  "  AND na.betroffene_ticker_json <> '[]'::jsonb\n"
                  "ORDER BY na.created_at DESC LIMIT 10;",
         "options": {}

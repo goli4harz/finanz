@@ -169,7 +169,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT ni.title, na.wirkungsrichtung, na.created_at\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.betroffene_ticker_json @> {{ JSON.stringify($('Nur echte Kandidaten weiterreichen').item.json.betroffene_ticker_json || []) }}::jsonb\n  AND na.betroffene_ticker_json <> '[]'::jsonb\nORDER BY na.created_at DESC LIMIT 10;",
+        "query": "=SELECT ni.title, na.wirkungsrichtung, na.created_at\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.betroffene_ticker_json @> '{{ JSON.stringify($('Nur echte Kandidaten weiterreichen').item.json.betroffene_ticker_json || []).replace(/'/g, \"''\") }}'::jsonb\n  AND na.betroffene_ticker_json <> '[]'::jsonb\nORDER BY na.created_at DESC LIMIT 10;",
         "options": {}
       },
       "name": "Werkzeug: Fruehere Meldungen zum Ticker lesen",
