@@ -90,9 +90,27 @@ def add_dedup(label, position):
     echten Inhalt hat -- ohne diese Entduplizierung wuerde der nachgelagerte
     Log-/Warn-Pfad doppelt ausgefuehrt (live bestaetigt: doppelte Matrix-
     Warnung + doppelte pipeline_runs-Zeile). Bevorzugt das Item mit mehr
-    echten Feldern (das tatsaechliche Ergebnis) vor dem leeren Platzhalter."""
+    echten Feldern (das tatsaechliche Ergebnis) vor dem leeren Platzhalter.
+
+    WICHTIG (live gefunden): zwei rohe "main"-Verbindungen auf denselben
+    Node fuehren NICHT zu einer kombinierten $input.all()-Ausfuehrung,
+    sondern zu ZWEI SEPARATEN Ausfuehrungen des Zielnodes (eine je
+    eingehender Verbindung) -- ein regulaerer Node verhaelt sich hier
+    anders als ein Merge-Node. Deshalb zuerst ein echter Merge-Node (das
+    bestaetigte, in diesem Projekt bereits mehrfach funktionierende
+    Kombinationsmuster), danach erst die eigentliche Dedup-Logik in einem
+    Code-Node mit genau EINER eingehenden Verbindung."""
     _dedup_counter[0] += 1
-    name = add({
+    n = _dedup_counter[0]
+    merge_name = add({
+        "parameters": {},
+        "id": f"dd000000-0000-4000-8000-{n:06d}0001",
+        "name": f"{label}: Zweige zusammenfuehren",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [position[0] - 120, position[1]]
+    })
+    code_name = add({
         "parameters": {
             "jsCode": "const items = $input.all();\n"
                       "if (items.length <= 1) return items;\n"
@@ -102,13 +120,14 @@ def add_dedup(label, position):
                       "}\n"
                       "return [best];"
         },
-        "id": f"dd000000-0000-4000-8000-{_dedup_counter[0]:012d}",
+        "id": f"dd000000-0000-4000-8000-{n:06d}0002",
         "name": f"{label}: Ergebnis entduplizieren",
         "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": position
     })
-    return name
+    link(merge_name, code_name)
+    return merge_name, code_name
 
 def pipeline_run_log(id_prefix, label, position, status_expr, stage_name, workflow_name, extra_json_expr="{}"):
     """SQL-Body fuer einen INSERT in trading.pipeline_runs."""
@@ -197,10 +216,10 @@ log_markt_in, log_markt_out = pipeline_run_log(
     "00000004-0000-4000-8000-00000000000", "Log Marktumfeld", [-1728, -80],
     "$json.error ? 'failed' : 'success'", "marktumfeld", "02b – Marktumfeld täglich"
 )
-dd_markt = add_dedup("Marktumfeld", [-1780, -160])
-link(n_ex_marktumfeld, dd_markt, src_index=0)
-link(n_ex_marktumfeld, dd_markt, src_index=1)
-link(dd_markt, log_markt_in)
+dd_markt_merge, dd_markt_code = add_dedup("Marktumfeld", [-1780, -160])
+link(n_ex_marktumfeld, dd_markt_merge, src_index=0, dst_index=0)
+link(n_ex_marktumfeld, dd_markt_merge, src_index=1, dst_index=1)
+link(dd_markt_code, log_markt_in)
 
 n_if_markt = add({
     "parameters": {
@@ -247,10 +266,10 @@ log_signale_in, log_signale_out = pipeline_run_log(
     "00000007-0000-4000-8000-00000000000", "Log Technische Signale", [-1056, -80],
     "$json.error ? 'failed' : 'success'", "technische_signale", "02 – Technische Signale täglich"
 )
-dd_signale = add_dedup("Technische Signale", [-1104, -160])
-link(n_ex_signale, dd_signale, src_index=0)
-link(n_ex_signale, dd_signale, src_index=1)
-link(dd_signale, log_signale_in)
+dd_signale_merge, dd_signale_code = add_dedup("Technische Signale", [-1104, -160])
+link(n_ex_signale, dd_signale_merge, src_index=0, dst_index=0)
+link(n_ex_signale, dd_signale_merge, src_index=1, dst_index=1)
+link(dd_signale_code, log_signale_in)
 
 n_if_signale = add({
     "parameters": {
@@ -405,10 +424,10 @@ log_empf_in, log_empf_out = pipeline_run_log(
     "00000010-0000-4000-8000-000000000", "Log Empfehlungswatchlist", [736, -80],
     "$json.error ? 'failed' : 'success'", "empfehlungswatchlist", "06 – Empfehlungswatchlist"
 )
-dd_empf = add_dedup("Empfehlungswatchlist", [688, -160])
-link(n_ex_empf, dd_empf, src_index=0)
-link(n_ex_empf, dd_empf, src_index=1)
-link(dd_empf, log_empf_in)
+dd_empf_merge, dd_empf_code = add_dedup("Empfehlungswatchlist", [688, -160])
+link(n_ex_empf, dd_empf_merge, src_index=0, dst_index=0)
+link(n_ex_empf, dd_empf_merge, src_index=1, dst_index=1)
+link(dd_empf_code, log_empf_in)
 
 # ---------------------------------------------------------------------------
 # 7. Report- und Pruefagent (10) ausfuehren
@@ -437,10 +456,10 @@ log_report_in, log_report_out = pipeline_run_log(
     "00000012-0000-4000-8000-000000000", "Log Report-Pruef-Agent", [1184, -80],
     "$json.error ? 'failed' : ($json.approved ? 'success' : 'warning')", "report_pruef_agent", "10 – Report- und Prüfagent"
 )
-dd_report = add_dedup("Report-Pruef-Agent", [1136, -160])
-link(n_ex_report, dd_report, src_index=0)
-link(n_ex_report, dd_report, src_index=1)
-link(dd_report, log_report_in)
+dd_report_merge, dd_report_code = add_dedup("Report-Pruef-Agent", [1136, -160])
+link(n_ex_report, dd_report_merge, src_index=0, dst_index=0)
+link(n_ex_report, dd_report_merge, src_index=1, dst_index=1)
+link(dd_report_code, log_report_in)
 
 n_if_freigabe = add({
     "parameters": {
@@ -492,10 +511,10 @@ log_versand_in, log_versand_out = pipeline_run_log(
     "00000015-0000-4000-8000-000000000", "Log Versand", [1856, -120],
     "$json.error ? 'failed' : 'success'", "tagesreport_versand", "05 – Tagesreport"
 )
-dd_versand = add_dedup("Versand", [1808, -280])
-link(n_ex_versand, dd_versand, src_index=0)
-link(n_ex_versand, dd_versand, src_index=1)
-link(dd_versand, log_versand_in)
+dd_versand_merge, dd_versand_code = add_dedup("Versand", [1808, -280])
+link(n_ex_versand, dd_versand_merge, src_index=0, dst_index=0)
+link(n_ex_versand, dd_versand_merge, src_index=1, dst_index=1)
+link(dd_versand_code, log_versand_in)
 
 n_finish_success = add({
     "parameters": {"jsCode": "return { json: { ...$json, final_status: 'success' } };"},

@@ -100,10 +100,21 @@
       }
     },
     {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000010001",
+      "name": "Marktumfeld: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1900,
+        -160
+      ]
+    },
+    {
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      "id": "dd000000-0000-4000-8000-000000000001",
+      "id": "dd000000-0000-4000-8000-0000010002",
       "name": "Marktumfeld: Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -210,10 +221,21 @@
       }
     },
     {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000020001",
+      "name": "Technische Signale: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1224,
+        -160
+      ]
+    },
+    {
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      "id": "dd000000-0000-4000-8000-000000000002",
+      "id": "dd000000-0000-4000-8000-0000020002",
       "name": "Technische Signale: Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -463,10 +485,21 @@
       }
     },
     {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000030001",
+      "name": "Empfehlungswatchlist: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        568,
+        -160
+      ]
+    },
+    {
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      "id": "dd000000-0000-4000-8000-000000000003",
+      "id": "dd000000-0000-4000-8000-0000030002",
       "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -542,10 +575,21 @@
       }
     },
     {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000040001",
+      "name": "Report-Pruef-Agent: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1016,
+        -160
+      ]
+    },
+    {
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      "id": "dd000000-0000-4000-8000-000000000004",
+      "id": "dd000000-0000-4000-8000-0000040002",
       "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -655,10 +699,21 @@
       }
     },
     {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000050001",
+      "name": "Versand: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1688,
+        -280
+      ]
+    },
+    {
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      "id": "dd000000-0000-4000-8000-000000000005",
+      "id": "dd000000-0000-4000-8000-0000050002",
       "name": "Versand: Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -815,7 +870,7 @@
         ]
       ]
     },
-    "Ausfuehren: Marktumfeld (02b)": {
+    "Marktumfeld: Zweige zusammenfuehren": {
       "main": [
         [
           {
@@ -823,12 +878,23 @@
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Ausfuehren: Marktumfeld (02b)": {
+      "main": [
+        [
+          {
+            "node": "Marktumfeld: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
           {
-            "node": "Marktumfeld: Ergebnis entduplizieren",
+            "node": "Marktumfeld: Zweige zusammenfuehren",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -884,7 +950,7 @@
         ]
       ]
     },
-    "Ausfuehren: Technische Signale (02)": {
+    "Technische Signale: Zweige zusammenfuehren": {
       "main": [
         [
           {
@@ -892,12 +958,23 @@
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Ausfuehren: Technische Signale (02)": {
+      "main": [
+        [
+          {
+            "node": "Technische Signale: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
           {
-            "node": "Technische Signale: Ergebnis entduplizieren",
+            "node": "Technische Signale: Zweige zusammenfuehren",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1042,7 +1119,7 @@
         ]
       ]
     },
-    "Ausfuehren: Empfehlungswatchlist (06)": {
+    "Empfehlungswatchlist: Zweige zusammenfuehren": {
       "main": [
         [
           {
@@ -1050,12 +1127,23 @@
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Ausfuehren: Empfehlungswatchlist (06)": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
           {
-            "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
+            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1093,7 +1181,7 @@
         ]
       ]
     },
-    "Ausfuehren: Report- und Pruefagent (10)": {
+    "Report-Pruef-Agent: Zweige zusammenfuehren": {
       "main": [
         [
           {
@@ -1101,12 +1189,23 @@
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Ausfuehren: Report- und Pruefagent (10)": {
+      "main": [
+        [
+          {
+            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
           {
-            "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
+            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1162,7 +1261,7 @@
         ]
       ]
     },
-    "Ausfuehren: Tagesreport-Versand (05)": {
+    "Versand: Zweige zusammenfuehren": {
       "main": [
         [
           {
@@ -1170,12 +1269,23 @@
             "type": "main",
             "index": 0
           }
+        ]
+      ]
+    },
+    "Ausfuehren: Tagesreport-Versand (05)": {
+      "main": [
+        [
+          {
+            "node": "Versand: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
         ],
         [
           {
-            "node": "Versand: Ergebnis entduplizieren",
+            "node": "Versand: Zweige zusammenfuehren",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
