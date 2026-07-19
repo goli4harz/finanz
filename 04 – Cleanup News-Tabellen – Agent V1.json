@@ -1,0 +1,347 @@
+{
+  "name": "04 – Cleanup News-Tabellen – Agent V1",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 45 23 * * 1-5"
+            }
+          ]
+        }
+      },
+      "name": "Trigger: Cleanup (23:45 Mo-Fr)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -800,
+        -80
+      ],
+      "id": "n-00000001-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 0 * * 6"
+            }
+          ]
+        }
+      },
+      "name": "Trigger: Cleanup (Sa 00:15)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -800,
+        80
+      ],
+      "id": "n-00000002-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst sql = `DELETE FROM trading.news_items\n  WHERE status = 'discarded' AND created_at < now() - interval '21 days';`;\nreturn { json: { ...$json, sql, stufe: 'discarded_21d' } };\n"
+      },
+      "name": "Loesche irrelevante Rohnews (21 Tage) (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -160
+      ],
+      "id": "n-00000003-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Loesche irrelevante Rohnews (21 Tage) (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -224,
+        -160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000004-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst sql = `DELETE FROM trading.news_items\n  WHERE status = 'failed' AND created_at < now() - interval '30 days';`;\nreturn { json: { ...$json, sql, stufe: 'failed_30d' } };\n"
+      },
+      "name": "Loesche fehlgeschlagene News (30 Tage) (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "n-00000005-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Loesche fehlgeschlagene News (30 Tage) (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -224,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000006-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst sql = `DELETE FROM trading.news_items ni\n  WHERE ni.status = 'evaluated'\n    AND ni.created_at < now() - interval '365 days'\n    AND NOT EXISTS (\n      SELECT 1 FROM trading.news_impact_tracking nit WHERE nit.news_id = ni.id\n    );`;\nreturn { json: { ...$json, sql, stufe: 'evaluated_365d' } };\n"
+      },
+      "name": "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        160
+      ],
+      "id": "n-00000007-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -224,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000008-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst sql = `UPDATE trading.news_items\n  SET metadata_json = metadata_json || '{\"datenqualitaet_hinweis\":\"fehlendes_veroeffentlichungsdatum\"}'::jsonb\n  WHERE published_at IS NULL\n    AND status IN ('evaluated','discarded')\n    AND NOT (metadata_json ? 'datenqualitaet_hinweis');`;\nreturn { json: { ...$json, sql, stufe: 'datenqualitaet_markierung' } };\n"
+      },
+      "name": "Markiere News ohne Veroeffentlichungsdatum (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        320
+      ],
+      "id": "n-00000009-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Markiere News ohne Veroeffentlichungsdatum (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -224,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000010-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at)\n  VALUES (${pgStr('cleanup-' + getBusinessDate() + '-' + Date.now())}, '04 – Cleanup News-Tabellen', 'cleanup',\n          'success', now(), now());`;\nreturn { json: { ...$json, sql } };\n"
+      },
+      "name": "Log Cleanup-Lauf (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "id": "n-00000011-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Log Cleanup-Lauf (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -24,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000012-0000-4000-8000-0000000000"
+    }
+  ],
+  "connections": {
+    "Loesche irrelevante Rohnews (21 Tage) (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Loesche irrelevante Rohnews (21 Tage) (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Cleanup (23:45 Mo-Fr)": {
+      "main": [
+        [
+          {
+            "node": "Loesche irrelevante Rohnews (21 Tage) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Cleanup (Sa 00:15)": {
+      "main": [
+        [
+          {
+            "node": "Loesche irrelevante Rohnews (21 Tage) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche fehlgeschlagene News (30 Tage) (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Loesche fehlgeschlagene News (30 Tage) (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche irrelevante Rohnews (21 Tage) (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Loesche fehlgeschlagene News (30 Tage) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche fehlgeschlagene News (30 Tage) (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markiere News ohne Veroeffentlichungsdatum (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Markiere News ohne Veroeffentlichungsdatum (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche alte evaluierte News (365 Tage, ohne Wirkungsdaten) (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Markiere News ohne Veroeffentlichungsdatum (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Cleanup-Lauf (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Cleanup-Lauf (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markiere News ohne Veroeffentlichungsdatum (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Log Cleanup-Lauf (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

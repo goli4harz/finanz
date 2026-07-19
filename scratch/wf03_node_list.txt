@@ -1,0 +1,275 @@
+Trigger: Nachrichten (stündlich) | n8n-nodes-base.scheduleTrigger
+RSS-Feeds laden & filtern | n8n-nodes-base.code
+RSS: Fehler prüfen | n8n-nodes-base.code
+IF: RSS fehlgeschlagen? | n8n-nodes-base.if
+Matrix: RSS-Fehler-Alert | n8n-nodes-base.httpRequest
+Filter: Nur echte Nachrichten | n8n-nodes-base.filter
+News: news_key erzeugen | n8n-nodes-base.code
+Dedup: DB-Lesen einmal starten | n8n-nodes-base.code
+Dedup: stock_news laden | n8n-nodes-base.dataTable
+Dedup: stock_news_evaluated laden | n8n-nodes-base.dataTable
+Dedup: Tabellen zusammenführen | n8n-nodes-base.merge
+Dedup: Bekannte Keys sammeln | n8n-nodes-base.code
+Dedup: News + Keys sync | n8n-nodes-base.merge
+News: Duplikat-Check | n8n-nodes-base.code
+IF: News neu? | n8n-nodes-base.if
+DB: Raw-News speichern | n8n-nodes-base.dataTable
+News zu Batch zusammenfassen | n8n-nodes-base.code
+KI: Nachricht bewerten | @n8n/n8n-nodes-langchain.openAi
+KI-Bewertung aufbereiten | n8n-nodes-base.code
+DB: Bewertung speichern | n8n-nodes-base.dataTable
+Filter: Hohe Relevanz → Matrix | n8n-nodes-base.filter
+Code in JavaScript | n8n-nodes-base.code
+Matrix Alert: Wichtige Nachricht | n8n-nodes-base.httpRequest
+
+--- CONNECTIONS ---
+{
+ "Trigger: Nachrichten (stündlich)": {
+  "main": [
+   [
+    {
+     "node": "RSS-Feeds laden & filtern",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "RSS-Feeds laden & filtern": {
+  "main": [
+   [
+    {
+     "node": "RSS: Fehler prüfen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Filter: Nur echte Nachrichten": {
+  "main": [
+   [
+    {
+     "node": "News: news_key erzeugen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Filter: Hohe Relevanz → Matrix": {
+  "main": [
+   [
+    {
+     "node": "Code in JavaScript",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "KI: Nachricht bewerten": {
+  "main": [
+   [
+    {
+     "node": "KI-Bewertung aufbereiten",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Code in JavaScript": {
+  "main": [
+   [
+    {
+     "node": "Matrix Alert: Wichtige Nachricht",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Raw-News speichern": {
+  "main": [
+   [
+    {
+     "node": "News zu Batch zusammenfassen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "KI-Bewertung aufbereiten": {
+  "main": [
+   [
+    {
+     "node": "DB: Bewertung speichern",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "DB: Bewertung speichern": {
+  "main": [
+   [
+    {
+     "node": "Filter: Hohe Relevanz → Matrix",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "News zu Batch zusammenfassen": {
+  "main": [
+   [
+    {
+     "node": "KI: Nachricht bewerten",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "News: news_key erzeugen": {
+  "main": [
+   [
+    {
+     "node": "Dedup: DB-Lesen einmal starten",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "Dedup: News + Keys sync",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "IF: News neu?": {
+  "main": [
+   [
+    {
+     "node": "DB: Raw-News speichern",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Dedup: stock_news laden": {
+  "main": [
+   [
+    {
+     "node": "Dedup: Tabellen zusammenführen",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Dedup: stock_news_evaluated laden": {
+  "main": [
+   [
+    {
+     "node": "Dedup: Tabellen zusammenführen",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "Dedup: Tabellen zusammenführen": {
+  "main": [
+   [
+    {
+     "node": "Dedup: Bekannte Keys sammeln",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "News: Duplikat-Check": {
+  "main": [
+   [
+    {
+     "node": "IF: News neu?",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "RSS: Fehler prüfen": {
+  "main": [
+   [
+    {
+     "node": "IF: RSS fehlgeschlagen?",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "IF: RSS fehlgeschlagen?": {
+  "main": [
+   [
+    {
+     "node": "Matrix: RSS-Fehler-Alert",
+     "type": "main",
+     "index": 0
+    }
+   ],
+   [
+    {
+     "node": "Filter: Nur echte Nachrichten",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Dedup: Bekannte Keys sammeln": {
+  "main": [
+   [
+    {
+     "node": "Dedup: News + Keys sync",
+     "type": "main",
+     "index": 1
+    }
+   ]
+  ]
+ },
+ "Dedup: News + Keys sync": {
+  "main": [
+   [
+    {
+     "node": "News: Duplikat-Check",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ },
+ "Dedup: DB-Lesen einmal starten": {
+  "main": [
+   [
+    {
+     "node": "Dedup: stock_news laden",
+     "type": "main",
+     "index": 0
+    },
+    {
+     "node": "Dedup: stock_news_evaluated laden",
+     "type": "main",
+     "index": 0
+    }
+   ]
+  ]
+ }
+}
