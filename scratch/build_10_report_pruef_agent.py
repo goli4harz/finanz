@@ -256,10 +256,18 @@ const empfehlungswatchlist = {
 // der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als
 // NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,
 // unabhaengig von der pairedItem-Kette.
-const triggerVals = safeAll('Trigger-Werte fuer Merge-Kette');
-const triggerRunId = triggerVals.length > 0 ? triggerVals[0]._run_id : null;
+// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger
+// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.
+// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der
+// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute
+// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so
+// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in
+// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt
+// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum
+// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs
+// moeglich, ist aber kein exakter run_id-Abgleich mehr.
 return [{ json: {
-  run_id: triggerRunId || ('standalone-' + Date.now()),
+  run_id: 'report-' + heute + '-' + Date.now(),
   business_date: heute,
   datum: new Date().toLocaleDateString('de-DE'),
   uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
