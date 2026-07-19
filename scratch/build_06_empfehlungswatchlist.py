@@ -92,8 +92,9 @@ orig_code = orig_nodes["Empfehlungen: Abgleich berechnen"]["parameters"]["jsCode
 new_code = orig_code.replace(
     "const heute = new Date().toISOString().substring(0, 10);\nconst zeitstempel = new Date().toISOString();",
     GET_BUSINESS_DATE_JS + "\nconst heute = getBusinessDate();\nconst zeitstempel = new Date().toISOString();\n"
-    "const DRY_RUN = $('Trigger-Eingabe normalisieren').first().json.DRY_RUN;\n"
-    "const REQUIRE_CONFIRMATION = $('Trigger-Eingabe normalisieren').first().json.REQUIRE_CONFIRMATION;"
+    "const _triggerCtx = $('Trigger-Eingabe normalisieren').all()[0];\n"
+    "const DRY_RUN = _triggerCtx && _triggerCtx.json ? _triggerCtx.json.DRY_RUN : false;\n"
+    "const REQUIRE_CONFIRMATION = _triggerCtx && _triggerCtx.json ? _triggerCtx.json.REQUIRE_CONFIRMATION : false;"
 )
 new_code = new_code.replace("$('DB: News laden (Empf.)')", "$('DB: News laden (Empf., trading.*)')")
 new_code = new_code.replace(

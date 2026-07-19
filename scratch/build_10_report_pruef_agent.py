@@ -233,8 +233,15 @@ const empfehlungswatchlist = {
   trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null
 };
 
+// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die
+// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch
+// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus
+// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als
+// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,
+// unabhaengig von der pairedItem-Kette.
+const trigger = $('Execute Workflow Trigger').all()[0];
 return [{ json: {
-  run_id: $('Execute Workflow Trigger').first().json.run_id,
+  run_id: (trigger && trigger.json && trigger.json.run_id) || ('standalone-' + Date.now()),
   business_date: heute,
   datum: new Date().toLocaleDateString('de-DE'),
   uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),
