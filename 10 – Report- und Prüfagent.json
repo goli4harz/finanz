@@ -388,6 +388,7 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
         "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'report-agent', 'report', 'gpt-5.4-mini', 'report-agent-v1', 'success', now(), now());`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Report-Agent protokollieren (SQL bauen)",
@@ -423,6 +424,7 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
         "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, confidence, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'pruef-agent', 'pruefung', 'gpt-5.4-mini', 'pruef-agent-v1',\n          ${pgStr(j.approved ? 'success' : 'warning')}, ${pgNum(j.quality_score)}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Pruef-Agent protokollieren (SQL bauen)",

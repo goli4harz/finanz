@@ -54,7 +54,10 @@ class Builder:
         code_name = f"{label} (SQL bauen)"
         pg_name = f"{label} (ausfuehren)"
         self.add({
-            "parameters": {"jsCode": PG_HELPERS_JS + "\n\n" + sql_js_body},
+            "parameters": {
+                "mode": "runOnceForEachItem",
+                "jsCode": PG_HELPERS_JS + "\n\n" + sql_js_body
+            },
             "name": code_name,
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,

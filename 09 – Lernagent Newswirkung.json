@@ -259,6 +259,7 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
         "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, status)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)}, 'proposed');`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Vorschlag speichern (SQL bauen)",
@@ -294,6 +295,7 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
         "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, started_at, finished_at)\n  VALUES (${pgStr('lernagent-' + getBusinessDate())}, 'lernagent-newswirkung', 'lernen',\n          'gpt-5.4-mini', 'lernagent-v1', ${pgStr(j.analysis_from + '..' + j.analysis_to)},\n          ${pgStr((j.proposals_final || []).length + ' Vorschlaege')}, 'success', now(), now());`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Agentenlauf protokollieren (SQL bauen)",
