@@ -3,6 +3,7 @@ import json, os, urllib.request, urllib.error
 API_KEY = os.environ["N8N_API_KEY"]
 BASE = "http://172.16.1.14:5678/api/v1"
 REAL_CRED = {"id": "NWckNyl8ZfwVVJCd", "name": "Postgres account"}
+STATUS_WEBHOOK_CRED = {"id": "5lPS4iU0YNbMcjWR", "name": "Status-Webhook Token"}
 
 WORKFLOW_IDS = {
     "00 Orchestrator": "ncMZzkqDHpSiDGPm",
@@ -49,6 +50,9 @@ for label, wid in WORKFLOW_IDS.items():
     for n in d["nodes"]:
         if n["type"] == "n8n-nodes-base.postgres":
             n["credentials"] = {"postgres": REAL_CRED}
+            changed += 1
+        elif n["type"] == "n8n-nodes-base.webhook" and "httpHeaderAuth" in (n.get("credentials") or {}):
+            n["credentials"] = {"httpHeaderAuth": STATUS_WEBHOOK_CRED}
             changed += 1
     if changed == 0:
         print(label, wid, "-> keine Postgres-Nodes, uebersprungen")

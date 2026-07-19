@@ -75,17 +75,17 @@ sql/001_agenten_architektur.sql
 
 Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zusätzlich unverändert im ersten Commit des `agenten-modernisierung`-Branches.
 
-## Benötigte n8n Credentials — Stand: Postgres bereits angelegt und überall zugewiesen
+## Benötigte n8n Credentials — Stand: alle angelegt und zugewiesen
 
 | Credential-Name | Typ | Verwendung | Status |
 |---|---|---|---|
-| `Postgres account` (ID `NWckNyl8ZfwVVJCd`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen 49 betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
-| `Status-Webhook Token (TODO Credential zuweisen)` | Header Auth | Absicherung des Status-Webhooks in 07 | Noch offen — 07 wurde in dieser Session nicht live getestet |
+| `Postgres account` (ID `NWckNyl8ZfwVVJCd`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
+| `Status-Webhook Token` (ID `5lPS4iU0YNbMcjWR`) | Header Auth | Absicherung des Status-Webhooks in 07 (Header `X-Status-Token`) | **Angelegt und zugewiesen, live getestet** — 07 liefert die Status-HTML mit korrektem Header, `403 Authorization data is wrong!` ohne |
 | `Header Auth account` (ID `od1pN1F5wy2irSDs`) | Header Auth | Alle Matrix-Sends | Bereits vorhanden, unverändert aus den Originalen übernommen |
 | `OpenAI account` (ID `RiT1gwJpQWzSo6NO`) | OpenAI API | Alle KI-Nodes (03, 03a, 09, 10) | Bereits vorhanden, live bestätigt funktionsfähig |
 | `SMTP account` (ID `9z1hWYlOfxcO8avw`) | SMTP | E-Mail-Versand in 05 | Bereits vorhanden, noch nicht live getestet (05 wurde in den Orchestrator-Testläufen nie mit `approved=true` erreicht) |
 
-**Kein Zugangsdatenwert steht in irgendeiner Workflow-Datei oder in Git.** Die Postgres-Credential wurde ausschließlich in der n8n-UI angelegt und danach per API-Referenz (Name+ID, kein Passwort) den Nodes zugewiesen.
+**Kein Zugangsdatenwert steht in irgendeiner Workflow-Datei oder in Git.** Beide neuen Credentials (Postgres, Status-Webhook Token) wurden ausschließlich per API angelegt (Token/Passwort nur im API-Request an n8n selbst, nirgends im Repo) und danach per API-Referenz (Name+ID, kein Zugangsdatenwert) den Nodes zugewiesen — `scratch/assign_postgres_credential.py` deckt inzwischen beide Credential-Typen ab und muss nach jedem vollständigen PUT-Push der betroffenen Workflows erneut laufen.
 
 ## Benötigte Umgebungsvariablen / offene Platzhalter
 
@@ -145,7 +145,8 @@ Alle Tests liefen gegen die echte Produktions-Postgres-Instanz und echte RSS-/Op
 | `06` Empfehlungswatchlist | ✅ bestanden | Läuft durch, 0 Treffer diesmal (korrekt bei aktueller Datenlage) |
 | `00` Tagesabschluss-Orchestrator | ✅ bestanden | Kompletter Durchlauf 02b→02→06→10→(Ablehnung)→Matrix-Warnung, keine Duplikate mehr |
 | `03a` News-Recherche-Agent | ✅ bestanden | Künstlicher `wirkungsebene='unklar'`-Fall (News 71) lief durch kompletten Zweitpass (Artikel laden, ähnliche News, Ticker-Historie, KI-Bewertung, Persistierung) — SQL-Bug im Werkzeug „Frühere Meldungen zum Ticker lesen" dabei gefunden und behoben |
-| `09`, `07` | ⏳ noch nicht live getestet | `09` mangels `completed`-Wirkungsanalysen, `07` mangels Webhook-Token-Credential |
+| `07` Status-Uebersicht | ✅ bestanden | Webhook mit Header-Auth angelegt und live getestet (korrekte Statusseite mit Header, `403` ohne) — Webhook-Pfad kollidiert mit dem noch aktiven Original-Workflow, daher nur kurzzeitig unter Test-Pfad aktiviert, danach wieder deaktiviert |
+| `09` | ⏳ noch nicht live getestet | Mangels `completed`-Wirkungsanalysen (braucht mehrtägige Historie) |
 | `05` echter Versandpfad | ⏳ noch nie erreicht | Der Prüf-Agent hat in allen Testläufen korrekt abgelehnt — der `approved=true`-Pfad (05 wird tatsächlich aufgerufen, Matrix+E-Mail gehen raus) ist dadurch noch nie durchlaufen worden |
 
 ## Zehn echte Bugs beim Live-Testen gefunden und behoben
@@ -165,8 +166,11 @@ Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den j
 
 ## Testreihenfolge für die verbleibenden Workflows
 
-1. `07` — Status-Webhook-Token-Credential anlegen, dann testen.
-2. Den echten Versandpfad von `05` einmal gezielt erzwingen (z. B. testweise die `quality_score`-Schwelle in `10` lokal senken oder eine Testdaten-Konstellation bauen, die der Prüf-Agent freigibt), um Matrix+E-Mail-Versand mindestens einmal live zu verifizieren.
+1. Den echten Versandpfad von `05` einmal gezielt erzwingen (z. B. testweise die `quality_score`-Schwelle in `10` lokal senken oder eine Testdaten-Konstellation bauen, die der Prüf-Agent freigibt), um Matrix+E-Mail-Versand mindestens einmal live zu verifizieren.
+2. `04` — sobald genügend alte Testdaten vorhanden sind, gegen die Retention-Regeln testen.
+3. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben (braucht mehrere Tage `02`/`02b`-Historie). Bis dahin liefert der Bericht mangels Fallzahl leer/fast leer — das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
+
+**Hinweis zum Testen webhook-basierter Workflows (aus dem 07-Test gelernt):** „Listen for test event" im n8n-Editor fängt bei `responseMode: responseNode` nur den Trigger-Aufruf ab und pinnt die Daten, führt aber NICHT automatisch die nachgelagerte Kette aus. Für einen echten End-to-End-Test muss der Workflow aktiviert und die Produktions-URL aufgerufen werden. Da `07`s Webhook-Pfad (`aktien-status`) mit dem noch aktiven Original-Workflow kollidiert, wurde für den Test kurzzeitig ein abweichender Pfad gesetzt, aktiviert, getestet und danach Pfad+Aktivierung wieder zurückgesetzt — bei der eigentlichen Umstellung muss der Original-Workflow zuerst deaktiviert werden, bevor die neue `07`-Version unter dem echten Pfad aktiviert werden kann.
 3. `04` — sobald genügend alte Testdaten vorhanden sind, gegen die Retention-Regeln testen.
 4. `09` — erst sinnvoll testbar, sobald mehrere `news_impact_tracking`-Zeilen `status='completed'` erreicht haben (braucht mehrere Tage `02`/`02b`-Historie). Bis dahin liefert der Bericht mangels Fallzahl leer/fast leer — das ist korrektes Verhalten (Mindestfallzahlen-Regel), kein Fehler.
 
@@ -178,20 +182,18 @@ Diese wären bei rein statischer Prüfung nicht aufgefallen — Details in den j
 
 ## Offene manuelle Schritte (Zusammenfassung)
 
-1. Status-Webhook-Token-Credential in n8n anlegen und `07` zuweisen.
-2. `03a`, `04`, `07`, `09` live testen (siehe „Testreihenfolge für die verbleibenden Workflows" oben) — bisher nur `00`, `03`, `06`, `08`, `10` live bestätigt.
-3. Den echten `05`-Versandpfad (`approved=true`) mindestens einmal gezielt erzwingen und verifizieren — bisher hat der Prüf-Agent in jedem Testlauf korrekt abgelehnt, wodurch dieser Pfad nie durchlaufen wurde.
-4. Nach erfolgreichem Test aller Stufen: alte Schedule-Trigger in den Original-Workflows `02b`/`02`/`05`/`06` deaktivieren, um Doppelläufe zu vermeiden — bewusst noch nicht geschehen.
-5. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen (im Auftrag nur als optional gefordert).
+1. `04`, `09` live testen (siehe „Testreihenfolge für die verbleibenden Workflows" oben) — `00`, `03`, `03a`, `06`, `07`, `08`, `10` bereits live bestätigt.
+2. Den echten `05`-Versandpfad (`approved=true`) mindestens einmal gezielt erzwingen und verifizieren — bisher hat der Prüf-Agent in jedem Testlauf korrekt abgelehnt, wodurch dieser Pfad nie durchlaufen wurde.
+3. Nach erfolgreichem Test aller Stufen: alte Schedule-Trigger in `02b`/`02`/`05`/`06` UND den alten Webhook-Pfad-Inhaber `07 – Status-Uebersicht` (Original) deaktivieren, um Doppelläufe bzw. Pfadkollisionen zu vermeiden — bewusst noch nicht geschehen.
+4. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen (im Auftrag nur als optional gefordert).
 6. Erst nach Punkt 2+3: alle 15 Workflows aktivieren.
 
 ## Punkte, die weiterhin nur statisch geprüft sind (nicht live getestet)
 
-Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/06/08/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung) und 10 (Report- + Prüf-Agent), sowie die D+1-Zeile der Handelstage-Zählung in 08.
+Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/03a/06/07/08/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung), 03a (Recherche-Agent) und 10 (Report- + Prüf-Agent), `n8n-nodes-base.webhook` mit `authentication: headerAuth` in 07, sowie die D+1-Zeile der Handelstage-Zählung in 08.
 
 Noch offen:
-- `n8n-nodes-base.webhook` mit `authentication: headerAuth` in `07`: Standard-n8n-Feature, aber noch keine Credential angelegt und kein Testlauf erfolgt.
-- Die KI-Prompts in `03a` (Recherche-Agent) und `09` (Lernagent): Format-Erwartungen nur aus der Prompt-Struktur der bereits bestätigten Agenten (03/10) abgeleitet, nicht selbst mit echten Modellaufrufen verifiziert.
+- Die KI-Prompts in `09` (Lernagent): Format-Erwartungen nur aus der Prompt-Struktur der bereits bestätigten Agenten (03/03a/10) abgeleitet, nicht selbst mit echten Modellaufrufen verifiziert.
 - Die D+3/D+5/D+10/D+20-Zweige der Handelstage-Zählung in 08: nur D+1 wurde bisher tatsächlich erreicht (es liegt erst 1 Tag Kurshistorie seit der Migration vor), die späteren Zeitfenster sind weiterhin nur gegen die Codelogik durchdacht.
 - Der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`): nie erreicht, da der Prüf-Agent in allen bisherigen Testläufen korrekt ablehnte.
 - `04` (Cleanup) und dessen Retention-Regeln gegen echte, ausreichend alte Datensätze — die Testdaten sind dafür noch zu jung.
