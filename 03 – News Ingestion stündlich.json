@@ -1,0 +1,1180 @@
+{
+  "name": "03 – News Ingestion stündlich",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "4127827e-ea16-42a6-9764-6fa262820f17",
+      "name": "Trigger: Nachrichten (stündlich)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4480,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RSS-FEEDS LADEN & VORFILTERN\n// n8n Code Node: \"Run Once for All Items\"\n// Ziel:\n// 1. RSS-Feeds laden\n// 2. Direkte Aktiennews erkennen: type = stock_news\n// 3. Markt-/Makro-News erkennen: type = market_news\n// 4. Breitere Kandidaten erkennen: type = market_candidate\n// 5. Nur eindeutig irrelevanten Unsinn ausschließen\n// 6. KI bewertet später final: hoch / mittel / niedrig / irrelevant\n\nconst feeds = [\n  { url: 'https://www.tagesschau.de/xml/rss2', name: 'Tagesschau' },\n  { url: 'https://www.tagesschau.de/wirtschaft/index~rss2.xml', name: 'Tagesschau Wirtschaft' },\n  { url: 'https://www.welt.de/feeds/latest.rss', name: 'Die Welt' },\n  { url: 'https://www.spiegel.de/wirtschaft/index.rss', name: 'Spiegel Wirtschaft' },\n  { url: 'https://www.stern.de/feed/standard/all/', name: 'Stern' },\n  { url: 'https://newsfeed.zeit.de/wirtschaft/index', name: 'Zeit Wirtschaft' },\n  { url: 'https://www.n-tv.de/wirtschaft/rss', name: 'n-tv Wirtschaft' }\n];\n\n// Direkte Aktien-Watchlist\nconst watchlist = [\n  {\n    ticker: 'SAP.DE',\n    name: 'SAP SE',\n    patterns: [\n      /\\bSAP\\b/i,\n      /\\bSAP SE\\b/i\n    ],\n    excludePatterns: [\n      /\\bWhatsApp\\b/i\n    ]\n  },\n  {\n    ticker: 'SIE.DE',\n    name: 'Siemens AG',\n    patterns: [\n      /\\bSiemens\\b/i,\n      /\\bSiemens AG\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'BASF.DE',\n    name: 'BASF SE',\n    patterns: [\n      /\\bBASF\\b/i,\n      /\\bBASF SE\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'ALV.DE',\n    name: 'Allianz SE',\n    patterns: [\n      /\\bAllianz\\b/i,\n      /\\bAllianz SE\\b/i\n    ],\n    excludePatterns: [\n      /\\bAllianzen\\b/i,\n      /\\bAllianzpartner\\b/i\n    ]\n  },\n  {\n    ticker: 'MBG.DE',\n    name: 'Mercedes-Benz Group',\n    patterns: [\n      /\\bMercedes\\b/i,\n      /\\bMercedes-Benz\\b/i,\n      /\\bMercedes Benz\\b/i,\n      /\\bDaimler\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'BMW.DE',\n    name: 'BMW AG',\n    patterns: [\n      /\\bBMW\\b/i,\n      /\\bBMW AG\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'VOW3.DE',\n    name: 'Volkswagen VZ',\n    patterns: [\n      /\\bVolkswagen\\b/i,\n      /\\bVolkswagen AG\\b/i,\n      /\\bVW\\b/i\n    ],\n    excludePatterns: [\n      // nicht komplett verbieten, aber diese klaren Nicht-Volkswagen-Artikel raus\n      /\\bVW Käfer\\b/i,\n      /\\bVW-Bus Oldtimer\\b/i\n    ]\n  },\n  {\n    ticker: 'DBK.DE',\n    name: 'Deutsche Bank',\n    patterns: [\n      /\\bDeutsche Bank\\b/i,\n      /\\bDeutsche Bank AG\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'DTE.DE',\n    name: 'Deutsche Telekom',\n    patterns: [\n      /\\bDeutsche Telekom\\b/i,\n      /\\bTelekom\\b/i,\n      /\\bT-Mobile\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'RWE.DE',\n    name: 'RWE AG',\n    patterns: [\n      /\\bRWE AG\\b/i,\n      /\\bRWE\\b/i\n    ],\n    excludePatterns: [\n      /\\bRot-Weiss Essen\\b/i,\n      /\\bRot Weiss Essen\\b/i,\n      /\\bRot-Weiß Essen\\b/i,\n      /\\bRWE Essen\\b/i,\n      /\\bRWE-Abwehrchef\\b/i,\n      /\\bRWE-Fans\\b/i,\n      /\\bRWE-Spieler\\b/i,\n      /\\bRWE-Trainer\\b/i,\n      /\\bRWE-Profi\\b/i,\n      /\\bRWE-Keeper\\b/i,\n      /\\bRWE\\b.*\\bFürth\\b/i,\n      /\\bRWE\\b.*\\bGreuther\\b/i,\n      /\\bRelegation\\b.*\\bRWE\\b/i,\n      /\\bFußball\\b.*\\bRWE\\b/i,\n      /\\bFussball\\b.*\\bRWE\\b/i\n    ]\n  },\n  {\n    ticker: 'BAYN.DE',\n    name: 'Bayer AG',\n    patterns: [\n      /\\bBayer AG\\b/i,\n      /\\bBayer\\b/i\n    ],\n    excludePatterns: [\n      /\\bBayern\\b/i,\n      /\\bNiederbayern\\b/i,\n      /\\bOberbayern\\b/i,\n      /\\bBayerischer\\b/i,\n      /\\bBayerische\\b/i,\n      /\\bBayerisches\\b/i,\n      /\\bFC Bayern\\b/i\n    ]\n  },\n  {\n    ticker: 'EOAN.DE',\n    name: 'E.ON SE',\n    patterns: [\n      /\\bE\\.ON SE\\b/i,\n      /\\bE\\.ON\\b/i,\n      /\\bEON\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'ADS.DE',\n    name: 'adidas AG',\n    patterns: [\n      /\\badidas AG\\b/i,\n      /\\badidas\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'HEN3.DE',\n    name: 'Henkel VZ',\n    patterns: [\n      /\\bHenkel AG\\b/i,\n      /\\bHenkel\\b/i\n    ],\n    excludePatterns: []\n  },\n  {\n    ticker: 'FRE.DE',\n    name: 'Fresenius SE',\n    patterns: [\n      /\\bFresenius SE\\b/i,\n      /\\bFresenius\\b/i\n    ],\n    excludePatterns: []\n  }\n];\n\n// Klare Markt-/Wirtschaftsbegriffe.\n// Diese gehen als market_news durch.\nconst marketPatterns = [\n  /\\bDAX\\b/i,\n  /\\bMDAX\\b/i,\n  /\\bTecDAX\\b/i,\n  /\\bEuroStoxx\\b/i,\n  /\\bDow Jones\\b/i,\n  /\\bNasdaq\\b/i,\n  /\\bS&P 500\\b/i,\n  /\\bWall Street\\b/i,\n\n  /\\bMarktbericht\\b/i,\n  /\\bBörse\\b/i,\n  /\\bBoerse\\b/i,\n  /\\bAktienmarkt\\b/i,\n  /\\bFinanzmarkt\\b/i,\n  /\\bKapitalmarkt\\b/i,\n  /\\bAnleger\\b/i,\n  /\\bInvestoren\\b/i,\n  /\\bAktienkurs\\b/i,\n  /\\bAktienkurse\\b/i,\n\n  /\\bEZB\\b/i,\n  /\\bFed\\b/i,\n  /\\bNotenbank\\b/i,\n  /\\bZinsen\\b/i,\n  /\\bLeitzins\\b/i,\n  /\\bZinserhöhung\\b/i,\n  /\\bZinssenkung\\b/i,\n  /\\bInflation\\b/i,\n\n  /\\bKonjunktur\\b/i,\n  /\\bWirtschaftswachstum\\b/i,\n  /\\bRezession\\b/i,\n  /\\bFrühjahrsgutachten\\b/i,\n  /\\bWirtschaftsweise\\b/i,\n  /\\bBIP\\b/i,\n\n  /\\bÖlpreis\\b/i,\n  /\\bOelpreis\\b/i,\n  /\\bGaspreis\\b/i,\n  /\\bEnergiepreis\\b/i,\n  /\\bRohstoff\\b/i,\n  /\\bRohstoffe\\b/i,\n  /\\bSeltene Erden\\b/i,\n\n  /\\bZoll\\b/i,\n  /\\bZölle\\b/i,\n  /\\bZoelle\\b/i,\n  /\\bHandelskrieg\\b/i,\n  /\\bSanktionen\\b/i,\n  /\\bLieferkette\\b/i,\n  /\\bLieferketten\\b/i,\n  /\\bExport\\b/i,\n  /\\bImport\\b/i\n];\n\n// Breitere geopolitische und wirtschaftliche Kandidaten.\n// Diese gehen als market_candidate durch und werden später von der KI kritisch bewertet.\nconst candidatePatterns = [\n  /\\bUSA\\b/i,\n  /\\bUS-\\b/i,\n  /\\bChina\\b/i,\n  /\\bIran\\b/i,\n  /\\bNahost\\b/i,\n  /\\bUkraine\\b/i,\n  /\\bRussland\\b/i,\n  /\\bTaiwan\\b/i,\n  /\\bEU\\b/i,\n  /\\bEuropa\\b/i,\n\n  /\\bKrieg\\b/i,\n  /\\bKrise\\b/i,\n  /\\bKonflikt\\b/i,\n  /\\bEskalation\\b/i,\n  /\\bAngriff\\b/i,\n\n  /\\bIndustrie\\b/i,\n  /\\bUnternehmen\\b/i,\n  /\\bWirtschaft\\b/i,\n  /\\bArbeitsplätze\\b/i,\n  /\\bArbeitsplaetze\\b/i,\n  /\\bJobabbau\\b/i,\n  /\\bStandort\\b/i,\n\n  /\\bKI\\b/i,\n  /\\bKünstliche Intelligenz\\b/i,\n  /\\bKuenstliche Intelligenz\\b/i,\n  /\\bHalbleiter\\b/i,\n  /\\bChip\\b/i,\n  /\\bChips\\b/i,\n  /\\bTechnologie\\b/i\n];\n\n// Nur klar irrelevante Bereiche ausschließen.\n// Nicht zu hart filtern, weil KI später bewertet.\nconst globalExcludePatterns = [\n  /\\bFußball\\b/i,\n  /\\bFussball\\b/i,\n  /\\bBundesliga\\b/i,\n  /\\bChampions League\\b/i,\n  /\\bRelegation\\b/i,\n  /\\bTrainer\\b/i,\n  /\\bAbwehrchef\\b/i,\n\n  /\\bPromi\\b/i,\n  /\\bReality-TV\\b/i,\n  /\\bDschungelcamp\\b/i,\n  /\\bTatort\\b/i,\n  /\\bKrimi\\b/i,\n\n  /\\bRezept\\b/i,\n  /\\bKochen\\b/i,\n  /\\bBacken\\b/i,\n\n  /\\bHoroskop\\b/i,\n  /\\bQuiz\\b/i\n];\n\n// Diese Begriffe sind nicht pauschal ausgeschlossen.\n// Sie werden nur ausgeschlossen, wenn kein Markt-/Wirtschaftsbezug erkennbar ist.\nconst softNoisePatterns = [\n  /\\bKonzert\\b/i,\n  /\\bKonzerte\\b/i,\n  /\\bMusik\\b/i,\n  /\\bFestival\\b/i,\n  /\\bFilm\\b/i,\n  /\\bKino\\b/i,\n  /\\bSport\\b/i,\n  /\\bWahlkreis\\b/i,\n  /\\bWahlkreiszuschnitte\\b/i\n];\n\nconst headers = {\n  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',\n  'Accept': 'application/rss+xml, application/xml, text/xml, */*'\n};\n\nfunction cleanText(value) {\n  return String(value || '')\n    .replace(/<!\\[CDATA\\[/g, '')\n    .replace(/\\]\\]>/g, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&#8211;/g, '–')\n    .replace(/&#8212;/g, '—')\n    .replace(/&#8230;/g, '…')\n    .replace(/&#8222;/g, '„')\n    .replace(/&#8220;/g, '“')\n    .replace(/&#8221;/g, '”')\n    .replace(/&#8216;/g, '‘')\n    .replace(/&#8217;/g, '’')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction extractTag(xml, tag) {\n  const rx = new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`, 'i');\n  return cleanText(xml.match(rx)?.[1] || '');\n}\n\nfunction extractLink(rawItem) {\n  let link = extractTag(rawItem, 'link');\n\n  if (!link) {\n    const atomLink = rawItem.match(/<link[^>]+href=[\"']([^\"']+)[\"']/i);\n    if (atomLink?.[1]) {\n      link = cleanText(atomLink[1]);\n    }\n  }\n\n  return link;\n}\n\nfunction normalizeDate(datumRaw) {\n  if (!datumRaw) return '';\n  const d = new Date(datumRaw);\n  if (isNaN(d.getTime())) return datumRaw;\n  return d.toISOString();\n}\n\nfunction shorten(value, maxLength = 500) {\n  const text = cleanText(value);\n  if (text.length <= maxLength) return text;\n  return text.substring(0, maxLength - 1).trim() + '…';\n}\n\nfunction getMatchedPattern(patterns, text) {\n  for (const rx of patterns || []) {\n    rx.lastIndex = 0;\n    if (rx.test(text)) {\n      return String(rx);\n    }\n  }\n  return '';\n}\n\nfunction hasAny(patterns, text) {\n  return Boolean(getMatchedPattern(patterns, text));\n}\n\nfunction classifyArticle(suchtext, stockMatches) {\n  const hardExcluded = hasAny(globalExcludePatterns, suchtext);\n  const directMarket = getMatchedPattern(marketPatterns, suchtext);\n  const candidate = getMatchedPattern(candidatePatterns, suchtext);\n  const softNoise = hasAny(softNoisePatterns, suchtext);\n\n  // Direkte Aktiennews dürfen trotz weicher Noise-Wörter durch,\n  // außer es ist ein harter Ausschluss.\n  if (stockMatches.length > 0 && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'stock_news',\n      matchGrund: stockMatches.map(m => `${m.ticker}:${m.matchGrund}`).join(', ')\n    };\n  }\n\n  // Klare Marktnews gehen durch, außer harter Ausschluss.\n  if (directMarket && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'market_news',\n      matchGrund: directMarket\n    };\n  }\n\n  // Breitere Kandidaten gehen durch,\n  // aber nicht, wenn es nur weicher Lärm ohne Marktbezug ist.\n  if (candidate && !hardExcluded && !softNoise) {\n    return {\n      allow: true,\n      type: 'market_candidate',\n      matchGrund: candidate\n    };\n  }\n\n  return {\n    allow: false,\n    type: 'ignored',\n    matchGrund: hardExcluded ? 'globalExclude' : (softNoise ? 'softNoiseWithoutMarketContext' : 'noMatch')\n  };\n}\n\nconst debugFeeds = [];\nconst alleArtikel = [];\nconst treffer = [];\n\nfor (const feed of feeds) {\n  let xml = '';\n\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: feed.url,\n      headers,\n      ignoreHttpStatusErrors: true,\n      timeout: 15000\n    });\n\n    xml = typeof response === 'string'\n      ? response\n      : JSON.stringify(response || '');\n\n  } catch (e) {\n    debugFeeds.push({\n      feed: feed.name,\n      url: feed.url,\n      status: 'FEHLER',\n      error: e.message\n    });\n    continue;\n  }\n\n  const itemMatches = xml.match(/<item\\b[\\s\\S]*?<\\/item>/gi) || [];\n  const entryMatches = xml.match(/<entry\\b[\\s\\S]*?<\\/entry>/gi) || [];\n  const items = [...itemMatches, ...entryMatches];\n\n  debugFeeds.push({\n    feed: feed.name,\n    url: feed.url,\n    status: 'OK',\n    xmlLength: xml.length,\n    itemCount: itemMatches.length,\n    entryCount: entryMatches.length\n  });\n\n  for (const rawItem of items) {\n    const titel = extractTag(rawItem, 'title');\n\n    const beschreibung =\n      extractTag(rawItem, 'description') ||\n      extractTag(rawItem, 'summary') ||\n      extractTag(rawItem, 'content');\n\n    const datumRaw =\n      extractTag(rawItem, 'pubDate') ||\n      extractTag(rawItem, 'updated') ||\n      extractTag(rawItem, 'published');\n\n    const link = extractLink(rawItem);\n\n    if (!titel || titel.length < 5) continue;\n\n    const artikel = {\n      titel: cleanText(titel),\n      beschreibung: shorten(beschreibung, 500),\n      quelle: feed.name,\n      datum: datumRaw,\n      datum_iso: normalizeDate(datumRaw),\n      link\n    };\n\n    alleArtikel.push(artikel);\n\n    const suchtext = `${artikel.titel} ${artikel.beschreibung}`;\n\n    // Direkte Aktienmatches sammeln\n    const stockMatches = [];\n\n    for (const aktie of watchlist) {\n      const matchedPattern = getMatchedPattern(aktie.patterns, suchtext);\n      const excludedPattern = getMatchedPattern(aktie.excludePatterns || [], suchtext);\n\n      if (matchedPattern && !excludedPattern) {\n        stockMatches.push({\n          ticker: aktie.ticker,\n          name: aktie.name,\n          matchGrund: matchedPattern\n        });\n      }\n    }\n\n    const classification = classifyArticle(suchtext, stockMatches);\n\n    if (!classification.allow) {\n      continue;\n    }\n\n    // Wenn direkte Aktienmatches vorhanden sind: pro Aktie ein eigenes Item ausgeben\n    if (stockMatches.length > 0) {\n      for (const match of stockMatches) {\n        treffer.push({\n          json: {\n            type: 'stock_news',\n            ticker: match.ticker,\n            name: match.name,\n            titel: artikel.titel,\n            beschreibung: artikel.beschreibung,\n            quelle: artikel.quelle,\n            datum: artikel.datum,\n            datum_iso: artikel.datum_iso,\n            link: artikel.link,\n            matchGrund: match.matchGrund,\n            vorfilter: 'direkter_aktienbezug',\n            zeitstempel: new Date().toISOString()\n          }\n        });\n      }\n\n      continue;\n    }\n\n    // Sonst allgemeine Marktnews oder Kandidaten ausgeben\n    treffer.push({\n      json: {\n        type: classification.type,\n        ticker: 'MARKT',\n        name: classification.type === 'market_news'\n          ? 'Allgemeine Marktlage'\n          : 'Markt-Kandidat zur KI-Prüfung',\n        titel: artikel.titel,\n        beschreibung: artikel.beschreibung,\n        quelle: artikel.quelle,\n        datum: artikel.datum,\n        datum_iso: artikel.datum_iso,\n        link: artikel.link,\n        matchGrund: classification.matchGrund,\n        vorfilter: classification.type === 'market_news'\n          ? 'klarer_marktbezug'\n          : 'breiter_kandidat',\n        zeitstempel: new Date().toISOString()\n      }\n    });\n  }\n}\n\n// Duplikate entfernen.\n// Wichtig: Quelle nicht mehr in den Key, damit Tagesschau + Tagesschau Wirtschaft nicht doppelt bleiben.\nconst seen = new Set();\n\nconst unique = treffer.filter(e => {\n  const key = [\n    e.json.type,\n    e.json.ticker,\n    e.json.link || e.json.titel.substring(0, 120)\n  ].join('|');\n\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// Sortierung: stock_news zuerst, dann market_news, dann market_candidate, jeweils neueste zuerst\nunique.sort((a, b) => {\n  const typeScore = {\n    stock_news: 1,\n    market_news: 2,\n    market_candidate: 3\n  };\n\n  const ta = typeScore[a.json.type] || 9;\n  const tb = typeScore[b.json.type] || 9;\n\n  if (ta !== tb) return ta - tb;\n\n  const da = new Date(a.json.datum_iso || 0).getTime();\n  const db = new Date(b.json.datum_iso || 0).getTime();\n\n  return db - da;\n});\n\n\n// RSS-Status ermitteln\nconst feedsOk     = debugFeeds.filter(f => f.status === 'OK').length;\nconst feedsFehler = debugFeeds.filter(f => f.status === 'FEHLER').length;\n\nconst rss_status =\n  feedsOk === 0                      ? 'komplett_fehler' :\n  feedsFehler > 0                    ? 'teilweise_fehler' :\n                                       'ok';\n\n// Treffer vorhanden: direkt zurückgeben (keine seenNewsLinks-Filterung mehr)\nif (unique.length > 0) {\n  return unique;\n}\n\n// Keine Treffer: Debug-Item mit rss_status\nreturn [\n  {\n    json: {\n      rss_status:      rss_status === 'komplett_fehler' ? 'komplett_fehler' : 'keine_treffer',\n      info:            'Keine relevanten Aktien-, Markt- oder Kandidaten-Nachrichten gefunden',\n      feedsOk,\n      feedsFehler,\n      feedsGetestet:   feeds.length,\n      feedsDebug:      debugFeeds,\n      artikelGesamt:   alleArtikel.length,\n      zeitstempel:     new Date().toISOString()\n    }\n  }\n];"
+      },
+      "id": "0b053b62-271b-4231-9ac5-ce3fef66d0ac",
+      "name": "RSS-Feeds laden & filtern",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4256,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// RSS-FEED FEHLER-CHECK\n// Prüft ob das Item ein reines Debug-Item ohne Nachrichten ist\n// (passiert wenn alle Feeds fehlschlagen)\n\nconst j = $json;\n\n// Wenn kein titel vorhanden aber 'info'-Feld → alle Feeds fehlgeschlagen\nconst alleFeedsFehler =\n  !j.titel &&\n  j.info &&\n  Array.isArray(j.feedsDebug) &&\n  j.feedsDebug.every(f => f.status === 'FEHLER');\n\nif (alleFeedsFehler) {\n  // Static Data für Fehler-Matrix nutzen\n  const sd = $getWorkflowStaticData('global');\n  sd.rss_alle_feeds_fehler = true;\n  sd.rss_fehler_zeitstempel = new Date().toISOString();\n  sd.rss_fehler_feeds = j.feedsDebug;\n}\n\nreturn { json: { ...j, _rss_alle_fehler: alleFeedsFehler } };\n"
+      },
+      "id": "31a2e64e-1545-46c2-ab52-9781f830db74",
+      "name": "RSS: Fehler prüfen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4032,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "rss-fehler",
+              "leftValue": "={{ $json._rss_alle_fehler }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "054b43e5-d97f-45a0-bbd6-6d5db6724dd3",
+      "name": "IF: RSS fehlgeschlagen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3808,
+        1712
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-rssfehler-{{ Date.now() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "msgtype",
+              "value": "m.text"
+            },
+            {
+              "name": "format",
+              "value": "org.matrix.custom.html"
+            },
+            {
+              "name": "body",
+              "value": "={{ `🔴 RSS-Fehler: Alle Feeds nicht erreichbar (${new Date().toLocaleTimeString('de-DE')}). News-Strang läuft leer.` }}"
+            },
+            {
+              "name": "formatted_body",
+              "value": "={{ `<b>🔴 RSS-Fehler</b><br>Alle Feeds nicht erreichbar (${new Date().toLocaleTimeString('de-DE')}).<br>News-Strang läuft leer.` }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "e8b55389-41b0-4fd8-a20a-070e14f6da7d",
+      "name": "Matrix: RSS-Fehler-Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -3584,
+        1792
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.titel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "7f0175c3-69eb-44a6-9774-b63fadfcc8de",
+      "name": "Filter: Nur echte Nachrichten",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        -3584,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// NEWS_KEY ERZEUGEN + NORMALISIERUNG\n// Modus: runOnceForEachItem\n\nconst heute = new Date().toISOString().substring(0, 10);\n\nfunction normalizeTitle(raw) {\n  return String(raw || '')\n    .replace(/<[^>]+>/g, ' ')   // HTML entfernen\n    .replace(/&amp;/g, '&').replace(/&quot;/g, '\"').replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>')\n    .toLowerCase()\n    .replace(/[^a-z0-9äöüß\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim()\n    .substring(0, 160);\n}\n\nconst link  = ($json.link || '').trim();\nconst quelle = ($json.quelle || 'unbekannt').trim();\nconst titel  = $json.titel || '';\n\n// Link bevorzugen, sonst Datum+Quelle+normalisierter Titel\nconst news_key = link\n  ? `${heute}|${link}`\n  : `${heute}|${quelle}|${normalizeTitle(titel)}`;\n\nreturn {\n  json: {\n    ...$json,\n    news_key\n  }\n};\n"
+      },
+      "id": "cbb08f9f-6486-4753-885d-c03aa5bf2f75",
+      "name": "News: news_key erzeugen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3360,
+        1600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      action: 'load_existing_news_keys'\n    }\n  }\n];"
+      },
+      "id": "ec23d33d-a901-4694-bf55-bb770abb717b",
+      "name": "Dedup: DB-Lesen einmal starten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3136,
+        1632
+      ],
+      "settings": {}
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "JlpJuqaFjoGiCpyD",
+          "mode": "list",
+          "cachedResultName": "stock_news",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/JlpJuqaFjoGiCpyD"
+        },
+        "returnAll": true
+      },
+      "id": "493328db-0826-456d-94a3-da1e5aa96e79",
+      "name": "Dedup: stock_news laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3136,
+        1472
+      ],
+      "settings": {
+        "alwaysOutputData": true
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "0mPlpPLztuDYz0Ee",
+          "mode": "list",
+          "cachedResultName": "stock_news_evaluated",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+        },
+        "returnAll": true
+      },
+      "id": "9db37f75-c3da-4423-b3a8-ede891f50a7e",
+      "name": "Dedup: stock_news_evaluated laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3136,
+        1824
+      ],
+      "settings": {
+        "alwaysOutputData": true
+      }
+    },
+    {
+      "parameters": {},
+      "id": "af409a62-88c4-4829-8d3c-7aba476533d9",
+      "name": "Dedup: Tabellen zusammenführen",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2912,
+        1472
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst knownKeys = new Set();\nconst knownTitles = new Set();\n\nfor (const item of items) {\n  const j = item.json || {};\n\n  if (j.news_key) {\n    knownKeys.add(String(j.news_key).trim());\n  }\n\n  if (j.link) {\n    knownKeys.add(String(j.link).trim());\n  }\n\n  if (j.titel) {\n    knownTitles.add(String(j.titel).trim());\n  }\n}\n\nreturn [\n  {\n    json: {\n      known_count: knownKeys.size,\n      known_keys: Array.from(knownKeys),\n      known_titles: Array.from(knownTitles)\n    }\n  }\n];"
+      },
+      "id": "5d57467d-7e1d-40c5-ba7a-60f75e89c191",
+      "name": "Dedup: Bekannte Keys sammeln",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        1472
+      ],
+      "settings": {}
+    },
+    {
+      "parameters": {},
+      "id": "7c20cafc-b989-4280-94f2-8a1fdfddc202",
+      "name": "Dedup: News + Keys sync",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2464,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NEWS-DUPLIKAT-CHECK – Run Once for All Items\n// Prüft: 1) Exakter Key/Link-Match (wie bisher)\n//         2) NEU: Titel-Ähnlichkeit (Jaccard) gegen bekannte + aktuelle Titel\n\nconst items = $input.all();\n\nlet knownKeysArray = [];\nlet knownTitlesArray = [];\nconst newsItems = [];\n\nfor (const item of items) {\n  const j = item.json || {};\n  if (Array.isArray(j.known_keys)) {\n    knownKeysArray = j.known_keys;\n    if (Array.isArray(j.known_titles)) {\n      knownTitlesArray = j.known_titles;\n    }\n  } else if (j.news_key || j.titel || j.link) {\n    newsItems.push(j);\n  }\n}\n\nconst knownKeys = new Set(\n  knownKeysArray.filter(Boolean).map(k => String(k).trim())\n);\n\n// Bekannte Titel direkt aus der DB (titel-Spalte) statt aus dem Key-Format geraten –\n// vorher wurden Titel nur aus dem \"kein Link\"-Key-Format (3 Teile) extrahiert, das\n// bei Artikeln mit Link (fast immer) nie zutraf → History-Vergleich lief faktisch leer.\nconst knownTitles = knownTitlesArray.filter(Boolean).map(t => String(t).trim());\n\n// ── Hilfsfunktionen Ähnlichkeit ────────────────────────────────────────────────\nfunction normalizeForSim(text) {\n  return String(text || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9äöüß\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tokenize(text) {\n  return new Set(normalizeForSim(text).split(' ').filter(w => w.length > 2));\n}\n\nfunction jaccardSimilarity(titleA, titleB) {\n  const setA = tokenize(titleA);\n  const setB = tokenize(titleB);\n  if (setA.size === 0 && setB.size === 0) return 1;\n  if (setA.size === 0 || setB.size === 0) return 0;\n\n  let intersection = 0;\n  for (const word of setA) {\n    if (setB.has(word)) intersection++;\n  }\n  const union = setA.size + setB.size - intersection;\n  return intersection / union;\n}\n\n// Schwellenwert: 0.6 = 60% Wort-Überlappung → als Duplikat werten\n// (Tagesschau + Tagesschau Wirtschaft haben oft identische Titel → ~1.0)\n// Kannst du auf 0.5 senken für aggressivere Deduplizierung\nconst SIMILARITY_THRESHOLD = 0.6;\n\n// ── Duplikat-Check ─────────────────────────────────────────────────────────────\nconst seenThisRun = new Set();\nconst seenTitlesThisRun = [];  // Array für Ähnlichkeitsvergleich innerhalb des Runs\nconst output = [];\n\nfor (const j of newsItems) {\n  const key  = String(j.news_key || '').trim();\n  const link = String(j.link     || '').trim();\n  const titel = String(j.titel   || '').trim();\n\n  // 1) Exakter Key/Link-Check (wie bisher)\n  const isExactDuplicate =\n    (key  && (knownKeys.has(key)  || seenThisRun.has(key)))  ||\n    (link && (knownKeys.has(link) || seenThisRun.has(link)));\n\n  if (isExactDuplicate) continue;\n\n  // 2) NEU: Titel-Ähnlichkeits-Check\n  let isSimilarDuplicate = false;\n  let similarScore = 0;\n\n  // Gegen bekannte Titel aus DB\n  for (const knownTitle of knownTitles) {\n    const sim = jaccardSimilarity(titel, knownTitle);\n    if (sim >= SIMILARITY_THRESHOLD) {\n      isSimilarDuplicate = true;\n      similarScore = sim;\n      break;\n    }\n  }\n\n  // Gegen bereits akzeptierte Artikel in diesem Run\n  if (!isSimilarDuplicate) {\n    for (const seenTitle of seenTitlesThisRun) {\n      const sim = jaccardSimilarity(titel, seenTitle);\n      if (sim >= SIMILARITY_THRESHOLD) {\n        isSimilarDuplicate = true;\n        similarScore = sim;\n        break;\n      }\n    }\n  }\n\n  if (isSimilarDuplicate) continue;\n\n  // Neu und einzigartig → durchlassen\n  if (key)  seenThisRun.add(key);\n  if (link) seenThisRun.add(link);\n  seenTitlesThisRun.push(normalizeForSim(titel));\n\n  output.push({\n    json: {\n      ...j,\n      _isDuplicate: false,\n      dedup_status: 'new'\n    }\n  });\n}\n\nreturn output;"
+      },
+      "id": "b3d547ef-ded0-4820-87cb-b00a9684ce9f",
+      "name": "News: Duplikat-Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "dedup-check",
+              "leftValue": "={{ $json._isDuplicate }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "4e5609ee-bc2d-448e-a8e8-2f306ccce44f",
+      "name": "IF: News neu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2016,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "JlpJuqaFjoGiCpyD",
+          "mode": "list",
+          "cachedResultName": "stock_news",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/JlpJuqaFjoGiCpyD"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "news_key": "={{ $json.news_key }}",
+            "type": "={{ $json.type }}",
+            "ticker": "={{ $json.ticker }}",
+            "name": "={{ $json.name }}",
+            "titel": "={{ $json.titel }}",
+            "beschreibung": "={{ $json.beschreibung }}",
+            "quelle": "={{ $json.quelle }}",
+            "datum": "={{ $json.datum }}",
+            "datum_iso": "={{ $json.datum_iso }}",
+            "link": "={{ $json.link }}",
+            "vorfilter": "={{ $json.vorfilter }}",
+            "matchGrund": "={{ $json.matchGrund }}"
+          },
+          "schema": [
+            {
+              "id": "news_key",
+              "displayName": "news_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "titel",
+              "displayName": "titel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "beschreibung",
+              "displayName": "beschreibung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "quelle",
+              "displayName": "quelle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum_iso",
+              "displayName": "datum_iso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "vorfilter",
+              "displayName": "vorfilter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "matchGrund",
+              "displayName": "matchGrund",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ee7a3983-27ba-4411-8d3c-f650047b8012",
+      "name": "DB: Raw-News speichern",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ALLE NEWS ZU EINEM BATCH ZUSAMMENFASSEN\n// Sammelt alle Items und baut einen einzigen KI-Prompt\n// → ein API-Call statt N einzelne Calls\n\nconst items = $input.all();\n\n// News-Array für den Prompt bauen (kompakt)\nconst newsListe = items.map((item, i) => {\n  const j = item.json;\n  return {\n    id: i,\n    type: j.type,\n    ticker: j.ticker || 'MARKT',\n    name: j.name || '',\n    titel: j.titel || '',\n    beschreibung: (j.beschreibung || '').substring(0, 300), // kürzen\n    quelle: j.quelle || '',\n    datum: j.datum || '',\n    link: j.link || '',\n    vorfilter: j.vorfilter || '',\n    matchGrund: j.matchGrund || ''\n  };\n});\n\n// Originaldaten für spätere Zusammenführung als Static Data speichern\nconst sd = $getWorkflowStaticData('global');\nsd.news_batch_originals = items.map(i => i.json);\n\nreturn [{\n  json: {\n    news_count: newsListe.length,\n    news_batch: newsListe\n  }\n}];"
+      },
+      "id": "b9d233b8-f874-44bd-b3d5-d503d3f94e6f",
+      "name": "News zu Batch zusammenfassen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1568,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Du bist ein sachlicher Aktien-News-Analyst für ein automatisiertes Aktien-Beobachtungssystem.\n\nDeine Aufgabe:\nBewerte ALLE Nachrichten im übergebenen Array. Für jede Nachricht gibst du eine Bewertung zurück.\n\nRegeln:\n- Keine Anlageberatung, keine Kauf-/Verkaufsempfehlungen, keine erfundenen Fakten.\n- Auch Marktumfeld, DAX, Nasdaq, EZB, Fed, Zinsen, Inflation, Ölpreis, Rohstoffe, Konjunktur, KI, Halbleiter, Energie und geopolitische Risiken können relevant sein.\n- Antworte ausschließlich mit einem validen JSON-Array. Kein Markdown, kein Text davor oder danach.\n\nBewertungsfelder pro Nachricht:\n- id: (gleiche id wie im Input)\n- relevanz: \"hoch\" | \"mittel\" | \"niedrig\" | \"irrelevant\"\n- sentiment: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n- kurswirkung: \"steigend\" | \"fallend\" | \"keine\" | \"unklar\"\n- bezug: kurze Erklärung warum relevant oder nicht\n- verwendung: \"matrix_alert\" | \"tagesreport\" | \"speichern\" | \"verwerfen\"\n- score: 0-100\n- dringlichkeit: \"sofort\" | \"heute\" | \"beobachten\" | \"ignorieren\"\n- begruendung: ein Satz Begründung\n- betroffene_ticker: JSON-Array mit Ticker-Symbolen aus der Watchlist, z. B. [\"BMW.DE\",\"MBG.DE\"]. Leer [] wenn kein direkter Einzeltitel-Bezug.\n- wirkungsebene: \"einzeltitel\" | \"sektor\" | \"markt\" | \"makro\" | \"unklar\"\n- wirkungsrichtung: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n- wirkung_staerke: \"hoch\" | \"mittel\" | \"niedrig\"\n- begruendung_tickerbezug: kurze Begründung warum diese Ticker betroffen sind. Leer wenn kein Tickerbezug.\n\nWatchlist für Ticker-Zuordnung: SAP.DE, SIE.DE, BASF.DE, ALV.DE, MBG.DE, BMW.DE, VOW3.DE, DBK.DE, DTE.DE, RWE.DE, BAYN.DE, EOAN.DE, ADS.DE, HEN3.DE, FRE.DE\n\nWenn type = \"stock_news\": Prüfe ob die Nachricht wirklich zur genannten Aktie passt.\nWenn type = \"market_news\": Bewerte Wirkung auf das Marktumfeld.\nWenn type = \"market_candidate\": Prüfe kritisch ob ein plausibler Marktbezug besteht."
+            },
+            {
+              "content": "={{ `Nachrichten:\n${JSON.stringify($json.news_batch)}\n\nAntworte NUR mit einem JSON-Array der Form:\n[{\"id\":0,\"relevanz\":\"...\",\"sentiment\":\"...\",\"kurswirkung\":\"...\",\"bezug\":\"...\",\"verwendung\":\"...\",\"score\":50,\"dringlichkeit\":\"...\",\"begruendung\":\"...\",\"betroffene_ticker\":[],\"wirkungsebene\":\"...\",\"wirkungsrichtung\":\"...\",\"wirkung_staerke\":\"...\",\"begruendung_tickerbezug\":\"...\"},...]` }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "a0d4f3bd-fd4a-44d5-bf40-85cee93a0517",
+      "name": "KI: Nachricht bewerten",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -1344,
+        1504
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "RiT1gwJpQWzSo6NO",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// KI-BEWERTUNG AUFBEREITEN – robust + debug\n// Modus: runOnceForAllItems\n// ============================================================\n\n// ── 1. Alle Input-Items einlesen ───────────────────────────\nconst allItems = $input.all();\nconst sd = $getWorkflowStaticData('global');\nconst originals = sd.news_batch_originals || [];\n\n// ── 2. KI-Rohantwort robust extrahieren ────────────────────\n// Der OpenAI-Node gibt je nach Version/Modus unterschiedliche Strukturen aus.\n// Wir durchsuchen alle bekannten Pfade und nehmen den längsten gültigen String.\n\nfunction findLongestString(obj, depth = 0) {\n  if (depth > 6) return '';\n  if (typeof obj === 'string' && obj.length > 10) return obj;\n  if (Array.isArray(obj)) {\n    return obj.map(v => findLongestString(v, depth + 1))\n              .reduce((a, b) => (b.length > a.length ? b : a), '');\n  }\n  if (obj && typeof obj === 'object') {\n    return Object.values(obj)\n                 .map(v => findLongestString(v, depth + 1))\n                 .reduce((a, b) => (b.length > a.length ? b : a), '');\n  }\n  return '';\n}\n\nfunction extractRaw(ki) {\n  const candidates = [\n    // n8n OpenAI node v2.x Responses-Modus\n    ki?.output?.[0]?.content?.[0]?.text,\n    ki?.output?.[0]?.content?.[0]?.value,\n    // output_text (direkt)\n    ki?.output_text,\n    // Chat-Completions klassisch\n    ki?.choices?.[0]?.message?.content,\n    ki?.message?.content,\n    // Einfache Felder\n    ki?.text,\n    ki?.response,\n    ki?.content,\n    ki?.data,\n    ki?.result,\n    // output als String\n    typeof ki?.output === 'string' ? ki.output : null,\n    // output als Array von Strings\n    Array.isArray(ki?.output) && typeof ki.output[0] === 'string' ? ki.output[0] : null,\n  ].filter(v => typeof v === 'string' && v.trim().length > 5);\n\n  if (candidates.length > 0) {\n    // Längsten nehmen (wahrscheinlich die vollständige Antwort)\n    return candidates.reduce((a, b) => (b.length > a.length ? b : a), '');\n  }\n\n  // Letzter Ausweg: rekursiv den längsten String im ganzen Objekt suchen\n  return findLongestString(ki);\n}\n\n// ── 3. Alle Input-Items nach der Rohantwort durchsuchen ────\nlet raw = '';\nlet rawSource = 'nicht gefunden';\nlet availableKeys = [];\n\nfor (const item of allItems) {\n  const ki = item.json;\n  availableKeys = Object.keys(ki || {});\n  const candidate = extractRaw(ki);\n  if (candidate && candidate.length > raw.length) {\n    raw = candidate;\n    rawSource = 'gefunden in item ' + allItems.indexOf(item);\n  }\n}\n\n// ── 4. JSON-Array aus Rohantwort extrahieren ───────────────\nfunction parseKiArray(raw) {\n  if (!raw) return null;\n\n  // Markdown-Codeblöcke entfernen\n  let cleaned = raw\n    .replace(/^```json\\s*/gm, '')\n    .replace(/^```\\s*/gm, '')\n    .replace(/```$/gm, '')\n    .trim();\n\n  // Ersten vollständigen JSON-Array-Block finden\n  const start = cleaned.indexOf('[');\n  if (start === -1) return null;\n\n  // Klammern zählen um das Ende zu finden\n  let depth = 0;\n  let end = -1;\n  for (let i = start; i < cleaned.length; i++) {\n    if (cleaned[i] === '[') depth++;\n    else if (cleaned[i] === ']') {\n      depth--;\n      if (depth === 0) { end = i; break; }\n    }\n  }\n\n  if (end === -1) return null;\n\n  const jsonStr = cleaned.substring(start, end + 1);\n  return JSON.parse(jsonStr); // wirft bei ungültigem JSON\n}\n\nlet bewertungen = null;\nlet parseError = null;\n\ntry {\n  bewertungen = parseKiArray(raw);\n} catch(e) {\n  parseError = e.message;\n}\n\n// ── 5. Debug-Output wenn Parsing fehlgeschlagen ────────────\nif (!bewertungen || !Array.isArray(bewertungen) || bewertungen.length === 0) {\n  return [{\n    json: {\n      debug_error: true,\n      fehler: parseError || 'Kein JSON-Array gefunden',\n      raw_preview: raw.substring(0, 500),\n      raw_length: raw.length,\n      raw_source: rawSource,\n      available_keys: availableKeys,\n      input_count: allItems.length,\n      originals_count: originals.length,\n      hinweis: 'Prüfe im KI-Node Output: {{ JSON.stringify($json) }}'\n    }\n  }];\n}\n\n// ── 6. Bewertungs-Map über id aufbauen ─────────────────────\nconst bewertungMap = new Map();\nfor (const b of bewertungen) {\n  // id kann Zahl oder String sein\n  bewertungMap.set(String(b.id), b);\n  // Fallback: news_key falls vorhanden\n  if (b.news_key) bewertungMap.set(String(b.news_key), b);\n}\n\n// ── 7. Originaldaten + Bewertungen zusammenführen ──────────\nconst result = originals.map((original, i) => {\n  const idKey = String(i);\n  const newsKey = original.news_key || original.link || (original.ticker + '|' + original.titel);\n\n  const b = bewertungMap.get(idKey)\n         || bewertungMap.get(newsKey)\n         || null;\n\n  // Nur echter Fallback wenn Bewertung wirklich fehlt (KI-Antwort war aber valide)\n  const fallback = {\n    relevanz:      'unbekannt',\n    sentiment:     'unklar',\n    kurswirkung:   'unklar',\n    bezug:         `ID ${i} nicht in KI-Antwort (${bewertungen.length} Bewertungen erhalten)`,\n    verwendung:    'speichern',\n    score:         0,\n    dringlichkeit: 'beobachten',\n    begruendung:   `Keine Bewertung für ID ${i} gefunden`\n  };\n\n  const bw = b || fallback;\n\n  return {\n    json: {\n      // Originaldaten\n      news_key:     newsKey,\n      type:         original.type         || 'unknown',\n      ticker:       original.ticker       || 'MARKT',\n      name:         original.name         || '',\n      titel:        original.titel        || '',\n      beschreibung: original.beschreibung || '',\n      quelle:       original.quelle       || '',\n      datum:        original.datum        || '',\n      datum_iso:    original.datum_iso    || '',\n      link:         original.link         || '',\n      vorfilter:    original.vorfilter    || '',\n      matchGrund:   original.matchGrund   || '',\n      // KI-Bewertung\n      relevanz:      String(bw.relevanz      || 'unbekannt'),\n      sentiment:     String(bw.sentiment     || 'unklar'),\n      kurswirkung:   String(bw.kurswirkung   || 'unklar'),\n      bezug:         String(bw.bezug         || ''),\n      verwendung:    String(bw.verwendung    || 'speichern'),\n      score:         Math.max(0, Math.min(100, Number(bw.score) || 0)),\n      dringlichkeit: String(bw.dringlichkeit || 'beobachten'),\n      begruendung:   String(bw.begruendung   || ''),\n      ki_rohantwort: raw.substring(0, 2000),\n      // News-Wirkungsfelder\n      betroffene_ticker:     Array.isArray(bw.betroffene_ticker)\n                               ? JSON.stringify(bw.betroffene_ticker)\n                               : '[]',\n      wirkungsebene:         String(bw.wirkungsebene         || 'unklar'),\n      wirkungsrichtung:      String(bw.wirkungsrichtung      || 'unklar'),\n      wirkung_staerke:       String(bw.wirkung_staerke       || 'niedrig'),\n      begruendung_tickerbezug: String(bw.begruendung_tickerbezug || '')\n    }\n  };\n});\n\nreturn result;"
+      },
+      "id": "abb69e6c-4a42-47d8-9226-b9c50441d5ec",
+      "name": "KI-Bewertung aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -992,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "0mPlpPLztuDYz0Ee",
+          "mode": "list",
+          "cachedResultName": "stock_news_evaluated",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "news_key": "={{ $json.news_key }}",
+            "type": "={{ $json.type }}",
+            "ticker": "={{ $json.ticker }}",
+            "name": "={{ $json.name }}",
+            "titel": "={{ $json.titel }}",
+            "beschreibung": "={{ $json.beschreibung }}",
+            "quelle": "={{ $json.quelle }}",
+            "datum": "={{ $json.datum }}",
+            "datum_iso": "={{ $json.datum_iso }}",
+            "link": "={{ $json.link }}",
+            "vorfilter": "={{ $json.vorfilter }}",
+            "matchGrund": "={{ $json.matchGrund }}",
+            "relevanz": "={{ $json.relevanz }}",
+            "sentiment": "={{ $json.sentiment }}",
+            "kurswirkung": "={{ $json.kurswirkung }}",
+            "bezug": "={{ $json.bezug }}",
+            "verwendung": "={{ $json.verwendung }}",
+            "score": "={{ $json.score }}",
+            "dringlichkeit": "={{ $json.dringlichkeit }}",
+            "begruendung": "={{ $json.begruendung }}",
+            "ki_rohantwort": "={{ $json.ki_rohantwort }}",
+            "betroffene_ticker": "={{ $json.betroffene_ticker }}",
+            "wirkungsebene": "={{ $json.wirkungsebene }}",
+            "wirkungsrichtung": "={{ $json.wirkungsrichtung }}",
+            "wirkung_staerke": "={{ $json.wirkung_staerke }}",
+            "begruendung_tickerbezug": "={{ $json.begruendung_tickerbezug }}"
+          },
+          "schema": [
+            {
+              "id": "news_key",
+              "displayName": "news_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "titel",
+              "displayName": "titel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "beschreibung",
+              "displayName": "beschreibung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "quelle",
+              "displayName": "quelle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum_iso",
+              "displayName": "datum_iso",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "vorfilter",
+              "displayName": "vorfilter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "matchGrund",
+              "displayName": "matchGrund",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "relevanz",
+              "displayName": "relevanz",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kurswirkung",
+              "displayName": "kurswirkung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bezug",
+              "displayName": "bezug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "verwendung",
+              "displayName": "verwendung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "dringlichkeit",
+              "displayName": "dringlichkeit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "begruendung",
+              "displayName": "begruendung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ki_rohantwort",
+              "displayName": "ki_rohantwort",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "betroffene_ticker",
+              "displayName": "betroffene_ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "wirkungsebene",
+              "displayName": "wirkungsebene",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "wirkungsrichtung",
+              "displayName": "wirkungsrichtung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "wirkung_staerke",
+              "displayName": "wirkung_staerke",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "begruendung_tickerbezug",
+              "displayName": "begruendung_tickerbezug",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0511c30-3362-4633-8284-1e2545b50fc7",
+      "name": "DB: Bewertung speichern",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "leftValue": "={{ $json.relevanz }}",
+              "rightValue": "hoch",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "80b00dce-c45c-4f05-a868-1fbfcafabb05",
+      "name": "Filter: Hohe Relevanz → Matrix",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function esc(value) {\n  return String(value ?? '')\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;');\n}\n\nconst relevanz = String($json.relevanz || 'unbekannt').toUpperCase();\nconst titel = $json.titel || 'Ohne Titel';\nconst type = $json.type || 'unbekannt';\nconst ticker = $json.ticker || '';\nconst name = $json.name || '';\nconst bezug = $json.bezug || 'unklar';\nconst sentiment = $json.sentiment || 'unklar';\nconst kurswirkung = $json.kurswirkung || 'unklar';\nconst score = $json.score ?? '';\nconst dringlichkeit = $json.dringlichkeit || 'beobachten';\nconst begruendung = $json.begruendung || '';\nconst link = $json.link || '';\n\nconst body =\n`🚨 Aktien-Radar: ${relevanz}\n\n${titel}\n\nTyp: ${type}\nTicker: ${ticker}\nName: ${name}\nBezug: ${bezug}\nSentiment: ${sentiment}\nKurswirkung: ${kurswirkung}\nScore: ${score}\nDringlichkeit: ${dringlichkeit}\n\n${begruendung}\n\n${link}`;\n\nconst formatted_body =\n`<b>🚨 Aktien-Radar: ${esc(relevanz)}</b><br>\n<b>${esc(titel)}</b><br><br>\n<b>Typ:</b> ${esc(type)}<br>\n<b>Ticker:</b> ${esc(ticker)}<br>\n<b>Name:</b> ${esc(name)}<br>\n<b>Bezug:</b> ${esc(bezug)}<br>\n<b>Sentiment:</b> ${esc(sentiment)}<br>\n<b>Kurswirkung:</b> ${esc(kurswirkung)}<br>\n<b>Score:</b> ${esc(score)}<br>\n<b>Dringlichkeit:</b> ${esc(dringlichkeit)}<br><br>\n<i>${esc(begruendung)}</i><br><br>\n${link ? `<a href=\"${esc(link)}\">Quelle öffnen</a>` : ''}`;\n\nreturn {\n  json: {\n    ...$json,\n    matrixTxnId: `${$execution.id}-news-${$itemIndex}-${Date.now()}`,\n    matrixPayload: {\n      msgtype: 'm.text',\n      format: 'org.matrix.custom.html',\n      body,\n      formatted_body\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        1504
+      ],
+      "id": "253d5871-663b-4233-aa10-b75566d06a4b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $json.matrixTxnId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "msgtype",
+              "value": "m.text"
+            },
+            {
+              "name": "format",
+              "value": "org.matrix.custom.html"
+            },
+            {
+              "name": "body",
+              "value": "={{ $json.matrixPayload.body }}"
+            },
+            {
+              "name": "formatted_body",
+              "value": "={{ $json.matrixPayload.formatted_body }}"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 5000
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "19668666-c59b-43e4-a53c-194179520b4e",
+      "name": "Matrix Alert: Wichtige Nachricht",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -96,
+        1504
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger: Nachrichten (stündlich)": {
+      "main": [
+        [
+          {
+            "node": "RSS-Feeds laden & filtern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS-Feeds laden & filtern": {
+      "main": [
+        [
+          {
+            "node": "RSS: Fehler prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Nur echte Nachrichten": {
+      "main": [
+        [
+          {
+            "node": "News: news_key erzeugen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Hohe Relevanz → Matrix": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI: Nachricht bewerten": {
+      "main": [
+        [
+          {
+            "node": "KI-Bewertung aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Matrix Alert: Wichtige Nachricht",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Raw-News speichern": {
+      "main": [
+        [
+          {
+            "node": "News zu Batch zusammenfassen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI-Bewertung aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "DB: Bewertung speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Bewertung speichern": {
+      "main": [
+        [
+          {
+            "node": "Filter: Hohe Relevanz → Matrix",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News zu Batch zusammenfassen": {
+      "main": [
+        [
+          {
+            "node": "KI: Nachricht bewerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News: news_key erzeugen": {
+      "main": [
+        [
+          {
+            "node": "Dedup: DB-Lesen einmal starten",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dedup: News + Keys sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: News neu?": {
+      "main": [
+        [
+          {
+            "node": "DB: Raw-News speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup: stock_news laden": {
+      "main": [
+        [
+          {
+            "node": "Dedup: Tabellen zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup: stock_news_evaluated laden": {
+      "main": [
+        [
+          {
+            "node": "Dedup: Tabellen zusammenführen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Dedup: Tabellen zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Dedup: Bekannte Keys sammeln",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "News: Duplikat-Check": {
+      "main": [
+        [
+          {
+            "node": "IF: News neu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS: Fehler prüfen": {
+      "main": [
+        [
+          {
+            "node": "IF: RSS fehlgeschlagen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: RSS fehlgeschlagen?": {
+      "main": [
+        [
+          {
+            "node": "Matrix: RSS-Fehler-Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filter: Nur echte Nachrichten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup: Bekannte Keys sammeln": {
+      "main": [
+        [
+          {
+            "node": "Dedup: News + Keys sync",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Dedup: News + Keys sync": {
+      "main": [
+        [
+          {
+            "node": "News: Duplikat-Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup: DB-Lesen einmal starten": {
+      "main": [
+        [
+          {
+            "node": "Dedup: stock_news laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Dedup: stock_news_evaluated laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "92c4add6-1da7-4c70-be56-2d5d8ea9abd7",
+  "meta": {
+    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
+  },
+  "id": "n0xoxT5cRlBMgYBB",
+  "tags": []
+}

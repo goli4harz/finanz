@@ -1,0 +1,333 @@
+{
+  "name": "04 – Cleanup News-Tabellen",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 45 23 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "17963a7b-f341-4ab3-8ffe-3be3182bea40",
+      "name": "Trigger: News-Tabellen leeren (23:45)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1168,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 15 0 * * 6"
+            }
+          ]
+        }
+      },
+      "id": "83fc97aa-3568-4b6d-be44-6803193435de",
+      "name": "Trigger: News-Tabellen leeren (Sa 00:15)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1168,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "JlpJuqaFjoGiCpyD",
+          "mode": "list",
+          "cachedResultName": "stock_news",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/JlpJuqaFjoGiCpyD"
+        },
+        "returnAll": true
+      },
+      "id": "71292fc7-6da3-4bdd-9f92-42ca8ff1343a",
+      "name": "Lösch: stock_news laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "0mPlpPLztuDYz0Ee",
+          "mode": "list",
+          "cachedResultName": "stock_news_evaluated",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+        },
+        "returnAll": true
+      },
+      "id": "c4f7c5f0-1143-4125-aabe-4de2ae2a9429",
+      "name": "Lösch: stock_news_evaluated laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1392,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NUR ALTE NEWS LÖSCHEN (älter als 3 Tage)\n// Modus: runOnceForAllItems\n// Gibt nur alte Items mit gültiger id weiter.\n\nconst heute = new Date();\nconst grenzeDatum = new Date(heute);\ngrenzeDatum.setDate(grenzeDatum.getDate() - 3);\nconst grenzeISO = grenzeDatum.toISOString().substring(0, 10);\n\nconst alleZeilen = $input.all().map(i => i.json);\n\nconst alteZeilen = alleZeilen.filter(z => {\n  if (!z.id && z.id !== 0) return false;\n  const d = String(z.datum_iso || z.datum || '');\n  if (!d) return true;\n  return d.substring(0, 10) < grenzeISO;\n});\n\nif (alteZeilen.length === 0) return [];\n\nreturn alteZeilen.map(z => ({\n  json: { ...z, _delete_reason: 'older_than_3_days' }\n}));"
+      },
+      "id": "7809d95b-49da-4f5d-bcd2-c900aee5b13c",
+      "name": "Lösch: Alte News filtern (stock_news)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// NUR ALTE BEWERTETE NEWS LÖSCHEN (älter als 3 Tage)\n// Modus: runOnceForAllItems\n\nconst heute = new Date();\nconst grenzeDatum = new Date(heute);\ngrenzeDatum.setDate(grenzeDatum.getDate() - 3);\nconst grenzeISO = grenzeDatum.toISOString().substring(0, 10);\n\nconst alleZeilen = $input.all().map(i => i.json);\n\nconst alteZeilen = alleZeilen.filter(z => {\n  if (!z.id && z.id !== 0) return false;\n  const d = String(z.datum_iso || z.datum || '');\n  if (!d) return true;\n  return d.substring(0, 10) < grenzeISO;\n});\n\nif (alteZeilen.length === 0) return [];\n\nreturn alteZeilen.map(z => ({\n  json: { ...z, _delete_reason: 'older_than_3_days' }\n}));"
+      },
+      "id": "85be0d75-46ec-4f0e-bbb0-232a007bcf14",
+      "name": "Lösch: Alte News filtern (stock_news_evaluated)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "610ee418-5e9b-48c7-b378-94eeca9b20c5",
+      "name": "Batch: stock_news",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1840,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {}
+      },
+      "id": "c18a5a01-7719-423e-a521-05245c07fefe",
+      "name": "Batch: stock_news_evaluated",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1840,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "JlpJuqaFjoGiCpyD",
+          "mode": "list",
+          "cachedResultName": "stock_news",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/JlpJuqaFjoGiCpyD"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "42164148-3e32-4256-b573-e04f1b38186c",
+      "name": "Lösch: stock_news Zeile löschen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "0mPlpPLztuDYz0Ee",
+          "mode": "list",
+          "cachedResultName": "stock_news_evaluated",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "06f0bb77-ea8d-4e22-8804-cae8f7ce0cac",
+      "name": "Lösch: stock_news_evaluated Zeile löschen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        720
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Trigger: News-Tabellen leeren (23:45)": {
+      "main": [
+        [
+          {
+            "node": "Lösch: stock_news laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lösch: stock_news_evaluated laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: News-Tabellen leeren (Sa 00:15)": {
+      "main": [
+        [
+          {
+            "node": "Lösch: stock_news laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lösch: stock_news_evaluated laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news laden": {
+      "main": [
+        [
+          {
+            "node": "Lösch: Alte News filtern (stock_news)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news_evaluated laden": {
+      "main": [
+        [
+          {
+            "node": "Lösch: Alte News filtern (stock_news_evaluated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch: stock_news": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Lösch: stock_news Zeile löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch: stock_news_evaluated": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Lösch: stock_news_evaluated Zeile löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news Zeile löschen": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news_evaluated Zeile löschen": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news_evaluated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: Alte News filtern (stock_news)": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: Alte News filtern (stock_news_evaluated)": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news_evaluated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f9e9c26f-7cf2-4860-8661-c9336ea6f2ce",
+  "meta": {
+    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
+  },
+  "id": "CQXpLtwlbK6YGqdq",
+  "tags": []
+}

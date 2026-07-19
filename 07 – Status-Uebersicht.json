@@ -1,0 +1,286 @@
+{
+  "name": "07 – Status-Uebersicht",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aktien-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1af20d82-7aa5-4585-b42f-18b319617df2",
+      "name": "Webhook Status-Uebersicht",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "eeeeeeee-0000-4000-8000-100000000001"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Le3FJQ6pctb6qtGi",
+          "mode": "list",
+          "cachedResultName": "stock_fundamentals",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/Le3FJQ6pctb6qtGi"
+        },
+        "returnAll": true
+      },
+      "id": "a4947598-49c0-41af-af2f-4bfbb4ac09e3",
+      "name": "DB: Fundamentaldaten laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
+        },
+        "returnAll": true
+      },
+      "id": "be782a29-d7bf-4e77-889a-8f0ce26d18b1",
+      "name": "DB: Marktumfeld laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/GDMAKrvQovPcBItA"
+        },
+        "returnAll": true
+      },
+      "id": "2654fe02-b761-4341-8ba7-3b9adc4f1709",
+      "name": "DB: Technische Signale laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "0mPlpPLztuDYz0Ee",
+          "mode": "list",
+          "cachedResultName": "stock_news_evaluated",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/0mPlpPLztuDYz0Ee"
+        },
+        "returnAll": true
+      },
+      "id": "0e05f891-5069-48f1-831e-48b4fd131a69",
+      "name": "DB: News laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TJgigfIfzXm7c7Ob",
+          "mode": "list",
+          "cachedResultName": "stock_empfehlungen",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
+        },
+        "returnAll": true
+      },
+      "id": "490fba1a-a170-41a5-830d-7edee6523d41",
+      "name": "DB: Empfehlungen laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Mc3Pem5RGio6bqXt",
+          "mode": "list",
+          "cachedResultName": "stock_price_history",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/Mc3Pem5RGio6bqXt"
+        },
+        "returnAll": true
+      },
+      "id": "678cabe6-add8-4dda-8aa3-634a804197b6",
+      "name": "DB: Kursverlauf laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function safeStr(v) { return v === null || v === undefined ? '' : String(v).trim(); }\nfunction esc(s) {\n  return safeStr(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\nfunction num(v) {\n  const n = Number(v);\n  return isNaN(n) ? null : n;\n}\nfunction rows(nodeName) {\n  try { return $(nodeName).all().map(i => i.json || {}); } catch (e) { return []; }\n}\n\nconst heute = new Date().toISOString().substring(0, 10);\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n\nconst fundamentaldaten = rows('DB: Fundamentaldaten laden');\nconst marktKontext     = rows('DB: Marktumfeld laden');\nconst techSignale      = rows('DB: Technische Signale laden');\nconst news             = rows('DB: News laden');\nconst empfehlungen     = rows('DB: Empfehlungen laden');\nconst kursHistorie     = rows('DB: Kursverlauf laden');\n\nfunction letzterStand(list, getFeld) {\n  const daten = list.map(r => safeStr(getFeld(r))).filter(Boolean).sort();\n  return daten.length > 0 ? daten[daten.length - 1] : null;\n}\n\nfunction quelleZeile(name, list, getFeld) {\n  const stand = letzterStand(list, getFeld);\n  const standDatum = stand ? stand.substring(0, 10) : null;\n  const aktuell = standDatum === heute;\n  const badge = list.length === 0\n    ? '<span class=\"badge warn\">leer</span>'\n    : aktuell\n      ? '<span class=\"badge ok\">aktuell</span>'\n      : '<span class=\"badge warn\">veraltet (' + esc(standDatum || 'unbekannt') + ')</span>';\n  return '<tr><td>' + esc(name) + '</td><td class=\"num\">' + list.length + '</td><td>' + (stand ? esc(stand) : '—') + '</td><td>' + badge + '</td></tr>';\n}\n\nconst quellenHtml =\n  quelleZeile('stock_fundamentals', fundamentaldaten, r => r.datum) +\n  quelleZeile('stock_market_context', marktKontext, r => r.datum) +\n  quelleZeile('stock_technical_signals', techSignale, r => r.datum) +\n  quelleZeile('stock_news_evaluated', news, r => r.datum_iso || r.datum) +\n  quelleZeile('stock_empfehlungen', empfehlungen, r => r.letzte_aktualisierung) +\n  quelleZeile('stock_price_history', kursHistorie, r => r.datum);\n\n// Technische Signale heute\nconst techHeute = techSignale.filter(s => safeStr(s.datum).startsWith(heute));\nconst handelskandidaten = techHeute.filter(s => s.handels_status === 'handelskandidat');\nconst beobachten = techHeute.filter(s => s.handels_status === 'beobachten');\n\nfunction signalZeile(s) {\n  return '<tr><td>' + esc(s.ticker) + '</td><td>' + esc(s.name) + '</td><td>' + esc(s.handels_status_text || s.handels_status) + '</td>' +\n    '<td class=\"num\">' + esc(s.rsi) + '</td><td>' + esc(s.macd_signal) + '</td><td>' + esc(s.richtung) + '</td></tr>';\n}\nconst kandidatenHtml = handelskandidaten.length > 0 ? handelskandidaten.map(signalZeile).join('') : '<tr><td colspan=\"6\" class=\"empty\">keine heute</td></tr>';\nconst beobachtenHtml = beobachten.length > 0 ? beobachten.map(signalZeile).join('') : '<tr><td colspan=\"6\" class=\"empty\">keine heute</td></tr>';\n\n// Empfehlungs-Watchlist\nconst offen = empfehlungen.filter(e => e.status === 'offen');\nconst geschlossen = empfehlungen.filter(e => e.status === 'geschlossen');\nconst perfWerte = geschlossen.map(e => num(e.performance_pct)).filter(v => v !== null);\nconst avgPerf = perfWerte.length > 0 ? (perfWerte.reduce((a, b) => a + b, 0) / perfWerte.length).toFixed(2) : null;\nconst hitRate = perfWerte.length > 0 ? Math.round((perfWerte.filter(v => v > 0).length / perfWerte.length) * 100) : null;\n\nfunction empfehlungZeile(e) {\n  return '<tr><td>' + esc(e.ticker) + '</td><td>' + esc(e.richtung) + '</td><td>' + esc(e.entry_datum) + '</td>' +\n    '<td class=\"num\">' + esc(e.entry_kurs) + '</td><td>' + esc(e.status) + '</td></tr>';\n}\nconst offenHtml = offen.length > 0 ? offen.map(empfehlungZeile).join('') : '<tr><td colspan=\"5\" class=\"empty\">keine offenen Positionen</td></tr>';\n\n// News heute\nconst newsHeute = news.filter(n => safeStr(n.datum_iso || n.datum).startsWith(heute));\nconst newsHoch = newsHeute.filter(n => n.relevanz === 'hoch').length;\nconst newsMittel = newsHeute.filter(n => n.relevanz === 'mittel').length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Pipeline Status-Uebersicht</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:32px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; font-variant-numeric: tabular-nums; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  td.num { text-align:right; }' +\n'  .empty { color:#5f6368; font-style:italic; }' +\n'  h2 { font-size:15px; margin-top:8px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:12px; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .summary { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }' +\n'  .stat { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:12px 16px; min-width:140px; }' +\n'  .stat .label { color:#9aa0a6; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'  .stat .value { font-size:22px; font-weight:700; font-variant-numeric: tabular-nums; }' +\n'  .stat .value.good { color:#6bcf8e; }' +\n'  .stat .value.bad { color:#e0665a; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'  <h1>Aktien-Report-Pipeline &mdash; Status-Uebersicht</h1>' +\n'  <div class=\"meta\">Stand: ' + esc(now) + '</div>' +\n'  <h2>Datenquellen</h2>' +\n'  <table>' +\n'    <thead><tr><th>Tabelle</th><th>Zeilen</th><th>Letzter Stand</th><th></th></tr></thead>' +\n'    <tbody>' + quellenHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Kennzahlen heute</h2>' +\n'  <div class=\"summary\">' +\n'    <div class=\"stat\"><div class=\"label\">Handelskandidaten</div><div class=\"value\">' + handelskandidaten.length + '</div></div>' +\n'    <div class=\"stat\"><div class=\"label\">Beobachten</div><div class=\"value\">' + beobachten.length + '</div></div>' +\n'    <div class=\"stat\"><div class=\"label\">News hoch/mittel</div><div class=\"value\">' + newsHoch + ' / ' + newsMittel + '</div></div>' +\n'    <div class=\"stat\"><div class=\"label\">Offene Empfehlungen</div><div class=\"value\">' + offen.length + '</div></div>' +\n'    <div class=\"stat\"><div class=\"label\">Ø Performance geschlossen</div><div class=\"value ' + (avgPerf !== null && avgPerf >= 0 ? 'good' : avgPerf !== null ? 'bad' : '') + '\">' + (avgPerf !== null ? avgPerf + '%' : '—') + '</div></div>' +\n'    <div class=\"stat\"><div class=\"label\">Trefferquote</div><div class=\"value\">' + (hitRate !== null ? hitRate + '%' : '—') + '</div></div>' +\n'  </div>' +\n'  <h2>Handelskandidaten heute</h2>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Status</th><th>RSI</th><th>MACD</th><th>Richtung</th></tr></thead>' +\n'    <tbody>' + kandidatenHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Beobachten heute</h2>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Status</th><th>RSI</th><th>MACD</th><th>Richtung</th></tr></thead>' +\n'    <tbody>' + beobachtenHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Offene Empfehlungs-Positionen</h2>' +\n'  <div class=\"hint\">Hypothetische Watchlist aus News+Signal-Treffern, keine echten Trades.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Richtung</th><th>Entry-Datum</th><th>Entry-Kurs</th><th>Status</th></tr></thead>' +\n'    <tbody>' + offenHtml + '</tbody>' +\n'  </table>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html: html } }];"
+      },
+      "id": "943f725f-a728-4a0e-9c4e-4d8832b3249e",
+      "name": "Baue Uebersicht",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "104f65b6-454d-4a90-90f8-d38b8be57bc6",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1792,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Status-Uebersicht": {
+      "main": [
+        [
+          {
+            "node": "DB: Fundamentaldaten laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamentaldaten laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Technische Signale laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale laden": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Kursverlauf laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Kursverlauf laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Uebersicht",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Uebersicht": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fb099edd-0526-45df-97f0-8089a9991e72",
+  "meta": {
+    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
+  },
+  "id": "V91NVvOl7K4Bdd3w",
+  "tags": []
+}
