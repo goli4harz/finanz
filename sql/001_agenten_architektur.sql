@@ -15,7 +15,7 @@
 -- nicht unkontrolliert die internen n8n-Systemtabellen").
 --
 -- Verbindungsdetails (Host/Port/Datenbankname/Credential) sind zum Zeitpunkt
--- dieser Migration NICHT bekannt -- siehe README_AGENTEN_ARCHITEKTUR.md,
+-- dieser Migration NICHT bekannt -- siehe README.md,
 -- Abschnitt "Benoetigte Umgebungsvariablen/Credentials". Diese Datei selbst
 -- enthaelt keine Zugangsdaten.
 -- ============================================================================

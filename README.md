@@ -36,7 +36,7 @@ Dieses Dokument beschreibt den Zielzustand nach dem Umbau auf `agenten-modernisi
 ARCHITEKTUR_BESTAND.md
 MIGRATIONSPLAN_AGENTEN.md
 TESTPLAN_AGENTEN.md
-README_AGENTEN_ARCHITEKTUR.md (dieses Dokument)
+README.md (dieses Dokument)
 
 00 – Tagesabschluss-Orchestrator.json
 03a – News-Recherche-Agent.json
