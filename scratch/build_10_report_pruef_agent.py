@@ -400,6 +400,11 @@ Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Ma
   "required_corrections": []
 }`;
 
+// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten
+// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur
+// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE
+// Detailaussage als "nicht verifizierbar" ablehnte (technisch korrekt,
+// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.
 const userPrompt = `BERICHTSTEXT:
 ${d.report_markdown}
 
@@ -409,7 +414,17 @@ ${JSON.stringify(d.datenqualitaet)}
 ROHDATEN (Marktumfeld):
 ${JSON.stringify(d.marktumfeld)}
 
-ROHDATEN (Anzahl technische Signale: ${(d.technische_signale||[]).length}, Anzahl News: ${(d.nachrichten||[]).length}, Anzahl Fundamentaldaten: ${(d.fundamentaldaten||[]).length})`;
+ROHDATEN (technische Signale, vollstaendig):
+${JSON.stringify(d.technische_signale || [])}
+
+ROHDATEN (Fundamentaldaten, vollstaendig):
+${JSON.stringify(d.fundamentaldaten || [])}
+
+ROHDATEN (relevante News, vollstaendig):
+${JSON.stringify(d.nachrichten || [])}
+
+ROHDATEN (Empfehlungswatchlist):
+${JSON.stringify(d.empfehlungswatchlist || {})}`;
 
 return [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];
 """
