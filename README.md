@@ -179,18 +179,36 @@ Alle 13 neuen/geänderten Workflows (00, 02/02b-Orchestriert, 03, 03a, 04, 05, 0
 
 **Hinweis zu doppelt-kodierten Workflow-Namen (aus dem 97-Namensfund gelernt):** n8n-UI zeigt `â€"` statt `–` an, wenn der Name-String beim Erzeugen ohne explizites `encoding='utf-8'` gelesen/geschrieben wurde (Windows-Python-Default ist cp1252). Bei Verdacht: `name.encode('utf-8')[:6].hex()` prüfen — korrekt beginnt ein Gedankenstrich nach einem Leerzeichen mit `20e28093`, korrupt mit `20c3a2e2` o.ä. Bei diesem Projekt wurde dadurch nur der Name eines einzelnen Wegwerf-Workflows beschädigt, keine Inhalte.
 
+## Produktions-Umstellung — ERLEDIGT (Stand 2026-07-20)
+
+Die neue Architektur ist live geschaltet. Alle alten Original-Workflows (`01` ausgenommen) sind deaktiviert, alle 15 neuen sind aktiv.
+
+**Dabei gefundener, vorbestehender Bug (unabhängig von dieser Migration):** `02 – Technische Signale täglich` lief bereits **doppelt aktiv** — zwei unterschiedliche Workflow-Kopien (erstellt 2026-05-29 bzw. 2026-07-14, vermutlich ein Artefakt der Architektur-Review vom 07-14) liefen parallel auf demselben 18:00-Zeitplan. Beide wurden im Zuge der Umstellung deaktiviert.
+
+**Wichtige technische Erkenntnis beim Aktivieren:** n8n verweigert die Aktivierung eines Workflows, wenn eines seiner `Execute Workflow`-Nodes auf einen **inaktiven** Sub-Workflow zeigt ("Cannot publish workflow: ... which is not published"). Die ursprünglich geplante Strategie „`00` aktivieren, die von ihm aufgerufenen Sub-Workflows (`02b`/`02`/`06`/`05`/`10`) aber inaktiv lassen, um deren eigene Schedule-Trigger nicht doppelt laufen zu lassen" funktioniert daher NICHT — alle referenzierten Sub-Workflows müssen selbst aktiv sein. Lösung: bei `02b`-Orchestriert, `02`-Orchestriert, `06` und `05` wurde stattdessen gezielt nur der jeweils eigene `scheduleTrigger`-Node deaktiviert (`"disabled": true`, sowohl live als auch in den lokalen Dateien), nicht der ganze Workflow — der Node bleibt für den `Execute Workflow`-Aufruf durch `00` nutzbar, feuert aber nicht mehr eigenständig. Bei `05` war das nicht nur eine Doppellauf-, sondern eine echte Sicherheitsfrage: dessen eigener 18:30-Trigger hätte den Prüf-Agenten komplett umgangen und immer versendet, unabhängig vom `approved`-Status.
+
+**Aktueller Aktivierungsstatus:**
+
+| Workflow | Status | Grund |
+|---|---|---|
+| `01` (Original) | aktiv, unverändert | kein Ersatz, rein deterministisch |
+| `00`, `03`, `03a`, `04`, `07`, `08`, `09` (neu) | aktiv, eigener Zeitplan/Webhook | laufen unabhängig |
+| `02b`, `02`, `06`, `05`, `10` (neu) | aktiv, aber eigener Schedule-Trigger deaktiviert | nur über `00`s Execute-Workflow-Aufruf erreichbar |
+| `02b`, `02` (beide Kopien), `03`, `04`, `05`, `06`, `07` (Originale) | deaktiviert | durch neue Versionen ersetzt |
+| `97`/`98`/`99` (Einmalig) | deaktiviert | Wegwerf-Workflows, nicht Teil der Kaskade |
+
 ## Rollback-Anleitung
 
-- **Vollständiger Rollback auf den Ist-Zustand**: `git checkout main` im Repo `finanz` — der `main`-Branch enthält ausschließlich den unveränderten Ist-Stand (Commit `40e5575`), keine der neuen Dateien. In n8n die dort laufenden Original-Workflows unverändert weiter aktiv lassen (sie wurden durch diese Migration nicht angefasst).
-- **Teilweiser Rollback**: da jede neue/geänderte Datei ein eigener, unabhängig importierbarer Workflow ist, kann z. B. nur `00 – Tagesabschluss-Orchestrator` deaktiviert werden, während `03`/`08`/`09` (News-Pipeline + Lernprozess) weiterlaufen — die alten `02b`/`02`/`05`/`06`-Originale mit ihren eigenen Schedule-Triggern funktionieren unabhängig vom Orchestrator weiter, solange sie nicht deaktiviert wurden.
+- **Vollständiger Rollback auf den Ist-Zustand**: `git checkout main` im Repo `finanz` für die Dateien — der `main`-Branch enthält den unveränderten Ist-Stand (Commit `40e5575`). In n8n zusätzlich: die 15 neuen Workflows deaktivieren, die alten Originale (Liste oben) sowie deren eigene Schedule-Trigger wieder aktivieren.
+- **Teilweiser Rollback**: da jede neue/geänderte Datei ein eigener, unabhängig aktivierbarer Workflow ist, kann z. B. nur `00 – Tagesabschluss-Orchestrator` deaktiviert werden, während `03`/`08`/`09` (News-Pipeline + Lernprozess) weiterlaufen. Achtung: `02b`/`02`/`06`/`05` liefern dann keinen Report mehr (ihr eigener Schedule-Trigger ist deaktiviert) — deren Original-Gegenstücke müssten dafür wieder aktiviert UND deren eigener Trigger wieder eingeschaltet werden.
 - **Datenbank-Rollback**: `sql/001_agenten_architektur.sql` legt ausschließlich NEUE Tabellen im Schema `trading` an, verändert oder löscht nichts an den bestehenden n8n Data Tables. Ein Rollback bedeutet einfach: die `trading.*`-Tabellen nicht mehr befüllen/lesen lassen (Workflows deaktivieren) — sie können bei Bedarf mit `DROP SCHEMA trading CASCADE;` vollständig entfernt werden (nicht Teil der Migration selbst, bewusste manuelle Entscheidung).
 
 ## Offene manuelle Schritte (Zusammenfassung)
 
-1. Alle 13 neuen/geänderten Workflows sind live getestet (siehe oben) — keine offenen Einzeltests mehr.
-2. Alte Schedule-Trigger in `02b`/`02`/`05`/`06` UND den alten Webhook-Pfad-Inhaber `07 – Status-Uebersicht` (Original) deaktivieren, um Doppelläufe bzw. Pfadkollisionen zu vermeiden — bewusst noch nicht geschehen.
+1. Alle 13 neuen/geänderten Workflows sind live getestet — keine offenen Einzeltests mehr.
+2. Produktions-Umstellung durchgeführt (siehe oben) — alte Originale deaktiviert, alle 15 neuen aktiv.
 3. `REQUIRE_CONFIRMATION` in `06` bei Bedarf von einer Konstante zu einem echten Konfigurationswert machen (im Auftrag nur als optional gefordert).
-4. Erst nach Punkt 2: alle 15 Workflows aktivieren.
+4. Den ersten echten, ungeplanten Produktionslauf (nächster planmäßiger Zeitpunkt) beobachten, um die Kaskade unter realen Bedingungen zu bestätigen — alle bisherigen Tests liefen manuell/isoliert.
 
 ## Punkte, die weiterhin nur statisch geprüft sind (nicht live getestet)
 
