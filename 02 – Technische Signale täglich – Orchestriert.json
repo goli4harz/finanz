@@ -110,7 +110,8 @@
       ],
       "settings": {
         "alwaysOutputData": true
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {

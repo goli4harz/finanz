@@ -78,7 +78,8 @@
       ],
       "settings": {
         "alwaysOutputData": true
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -125,7 +126,8 @@
       "settings": {
         "alwaysOutputData": true
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
