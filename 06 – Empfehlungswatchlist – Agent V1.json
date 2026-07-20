@@ -707,7 +707,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(i => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  return { json: { ...j, _aktion: 'oeffnen', _write_failed: failed,\n    _write_error: failed ? String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)') : null } };\n});"
+        "jsCode": "return $input.all().map((i, idx) => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  const errMsg = String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)');\n  if (failed) {\n    const original = $('Oeffnen: SQL bauen').all()[idx];\n    const base = (original && original.json) || {};\n    return { json: { ...base, _aktion: 'oeffnen', _write_failed: true, _write_error: errMsg } };\n  }\n  return { json: { ...j, _aktion: 'oeffnen', _write_failed: false, _write_error: null } };\n});"
       },
       "id": "0d00b1ca-c6af-45c9-888b-36451e7b2e21",
       "name": "Oeffnen: _aktion ergaenzen",
@@ -720,7 +720,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(i => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  return { json: { ...j, _aktion: 'schliessen', _write_failed: failed,\n    _write_error: failed ? String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)') : null } };\n});"
+        "jsCode": "return $input.all().map((i, idx) => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  const errMsg = String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)');\n  if (failed) {\n    const original = $('Schliessen: SQL bauen').all()[idx];\n    const base = (original && original.json) || {};\n    return { json: { ...base, _aktion: 'schliessen', _write_failed: true, _write_error: errMsg } };\n  }\n  return { json: { ...j, _aktion: 'schliessen', _write_failed: false, _write_error: null } };\n});"
       },
       "id": "0ebab754-f33a-488c-845d-265920e41572",
       "name": "Schliessen: _aktion ergaenzen",
@@ -763,5 +763,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "fa1bd694-4c0f-472f-8a86-1912dc61bc88"
+  "versionId": "115d5e43-c8fd-40c6-b399-7fdea8beb1ab"
 }
