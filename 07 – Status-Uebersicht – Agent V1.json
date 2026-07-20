@@ -451,24 +451,24 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "TJgigfIfzXm7c7Ob",
-          "mode": "list",
-          "cachedResultName": "stock_empfehlungen"
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT * FROM trading.recommendations ORDER BY id;",
+        "options": {}
       },
       "name": "DB: Empfehlungen laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -3400,
         160
       ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000005-0000-4000-8000-0000000000"
+      "id": "n-00000005-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -842,5 +842,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "5afb2fcb-8fff-4315-b62f-ad82e7ea5fa4"
+  "versionId": "6e328153-d62b-4dbe-8394-87e5c0383158"
 }

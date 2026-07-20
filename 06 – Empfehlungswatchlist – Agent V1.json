@@ -82,7 +82,7 @@
       "main": [
         [
           {
-            "node": "DB: Empfehlung schließen",
+            "node": "Schliessen: SQL bauen",
             "type": "main",
             "index": 0
           }
@@ -107,7 +107,7 @@
         ],
         [
           {
-            "node": "DB: Empfehlung öffnen",
+            "node": "Oeffnen: SQL bauen",
             "type": "main",
             "index": 0
           }
@@ -252,6 +252,28 @@
           }
         ]
       ]
+    },
+    "Oeffnen: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung öffnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schliessen: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung schließen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "id": "aguWZUolRizBnsj4",
@@ -360,26 +382,25 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "TJgigfIfzXm7c7Ob",
-          "mode": "list",
-          "cachedResultName": "stock_empfehlungen",
-          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT * FROM trading.recommendations ORDER BY id;",
+        "options": {}
       },
       "id": "b5a8336a-587b-4f8c-bc7a-0ca8d8bc7910",
       "name": "DB: Bestehende Empfehlungen laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -3168,
         416
       ],
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -429,99 +450,26 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "dataTableId": {
-          "__rl": true,
-          "value": "TJgigfIfzXm7c7Ob",
-          "mode": "list",
-          "cachedResultName": "stock_empfehlungen",
-          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyValue": "={{ $json._existing_id }}"
-            }
-          ]
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "status": "geschlossen",
-            "exit_datum": "={{ $json.exit_datum }}",
-            "exit_kurs": "={{ $json.exit_kurs }}",
-            "exit_grund": "={{ $json.exit_grund }}",
-            "performance_pct": "={{ $json.performance_pct }}",
-            "letzte_aktualisierung": "={{ $json.letzte_aktualisierung }}"
-          },
-          "schema": [
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "exit_datum",
-              "displayName": "exit_datum",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "exit_kurs",
-              "displayName": "exit_kurs",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "exit_grund",
-              "displayName": "exit_grund",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "performance_pct",
-              "displayName": "performance_pct",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "letzte_aktualisierung",
-              "displayName": "letzte_aktualisierung",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
         "options": {}
       },
       "id": "87b7c5ef-0fc0-49eb-ad43-90666b1b0618",
       "name": "DB: Empfehlung schließen",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -2496,
         160
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -557,181 +505,26 @@
     },
     {
       "parameters": {
-        "dataTableId": {
-          "__rl": true,
-          "value": "TJgigfIfzXm7c7Ob",
-          "mode": "list",
-          "cachedResultName": "stock_empfehlungen",
-          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/TJgigfIfzXm7c7Ob"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "ticker": "={{ $json.ticker }}",
-            "name": "={{ $json.name }}",
-            "sektor": "={{ $json.sektor }}",
-            "richtung": "={{ $json.richtung }}",
-            "status": "offen",
-            "entry_datum": "={{ $json.entry_datum }}",
-            "entry_kurs": "={{ $json.entry_kurs }}",
-            "entry_grund": "={{ $json.entry_grund }}",
-            "letzte_aktualisierung": "={{ $json.letzte_aktualisierung }}",
-            "hebelprodukt_typ": "={{ $json.hebelprodukt_typ }}",
-            "hebel_spanne": "={{ $json.hebel_spanne }}",
-            "basispreis_hebel_3": "={{ $json.basispreis_hebel_3 }}",
-            "basispreis_hebel_4": "={{ $json.basispreis_hebel_4 }}",
-            "onvista_link": "={{ $json.onvista_link }}",
-            "hebelprodukt_hinweis": "={{ $json.hebelprodukt_hinweis }}"
-          },
-          "schema": [
-            {
-              "id": "ticker",
-              "displayName": "ticker",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "name",
-              "displayName": "name",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "sektor",
-              "displayName": "sektor",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "richtung",
-              "displayName": "richtung",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "entry_datum",
-              "displayName": "entry_datum",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "entry_kurs",
-              "displayName": "entry_kurs",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "entry_grund",
-              "displayName": "entry_grund",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "letzte_aktualisierung",
-              "displayName": "letzte_aktualisierung",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "hebelprodukt_typ",
-              "displayName": "hebelprodukt_typ",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "hebel_spanne",
-              "displayName": "hebel_spanne",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "basispreis_hebel_3",
-              "displayName": "basispreis_hebel_3",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "basispreis_hebel_4",
-              "displayName": "basispreis_hebel_4",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "onvista_link",
-              "displayName": "onvista_link",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            },
-            {
-              "id": "hebelprodukt_hinweis",
-              "displayName": "hebelprodukt_hinweis",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": false
-            }
-          ]
-        },
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
         "options": {}
       },
       "id": "0c360997-ac2e-4cce-b5de-a870e83cc002",
       "name": "DB: Empfehlung öffnen",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -2272,
         520
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -770,7 +563,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Nur Zeilen mit einer echten DB-id (erfolgreich geschrieben) ODER expliziten\n// Vorschlaegen (id=null, bewusst nicht geschrieben) gehen in die Matrix-\n// Nachricht ein. Ein fehlgeschlagener Write (kein id im Ergebnis, kein\n// Vorschlag) wird stillschweigend AUS der Nachricht entfernt statt\n// faelschlich als erfolgreich gemeldet zu werden.\nconst items = $input.all().map(i => i.json);\nconst verified = items.filter(j => j._aktion === 'vorschlag_ungespeichert' || (j.id !== undefined && j.id !== null && String(j.id).trim() !== ''));\nreturn verified.map(j => ({ json: j }));"
+        "jsCode": "// Behaelt fehlgeschlagene Writes explizit sichtbar (statt sie wie zuvor\n// stillschweigend zu entfernen), damit sie in der Matrix-Nachricht als\n// Fehler auftauchen -- Auftrag: keine stillen Fehler (Prioritaet 5, Punkt 14).\nconst items = $input.all().map(i => i.json);\nconst relevant = items.filter(j => j._aktion === 'vorschlag_ungespeichert' || j._write_failed === true || (j.id !== undefined && j.id !== null && String(j.id).trim() !== ''));\nreturn relevant.map(j => ({ json: j }));"
       },
       "name": "Schreiberfolg verifizieren",
       "type": "n8n-nodes-base.code",
@@ -783,7 +576,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all().map(i => i.json);\nif (items.length === 0) return [];\n\nconst geschlossen = items.filter(i => i._aktion === 'schliessen');\nconst geoeffnet = items.filter(i => i._aktion === 'oeffnen');\nconst vorschlaege = items.filter(i => i._aktion === 'vorschlag_ungespeichert');\n\nlet text = `📋 Empfehlungs-Watchlist Update (${new Date().toLocaleDateString('de-DE')})\\n\\n`;\nif (geschlossen.length) {\n  text += 'Geschlossen:\\n' + geschlossen.map(g => `• Position beendet, Performance: ${g.performance_pct ?? 'n/a'}%`).join('\\n') + '\\n\\n';\n}\nif (geoeffnet.length) {\n  text += 'Neu eröffnet:\\n' + geoeffnet.map(o => `• ${o.ticker} (${o.richtung}) @ ${o.entry_kurs}\\n  ${o.hebelprodukt_hinweis || ''}`).join('\\n') + '\\n\\n';\n}\nif (vorschlaege.length) {\n  text += 'Vorschlaege (Bestaetigung erforderlich, noch NICHT gespeichert):\\n' + vorschlaege.map(v => `• ${v.ticker} (${v.richtung}) @ ${v.entry_kurs}`).join('\\n') + '\\n\\n';\n}\ntext += '⚠️ SIMULATION: hypothetische Watchlist, keine echte Order, keine Anlageberatung.';\n\nreturn [{ json: { matrix_text: text } }];"
+        "jsCode": "const items = $input.all().map(i => i.json);\nif (items.length === 0) return [];\n\nconst geschlossen = items.filter(i => i._aktion === 'schliessen' && !i._write_failed);\nconst geoeffnet = items.filter(i => i._aktion === 'oeffnen' && !i._write_failed);\nconst vorschlaege = items.filter(i => i._aktion === 'vorschlag_ungespeichert');\nconst fehler = items.filter(i => i._write_failed === true);\n\nlet text = `📋 Empfehlungs-Watchlist Update (${new Date().toLocaleDateString('de-DE')})\\n\\n`;\nif (geschlossen.length) {\n  text += 'Geschlossen:\\n' + geschlossen.map(g => `• Position beendet, Performance: ${g.performance_pct ?? 'n/a'}%`).join('\\n') + '\\n\\n';\n}\nif (geoeffnet.length) {\n  text += 'Neu eröffnet:\\n' + geoeffnet.map(o => `• ${o.ticker} (${o.richtung}) @ ${o.entry_kurs}\\n  ${o.hebelprodukt_hinweis || ''}`).join('\\n') + '\\n\\n';\n}\nif (vorschlaege.length) {\n  text += 'Vorschlaege (Bestaetigung erforderlich, noch NICHT gespeichert):\\n' + vorschlaege.map(v => `• ${v.ticker} (${v.richtung}) @ ${v.entry_kurs}`).join('\\n') + '\\n\\n';\n}\nif (fehler.length) {\n  text += '⚠️ Fehler beim Speichern:\\n' + fehler.map(f => `• ${f.ticker || f._existing_id || '?'} (${f._aktion}): ${f._write_error}`).join('\\n') + '\\n\\n';\n}\ntext += '⚠️ SIMULATION: hypothetische Watchlist, keine echte Order, keine Anlageberatung.';\n\nreturn [{ json: { matrix_text: text } }];"
       },
       "name": "Matrix: Zusammenfassung bauen",
       "type": "n8n-nodes-base.code",
@@ -914,7 +707,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _aktion: 'oeffnen' } }));"
+        "jsCode": "return $input.all().map(i => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  return { json: { ...j, _aktion: 'oeffnen', _write_failed: failed,\n    _write_error: failed ? String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)') : null } };\n});"
       },
       "id": "0d00b1ca-c6af-45c9-888b-36451e7b2e21",
       "name": "Oeffnen: _aktion ergaenzen",
@@ -927,7 +720,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _aktion: 'schliessen' } }));"
+        "jsCode": "return $input.all().map(i => {\n  const j = i.json;\n  const failed = !!j.error || j.id === undefined || j.id === null;\n  return { json: { ...j, _aktion: 'schliessen', _write_failed: failed,\n    _write_error: failed ? String(j.message || (j.error && j.error.description) || 'Unbekannter Fehler beim Schreiben (kein id in RETURNING)') : null } };\n});"
       },
       "id": "0ebab754-f33a-488c-845d-265920e41572",
       "name": "Schliessen: _aktion ergaenzen",
@@ -937,6 +730,32 @@
         -2316,
         160
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.recommendations\n  (ticker, name, sektor, richtung, status, entry_datum, entry_kurs, entry_grund,\n   letzte_aktualisierung, hebelprodukt_typ, hebel_spanne, basispreis_hebel_3, basispreis_hebel_4,\n   onvista_link, hebelprodukt_hinweis, run_id)\n  VALUES (${pgStr(j.ticker)}, ${pgStr(j.name)}, ${pgStr(j.sektor)}, ${pgStr(j.richtung)}, 'offen',\n          ${pgStr(j.entry_datum)}, ${pgNum(j.entry_kurs)}, ${pgStr(j.entry_grund)},\n          ${pgStr(j.letzte_aktualisierung)}, ${pgStr(j.hebelprodukt_typ)}, ${pgStr(j.hebel_spanne)},\n          ${pgNum(j.basispreis_hebel_3)}, ${pgNum(j.basispreis_hebel_4)}, ${pgStr(j.onvista_link)},\n          ${pgStr(j.hebelprodukt_hinweis)}, ${pgStr(j.run_id)})\n  RETURNING *;`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "264788bd-afd9-4d1d-878f-254db0899b73",
+      "name": "Oeffnen: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2452,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `UPDATE trading.recommendations SET\n  status = 'geschlossen', exit_datum = ${pgStr(j.exit_datum)}, exit_kurs = ${pgNum(j.exit_kurs)},\n  exit_grund = ${pgStr(j.exit_grund)}, performance_pct = ${pgNum(j.performance_pct)},\n  letzte_aktualisierung = ${pgStr(j.letzte_aktualisierung)}, updated_at = now()\n  WHERE id = ${pgNum(j._existing_id)}\n  RETURNING *;`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "d2698915-ed2e-4472-aece-c3a24a2d8755",
+      "name": "Schliessen: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2676,
+        160
+      ]
     }
   ],
   "pinData": {},
@@ -944,5 +763,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "8f82cb0c-403f-4eac-b031-b9f76c93c90e"
+  "versionId": "fa1bd694-4c0f-472f-8a86-1912dc61bc88"
 }
