@@ -306,32 +306,25 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "GDMAKrvQovPcBItA",
-          "mode": "list",
-          "cachedResultName": "stock_technical_signals"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "ticker",
-              "keyValue": "={{ $json.ticker }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}' ORDER BY trading_date;",
+        "options": {}
       },
       "name": "DB: Kursverlauf je Ticker laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -2000,
         0
       ],
       "onError": "continueRegularOutput",
-      "id": "n-00000008-0000-4000-8000-0000000000"
+      "id": "n-00000008-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -361,32 +354,25 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "dzUOoGnfASjaaVhn",
-          "mode": "list",
-          "cachedResultName": "stock_market_context"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "symbol",
-              "keyValue": "={{ $json.symbol }}"
-            }
-          ]
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}' ORDER BY trading_date;",
+        "options": {}
       },
       "name": "DB: Benchmark-Kursverlauf laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -2000,
         -320
       ],
       "onError": "continueRegularOutput",
-      "id": "n-00000011-0000-4000-8000-0000000000"
+      "id": "n-00000011-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
@@ -467,5 +453,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "b0451c7a-003e-4a28-917c-d3ec7ab3da23"
+  "versionId": "b5e7ba70-4e44-42e5-bde1-e96053728fa3"
 }
