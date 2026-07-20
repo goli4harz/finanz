@@ -97,6 +97,11 @@
             "node": "Kurshistorie: SQL bauen",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Abschluss-Ergebnis bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -111,6 +116,11 @@
           },
           {
             "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }
@@ -222,7 +232,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const watchlist = [\n  { ticker: 'SAP.DE',  name: 'SAP SE',           sektor: 'Technologie',  keywords: ['SAP'] },\n  { ticker: 'SIE.DE',  name: 'Siemens AG',        sektor: 'Industrie',    keywords: ['Siemens'] },\n  { ticker: 'BASF.DE', name: 'BASF SE',           sektor: 'Chemie',       keywords: ['BASF'] },\n  { ticker: 'ALV.DE',  name: 'Allianz SE',        sektor: 'Versicherung', keywords: ['Allianz'] },\n  { ticker: 'MBG.DE',  name: 'Mercedes-Benz',     sektor: 'Auto',         keywords: ['Mercedes', 'Mercedes-Benz', 'Daimler'] },\n  { ticker: 'BMW.DE',  name: 'BMW AG',            sektor: 'Auto',         keywords: ['BMW'] },\n  { ticker: 'VOW3.DE', name: 'Volkswagen VZ',     sektor: 'Auto',         keywords: ['Volkswagen', 'VW'] },\n  { ticker: 'DBK.DE',  name: 'Deutsche Bank',     sektor: 'Banken',       keywords: ['Deutsche Bank'] },\n  { ticker: 'DTE.DE',  name: 'Deutsche Telekom',  sektor: 'Telekom',      keywords: ['Telekom', 'Deutsche Telekom'] },\n  { ticker: 'RWE.DE',  name: 'RWE AG',            sektor: 'Energie',      keywords: ['RWE'] },\n  { ticker: 'BAYN.DE', name: 'Bayer AG',          sektor: 'Pharma',       keywords: ['Bayer'] },\n  { ticker: 'EOAN.DE', name: 'E.ON SE',           sektor: 'Energie',      keywords: ['E.ON', 'EON'] },\n  { ticker: 'ADS.DE',  name: 'adidas AG',         sektor: 'Sport',        keywords: ['adidas', 'Adidas'] },\n  { ticker: 'HEN3.DE', name: 'Henkel VZ',         sektor: 'Konsumgüter',  keywords: ['Henkel'] },\n  { ticker: 'FRE.DE',  name: 'Fresenius SE',      sektor: 'Gesundheit',   keywords: ['Fresenius'] }\n];\nreturn watchlist.map(s => ({ json: s }));"
+        "jsCode": "const watchlist = [\n  { ticker: 'SAP.DE',  name: 'SAP SE',           sektor: 'Technologie',  keywords: ['SAP'] },\n  { ticker: 'SIE.DE',  name: 'Siemens AG',        sektor: 'Industrie',    keywords: ['Siemens'] },\n  { ticker: 'BASF.DE', name: 'BASF SE',           sektor: 'Chemie',       keywords: ['BASF'] },\n  { ticker: 'ALV.DE',  name: 'Allianz SE',        sektor: 'Versicherung', keywords: ['Allianz'] },\n  { ticker: 'MBG.DE',  name: 'Mercedes-Benz',     sektor: 'Auto',         keywords: ['Mercedes', 'Mercedes-Benz', 'Daimler'] },\n  { ticker: 'BMW.DE',  name: 'BMW AG',            sektor: 'Auto',         keywords: ['BMW'] },\n  { ticker: 'VOW3.DE', name: 'Volkswagen VZ',     sektor: 'Auto',         keywords: ['Volkswagen', 'VW'] },\n  { ticker: 'DBK.DE',  name: 'Deutsche Bank',     sektor: 'Banken',       keywords: ['Deutsche Bank'] },\n  { ticker: 'DTE.DE',  name: 'Deutsche Telekom',  sektor: 'Telekom',      keywords: ['Telekom', 'Deutsche Telekom'] },\n  { ticker: 'RWE.DE',  name: 'RWE AG',            sektor: 'Energie',      keywords: ['RWE'] },\n  { ticker: 'BAYN.DE', name: 'Bayer AG',          sektor: 'Pharma',       keywords: ['Bayer'] },\n  { ticker: 'EOAN.DE', name: 'E.ON SE',           sektor: 'Energie',      keywords: ['E.ON', 'EON'] },\n  { ticker: 'ADS.DE',  name: 'adidas AG',         sektor: 'Sport',        keywords: ['adidas', 'Adidas'] },\n  { ticker: 'HEN3.DE', name: 'Henkel VZ',         sektor: 'Konsumgüter',  keywords: ['Henkel'] },\n  { ticker: 'FRE.DE',  name: 'Fresenius SE',      sektor: 'Gesundheit',   keywords: ['Fresenius'] }\n];\nconst _startedAt = new Date().toISOString();\nreturn watchlist.map(s => ({ json: { ...s, _run_started_at: _startedAt } }));"
       },
       "id": "134fbfae-6827-4f0e-b253-e9aeecee42f3",
       "name": "Watchlist laden (Kurse)",
@@ -252,7 +262,8 @@
       "position": [
         -1312,
         656
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1820,6 +1831,19 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+      },
+      "id": "b7fe4dee-7c0d-4f1b-a8a6-0c670487e3e0",
+      "name": "Abschluss-Ergebnis bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        924,
+        300
+      ]
     }
   ],
   "pinData": null,
@@ -1827,5 +1851,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "aed0a296-af00-413e-bd40-c8447a378e35"
+  "versionId": "a0ad7c21-f78b-40b2-8b2e-64e9120d1604"
 }
