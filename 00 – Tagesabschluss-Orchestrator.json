@@ -623,7 +623,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : 'success';\nconst errorMessage = $json.error ? 'failed' : 'success' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('02b – Marktumfeld täglich')}, ${pgStr('marktumfeld')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('02b – Marktumfeld täglich')}, ${pgStr('marktumfeld')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000004-0000-4000-8000-00000000000a",
       "name": "Log Marktumfeld (SQL bauen)",
@@ -690,12 +690,11 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Ausfuehren: Marktumfeld (02b)').item.json.error }}",
-              "rightValue": "",
+              "leftValue": "={{ $('Ausfuehren: Marktumfeld (02b)').all()[0].json.status }}",
+              "rightValue": "failed",
               "operator": {
                 "type": "string",
-                "operation": "empty",
-                "singleValue": true
+                "operation": "notEquals"
               }
             }
           ],
@@ -1432,5 +1431,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "b031374e-9e3a-4b3e-83d1-4b1f55da3177"
+  "versionId": "53199f6a-e5c5-43c9-93ae-f34ea9548379"
 }

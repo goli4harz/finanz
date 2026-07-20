@@ -122,7 +122,7 @@
           {
             "node": "Merge Ergebnis 1",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1939,5 +1939,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "853f3a1e-095c-48ff-95a2-e379c73a1934"
+  "versionId": "f5a7f21f-d4dd-43f8-9b4c-aacd96217f5c"
 }

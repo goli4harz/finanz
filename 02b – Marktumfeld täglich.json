@@ -103,6 +103,11 @@
             "node": "Kurshistorie: SQL bauen",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge Ergebnis",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -114,6 +119,11 @@
             "node": "Kurshistorie: SQL bauen",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Merge Ergebnis",
+            "type": "main",
+            "index": 1
           }
         ]
       ]
@@ -123,6 +133,39 @@
         [
           {
             "node": "Kurshistorie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 2": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }
@@ -157,7 +200,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// MARKT-WATCHLIST LADEN\n// Gibt Marktindizes, Währungen und Rohstoffe als Items aus.\nconst watchlist = [\n  { symbol: '^GDAXI',   name: 'DAX',             markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'SAP.DE,SIE.DE,BASF.DE,ALV.DE,MBG.DE,BMW.DE,VOW3.DE,DBK.DE,DTE.DE,RWE.DE,BAYN.DE,EOAN.DE,ADS.DE,HEN3.DE,FRE.DE' },\n  { symbol: '^MDAXI',   name: 'MDAX',            markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'deutsche_nebenwerte' },\n  { symbol: '^STOXX50E',name: 'Euro Stoxx 50',   markt_typ: 'index',    region: 'Europa',      waehrung: 'EUR',     referenz_fuer: 'europa' },\n  { symbol: '^IXIC',    name: 'Nasdaq Composite',markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'technologie' },\n  { symbol: '^GSPC',    name: 'S&P 500',         markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'global' },\n  { symbol: 'EURUSD=X', name: 'EUR/USD',         markt_typ: 'waehrung', region: 'FX',          waehrung: 'EUR/USD', referenz_fuer: 'export_import' },\n  { symbol: 'CL=F',     name: 'WTI Öl',          markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'energie_inflation' },\n  { symbol: 'GC=F',     name: 'Gold',            markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'risk_off' }\n];\nreturn watchlist.map(s => ({ json: s }));\n"
+        "jsCode": "// MARKT-WATCHLIST LADEN\n// Gibt Marktindizes, Währungen und Rohstoffe als Items aus.\nconst watchlist = [\n  { symbol: '^GDAXI',   name: 'DAX',             markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'SAP.DE,SIE.DE,BASF.DE,ALV.DE,MBG.DE,BMW.DE,VOW3.DE,DBK.DE,DTE.DE,RWE.DE,BAYN.DE,EOAN.DE,ADS.DE,HEN3.DE,FRE.DE' },\n  { symbol: '^MDAXI',   name: 'MDAX',            markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'deutsche_nebenwerte' },\n  { symbol: '^STOXX50E',name: 'Euro Stoxx 50',   markt_typ: 'index',    region: 'Europa',      waehrung: 'EUR',     referenz_fuer: 'europa' },\n  { symbol: '^IXIC',    name: 'Nasdaq Composite',markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'technologie' },\n  { symbol: '^GSPC',    name: 'S&P 500',         markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'global' },\n  { symbol: 'EURUSD=X', name: 'EUR/USD',         markt_typ: 'waehrung', region: 'FX',          waehrung: 'EUR/USD', referenz_fuer: 'export_import' },\n  { symbol: 'CL=F',     name: 'WTI Öl',          markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'energie_inflation' },\n  { symbol: 'GC=F',     name: 'Gold',            markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'risk_off' }\n];\nconst _startedAt = new Date().toISOString();\nreturn watchlist.map(s => ({ json: { ...s, _run_started_at: _startedAt } }));\n"
       },
       "id": "52bcfc0e-5306-4f2d-b9e8-1ee00aa6d8f3",
       "name": "Markt-Watchlist laden",
@@ -187,7 +230,8 @@
       "position": [
         -1120,
         96
-      ]
+      ],
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -213,15 +257,7 @@
           "cachedResultName": "stock_market_context",
           "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
         },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "symbol",
-              "keyValue": "={{ $json.symbol }}"
-            }
-          ]
-        },
-        "limit": 1
+        "returnAll": true
       },
       "id": "d969f149-bdbd-4efc-96c7-16ded06b1ff8",
       "name": "DB: Marktumfeld suchen",
@@ -235,7 +271,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// MARKT: ROUTING – Run Once for All Items\n// Input: DB-Zeilen aus \"DB: Marktumfeld suchen\" (nach symbol gefiltert)\n// Quelle: frische Marktdaten aus \"Marktanalyse berechnen\"\n//\n// Für jeden Markt-Input: prüfen ob DB-Eintrag vorhanden (anhand id)\n// DB: Marktumfeld suchen läuft per Item (filter: symbol = $json.symbol)\n// → für jeden Markt genau 1 DB-Ergebnis (oder leer)\n\nconst suchItems  = $input.all();\nconst marktItems = $('Marktanalyse berechnen').all();\n\nreturn suchItems.map((item, index) => {\n  const suchItem  = item.json || {};\n  const marktItem = (marktItems[index] || { json: {} }).json;\n\n  const rowExists =\n    suchItem.id !== undefined &&\n    suchItem.id !== null &&\n    String(suchItem.id).trim() !== '';\n\n  return {\n    json: {\n      ...marktItem,\n      _existing_id: rowExists ? String(suchItem.id) : '',\n      _rowExists:   rowExists\n    }\n  };\n});\n"
+        "jsCode": "const dbRows = $input.all().map(i => i.json || {});\nconst marktItems = $('Marktanalyse berechnen').all().map(i => i.json || {});\n\nconst foundBySymbol = {};\nfor (const row of dbRows) {\n  const symbol = String(row.symbol || '').trim();\n  const hasId = row.id !== undefined && row.id !== null && String(row.id).trim() !== '';\n  if (symbol && hasId) foundBySymbol[symbol] = row;\n}\n\nreturn marktItems.map(markt => {\n  const symbol = String(markt.symbol || '').trim();\n  const found = foundBySymbol[symbol];\n  const rowExists = found !== undefined && found.id !== undefined && found.id !== null && String(found.id).trim() !== '';\n  return {\n    json: {\n      ...markt,\n      _existing_id: rowExists ? String(found.id) : '',\n      _rowExists: Boolean(rowExists)\n    }\n  };\n});"
       },
       "id": "b91acc04-8aec-424c-ac14-c2462a5ff134",
       "name": "Markt: Routing",
@@ -1055,6 +1091,41 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "f8183dc0-e367-42e1-8fb1-fe87f392bcc8",
+      "name": "Merge Ergebnis",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        220,
+        -150
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.symbol !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Markt-Watchlist laden').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02b \\u2013 Marktumfeld t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.symbol, node: 'Markt-Kursdaten abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+      },
+      "id": "20ba3c3d-90c2-44e9-9613-d3b0728f4eee",
+      "name": "Abschluss-Ergebnis bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -150
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "2c73f574-1cfc-47fd-8ada-7d936003d7e4",
+      "name": "Merge Ergebnis 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        440,
+        -50
+      ]
     }
   ],
   "pinData": null,
@@ -1062,5 +1133,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "4b973007-8e02-4a9a-a745-0dbd9c76c5d1"
+  "versionId": "48ff8a64-3f1a-41dd-b062-9406972f977d"
 }
