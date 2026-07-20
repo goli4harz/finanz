@@ -95,6 +95,39 @@
           }
         ]
       ]
+    },
+    "DB: Marktumfeld aktualisieren": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld neu anlegen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "id": "9zO3uZeZeakTnLnX",
@@ -987,6 +1020,41 @@
         -1568,
         -160
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.stock_price_history\n  (symbol, trading_date, close, currency, source)\n  VALUES (${pgStr(j.symbol)}, ${pgStr(j.datum)}, ${pgNum(j.aktueller_kurs)}, ${pgStr(j.waehrung)}, 'marktumfeld-02b')\n  ON CONFLICT (symbol, trading_date) DO UPDATE SET\n    close = EXCLUDED.close, currency = EXCLUDED.currency, source = EXCLUDED.source, fetched_at = now();`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "60fea350-12a8-46fc-abda-d26d63bdd5ac",
+      "name": "Kurshistorie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "96888aff-b6c5-4af9-a7b9-034b6d2cd0da",
+      "name": "Kurshistorie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        180
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": null,
@@ -994,5 +1062,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "f271c8a5-5e74-4e29-9f21-71dbcb895723"
+  "versionId": "4b973007-8e02-4a9a-a745-0dbd9c76c5d1"
 }

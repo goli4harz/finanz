@@ -92,6 +92,11 @@
             "node": "Filter: Starke Signale",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -101,6 +106,11 @@
         [
           {
             "node": "Filter: Starke Signale",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kurshistorie: SQL bauen",
             "type": "main",
             "index": 0
           }
@@ -167,6 +177,17 @@
         [
           {
             "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: upserten",
             "type": "main",
             "index": 0
           }
@@ -1764,6 +1785,41 @@
         -1568,
         -160
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.stock_price_history\n  (symbol, trading_date, close, source)\n  VALUES (${pgStr(j.ticker)}, ${pgStr(j.datum)}, ${pgNum(j.aktueller_kurs)}, 'technische-signale-02')\n  ON CONFLICT (symbol, trading_date) DO UPDATE SET\n    close = EXCLUDED.close, source = EXCLUDED.source, fetched_at = now();`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "27583414-7421-4672-baf0-88eb1f699f2b",
+      "name": "Kurshistorie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        924,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "ef31ef5f-a809-4586-97a2-b51a32a38586",
+      "name": "Kurshistorie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1144,
+        740
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": null,
@@ -1771,5 +1827,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "00cad33e-6639-445d-bb58-4567dfd921f2"
+  "versionId": "aed0a296-af00-413e-bd40-c8447a378e35"
 }
