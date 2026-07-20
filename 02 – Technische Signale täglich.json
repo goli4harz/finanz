@@ -99,7 +99,7 @@
             "index": 0
           },
           {
-            "node": "Abschluss-Ergebnis bauen",
+            "node": "Merge Ergebnis 1",
             "type": "main",
             "index": 0
           }
@@ -120,7 +120,7 @@
             "index": 0
           },
           {
-            "node": "Abschluss-Ergebnis bauen",
+            "node": "Merge Ergebnis 1",
             "type": "main",
             "index": 0
           }
@@ -198,6 +198,61 @@
         [
           {
             "node": "Kurshistorie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Matrix Alert": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 3": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }
@@ -1834,7 +1889,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all().map(i => i.json);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.ticker !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
       },
       "id": "b7fe4dee-7c0d-4f1b-a8a6-0c670487e3e0",
       "name": "Abschluss-Ergebnis bauen",
@@ -1844,6 +1899,39 @@
         924,
         300
       ]
+    },
+    {
+      "parameters": {},
+      "id": "bfc56c5c-6b70-48f5-8ddc-b12493702864",
+      "name": "Merge Ergebnis 1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "29cfade1-832f-4098-abc0-80f739bcfa27",
+      "name": "Merge Ergebnis 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d2ce5b3f-1861-4f63-b642-1bce690f54df",
+      "name": "Merge Ergebnis 3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        600
+      ]
     }
   ],
   "pinData": null,
@@ -1851,5 +1939,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "a0ad7c21-f78b-40b2-8b2e-64e9120d1604"
+  "versionId": "853f3a1e-095c-48ff-95a2-e379c73a1934"
 }
