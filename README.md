@@ -90,14 +90,13 @@ Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zus�
 ## Benötigte Umgebungsvariablen / offene Platzhalter
 
 - **Postgres-Verbindungsdetails** (Host, Port, Datenbankname, Benutzer, Passwort): nicht bekannt zum Zeitpunkt dieser Migration, werden ausschließlich über die oben genannte n8n-Credential konfiguriert, nirgends im Code.
-- **`DRY_RUN`**: wird als Execute-Workflow-Input-Parameter durchgereicht (00 → 06, 00 → 05), Default `false`. Für einen produktionsnahen Test ohne echten Matrix-/E-Mail-Versand `DRY_RUN=true` beim manuellen Start von `00` setzen.
-- **`REQUIRE_CONFIRMATION`** (06): aktuell als Konstante `false` im Code gesetzt (siehe „Trigger-Eingabe normalisieren“-Node in 06) — kann bei Bedarf zu einem echten Konfigurationswert gemacht werden (z. B. Zeile in `trading.stock_instruments.metadata_json` oder eine eigene Einstellungstabelle), war im Auftrag nur als „optional“ gefordert.
+- **`DRY_RUN`** und **`REQUIRE_CONFIRMATION`**: **überholt seit dem Verbesserungsauftrag Juli 2026** — beide sind seit 2026-07-20 keine Code-Konstanten mehr, sondern echte Werte in der neuen Tabelle `trading.pipeline_config` (`DRY_RUN` Default `false`, `REQUIRE_CONFIRMATION` Default `true`). Details, Wirkweise und Live-Testergebnisse: siehe „Nachtrag: Verbesserungsauftrag Juli 2026“ ganz unten.
 
 ## Datenbankmigration — ERLEDIGT und live verifiziert
 
 1. `sql/001_agenten_architektur.sql` wurde über `99 – Einmalig – SQL-Migration ausfuehren` live ausgeführt — Schema `trading` mit allen 9 Tabellen existiert und wurde per Kontrollabfrage bestätigt (`information_schema.schemata`).
 2. `sql/002_seed_stock_instruments.sql` (neu, während des Testens ergänzt) wurde ebenfalls live ausgeführt — `trading.stock_instruments` enthält alle 15 Ticker mit Name/Sektor (aus der bereits produktiven `stock_technical_signals` übernommen) und Aliasen/Ausschlussmustern (aus dem RSS-Vorfilter in 03 übernommen). War zwingend nötig, nicht optional: ohne diese Daten läuft 08s Benchmark-Zuordnung ins Leere.
-3. `stock_price_history` (n8n Data Table) bleibt unverändert bestehen; 08 nutzt `stock_technical_signals`/`stock_market_context` als Kursquelle — live bestätigt funktionsfähig (89 Tracking-Zeilen korrekt angelegt im Test).
+3. `stock_price_history` (n8n Data Table) bleibt unverändert bestehen und unbefüllt; 08 nutzte anfangs `stock_technical_signals`/`stock_market_context` als Kursquelle — live bestätigt funktionsfähig (89 Tracking-Zeilen korrekt angelegt im Test). **Überholt seit 2026-07-20**: es gibt inzwischen eine echte, dediziert befüllte Tabelle `trading.stock_price_history` (Postgres), auf die 08 umgestellt wurde — siehe „Nachtrag: Verbesserungsauftrag Juli 2026“ unten.
 
 ## Importreihenfolge — bereits erledigt (Stand 2026-07-19)
 
@@ -217,3 +216,79 @@ Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Pos
 Noch offen:
 - Die D+3/D+5/D+10/D+20-Zweige der Handelstage-Zählung in 08: nur D+1 wurde bisher tatsächlich erreicht (es liegt erst 1 Tag Kurshistorie seit der Migration vor), die späteren Zeitfenster sind weiterhin nur gegen die Codelogik durchdacht.
 - Der komplette Aktivierungs-/Produktionsbetrieb (alle 15 Workflows gleichzeitig über Tage/Wochen aktiv, echte Cron-Zeitplan-Kaskade statt Einzeltests): jeder Workflow wurde einzeln getestet, aber noch nicht im Dauerbetrieb nebeneinander.
+
+---
+
+## Nachtrag: Verbesserungsauftrag Juli 2026 (Stand 2026-07-20, Nacht)
+
+Nach der Produktions-Umstellung oben erteilte der Nutzer einen eigenständigen 29-Punkte-Verbesserungsauftrag (Priorität 1–12: sicherer Testbetrieb, echte Kurshistorie, Wirkungsanalyse-Korrektur, Störfaktoren, News-Datenqualität, Transaktionssicherheit, einheitliche Schnittstellen, Fehlerbehandlung, Lernagent-Verfeinerung, Prompt-Injection-Härtung, zentrale Konfiguration, Status-Dashboard-Erweiterung). Umgesetzt wurden in dieser Runde die **Prioritäten 1–5 vollständig**, **Priorität 6 teilweise** (nur `02`/`02b`) sowie **Priorität 7, Punkt 17**. Alles live gegen die echte Produktionsdatenbank getestet, 20 Commits auf `agenten-modernisierung`. Details je Bugfix/Commit: `git log`.
+
+### Priorität 1 — Sicherer Testbetrieb (erledigt, live getestet)
+
+Neue Tabelle `trading.pipeline_config` (`sql/003_pipeline_config.sql`, key-value: `config_key`, `value_bool`/`value_text`/`value_numeric`, `description`), Seed-Werte `DRY_RUN=false`, `REQUIRE_CONFIRMATION=true`.
+
+- `00`: neuer Node `Config: DRY_RUN laden` (Postgres) direkt nach `Run-ID erzeugen`, gemerged in den weitergereichten Kontext — die frühere hartkodierte `DRY_RUN: false`-Zeile ist entfernt.
+- `06`: neue Nodes `Config: DRY_RUN+REQUIRE_CONFIRMATION laden` + `Kontext ergaenzen`; echtes `IF: DRY_RUN aktiv?`-Gate direkt nach `Empfehlungen: Abgleich berechnen` — im DRY_RUN-Fall läuft ein neuer Zweig `Simulationsergebnis aufbauen` (`{dry_run, planned_actions[]}`), der **keinen** DB-Write und **keinen** Matrix-Versand mehr auslöst (vorher lief bei DRY_RUN weiterhin die volle Schreib-/Sendekette).
+- **Gefundener und behobener Bug**: `IF: Bestaetigung erforderlich?` war invertiert verdrahtet — `REQUIRE_CONFIRMATION=true` führte zum echten Schreiben, `false` zum reinen Vorschlag (Gegenteil der eigenen Code-Kommentare). Polarität korrigiert.
+- `00`s `Log Empfehlungswatchlist (SQL bauen)` schreibt jetzt echte `dry_run`/`planned_actions`-Werte in `metadata_json` statt immer `{}` — Simulationsergebnisse sind damit auditierbar.
+- Live bestätigt: DRY_RUN=true → keine Zeilenänderung in `trading.recommendations`, Matrix klar als Simulation markiert; REQUIRE_CONFIRMATION=true/false beide Pfade korrekt (Vorschlag ohne Write vs. echter Write); ein echter UNIQUE-Constraint-Verstoß beim Schreiben wird sichtbar gemeldet statt verschluckt.
+
+### Priorität 2 — Echte historische Kursdaten (erledigt, live getestet)
+
+Neue Tabelle `trading.stock_price_history` (`sql/004_stock_price_history.sql`: `symbol`, `trading_date`, `open/high/low/close NOT NULL/volume`, `currency`, `source`, `fetched_at`, `UNIQUE(symbol, trading_date)`).
+
+- `02`/`02b` bekamen je einen zusätzlichen `Kurshistorie: SQL bauen`/`Kurshistorie: upserten`-Zweig (additiv, ersetzt nicht die bestehenden `stock_technical_signals`/`stock_market_context`-Writes) — ein Datensatz je (Symbol, Handelstag) und Lauf, `ON CONFLICT (symbol, trading_date) DO UPDATE`.
+- `08 – News-Wirkungsanalyse`: Kursquelle für `DB: Kursverlauf je Ticker laden`/`DB: Benchmark-Kursverlauf laden` von `stock_technical_signals`/`stock_market_context` auf `trading.stock_price_history` umgestellt (Spalten-Alias `symbol AS ticker, trading_date AS datum, close AS aktueller_kurs`, damit die nachgelagerte Gruppierungslogik unverändert bleibt).
+- Damit ist der in `MIGRATIONSPLAN_AGENTEN.md` Phase 6 als „gelöst“ beschriebene Workaround (Wiederverwendung von `stock_technical_signals`/`stock_market_context` als Pseudo-Historie) überholt — echte, dedizierte Tagesreihen sind jetzt die Kursquelle.
+- Offen: rückwirkendes Backfill über die FastAPI (`172.16.1.14:8099`) wurde nicht geprüft/gebaut — die Tabelle akkumuliert ab jetzt real, D+20-Auswertungen brauchen entsprechend ~20 echte Handelstage.
+
+### Priorität 3 — Wirkungsanalyse-Korrektur (erledigt, live getestet)
+
+- `08`, `Baseline-Fall je (News,Ticker) bestimmen`: Handelszeiten-Klassifizierung war grob (`hour < 17`, laut eigenem Kommentar „vereinfacht“) — jetzt minutengenau (`berlinMinutesSinceMidnight`, Grenzen 9:00 und 17:30).
+- Neues Feld `baseline_quality` (`high` bei vor_handelsbeginn/nach_handelsende, `limited` bei waehrend_handelszeit, da nur Tagesschlusskurse vorliegen, keine Intraday-Daten) — DB-Migration `ALTER TABLE trading.news_impact_tracking ADD COLUMN baseline_quality ...`.
+- Neue Felder `direction_correct_d1/d3/d5/d10/d20` (vorher wurde `direction_correct` nur einmal bei D+20 berechnet, nicht je Horizont) — je Horizont in `D+1..D+20 berechnen + Stoerfaktoren` berechnet.
+- **Gefundener und behobener Crash**: `$('Benchmarkverlauf gruppieren').first()` warf einen Fehler, wenn die (neue, anfangs leere) `stock_price_history` 0 Zeilen lieferte und der Gruppierungs-Node dadurch übersprungen wurde — `alwaysOutputData: true` behebt das NICHT (nur wenn ein Node läuft aber nichts liefert, nicht wenn er wegen 0 Eingabe-Items gar nicht aufgerufen wird). Fix: `safeGrouped()`-Try/Catch-Helfer mit `{}`-Fallback.
+
+### Priorität 4 — Störfaktoren + News-Datenqualität (erledigt, live getestet)
+
+- **`news_kategorie`-Bug behoben**: die Spalte enthielt bisher fast durchgängig USAGE-Werte (`verwerfen`, `tagesreport`, `speichern`, `matrix_alert`) statt echter Inhaltskategorien — `Ergebnis persistieren (SQL bauen)` in `03` schrieb `verwendung` direkt in die `news_kategorie`-Spalte. Fix: neues, eigenes KI-Feld `news_kategorie` mit dem im Auftrag spezifizierten Enum (`quarterly_results, profit_warning, forecast_change, merger_acquisition, regulation, management_change, legal_dispute, product_news, macro, geopolitics, analyst_rating, other`) in `03` und `03a` ergänzt (Prompt + Validierung); neue Spalte `usage_type` nimmt jetzt den bisherigen `verwendung`-Wert auf.
+- `08`, `DB: Neue News-Ticker-Paare laden`: `ni.source` wurde nie selektiert (immer NULL) — ergänzt; „beste Bewertung“ zwischen `03`/`03a` jetzt per `DISTINCT ON (ni.id)` + Prioritäts-`CASE` (`news-recherche-agent-v1` > `news-ingestion-v1` > sonst).
+- Störfaktor-Erkennung ersetzt: die alte kumulative Rendite-Prüfung über D+1..D+20 war nahezu immer wahr (Dauer-Confounder) — durch `maxDailyMove()` (echte Tag-für-Tag-Benchmarkbewegung) ersetzt. Neuer Node `DB: Weitere News je Ticker laden` (60 Tage, hohe Wirkung) + `findAdditionalNews()` berechnet jetzt echte `additional_news_count`/`has_major_followup_news` (vorher `additional_news_count` immer 0, `has_major_followup_news` existierte nicht) — die bereits vorbereitete, aber tote `CATEGORY_KEYWORDS`-Liste ist jetzt aktiv verdrahtet.
+
+### Priorität 5 — Transaktionssicherheit (erledigt, live getestet)
+
+Architekturentscheidung mit dem Nutzer abgestimmt: `stock_empfehlungen` (n8n Data Table, keine Transaktionen/Unique-Constraints möglich) → neue Postgres-Tabelle `trading.recommendations` (`ticker`, `name`, `sektor`, `richtung` CHECK `kauf/verkauf`, `status` CHECK `offen/geschlossen`, Entry-/Exit-/Hebelprodukt-Felder, `run_id`, Zeitstempel) + `CREATE UNIQUE INDEX ux_recommendations_one_open_per_ticker ON trading.recommendations (ticker) WHERE status = 'offen'` — verhindert strukturell zwei gleichzeitig offene Positionen im selben Ticker.
+
+- `06`: `DB: Bestehende Empfehlungen laden` von Data-Table-`get` auf Postgres-`SELECT` umgestellt; `DB: Empfehlung öffnen`/`schließen` in `SQL bauen`(Code)+`executeQuery`(Postgres, `onError: continueRegularOutput`, `INSERT/UPDATE ... RETURNING *`) aufgeteilt.
+- **Gefundener und behobener Bug-Klasse** („Write-Node überschreibt Item“): nach jedem erfolgreichen Schreiben ging das JS-eigene Feld `_aktion` verloren, weil der DB-Node das Item durch sein eigenes Rückgabeschema ersetzt — neue `Oeffnen/Schliessen: _aktion ergaenzen`-Nodes stellen es wieder her, inkl. Ticker-Kontext-Wiederherstellung bei Schreibfehlern.
+- `Schreiberfolg verifizieren` zeigt fehlgeschlagene Writes jetzt sichtbar in der Matrix-Nachricht an (vorher wurden sie stillschweigend verworfen).
+- `07 – Status-Uebersicht`: `DB: Empfehlungen laden` ebenfalls auf `trading.recommendations` umgestellt.
+
+### Priorität 6 — Einheitliche Rückgabeformate (teilweise: nur `02`/`02b`)
+
+Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, warnings[], errors[], started_at, finished_at, status}`, `status` ∈ `success/partial_failure/failed/skipped`.
+
+- `02`/`02b`: `onError: continueRegularOutput` an den Kursabruf-Nodes, `_run_started_at`-Stempel, neuer `Abschluss-Ergebnis bauen`-Node.
+- `00`: `IF: Technische Signale ok?`/`IF: Marktumfeld ok?` prüfen jetzt `status != 'failed'` (statt leerem `.error`) — `partial_failure` blockiert die Kaskade nicht mehr, nur `failed` tut das; die zugehörigen `Log ...`-Nodes hatten einen Operator-Vorrang-Bug (`errorMessage` war praktisch immer `'failed'` oder `''`), jetzt korrekt aus `errors[]` befüllt.
+- **Zwei neue, session-eigene Bug-Klassen gefunden** (nicht Teil des ursprünglichen 29-Punkte-Katalogs):
+  1. *Data-Table-„get"-Node mit templatiertem Pro-Item-Filter* (`{{ $json.symbol }}`) liefert effektiv nur 1 Treffer für den gesamten Node-Lauf, nicht 1 pro Eingabe-Item — unabhängig von `limit`/`alwaysOutputData`/`returnAll`. Betraf `02b`s `DB: Marktumfeld suchen`; behoben nach dem bereits korrekten Muster aus `02` (`DB: Signal suchen`: kein Filter, `returnAll: true`, Lookup-Map in Code statt Index-Pairing).
+  2. *Merge-Node, zwei Quellen auf denselben Eingangsindex* kombiniert die Items NICHT — nur eine Quelle überlebt. Betraf `02` (unentdeckt seit dem Cutover, durch günstige Testdaten maskiert) und `02b`; beide auf getrennte Indizes (0/1) korrigiert.
+- Live-Test über `00`: `02b` `processed:8, successful:8, status:success`; `02` `processed:15, successful:14, failed:1, status:partial_failure` (echter Fall: `BASF.DE "Keine Chartdaten vorhanden"`, korrekt als Teilfehler statt Totalausfall behandelt), gemeinsame `run_id` mit dem Orchestrator-Lauf bestätigt.
+- **Offen**: `06`, `10`, `05` haben noch kein einheitliches Envelope — nur `02`/`02b` sind umgestellt.
+
+### Priorität 7, Punkt 17 — Durchgängige `run_id` (erledigt, live getestet)
+
+`10 – Report- und Prüfagent`, `Reportdaten aufbereiten`: erzeugte bisher immer eine eigene `run_id` (`'report-' + heute + '-' + Date.now()`), auch wenn `10` als Sub-Workflow vom Orchestrator aufgerufen wurde — dadurch hatten `report-agent`/`pruef-agent`-Zeilen in `trading.agent_runs` nie dieselbe `run_id` wie der auslösende `00`-Lauf. Fix: liest jetzt per sicherem Try/Catch (`.all()[0]`) die `run_id` vom `Execute Workflow Trigger` und nutzt sie, falls vorhanden; Fallback auf eine lokal erzeugte nur bei eigenständigem Lauf. Live verifiziert: `00`s und `10`s `run_id` identisch, beide Agentenlauf-Zeilen tragen sie.
+
+**Zusätzlich in dieser Runde behoben, unabhängig vom 29-Punkte-Auftrag**: der Cutover-Bug in `10`, der den täglichen Report seit der Produktions-Umstellung komplett blockierte (drei zusammenwirkende Ursachen: fragile `.item`-Referenzen über zwei Nodes, ein Node las versehentlich das Ergebnis des vorherigen Postgres-Writes statt der echten Report-Daten, kein definierter Sub-Workflow-Rückgabewert) — siehe Commit `c2cd1b9`.
+
+### Noch offen aus dem 29-Punkte-Auftrag
+
+- **Priorität 6 (Rest)**: einheitliches Envelope für `06`, `10`, `05`.
+- **Priorität 7, Punkt 18**: einheitlicher `{context, config, payload}`-Input-Wrapper für alle Sub-Workflow-Aufrufe.
+- **Priorität 8**: zentraler Error-Workflow, strukturierte Fehlerfelder, einheitliches Retry-Verhalten.
+- **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
+- **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
+- **Priorität 11**: `pipeline_config` zur vollen zentralen Konfigurationstabelle ausbauen (Watchlist, Schwellenwerte, Modelle, Matrix-Räume, Prompt-Versionen — aktuell nur `DRY_RUN`/`REQUIRE_CONFIRMATION`).
+- **Priorität 12**: Status-Übersicht (07) um Pipeline-Laufstatus, Wirkungsanalyse-Fortschritt, Trefferquoten, Konfigversion, Datenquellen-Aktualität erweitern.
+- Offene Klärfrage zu Priorität 2: ob die FastAPI (`172.16.1.14:8099`) historische Kursdaten für einen Datumsbereich liefern kann (Backfill), statt ~20 Handelstage lang natürlich zu warten.

@@ -1,5 +1,7 @@
 # Migrationsplan: Aktienanalyse-System → kontrollierte Agentenarchitektur
 
+**Status: abgeschlossen (Stand 2026-07-20).** Dieser Plan beschreibt ausschließlich die ursprüngliche Cutover-Migration (Phasen 2–13, alle umgesetzt und live geschaltet). Die im Anschluss erteilte 29-Punkte-Verbesserungsauftrag (DRY_RUN/REQUIRE_CONFIRMATION, echte Kurshistorie, Wirkungsanalyse-Korrektur, Transaktionssicherheit u.a.) ist **nicht** Teil dieses Dokuments und wurde separat umgesetzt — siehe `README.md`, Abschnitt „Nachtrag: Verbesserungsauftrag Juli 2026“. Zwei Stellen unten (Klärungspunkt vor Phase 6, Phase 11) sind durch diese Folgearbeit inhaltlich überholt, bleiben hier aber als historischer Beleg der ursprünglichen Entscheidung stehen.
+
 Basis: `ARCHITEKTUR_BESTAND.md`. Dieser Plan setzt die dort dokumentierten Befunde in konkrete, sequenzierte Umbauschritte um. Reihenfolge folgt der im Auftrag vorgegebenen Vorgehensweise (Punkte 1-12), mit einer Vorziehung: das SQL-Schema (ursprünglich Phase 3) wird vor dem Orchestrator (Phase 2) erstellt, da der Orchestrator bereits `trading.pipeline_runs` benötigt.
 
 ## Leitprinzipien für jeden Schritt
@@ -14,6 +16,8 @@ Basis: `ARCHITEKTUR_BESTAND.md`. Dieser Plan setzt die dort dokumentierten Befun
 `stock_price_history` wird laut Bestandsanalyse von keinem der 8 Workflows beschrieben, aber von `07 – Status-Uebersicht` gelesen — Herkunft der Daten dort bleibt ungeklärt. Phase 6 (News-Wirkungsanalyse) braucht historische Tages-Schlusskurse für D+1/D+3/D+5/D+10/D+20 je Ticker und Benchmark.
 
 **Tatsächliche Lösung (kein neuer FastAPI-Nachlade-Mechanismus nötig):** `stock_technical_signals` (täglich von `02` geschrieben, `aktueller_kurs`+`datum` je Ticker) und `stock_market_context` (täglich von `02b` geschrieben, `aktueller_kurs`+`datum` je Benchmark-Symbol) akkumulieren durch ihren normalen täglichen Betrieb bereits automatisch genau die Tages-Schlusskurshistorie, die 08 braucht — ohne dass eine neue Datenquelle erfunden werden musste. `08 – News-Wirkungsanalyse.json` liest beide gefiltert (je Ticker/Symbol, nicht als volle Tabellenladung). `stock_price_history` bleibt unangetastet und wird von dieser Migration nicht befüllt — falls es produktiv von einem hier nicht vorliegenden Prozess gespeist wird, bleibt das unverändert bestehen, ist für 08 aber nicht mehr erforderlich.
+
+> **Überholt seit 2026-07-20**: Der Verbesserungsauftrag (Priorität 2) hat diesen Workaround durch eine echte, dedizierte Tabelle `trading.stock_price_history` (Postgres, von `02`/`02b` per Upsert befüllt) ersetzt — die oben beschriebene Zweitverwendung von `stock_technical_signals`/`stock_market_context` als Pseudo-Historie ist nicht mehr die Kursquelle von `08`. Details: `README.md`, „Nachtrag: Verbesserungsauftrag Juli 2026“, Priorität 2.
 
 ## Klärungspunkt PostgreSQL-Zugang — GELÖST (Stand 2026-07-19)
 
@@ -102,6 +106,8 @@ Betrifft `03 – News Ingestion stündlich – Agent V1.json` und `04 – Cleanu
 ---
 
 ## Phase 11: `06 – Empfehlungswatchlist – Agent V1.json`
+
+> **Überholt seit 2026-07-20**: DRY_RUN/REQUIRE_CONFIRMATION laufen inzwischen über die zentrale Tabelle `trading.pipeline_config` statt über Code-Konstanten, inkl. eines dabei gefundenen und behobenen Polaritäts-Bugs (`IF: Bestaetigung erforderlich?` war invertiert verdrahtet). Punkt 6 unten (Matrix-Rückfrage vor Schreiben) und Punkt 7 (`trade_simulation_outcomes`) wurden **nicht** so gebaut — details zur tatsächlichen Umsetzung: `README.md`, „Nachtrag: Verbesserungsauftrag Juli 2026“, Priorität 1 und 5.
 
 Konkrete Fixes je Bestandsbefund:
 1. **Matrix erst nach Speicherung**: `Matrix: Zusammenfassung bauen` wird umverdrahtet, sodass sie NACH `DB: Empfehlung schließen`/`DB: Empfehlung öffnen` hängt (Merge-Node wartet auf beide Zweige), statt parallel/unabhängig zu laufen (behebt Prüfpunkt 4 aus dem Bestand).
