@@ -16,7 +16,7 @@
       "main": [
         [
           {
-            "node": "Ausfuehren: Marktumfeld (02b)",
+            "node": "Config: DRY_RUN laden",
             "type": "main",
             "index": 0
           }
@@ -530,6 +530,28 @@
           }
         ]
       ]
+    },
+    "Config: DRY_RUN laden": {
+      "main": [
+        [
+          {
+            "node": "Kontext zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontext zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Marktumfeld (02b)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "id": "ncMZzkqDHpSiDGPm",
@@ -558,7 +580,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\nfunction getBerlinTimeParts(date = new Date()) {\n  const fmt = new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false\n  }).formatToParts(date);\n  const p = Object.fromEntries(fmt.map(x => [x.type, x.value]));\n  return `${p.hour}${p.minute}${p.second}`;\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nconst businessDate = getBusinessDate();\nconst timePart = getBerlinTimeParts();\nconst runId = `daily-${businessDate}-${timePart}-${randHex(6)}`;\nconst startedAt = new Date().toISOString();\n\nreturn { json: {\n  run_id: runId,\n  business_date: businessDate,\n  started_at: startedAt,\n  DRY_RUN: false\n} };\n"
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\nfunction getBerlinTimeParts(date = new Date()) {\n  const fmt = new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false\n  }).formatToParts(date);\n  const p = Object.fromEntries(fmt.map(x => [x.type, x.value]));\n  return `${p.hour}${p.minute}${p.second}`;\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nconst businessDate = getBusinessDate();\nconst timePart = getBerlinTimeParts();\nconst runId = `daily-${businessDate}-${timePart}-${randHex(6)}`;\nconst startedAt = new Date().toISOString();\n\nreturn { json: {\n  run_id: runId,\n  business_date: businessDate,\n  started_at: startedAt\n} };\n"
       },
       "id": "00000000-0000-4000-8000-000000000002",
       "name": "Run-ID erzeugen",
@@ -965,8 +987,8 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Run-ID erzeugen').item.json.run_id }}",
-            "DRY_RUN": "={{ $('Run-ID erzeugen').item.json.DRY_RUN }}"
+            "run_id": "={{ $('Kontext zusammenfuehren').all()[0].json.run_id }}",
+            "DRY_RUN": "={{ $('Kontext zusammenfuehren').all()[0].json.DRY_RUN }}"
           }
         },
         "options": {
@@ -986,7 +1008,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : 'success';\nconst errorMessage = $json.error ? 'failed' : 'success' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : 'success';\nconst errorMessage = $json.error ? 'failed' : 'success' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = ($json.dry_run || $json.planned_actions) ? { dry_run: !!$json.dry_run, planned_actions: $json.planned_actions || [] } : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000010-0000-4000-8000-000000000a",
       "name": "Log Empfehlungswatchlist (SQL bauen)",
@@ -1177,10 +1199,10 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Run-ID erzeugen').item.json.run_id }}",
+            "run_id": "={{ $('Kontext zusammenfuehren').all()[0].json.run_id }}",
             "report_markdown": "={{ $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown }}",
             "approved": true,
-            "DRY_RUN": "={{ $('Run-ID erzeugen').item.json.DRY_RUN }}"
+            "DRY_RUN": "={{ $('Kontext zusammenfuehren').all()[0].json.DRY_RUN }}"
           }
         },
         "options": {
@@ -1369,6 +1391,41 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'DRY_RUN';",
+        "options": {}
+      },
+      "id": "f2575829-c666-46ef-96dd-58b948e404c6",
+      "name": "Config: DRY_RUN laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1976,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\nconst dryRun = cfg && typeof cfg.value_bool === 'boolean' ? cfg.value_bool : false;\nreturn [{ json: { ...base, DRY_RUN: dryRun } }];"
+      },
+      "id": "88be6e21-2351-42c4-a53a-ee63b4b7c1a8",
+      "name": "Kontext zusammenfuehren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        0
+      ]
     }
   ],
   "pinData": null,
@@ -1376,5 +1433,5 @@
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "c63c1df9-186c-420d-912b-6eefad891859"
+  "versionId": "2436f4be-0eca-4f14-83b2-9855b11ca5c3"
 }
