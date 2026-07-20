@@ -118,7 +118,7 @@
       "main": [
         [
           {
-            "node": "Schreibergebnisse zusammenfuehren",
+            "node": "Schliessen: _aktion ergaenzen",
             "type": "main",
             "index": 0
           }
@@ -129,9 +129,9 @@
       "main": [
         [
           {
-            "node": "Schreibergebnisse zusammenfuehren",
+            "node": "Oeffnen: _aktion ergaenzen",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -225,6 +225,28 @@
         [
           {
             "node": "IF: Aktion = schließen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oeffnen: _aktion ergaenzen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schliessen: _aktion ergaenzen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
             "type": "main",
             "index": 0
           }
@@ -889,12 +911,38 @@
         -2544,
         316
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _aktion: 'oeffnen' } }));"
+      },
+      "id": "0d00b1ca-c6af-45c9-888b-36451e7b2e21",
+      "name": "Oeffnen: _aktion ergaenzen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2092,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _aktion: 'schliessen' } }));"
+      },
+      "id": "0ebab754-f33a-488c-845d-265920e41572",
+      "name": "Schliessen: _aktion ergaenzen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2316,
+        160
+      ]
     }
   ],
-  "pinData": null,
+  "pinData": {},
   "settings": {
     "executionOrder": "v1"
   },
   "tags": [],
-  "versionId": "192f7c47-7084-48a2-9da6-4b51a502db72"
+  "versionId": "8f82cb0c-403f-4eac-b031-b9f76c93c90e"
 }
