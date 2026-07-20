@@ -1,4 +1,104 @@
 {
+  "active": true,
+  "connections": {
+    "Markt-Watchlist laden": {
+      "main": [
+        [
+          {
+            "node": "Markt-Kursdaten abrufen (lokaler FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktanalyse berechnen": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld suchen": {
+      "main": [
+        [
+          {
+            "node": "Markt: Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markt: Routing": {
+      "main": [
+        [
+          {
+            "node": "IF: Marktwert vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Marktwert vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Marktumfeld neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Marktumfeld (17:55)": {
+      "main": [
+        [
+          {
+            "node": "Markt-Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markt-Kursdaten abrufen (lokaler FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Marktanalyse berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Markt-Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "9zO3uZeZeakTnLnX",
+  "meta": null,
   "name": "02b – Marktumfeld täglich",
   "nodes": [
     {
@@ -54,12 +154,7 @@
       "position": [
         -1120,
         96
-      ],
-      "settings": {
-        "retryOnFail": true,
-        "maxTries": 3,
-        "waitBetweenTries": 3000
-      }
+      ]
     },
     {
       "parameters": {
@@ -103,9 +198,6 @@
         -672,
         96
       ],
-      "settings": {
-        "alwaysOutputData": true
-      },
       "alwaysOutputData": true
     },
     {
@@ -897,113 +989,10 @@
       ]
     }
   ],
-  "pinData": {},
-  "connections": {
-    "Markt-Watchlist laden": {
-      "main": [
-        [
-          {
-            "node": "Markt-Kursdaten abrufen (lokaler FastAPI)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Marktanalyse berechnen": {
-      "main": [
-        [
-          {
-            "node": "DB: Marktumfeld suchen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktumfeld suchen": {
-      "main": [
-        [
-          {
-            "node": "Markt: Routing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Markt: Routing": {
-      "main": [
-        [
-          {
-            "node": "IF: Marktwert vorhanden?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Marktwert vorhanden?": {
-      "main": [
-        [
-          {
-            "node": "DB: Marktumfeld aktualisieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Marktumfeld neu anlegen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Marktumfeld (17:55)": {
-      "main": [
-        [
-          {
-            "node": "Markt-Watchlist laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Markt-Kursdaten abrufen (lokaler FastAPI)": {
-      "main": [
-        [
-          {
-            "node": "Marktanalyse berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "Markt-Watchlist laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
+  "pinData": null,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "b7712746-8c68-48ed-8647-71bc5c60c1cf",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "EKxWwrP4SPLVUpNB",
-  "tags": []
+  "tags": [],
+  "versionId": "f271c8a5-5e74-4e29-9f21-71dbcb895723"
 }

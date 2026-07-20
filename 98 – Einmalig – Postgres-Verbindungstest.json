@@ -1,4 +1,31 @@
 {
+  "active": false,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Verbindung testen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Verbindung testen": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Prueft ob Schema trading existiert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "rp35CZNrjp4BLrR6",
+  "meta": null,
   "name": "98 – Einmalig – Postgres-Verbindungstest",
   "nodes": [
     {
@@ -28,8 +55,8 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
         }
       }
     },
@@ -50,38 +77,16 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
         }
       }
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "Postgres: Verbindung testen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Postgres: Verbindung testen": {
-      "main": [
-        [
-          {
-            "node": "Postgres: Prueft ob Schema trading existiert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "ac499f36-c40c-4e62-8104-14cb2ac048ff"
 }

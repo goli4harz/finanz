@@ -1,4 +1,20 @@
 {
+  "active": false,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Fuehre 001_agenten_architektur.sql aus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "8PHV9RfaXjfTo3ZK",
+  "meta": null,
   "name": "99 – Einmalig – SQL-Migration ausfuehren",
   "nodes": [
     {
@@ -28,27 +44,16 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
         }
       }
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "Fuehre 001_agenten_architektur.sql aus",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "3294342d-3e47-49c9-b21b-75ac3e757b7f"
 }

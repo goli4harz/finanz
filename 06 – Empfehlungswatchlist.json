@@ -1,4 +1,98 @@
 {
+  "active": false,
+  "connections": {
+    "Trigger: Empfehlungswatchlist (18:10)": {
+      "main": [
+        [
+          {
+            "node": "DB: Technische Signale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "DB: Bestehende Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Bestehende Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungen: Abgleich berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empfehlungen: Abgleich berechnen": {
+      "main": [
+        [
+          {
+            "node": "IF: Aktion = schließen?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Matrix: Zusammenfassung bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Aktion = schließen?": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung schließen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Empfehlung öffnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Zusammenfassung bauen": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Empfehlungs-Update senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "zmedV73DsUArNquX",
+  "meta": null,
   "name": "06 – Empfehlungswatchlist",
   "nodes": [
     {
@@ -467,106 +561,9 @@
     }
   ],
   "pinData": {},
-  "connections": {
-    "Trigger: Empfehlungswatchlist (18:10)": {
-      "main": [
-        [
-          {
-            "node": "DB: Technische Signale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Technische Signale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "DB: News laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: News laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "DB: Bestehende Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Bestehende Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "Empfehlungen: Abgleich berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Empfehlungen: Abgleich berechnen": {
-      "main": [
-        [
-          {
-            "node": "IF: Aktion = schließen?",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Matrix: Zusammenfassung bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Aktion = schließen?": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlung schließen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Empfehlung öffnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Matrix: Zusammenfassung bauen": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Empfehlungs-Update senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "48203a10-76ae-4b0d-bcba-5acc1819231c",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "zmedV73DsUArNquX",
-  "tags": []
+  "tags": [],
+  "versionId": "48203a10-76ae-4b0d-bcba-5acc1819231c"
 }

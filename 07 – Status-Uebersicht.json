@@ -1,4 +1,97 @@
 {
+  "active": false,
+  "connections": {
+    "Webhook Status-Uebersicht": {
+      "main": [
+        [
+          {
+            "node": "DB: Fundamentaldaten laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamentaldaten laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Technische Signale laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale laden": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Kursverlauf laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Kursverlauf laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Uebersicht",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Uebersicht": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "V91NVvOl7K4Bdd3w",
+  "meta": null,
   "name": "07 – Status-Uebersicht",
   "nodes": [
     {
@@ -182,105 +275,9 @@
     }
   ],
   "pinData": {},
-  "connections": {
-    "Webhook Status-Uebersicht": {
-      "main": [
-        [
-          {
-            "node": "DB: Fundamentaldaten laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Fundamentaldaten laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Marktumfeld laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktumfeld laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Technische Signale laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Technische Signale laden": {
-      "main": [
-        [
-          {
-            "node": "DB: News laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: News laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Kursverlauf laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Kursverlauf laden": {
-      "main": [
-        [
-          {
-            "node": "Baue Uebersicht",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Uebersicht": {
-      "main": [
-        [
-          {
-            "node": "Antwort mit HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "fb099edd-0526-45df-97f0-8089a9991e72",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "V91NVvOl7K4Bdd3w",
-  "tags": []
+  "tags": [],
+  "versionId": "fb099edd-0526-45df-97f0-8089a9991e72"
 }

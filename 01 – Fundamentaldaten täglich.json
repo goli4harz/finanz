@@ -1,4 +1,140 @@
 {
+  "active": true,
+  "connections": {
+    "Trigger: Fundamentaldaten (06:00)": {
+      "main": [
+        [
+          {
+            "node": "Watchlist laden (Fundamental)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watchlist laden (Fundamental)": {
+      "main": [
+        [
+          {
+            "node": "Fundamentaldaten abrufen (lokaler FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fundamentaldaten aufbereiten & speichern": {
+      "main": [
+        [
+          {
+            "node": "Code: Fundamental DB-Suche einmal starten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamental suchen": {
+      "main": [
+        [
+          {
+            "node": "Code: Ticker-Lookup & Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Ticker vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Fundamental aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Fundamental neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Ticker-Lookup & Routing": {
+      "main": [
+        [
+          {
+            "node": "IF: Fundamental Fehler?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Fundamental Fehler?": {
+      "main": [
+        [
+          {
+            "node": "IF: Fehler-Ticker vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Ticker vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Fehler-Ticker vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Fundamental Fehler notieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Fundamental Fehler neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fundamentaldaten abrufen (lokaler FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Fundamentaldaten aufbereiten & speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Fundamental DB-Suche einmal starten": {
+      "main": [
+        [
+          {
+            "node": "DB: Fundamental suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "TgHlJ6ckDhiOU1hq",
+  "meta": null,
   "name": "01 – Fundamentaldaten täglich",
   "nodes": [
     {
@@ -913,148 +1049,9 @@
     }
   ],
   "pinData": {},
-  "connections": {
-    "Trigger: Fundamentaldaten (06:00)": {
-      "main": [
-        [
-          {
-            "node": "Watchlist laden (Fundamental)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Watchlist laden (Fundamental)": {
-      "main": [
-        [
-          {
-            "node": "Fundamentaldaten abrufen (lokaler FastAPI)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fundamentaldaten aufbereiten & speichern": {
-      "main": [
-        [
-          {
-            "node": "Code: Fundamental DB-Suche einmal starten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Fundamental suchen": {
-      "main": [
-        [
-          {
-            "node": "Code: Ticker-Lookup & Routing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Ticker vorhanden?": {
-      "main": [
-        [
-          {
-            "node": "DB: Fundamental aktualisieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Fundamental neu anlegen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code: Ticker-Lookup & Routing": {
-      "main": [
-        [
-          {
-            "node": "IF: Fundamental Fehler?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Fundamental Fehler?": {
-      "main": [
-        [
-          {
-            "node": "IF: Fehler-Ticker vorhanden?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Ticker vorhanden?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Fehler-Ticker vorhanden?": {
-      "main": [
-        [
-          {
-            "node": "DB: Fundamental Fehler notieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Fundamental Fehler neu anlegen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fundamentaldaten abrufen (lokaler FastAPI)": {
-      "main": [
-        [
-          {
-            "node": "Fundamentaldaten aufbereiten & speichern",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Code: Fundamental DB-Suche einmal starten": {
-      "main": [
-        [
-          {
-            "node": "DB: Fundamental suchen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "85db28d5-c88f-47af-966c-f7722ed4abf6",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "TgHlJ6ckDhiOU1hq",
-  "tags": []
+  "tags": [],
+  "versionId": "85db28d5-c88f-47af-966c-f7722ed4abf6"
 }

@@ -1,4 +1,20 @@
 {
+  "active": false,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "NInmI0f9TfdndwI1",
+  "meta": null,
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
   "nodes": [
     {
@@ -15,7 +31,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT 1 AS platzhalter;",
+        "query": "DELETE FROM trading.learning_rule_proposals WHERE id = 6; SELECT count(*) AS verbleibend FROM trading.learning_rule_proposals WHERE status='proposed';",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -34,21 +50,10 @@
       }
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "Query ausfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "b514212a-47de-42c8-afe9-089d7a025425"
 }

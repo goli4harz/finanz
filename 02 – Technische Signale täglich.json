@@ -1,4 +1,181 @@
 {
+  "active": true,
+  "connections": {
+    "Technische Analyse (RSI/MACD/BB)": {
+      "main": [
+        [
+          {
+            "node": "Signal: flach aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watchlist laden (Kurse)": {
+      "main": [
+        [
+          {
+            "node": "Kurs abrufen (lokaler FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Starke Signale": {
+      "main": [
+        [
+          {
+            "node": "Matrix Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Kurse (18:00)": {
+      "main": [
+        [
+          {
+            "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal: flach aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld für Signal laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal: Routing": {
+      "main": [
+        [
+          {
+            "node": "IF: Signal vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Signal vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Signal aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Signal neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal aktualisieren": {
+      "main": [
+        [
+          {
+            "node": "Filter: Starke Signale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal neu anlegen": {
+      "main": [
+        [
+          {
+            "node": "Filter: Starke Signale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal: Marktumfeld ergänzen": {
+      "main": [
+        [
+          {
+            "node": "DB: Signal suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurs abrufen (lokaler FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Technische Analyse (RSI/MACD/BB)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal + Marktkontext zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Signal: Marktumfeld ergänzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld für Signal laden": {
+      "main": [
+        [
+          {
+            "node": "Signal + Marktkontext zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal suchen": {
+      "main": [
+        [
+          {
+            "node": "Signal: Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "vgT6IrPp3ATaJg8s",
+  "meta": null,
   "name": "02 – Technische Signale täglich",
   "nodes": [
     {
@@ -19,7 +196,8 @@
       "position": [
         -1760,
         656
-      ]
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -53,12 +231,7 @@
       "position": [
         -1312,
         656
-      ],
-      "settings": {
-        "retryOnFail": true,
-        "maxTries": 3,
-        "waitBetweenTries": 3000
-      }
+      ]
     },
     {
       "parameters": {
@@ -108,9 +281,7 @@
         -640,
         656
       ],
-      "settings": {
-        "alwaysOutputData": true
-      }
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -158,9 +329,6 @@
         32,
         656
       ],
-      "settings": {
-        "alwaysOutputData": true
-      },
       "alwaysOutputData": true
     },
     {
@@ -1577,181 +1745,31 @@
           "name": "Header Auth account"
         }
       }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "run_id"
+            }
+          ]
+        }
+      },
+      "id": "eeeeeeee-0000-4000-8000-000000000001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        -160
+      ]
     }
   ],
-  "pinData": {},
-  "connections": {
-    "Technische Analyse (RSI/MACD/BB)": {
-      "main": [
-        [
-          {
-            "node": "Signal: flach aufbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Watchlist laden (Kurse)": {
-      "main": [
-        [
-          {
-            "node": "Kurs abrufen (lokaler FastAPI)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter: Starke Signale": {
-      "main": [
-        [
-          {
-            "node": "Matrix Alert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Kurse (18:00)": {
-      "main": [
-        [
-          {
-            "node": "Watchlist laden (Kurse)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Signal: flach aufbereiten": {
-      "main": [
-        [
-          {
-            "node": "DB: Marktumfeld für Signal laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Signal: Routing": {
-      "main": [
-        [
-          {
-            "node": "IF: Signal vorhanden?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Signal vorhanden?": {
-      "main": [
-        [
-          {
-            "node": "DB: Signal aktualisieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Signal neu anlegen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Signal aktualisieren": {
-      "main": [
-        [
-          {
-            "node": "Filter: Starke Signale",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Signal neu anlegen": {
-      "main": [
-        [
-          {
-            "node": "Filter: Starke Signale",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Signal: Marktumfeld ergänzen": {
-      "main": [
-        [
-          {
-            "node": "DB: Signal suchen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Kurs abrufen (lokaler FastAPI)": {
-      "main": [
-        [
-          {
-            "node": "Technische Analyse (RSI/MACD/BB)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Signal + Marktkontext zusammenführen": {
-      "main": [
-        [
-          {
-            "node": "Signal: Marktumfeld ergänzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktumfeld für Signal laden": {
-      "main": [
-        [
-          {
-            "node": "Signal + Marktkontext zusammenführen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Signal suchen": {
-      "main": [
-        [
-          {
-            "node": "Signal: Routing",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
+  "pinData": null,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "64d7579b-b589-46ba-9e88-17ec1f4757aa",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "W6Mko3fAJEyJudoD",
-  "tags": []
+  "tags": [],
+  "versionId": "00cad33e-6639-445d-bb58-4567dfd921f2"
 }

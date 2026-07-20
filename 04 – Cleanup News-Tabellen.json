@@ -1,4 +1,131 @@
 {
+  "active": false,
+  "connections": {
+    "Trigger: News-Tabellen leeren (23:45)": {
+      "main": [
+        [
+          {
+            "node": "Lösch: stock_news laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lösch: stock_news_evaluated laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: News-Tabellen leeren (Sa 00:15)": {
+      "main": [
+        [
+          {
+            "node": "Lösch: stock_news laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lösch: stock_news_evaluated laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news laden": {
+      "main": [
+        [
+          {
+            "node": "Lösch: Alte News filtern (stock_news)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news_evaluated laden": {
+      "main": [
+        [
+          {
+            "node": "Lösch: Alte News filtern (stock_news_evaluated)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch: stock_news": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Lösch: stock_news Zeile löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch: stock_news_evaluated": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Lösch: stock_news_evaluated Zeile löschen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news Zeile löschen": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: stock_news_evaluated Zeile löschen": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news_evaluated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: Alte News filtern (stock_news)": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lösch: Alte News filtern (stock_news_evaluated)": {
+      "main": [
+        [
+          {
+            "node": "Batch: stock_news_evaluated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "CQXpLtwlbK6YGqdq",
+  "meta": null,
   "name": "04 – Cleanup News-Tabellen",
   "nodes": [
     {
@@ -195,139 +322,9 @@
     }
   ],
   "pinData": {},
-  "connections": {
-    "Trigger: News-Tabellen leeren (23:45)": {
-      "main": [
-        [
-          {
-            "node": "Lösch: stock_news laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Lösch: stock_news_evaluated laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: News-Tabellen leeren (Sa 00:15)": {
-      "main": [
-        [
-          {
-            "node": "Lösch: stock_news laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Lösch: stock_news_evaluated laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: stock_news laden": {
-      "main": [
-        [
-          {
-            "node": "Lösch: Alte News filtern (stock_news)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: stock_news_evaluated laden": {
-      "main": [
-        [
-          {
-            "node": "Lösch: Alte News filtern (stock_news_evaluated)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Batch: stock_news": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Lösch: stock_news Zeile löschen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Batch: stock_news_evaluated": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Lösch: stock_news_evaluated Zeile löschen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: stock_news Zeile löschen": {
-      "main": [
-        [
-          {
-            "node": "Batch: stock_news",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: stock_news_evaluated Zeile löschen": {
-      "main": [
-        [
-          {
-            "node": "Batch: stock_news_evaluated",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: Alte News filtern (stock_news)": {
-      "main": [
-        [
-          {
-            "node": "Batch: stock_news",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lösch: Alte News filtern (stock_news_evaluated)": {
-      "main": [
-        [
-          {
-            "node": "Batch: stock_news_evaluated",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate"
+    "executionOrder": "v1"
   },
-  "versionId": "f9e9c26f-7cf2-4860-8661-c9336ea6f2ce",
-  "meta": {
-    "instanceId": "3918cd7b1079333be95f7df5d1ce0c807af27c5d6c51c5bb061c962138165169"
-  },
-  "id": "CQXpLtwlbK6YGqdq",
-  "tags": []
+  "tags": [],
+  "versionId": "f9e9c26f-7cf2-4860-8661-c9336ea6f2ce"
 }

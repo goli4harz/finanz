@@ -1,501 +1,5 @@
 {
-  "name": "10 – Report- und Prüfagent",
-  "nodes": [
-    {
-      "parameters": {
-        "workflowInputs": {
-          "values": [
-            {
-              "name": "run_id"
-            },
-            {
-              "name": "business_date"
-            }
-          ]
-        }
-      },
-      "name": "Execute Workflow Trigger",
-      "type": "n8n-nodes-base.executeWorkflowTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -3200,
-        0
-      ],
-      "id": "n-00000001-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "Le3FJQ6pctb6qtGi",
-          "mode": "list",
-          "cachedResultName": "stock_fundamentals"
-        },
-        "returnAll": true
-      },
-      "name": "DB: Fundamentaldaten laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -3000,
-        -240
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000002-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "GDMAKrvQovPcBItA",
-          "mode": "list",
-          "cachedResultName": "stock_technical_signals"
-        },
-        "returnAll": true
-      },
-      "name": "DB: Technische Signale laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -3000,
-        -80
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000003-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "dzUOoGnfASjaaVhn",
-          "mode": "list",
-          "cachedResultName": "stock_market_context"
-        },
-        "returnAll": true
-      },
-      "name": "DB: Marktumfeld laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -3000,
-        80
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000004-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "TJgigfIfzXm7c7Ob",
-          "mode": "list",
-          "cachedResultName": "stock_empfehlungen"
-        },
-        "returnAll": true
-      },
-      "name": "DB: Empfehlungen laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -3000,
-        240
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000005-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT ni.title AS titel, ni.url AS link, ni.published_at, ni.created_at,\n       na.relevant, na.wirkungsebene, na.betroffene_ticker_json, na.wirkungsrichtung,\n       na.wirkung_staerke, na.ticker_begruendung, na.wirkungs_begruendung, na.sentiment\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.relevant = TRUE AND na.wirkung_staerke IN ('hoch','mittel')\n  AND ni.created_at >= now() - interval '2 days'\nORDER BY ni.created_at DESC;",
-        "options": {}
-      },
-      "name": "DB: Relevante News laden (trading.*)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -3000,
-        400
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
-        }
-      },
-      "id": "n-00000006-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT proposal_type, target_value, current_value, proposed_value, sample_size, reason, confidence_level, status\nFROM trading.learning_rule_proposals\nWHERE status IN ('proposed','approved') AND created_at >= now() - interval '14 days'\nORDER BY created_at DESC LIMIT 10;",
-        "options": {}
-      },
-      "name": "DB: Aktuelle Lernhinweise laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -3000,
-        560
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
-        }
-      },
-      "id": "n-00000007-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT stage_name, status, error_message FROM trading.pipeline_runs WHERE run_id = '{{ $json.run_id.replace(/'/g, \"''\") }}' ORDER BY id;",
-        "options": {}
-      },
-      "name": "DB: Orchestrator-Lauf laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -3000,
-        720
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
-        }
-      },
-      "id": "n-00000008-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 1",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2800,
-        -80
-      ],
-      "id": "n-00000009-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 2",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2600,
-        80
-      ],
-      "id": "n-00000010-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 3",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2400,
-        240
-      ],
-      "id": "n-00000011-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 4",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2200,
-        400
-      ],
-      "id": "n-00000012-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 5",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2000,
-        560
-      ],
-      "id": "n-00000013-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 6",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1800,
-        720
-      ],
-      "id": "n-00000014-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { _run_id: $json.run_id, _business_date: $json.business_date } }];"
-      },
-      "name": "Trigger-Werte fuer Merge-Kette",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -3000,
-        880
-      ],
-      "id": "n-00000015-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Merge Grunddaten 7",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1700,
-        880
-      ],
-      "id": "n-00000016-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nreturn [{ json: {\n  run_id: 'report-' + heute + '-' + Date.now(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose\n} }];\n"
-      },
-      "name": "Reportdaten aufbereiten",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1600,
-        240
-      ],
-      "id": "n-00000017-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "const d = $input.item.json;\nconst mu = d.marktumfeld || {};\nconst dq = d.datenqualitaet || {};\n\nconst systemPrompt = `Du bist ein vorsichtiger, sachlicher Aktienbeobachter fuer deutsche Aktien.\nDu richtest dich an Einsteiger und erklaerst Fachbegriffe kurz in einfachen Worten.\nDu analysierst technische Signale, Fundamentaldaten, Marktumfeld, Nachrichten und Lernhinweise aus\nder Vergangenheit. Du gibst KEINE Finanzberatung. Du machst KEINE Kauf- oder Verkaufsempfehlungen.\nDu erfindest keine Fakten. Du kennzeichnest Datenluecken klar. Du berechnest KEINE eigenen\ntechnischen Indikatoren neu, sondern interpretierst die bereits berechneten Werte.\n\nFORMATVORGABEN (zwingend einhalten):\n- Antworte ausschliesslich in sauberem Markdown.\n- Ueberschriften ausschliesslich mit ##.\n- Aufzaehlungen ausschliesslich mit \"- \".\n- Kein HTML, keine Code-Bloecke, keine Tabellen (ausser inhaltlich zwingend noetig).`;\n\nconst dqText = dq.warnungen && dq.warnungen.length > 0 ? `\\n\\nDATENQUALITAET-WARNUNGEN:\\n${dq.warnungen.join('\\n')}` : '';\nconst lernText = (d.lernhinweise && d.lernhinweise.length > 0)\n  ? `\\n\\nAKTUELLE LERNHINWEISE (aus dem Lernagenten, noch nicht produktiv aktiv, nur zur Einordnung):\\n${JSON.stringify(d.lernhinweise)}`\n  : '';\n\nconst userPrompt = `Erstelle einen konkreten Aktien-Tagesreport fuer Einsteiger auf Basis dieser Daten:\n\n${JSON.stringify(d, null, 2)}${dqText}${lernText}\n\nSTRUKTUR:\n## 1. Marktlage heute (einfache Worte)\n## 2. Top-Auffaelligkeiten des Tages (max 5)\n## 3. Technische Beobachtungen je Aktie (Kurs, Referenzindex, relative Staerke, Marktbestaetigung, RSI/MACD/Trend erklaert, passende News, vorsichtige Beobachtung)\n## 4. Signale mit Marktbestaetigung\n## 5. Signale gegen das Marktumfeld\n## 6. Nachrichtenlage (positiv/negativ/makro, je relevanter News: betroffene Ticker, Wirkungsebene, Richtung, Staerke, Begruendung)\n## 7. Fundamentale Auffaelligkeiten\n## 8. Watchlist fuer morgen (Long-/Short-/Neutral-Beobachtung mit Begruendung)\n## 9. Lernhinweise aus der Vergangenheit (falls vorhanden: kurz einordnen, klar als noch nicht produktiv aktiv kennzeichnen)\n## 10. Risiken und Datenluecken\n## 11. Fazit (3 konkrete Beobachtungspunkte)\n\nHaftungshinweis am Ende: Kein Handelssignal. Keine Anlageberatung. Nur automatisierte Markt- und Aktienbeobachtung.\nAlle Empfehlungswatchlist-Positionen sind SIMULATION, keine realen Trades - das muss im Text erkennbar bleiben.`;\n\nreturn [{ json: { ...d, systemPrompt, userPrompt } }];\n"
-      },
-      "name": "Report-Prompt aufbauen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1400,
-        240
-      ],
-      "id": "n-00000018-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-5.4-mini",
-          "mode": "list",
-          "cachedResultName": "GPT-5.4-MINI"
-        },
-        "responses": {
-          "values": [
-            {
-              "role": "system",
-              "content": "={{ $json.systemPrompt }}"
-            },
-            {
-              "content": "={{ $json.userPrompt }}"
-            }
-          ]
-        },
-        "builtInTools": {},
-        "options": {
-          "maxTokens": 8000
-        }
-      },
-      "name": "KI: Report-Agent",
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 2.3,
-      "position": [
-        -1200,
-        240
-      ],
-      "retryOnFail": true,
-      "waitBetweenTries": 5000,
-      "credentials": {
-        "openAiApi": {
-          "id": "RiT1gwJpQWzSo6NO",
-          "name": "OpenAI account"
-        }
-      },
-      "id": "n-00000019-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "function getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  return JSON.stringify(resp || '');\n}\nconst reportMarkdown = getAiText($json);\nconst base = $('Report-Prompt aufbauen').all()[0].json;\nreturn [{ json: { ...base, report_markdown: reportMarkdown } }];\n"
-      },
-      "name": "Report-Text extrahieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1000,
-        240
-      ],
-      "id": "n-00000020-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
-      },
-      "name": "Pruef-Prompt aufbauen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -800,
-        240
-      ],
-      "id": "n-00000021-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "gpt-5.4-mini",
-          "mode": "list",
-          "cachedResultName": "GPT-5.4-MINI"
-        },
-        "responses": {
-          "values": [
-            {
-              "role": "system",
-              "content": "={{ $json.checkSystemPrompt }}"
-            },
-            {
-              "content": "={{ $json.checkUserPrompt }}"
-            }
-          ]
-        },
-        "builtInTools": {},
-        "options": {
-          "maxTokens": 4000
-        }
-      },
-      "name": "KI: Pruef-Agent",
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 2.3,
-      "position": [
-        -600,
-        240
-      ],
-      "retryOnFail": true,
-      "waitBetweenTries": 5000,
-      "credentials": {
-        "openAiApi": {
-          "id": "RiT1gwJpQWzSo6NO",
-          "name": "OpenAI account"
-        }
-      },
-      "id": "n-00000022-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "function getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  return JSON.stringify(resp || '');\n}\nfunction parseObj(text) {\n  let t = String(text || '').trim().replace(/^```json\\s*/i,'').replace(/^```\\s*/i,'').replace(/```\\s*$/i,'').trim();\n  try { const p = JSON.parse(t); return (p && typeof p === 'object') ? p : null; } catch(e) {}\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return JSON.parse(t.substring(s, e+1)); } catch(err) {} }\n  return null;\n}\n\nconst base = $('Pruef-Prompt aufbauen').all()[0].json;\nconst verdict = parseObj(getAiText($json)) || { approved: false, quality_score: 0, unsupported_claims: [], contradictions: [], stale_data: [], missing_warnings: ['Pruef-Agent-Antwort nicht parsebar'], required_corrections: ['Pruef-Agent erneut ausfuehren'] };\n\nreturn [{ json: {\n  run_id: base.run_id,\n  business_date: base.business_date,\n  report_markdown: base.report_markdown,\n  approved: verdict.approved === true,\n  quality_score: verdict.quality_score,\n  unsupported_claims: verdict.unsupported_claims || [],\n  contradictions: verdict.contradictions || [],\n  stale_data: verdict.stale_data || [],\n  missing_warnings: verdict.missing_warnings || [],\n  required_corrections: verdict.required_corrections || [],\n  // Fuer 05s deterministische Zusatzabschnitte (Signal-Uebersicht,\n  // Empfehlungs-Watchlist), die NICHT vom Report-Agenten frei formuliert\n  // werden, sondern unveraendert aus dem Original-05-Muster uebernommen sind.\n  technische_signale: base.technische_signale || [],\n  empfehlungswatchlist: base.empfehlungswatchlist || {},\n  datenqualitaet: base.datenqualitaet || {}\n} }];\n"
-      },
-      "name": "Endergebnis zusammenstellen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -400,
-        240
-      ],
-      "id": "n-00000023-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'report-agent', 'report', 'gpt-5.4-mini', 'report-agent-v1', 'success', now(), now());`;\nreturn { json: { ...j, sql } };\n"
-      },
-      "name": "Report-Agent protokollieren (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -200,
-        120
-      ],
-      "id": "n-00000024-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "name": "Report-Agent protokollieren (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -24,
-        120
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "id": "n-00000025-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $('Endergebnis zusammenstellen').all()[0].json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, confidence, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'pruef-agent', 'pruefung', 'gpt-5.4-mini', 'pruef-agent-v1',\n          ${pgStr(j.approved ? 'success' : 'warning')}, ${pgNum(j.quality_score)}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
-      },
-      "name": "Pruef-Agent protokollieren (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        0,
-        240
-      ],
-      "id": "n-00000026-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "name": "Pruef-Agent protokollieren (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        176,
-        240
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "id": "n-00000027-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: $('Endergebnis zusammenstellen').all()[0].json }];"
-      },
-      "id": "fdfacf16-060b-4199-a1d1-6b523586c237",
-      "name": "Ergebnis fuer Aufrufer aufbereiten",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        426,
-        240
-      ]
-    }
-  ],
+  "active": true,
   "connections": {
     "Execute Workflow Trigger": {
       "main": [
@@ -830,8 +334,509 @@
       ]
     }
   },
-  "pinData": {},
+  "id": "BFlxfLyarzR2xbBT",
+  "meta": null,
+  "name": "10 – Report- und Prüfagent",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "run_id"
+            },
+            {
+              "name": "business_date"
+            }
+          ]
+        }
+      },
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3200,
+        0
+      ],
+      "id": "n-00000001-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "Le3FJQ6pctb6qtGi",
+          "mode": "list",
+          "cachedResultName": "stock_fundamentals"
+        },
+        "returnAll": true
+      },
+      "name": "DB: Fundamentaldaten laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3000,
+        -240
+      ],
+      "onError": "continueRegularOutput",
+      "id": "n-00000002-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals"
+        },
+        "returnAll": true
+      },
+      "name": "DB: Technische Signale laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3000,
+        -80
+      ],
+      "onError": "continueRegularOutput",
+      "id": "n-00000003-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context"
+        },
+        "returnAll": true
+      },
+      "name": "DB: Marktumfeld laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3000,
+        80
+      ],
+      "onError": "continueRegularOutput",
+      "id": "n-00000004-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "TJgigfIfzXm7c7Ob",
+          "mode": "list",
+          "cachedResultName": "stock_empfehlungen"
+        },
+        "returnAll": true
+      },
+      "name": "DB: Empfehlungen laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -3000,
+        240
+      ],
+      "onError": "continueRegularOutput",
+      "id": "n-00000005-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT ni.title AS titel, ni.url AS link, ni.published_at, ni.created_at,\n       na.relevant, na.wirkungsebene, na.betroffene_ticker_json, na.wirkungsrichtung,\n       na.wirkung_staerke, na.ticker_begruendung, na.wirkungs_begruendung, na.sentiment\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.relevant = TRUE AND na.wirkung_staerke IN ('hoch','mittel')\n  AND ni.created_at >= now() - interval '2 days'\nORDER BY ni.created_at DESC;",
+        "options": {}
+      },
+      "name": "DB: Relevante News laden (trading.*)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-00000006-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT proposal_type, target_value, current_value, proposed_value, sample_size, reason, confidence_level, status\nFROM trading.learning_rule_proposals\nWHERE status IN ('proposed','approved') AND created_at >= now() - interval '14 days'\nORDER BY created_at DESC LIMIT 10;",
+        "options": {}
+      },
+      "name": "DB: Aktuelle Lernhinweise laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        560
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-00000007-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT stage_name, status, error_message FROM trading.pipeline_runs WHERE run_id = '{{ $json.run_id.replace(/'/g, \"''\") }}' ORDER BY id;",
+        "options": {}
+      },
+      "name": "DB: Orchestrator-Lauf laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        720
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-00000008-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2800,
+        -80
+      ],
+      "id": "n-00000009-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2600,
+        80
+      ],
+      "id": "n-00000010-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2400,
+        240
+      ],
+      "id": "n-00000011-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2200,
+        400
+      ],
+      "id": "n-00000012-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 5",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2000,
+        560
+      ],
+      "id": "n-00000013-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 6",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1800,
+        720
+      ],
+      "id": "n-00000014-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _run_id: $json.run_id, _business_date: $json.business_date } }];"
+      },
+      "name": "Trigger-Werte fuer Merge-Kette",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3000,
+        880
+      ],
+      "id": "n-00000015-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Grunddaten 7",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1700,
+        880
+      ],
+      "id": "n-00000016-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nreturn [{ json: {\n  run_id: 'report-' + heute + '-' + Date.now(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose\n} }];\n"
+      },
+      "name": "Reportdaten aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        240
+      ],
+      "id": "n-00000017-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\nconst mu = d.marktumfeld || {};\nconst dq = d.datenqualitaet || {};\n\nconst systemPrompt = `Du bist ein vorsichtiger, sachlicher Aktienbeobachter fuer deutsche Aktien.\nDu richtest dich an Einsteiger und erklaerst Fachbegriffe kurz in einfachen Worten.\nDu analysierst technische Signale, Fundamentaldaten, Marktumfeld, Nachrichten und Lernhinweise aus\nder Vergangenheit. Du gibst KEINE Finanzberatung. Du machst KEINE Kauf- oder Verkaufsempfehlungen.\nDu erfindest keine Fakten. Du kennzeichnest Datenluecken klar. Du berechnest KEINE eigenen\ntechnischen Indikatoren neu, sondern interpretierst die bereits berechneten Werte.\n\nFORMATVORGABEN (zwingend einhalten):\n- Antworte ausschliesslich in sauberem Markdown.\n- Ueberschriften ausschliesslich mit ##.\n- Aufzaehlungen ausschliesslich mit \"- \".\n- Kein HTML, keine Code-Bloecke, keine Tabellen (ausser inhaltlich zwingend noetig).`;\n\nconst dqText = dq.warnungen && dq.warnungen.length > 0 ? `\\n\\nDATENQUALITAET-WARNUNGEN:\\n${dq.warnungen.join('\\n')}` : '';\nconst lernText = (d.lernhinweise && d.lernhinweise.length > 0)\n  ? `\\n\\nAKTUELLE LERNHINWEISE (aus dem Lernagenten, noch nicht produktiv aktiv, nur zur Einordnung):\\n${JSON.stringify(d.lernhinweise)}`\n  : '';\n\nconst userPrompt = `Erstelle einen konkreten Aktien-Tagesreport fuer Einsteiger auf Basis dieser Daten:\n\n${JSON.stringify(d, null, 2)}${dqText}${lernText}\n\nSTRUKTUR:\n## 1. Marktlage heute (einfache Worte)\n## 2. Top-Auffaelligkeiten des Tages (max 5)\n## 3. Technische Beobachtungen je Aktie (Kurs, Referenzindex, relative Staerke, Marktbestaetigung, RSI/MACD/Trend erklaert, passende News, vorsichtige Beobachtung)\n## 4. Signale mit Marktbestaetigung\n## 5. Signale gegen das Marktumfeld\n## 6. Nachrichtenlage (positiv/negativ/makro, je relevanter News: betroffene Ticker, Wirkungsebene, Richtung, Staerke, Begruendung)\n## 7. Fundamentale Auffaelligkeiten\n## 8. Watchlist fuer morgen (Long-/Short-/Neutral-Beobachtung mit Begruendung)\n## 9. Lernhinweise aus der Vergangenheit (falls vorhanden: kurz einordnen, klar als noch nicht produktiv aktiv kennzeichnen)\n## 10. Risiken und Datenluecken\n## 11. Fazit (3 konkrete Beobachtungspunkte)\n\nHaftungshinweis am Ende: Kein Handelssignal. Keine Anlageberatung. Nur automatisierte Markt- und Aktienbeobachtung.\nAlle Empfehlungswatchlist-Positionen sind SIMULATION, keine realen Trades - das muss im Text erkennbar bleiben.`;\n\nreturn [{ json: { ...d, systemPrompt, userPrompt } }];\n"
+      },
+      "name": "Report-Prompt aufbauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        240
+      ],
+      "id": "n-00000018-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.systemPrompt }}"
+            },
+            {
+              "content": "={{ $json.userPrompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 8000
+        }
+      },
+      "name": "KI: Report-Agent",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -1200,
+        240
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "RiT1gwJpQWzSo6NO",
+          "name": "OpenAI account"
+        }
+      },
+      "id": "n-00000019-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  return JSON.stringify(resp || '');\n}\nconst reportMarkdown = getAiText($json);\nconst base = $('Report-Prompt aufbauen').all()[0].json;\nreturn [{ json: { ...base, report_markdown: reportMarkdown } }];\n"
+      },
+      "name": "Report-Text extrahieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        240
+      ],
+      "id": "n-00000020-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
+      },
+      "name": "Pruef-Prompt aufbauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        240
+      ],
+      "id": "n-00000021-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "={{ $json.checkSystemPrompt }}"
+            },
+            {
+              "content": "={{ $json.checkUserPrompt }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 4000
+        }
+      },
+      "name": "KI: Pruef-Agent",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -600,
+        240
+      ],
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "openAiApi": {
+          "id": "RiT1gwJpQWzSo6NO",
+          "name": "OpenAI account"
+        }
+      },
+      "id": "n-00000022-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  return JSON.stringify(resp || '');\n}\nfunction parseObj(text) {\n  let t = String(text || '').trim().replace(/^```json\\s*/i,'').replace(/^```\\s*/i,'').replace(/```\\s*$/i,'').trim();\n  try { const p = JSON.parse(t); return (p && typeof p === 'object') ? p : null; } catch(e) {}\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return JSON.parse(t.substring(s, e+1)); } catch(err) {} }\n  return null;\n}\n\nconst base = $('Pruef-Prompt aufbauen').all()[0].json;\nconst verdict = parseObj(getAiText($json)) || { approved: false, quality_score: 0, unsupported_claims: [], contradictions: [], stale_data: [], missing_warnings: ['Pruef-Agent-Antwort nicht parsebar'], required_corrections: ['Pruef-Agent erneut ausfuehren'] };\n\nreturn [{ json: {\n  run_id: base.run_id,\n  business_date: base.business_date,\n  report_markdown: base.report_markdown,\n  approved: verdict.approved === true,\n  quality_score: verdict.quality_score,\n  unsupported_claims: verdict.unsupported_claims || [],\n  contradictions: verdict.contradictions || [],\n  stale_data: verdict.stale_data || [],\n  missing_warnings: verdict.missing_warnings || [],\n  required_corrections: verdict.required_corrections || [],\n  // Fuer 05s deterministische Zusatzabschnitte (Signal-Uebersicht,\n  // Empfehlungs-Watchlist), die NICHT vom Report-Agenten frei formuliert\n  // werden, sondern unveraendert aus dem Original-05-Muster uebernommen sind.\n  technische_signale: base.technische_signale || [],\n  empfehlungswatchlist: base.empfehlungswatchlist || {},\n  datenqualitaet: base.datenqualitaet || {}\n} }];\n"
+      },
+      "name": "Endergebnis zusammenstellen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        240
+      ],
+      "id": "n-00000023-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'report-agent', 'report', 'gpt-5.4-mini', 'report-agent-v1', 'success', now(), now());`;\nreturn { json: { ...j, sql } };\n"
+      },
+      "name": "Report-Agent protokollieren (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        120
+      ],
+      "id": "n-00000024-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Report-Agent protokollieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -24,
+        120
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000025-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $('Endergebnis zusammenstellen').all()[0].json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, status, confidence, started_at, finished_at)\n  VALUES (${pgStr(j.run_id)}, 'pruef-agent', 'pruefung', 'gpt-5.4-mini', 'pruef-agent-v1',\n          ${pgStr(j.approved ? 'success' : 'warning')}, ${pgNum(j.quality_score)}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
+      },
+      "name": "Pruef-Agent protokollieren (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        240
+      ],
+      "id": "n-00000026-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Pruef-Agent protokollieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        176,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000027-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: $('Endergebnis zusammenstellen').all()[0].json }];"
+      },
+      "id": "fe5de8ed-3c34-43c0-af9f-fb91923a290d",
+      "name": "Ergebnis fuer Aufrufer aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        426,
+        240
+      ]
+    }
+  ],
+  "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "dc2b5b55-bcff-44a6-af89-6edc76137165"
 }

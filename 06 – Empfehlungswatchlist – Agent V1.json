@@ -1,4 +1,199 @@
 {
+  "active": true,
+  "connections": {
+    "Trigger: Empfehlungswatchlist (18:10)": {
+      "main": [
+        [
+          {
+            "node": "Trigger-Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Trigger-Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger-Eingabe normalisieren": {
+      "main": [
+        [
+          {
+            "node": "DB: Technische Signale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden (Empf., trading.*)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden (Empf., trading.*)": {
+      "main": [
+        [
+          {
+            "node": "DB: Bestehende Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Bestehende Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungen: Abgleich berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empfehlungen: Abgleich berechnen": {
+      "main": [
+        [
+          {
+            "node": "IF: Aktion = schließen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Aktion = schließen?": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung schließen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Bestaetigung erforderlich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Bestaetigung erforderlich?": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung öffnen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Als Vorschlag markieren (kein Write)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlung schließen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlung öffnen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schreibergebnisse zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege dazu mergen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Als Vorschlag markieren (kein Write)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege dazu mergen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Vorschlaege dazu mergen": {
+      "main": [
+        [
+          {
+            "node": "Schreiberfolg verifizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schreiberfolg verifizieren": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Zusammenfassung bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Zusammenfassung bauen": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Empfehlungs-Update senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "aguWZUolRizBnsj4",
+  "meta": null,
   "name": "06 – Empfehlungswatchlist – Agent V1",
   "nodes": [
     {
@@ -77,9 +272,6 @@
         -3616,
         416
       ],
-      "settings": {
-        "alwaysOutputData": true
-      },
       "alwaysOutputData": true
     },
     {
@@ -98,8 +290,8 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "PLACEHOLDER_POSTGRES_CRED",
-          "name": "Postgres – Trading (TODO Credential zuweisen)"
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
         }
       },
       "id": "n-00000003-0000-4000-8000-0000000000"
@@ -124,9 +316,6 @@
         -3168,
         416
       ],
-      "settings": {
-        "alwaysOutputData": true
-      },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
@@ -582,200 +771,10 @@
       }
     }
   ],
-  "connections": {
-    "Trigger: Empfehlungswatchlist (18:10)": {
-      "main": [
-        [
-          {
-            "node": "Trigger-Eingabe normalisieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "Trigger-Eingabe normalisieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger-Eingabe normalisieren": {
-      "main": [
-        [
-          {
-            "node": "DB: Technische Signale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Technische Signale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "DB: News laden (Empf., trading.*)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: News laden (Empf., trading.*)": {
-      "main": [
-        [
-          {
-            "node": "DB: Bestehende Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Bestehende Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "Empfehlungen: Abgleich berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Empfehlungen: Abgleich berechnen": {
-      "main": [
-        [
-          {
-            "node": "IF: Aktion = schließen?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Aktion = schließen?": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlung schließen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Bestaetigung erforderlich?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Bestaetigung erforderlich?": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlung öffnen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Als Vorschlag markieren (kein Write)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Empfehlung schließen": {
-      "main": [
-        [
-          {
-            "node": "Schreibergebnisse zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Empfehlung öffnen": {
-      "main": [
-        [
-          {
-            "node": "Schreibergebnisse zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Schreibergebnisse zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege dazu mergen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Als Vorschlag markieren (kein Write)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege dazu mergen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Vorschlaege dazu mergen": {
-      "main": [
-        [
-          {
-            "node": "Schreiberfolg verifizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schreiberfolg verifizieren": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Zusammenfassung bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Matrix: Zusammenfassung bauen": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Empfehlungs-Update senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "7552ef7f-f6af-486f-b908-c5ade6d2f1ca"
 }
