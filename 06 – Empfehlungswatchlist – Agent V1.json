@@ -382,10 +382,13 @@
         "workflowInputs": {
           "values": [
             {
-              "name": "run_id"
+              "name": "context"
             },
             {
-              "name": "DRY_RUN"
+              "name": "config"
+            },
+            {
+              "name": "payload"
             }
           ]
         }
@@ -401,7 +404,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Vereinheitlicht beide Trigger-Pfade auf ein gemeinsames Item mit\n// DRY_RUN (Default false bei eigenstaendigem Zeitplan-Lauf).\n// REQUIRE_CONFIRMATION kommt zentral aus trading.pipeline_config (siehe\n// Node Kontext ergaenzen), nicht mehr als Konstante hier.\nconst j = $json || {};\nreturn [{ json: {\n  run_id: j.run_id || ('standalone-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  DRY_RUN: j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
+        "jsCode": "// Vereinheitlicht beide Trigger-Pfade auf ein gemeinsames Item mit\n// DRY_RUN (Default false bei eigenstaendigem Zeitplan-Lauf).\n// REQUIRE_CONFIRMATION kommt zentral aus trading.pipeline_config (siehe\n// Node Kontext ergaenzen), nicht mehr als Konstante hier.\n// Eingabe kommt seit Prioritaet 7/18 verschachtelt als {context, config, payload}.\nconst j = $json || {};\nconst ctx = j.context || {};\nconst cfg = j.config || {};\nreturn [{ json: {\n  run_id: ctx.run_id || ('standalone-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  DRY_RUN: cfg.DRY_RUN === true || cfg.DRY_RUN === 'true'\n} }];"
       },
       "name": "Trigger-Eingabe normalisieren",
       "type": "n8n-nodes-base.code",

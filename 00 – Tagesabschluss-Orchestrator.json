@@ -661,7 +661,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $json.run_id }}"
+            "context": "={{ { run_id: $json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
           }
         },
         "options": {
@@ -781,7 +783,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Run-ID erzeugen').item.json.run_id }}"
+            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
           }
         },
         "options": {
@@ -1043,8 +1047,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Kontext zusammenfuehren').all()[0].json.run_id }}",
-            "DRY_RUN": "={{ $('Kontext zusammenfuehren').all()[0].json.DRY_RUN }}"
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
+            "payload": "={{ {} }}"
           }
         },
         "options": {
@@ -1133,8 +1138,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Run-ID erzeugen').item.json.run_id }}",
-            "business_date": "={{ $('Run-ID erzeugen').item.json.business_date }}"
+            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id, business_date: $('Run-ID erzeugen').item.json.business_date } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
           }
         },
         "options": {
@@ -1255,10 +1261,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ $('Kontext zusammenfuehren').all()[0].json.run_id }}",
-            "report_markdown": "={{ $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown }}",
-            "approved": true,
-            "DRY_RUN": "={{ $('Kontext zusammenfuehren').all()[0].json.DRY_RUN }}"
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
+            "payload": "={{ { report_markdown: $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown, approved: true } }}"
           }
         },
         "options": {

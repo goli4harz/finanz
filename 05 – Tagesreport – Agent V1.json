@@ -256,16 +256,13 @@
         "workflowInputs": {
           "values": [
             {
-              "name": "run_id"
+              "name": "context"
             },
             {
-              "name": "report_markdown"
+              "name": "config"
             },
             {
-              "name": "approved"
-            },
-            {
-              "name": "DRY_RUN"
+              "name": "payload"
             }
           ]
         }
@@ -290,8 +287,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "run_id": "={{ 'standalone-' + Date.now() }}",
-            "business_date": ""
+            "context": "={{ { run_id: 'standalone-' + Date.now(), business_date: '' } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
           }
         },
         "options": {
@@ -310,7 +308,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Vereinheitlicht beide Einstiegspfade auf ein gemeinsames Item.\nconst j = $json || {};\nreturn [{ json: {\n  run_id: j.run_id || 'unbekannt',\n  _run_started_at: new Date().toISOString(),\n  report_markdown: j.report_markdown || '',\n  approved: j.approved === true || j.approved === 'true',\n  quality_score: j.quality_score,\n  required_corrections: j.required_corrections || [],\n  missing_warnings: j.missing_warnings || [],\n  technische_signale: j.technische_signale || [],\n  empfehlungswatchlist: j.empfehlungswatchlist || {},\n  datenqualitaet: j.datenqualitaet || {},\n  DRY_RUN: j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
+        "jsCode": "// Vereinheitlicht beide Einstiegspfade auf ein gemeinsames Item.\n// Echter Trigger-Pfad (ueber 00) liefert seit Prioritaet 7/18 verschachtelt\n// {context, config, payload}; der interne Standalone-Testpfad (Node\n// 'Ausfuehren: Report- und Pruefagent (10, standalone)') liefert 10s\n// eigenes, flaches Domaenen-Objekt (run_id/report_markdown/approved/...\n// direkt auf j) -- daher beide Formen unterstuetzen, verschachtelt zuerst.\nconst j = $json || {};\nconst ctx = j.context || {};\nconst cfg = j.config || {};\nconst pl = j.payload || {};\nreturn [{ json: {\n  run_id: ctx.run_id || j.run_id || 'unbekannt',\n  _run_started_at: new Date().toISOString(),\n  report_markdown: pl.report_markdown || j.report_markdown || '',\n  approved: pl.approved === true || pl.approved === 'true' || j.approved === true || j.approved === 'true',\n  quality_score: j.quality_score,\n  required_corrections: j.required_corrections || [],\n  missing_warnings: j.missing_warnings || [],\n  technische_signale: j.technische_signale || [],\n  empfehlungswatchlist: j.empfehlungswatchlist || {},\n  datenqualitaet: j.datenqualitaet || {},\n  DRY_RUN: cfg.DRY_RUN === true || cfg.DRY_RUN === 'true' || j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
       },
       "name": "Eingabe normalisieren",
       "type": "n8n-nodes-base.code",
