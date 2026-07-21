@@ -325,12 +325,29 @@ Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hat
 
 `07` hatte Pipeline-Laufstatus, Wirkungsanalyse-Fortschritt und Trefferquoten bereits aus einer früheren Session ("Phase 13"-Kommentar im Code, SVG-Balkendiagramme). Einzig fehlendes Stück aus der Priorität-12-Beschreibung: Konfigversion. Neuer Node `DB: Pipeline-Konfiguration laden` (`SELECT ... FROM trading.pipeline_config`) als 13. Zweig in die bestehende `Merge Status 1..12`-Kette eingehängt (`Merge Status 13`); `Baue Uebersicht` bekam eine zusätzliche `<h2>Konfiguration</h2>`-Tabelle (Key, Wert, Beschreibung, zuletzt geändert). Live per gepinntem Webhook-Trigger getestet: `DRY_RUN`/`REQUIRE_CONFIRMATION` samt Beschreibung und Zeitstempel korrekt gerendert.
 
+### Priorität 9 — Lernagent methodisch verbessern (erledigt, live getestet, Stand 2026-07-21)
+
+Nutzer hat den originalen Auftragstext (Punkte 22–25) nachgeliefert, der bisher nirgends im Repo dokumentiert war:
+
+- **22. Zeiträume getrennt auswerten**: D+1/D+3/D+5/D+10/D+20 separat.
+- **23. Mindestfallzahlen pro Kombination**: Quelle×Zeitraum, Kategorie×Zeitraum, Ticker×Zeitraum, Konfidenzklasse×Zeitraum.
+- **24. Fälle gewichten**: Baseline-Qualität/Störfaktoren/Konfidenz berücksichtigen, Beispielgewichtung high=1.0/medium=0.7/limited=0.4/confounded=0.25, transparent gespeichert und im Bericht erwähnt.
+- **25. Keine automatischen Regeländerungen**: bereits erfüllt, Vorschlag braucht aber `time_horizon` + `evidence`.
+
+Neue Migration `sql/006_learning_proposals_time_horizon.sql` (`ALTER TABLE trading.learning_rule_proposals ADD COLUMN time_horizon`; `evidence` nutzt die bereits vorhandene `metadata_json`-Spalte statt einer neuen). Die 4 Dimension-Queries in `09` (`Je Newskategorie`/`Je Quelle`/`Je Ticker`/`Je Konfidenz-Bucket`) liefern jetzt `UNION ALL` über die 5 Horizonte statt eines einzelnen Aggregats — jede Zeile ist eine (Dimension×Wert×Horizont)-Kombination mit eigener `sample_size` (löst Punkt 22+23 zusammen). Pro Fall wird ein `case_weight` berechnet (`confounded→0.25`, `baseline_quality='high'→1.0/'medium'→0.7/'limited'→0.4`), zwei Kennzahlen ausgewiesen: `direction_accuracy` (ungewichtet, weiterhin ohne konfundierte Fälle) und `weighted_direction_accuracy` (inklusive konfundierter Fälle, aber abgewertet — löst Punkt 24). `Mindestfallzahlen klassifizieren`, `Baue Lernagent-Prompt`, `Vorschlaege gegen Fallzahlen validieren` und `Vorschlag speichern (SQL bauen)` entsprechend erweitert (3-Komponenten-Match `dimension|value|horizon` statt 2, `evidence`-Objekt in `metadata_json`). `strength_correct` bleibt mangels `_dN`-Spalten nur als Gesamt-Aggregat erhalten (Schema-Grenze).
+
+**Bewusst nicht in die Gewichtsformel eingerechnet**: "Recherche-Agent vs. Erstbewertung" (bräuchte einen Join in jeder Aggregatabfrage) und "Konfidenz der ursprünglichen News-Bewertung" (bleibt informativ als `avg_confidence` sichtbar, fließt aber nicht multiplikativ ein) — beide vom Auftragstext als "zu berücksichtigen" genannt, aber die Beispieltabelle deckt nur Qualität/Confounded ab.
+
+**Live-Test-Fund**: `SQL: ...` mit `status = 'completed'` als Filter (das alte, vor Prioritaet 9 genutzte Kriterium) hätte ALLE Zeilen ausgeschlossen — eine Zeile erreicht `status='completed'` erst, wenn ALLE Horizonte bis D+20 fertig sind, `direction_correct_d1` kann aber längst befüllt sein, während die Zeile noch bei `waiting_d3` o. ä. hängt. Gefixt: Gating läuft jetzt über `direction_correct_dN IS NOT NULL` je Horizont-Block, nicht über den Gesamt-Status. Zusätzlich ein vorbestehender (nicht durch diese Änderung verursachter) Bug gefunden+behoben: `Lernbericht aufbereiten` las von `$json`, das aber vom Postgres-INSERT-Node überschrieben wurde (Report zeigte "Zeitraum undefined bis undefined") — liest jetzt per Rückverweis von `Agentenlauf protokollieren (SQL bauen)`.
+
+Voller Live-Test bestätigt: Query-Struktur korrekt (z. B. 15 Zeilen für `Je Newskategorie` = 3 Kategorien × 5 Horizonte), aktuell 0 Findings, weil die 89 vorhandenen `news_impact_tracking`-Zeilen alte Test-Artefakte von vor der `baseline_quality`-Einführung sind (`source`/`baseline_quality` durchgehend `NULL`, alle bei `status='waiting_d1'` hängengeblieben, unabhängig von Priorität 9) — erwartetes Verhalten bei aktuell dünner Datenlage, kein Bug. Matrix-Bericht zeigt jetzt korrekt Zeitraum, Ereigniszahlen und die Gewichtungstabelle.
+
 ### Noch offen aus dem 29-Punkte-Auftrag
 
 - **Priorität 6**: erledigt und live getestet (siehe oben) — nur `05`s DRY_RUN-/Ablehnungs-Zweig und `IF: Versand ok?` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
 - **Priorität 7, Punkt 18**: erledigt (siehe oben).
 - **Priorität 8**: erledigt (siehe oben) — offen bleibt nur echtes automatisches Node-Retry (API-Limitation, s. Caveat).
-- **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
+- **Priorität 9**: erledigt (siehe oben).
 - **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
 - **Priorität 11**: `pipeline_config` zur vollen zentralen Konfigurationstabelle ausbauen (Watchlist, Schwellenwerte, Modelle, Matrix-Räume, Prompt-Versionen — aktuell nur `DRY_RUN`/`REQUIRE_CONFIRMATION`).
 - **Priorität 12**: erledigt (siehe oben).
