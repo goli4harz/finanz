@@ -178,6 +178,28 @@
             "index": 0
           },
           {
+            "node": "Envelope: Real-Pfad zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Empfehlungs-Update senden": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Real-Pfad zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Envelope: Real-Pfad zusammenfuehren": {
+      "main": [
+        [
+          {
             "node": "Envelope: Zweige zusammenfuehren",
             "type": "main",
             "index": 0
@@ -734,6 +756,17 @@
     },
     {
       "parameters": {},
+      "id": "d8e9f0a1-2b3c-4d5e-6f70-8091a2b3c4d5",
+      "name": "Envelope: Real-Pfad zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1300,
+        700
+      ]
+    },
+    {
+      "parameters": {},
       "id": "a3e2f9c1-4b7d-4e6a-9c3f-1d8b2a5e6f70",
       "name": "Envelope: Zweige zusammenfuehren",
       "type": "n8n-nodes-base.merge",
@@ -745,7 +778,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prioritaet 6: einheitliches Envelope. Genau EIN Zweig liefert pro Lauf\n// tatsaechlich Items (DRY_RUN vs. echter Schreibpfad schliessen sich vor\n// diesem Merge gegenseitig aus, siehe IF: DRY_RUN aktiv?), daher reicht eine\n// Formerkennung am Item-Inhalt statt an der Merge-Eingangsseite.\nconst items = $input.all().map(i => i.json);\n\nlet runId = null, startedAt = null;\ntry {\n  const t = $('Trigger-Eingabe normalisieren').all()[0].json;\n  runId = t.run_id;\n  startedAt = t._run_started_at || null;\n} catch (e) {}\n\nconst isDryRun = items.length > 0 && items.every(i => i.dry_run === true);\n\nlet processed, successful, failed, warnings, errors, status;\n\nif (isDryRun) {\n  const planned = (items[0] && items[0].planned_actions) || [];\n  processed = planned.length;\n  successful = 0;\n  failed = 0;\n  warnings = [];\n  errors = [];\n  status = 'skipped';\n} else {\n  processed = items.length;\n  const failedItems = items.filter(i => i._write_failed === true);\n  const proposalItems = items.filter(i => i._aktion === 'vorschlag_ungespeichert');\n  failed = failedItems.length;\n  successful = processed - failed - proposalItems.length;\n  warnings = proposalItems.map(i => ({ ticker: i.ticker || null, message: 'Vorschlag ohne Schreibvorgang (REQUIRE_CONFIRMATION aktiv)' }));\n  errors = failedItems.map(i => ({\n    ticker: i.ticker || i._existing_id || null,\n    node: i._aktion === 'oeffnen' ? 'DB: Empfehlung \\u00f6ffnen' : 'DB: Empfehlung schlie\\u00dfen',\n    message: i._write_error || 'Unbekannter Fehler'\n  }));\n  if (processed === 0) status = 'skipped';\n  else if (failed === 0) status = 'success';\n  else if (successful === 0 && proposalItems.length === 0) status = 'failed';\n  else status = 'partial_failure';\n}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '06 \\u2013 Empfehlungswatchlist',\n  run_id: runId,\n  processed,\n  successful,\n  failed,\n  warnings,\n  errors,\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+        "jsCode": "// Prioritaet 6: einheitliches Envelope. Genau EIN Zweig liefert pro Lauf\n// tatsaechlich Items (DRY_RUN vs. echter Schreibpfad schliessen sich vor\n// diesem Merge gegenseitig aus, siehe IF: DRY_RUN aktiv?), daher reicht eine\n// Formerkennung am Item-Inhalt statt an der Merge-Eingangsseite.\n// Der echte Pfad enthaelt zusaetzlich die Matrix-Sende-Antwort (kein\n// _aktion-Feld, sonst haette die urspruengliche Matrix-Nachricht keinen\n// Rueckgabewert und der Execute-Workflow-Aufruf aus 00 laeuft ins Leere,\n// live beobachtet: 06 lieferte {} statt Envelope zurueck) -- die wird vor\n// der Zaehlung explizit herausgefiltert, analog zum ticker!==undefined-\n// Filter in 02s Abschluss-Ergebnis bauen.\nconst items = $input.all().map(i => i.json);\n\nlet runId = null, startedAt = null;\ntry {\n  const t = $('Trigger-Eingabe normalisieren').all()[0].json;\n  runId = t.run_id;\n  startedAt = t._run_started_at || null;\n} catch (e) {}\n\nconst isDryRun = items.length > 0 && items.every(i => i.dry_run === true);\n\nlet processed, successful, failed, warnings, errors, status;\n\nif (isDryRun) {\n  const planned = (items[0] && items[0].planned_actions) || [];\n  processed = planned.length;\n  successful = 0;\n  failed = 0;\n  warnings = [];\n  errors = [];\n  status = 'skipped';\n} else {\n  const relevant = items.filter(i => i._aktion !== undefined);\n  processed = relevant.length;\n  const failedItems = relevant.filter(i => i._write_failed === true);\n  const proposalItems = relevant.filter(i => i._aktion === 'vorschlag_ungespeichert');\n  failed = failedItems.length;\n  successful = processed - failed - proposalItems.length;\n  warnings = proposalItems.map(i => ({ ticker: i.ticker || null, message: 'Vorschlag ohne Schreibvorgang (REQUIRE_CONFIRMATION aktiv)' }));\n  errors = failedItems.map(i => ({\n    ticker: i.ticker || i._existing_id || null,\n    node: i._aktion === 'oeffnen' ? 'DB: Empfehlung \\u00f6ffnen' : 'DB: Empfehlung schlie\\u00dfen',\n    message: i._write_error || 'Unbekannter Fehler'\n  }));\n  if (processed === 0) status = 'skipped';\n  else if (failed === 0) status = 'success';\n  else if (successful === 0 && proposalItems.length === 0) status = 'failed';\n  else status = 'partial_failure';\n}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '06 \\u2013 Empfehlungswatchlist',\n  run_id: runId,\n  processed,\n  successful,\n  failed,\n  warnings,\n  errors,\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
       },
       "id": "b7c4d2e8-5f9a-4d1b-8e7c-2f6a9b0c1d3e",
       "name": "Abschluss-Ergebnis bauen",
