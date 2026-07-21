@@ -170,6 +170,17 @@
         ]
       ]
     },
+    "Tracking-Zeile upserten (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Persistierung pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "D+1..D+20 berechnen + Stoerfaktoren": {
       "main": [
         [
@@ -456,6 +467,20 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Persistierung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -160
+      ],
+      "id": "p8-check-08-tracking-upsert"
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
         "query": "SELECT na.news_id, ni.title AS titel, na.betroffene_ticker_json, na.news_kategorie, na.wirkung_staerke, ni.published_at FROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id WHERE na.relevant = TRUE AND na.wirkung_staerke = 'hoch' AND ni.published_at > now() - interval '60 days' ORDER BY ni.published_at;",
         "options": {}
@@ -480,7 +505,8 @@
   ],
   "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "2c8f30d2-624a-4b01-890c-c84ee29e7559"

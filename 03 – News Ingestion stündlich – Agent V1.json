@@ -243,6 +243,17 @@
       "main": [
         [
           {
+            "node": "Persistierung pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persistierung pruefen (sonst werfen)": {
+      "main": [
+        [
+          {
             "node": "Filter: Hohe Relevanz → Matrix",
             "type": "main",
             "index": 0
@@ -760,6 +771,20 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Persistierung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1048,
+        1450
+      ],
+      "id": "n-00000015-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
         "conditions": {
           "conditions": [
             {
@@ -859,7 +884,8 @@
   ],
   "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "9d80707a-1626-43e4-b0ac-876b1d769dd6"

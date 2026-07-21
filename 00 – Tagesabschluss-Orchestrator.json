@@ -527,7 +527,29 @@
       "main": [
         [
           {
+            "node": "Matrix-Warnung pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix-Warnung pruefen (sonst werfen)": {
+      "main": [
+        [
+          {
             "node": "Lauf abschliessen (Warnung/Fehler)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Gesamtlauf abgeschlossen (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Log Gesamtlauf pruefen (sonst werfen)",
             "type": "main",
             "index": 0
           }
@@ -1442,6 +1464,20 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Matrix-Warnung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        120
+      ],
+      "id": "p8-check-00-matrix-warnung"
+    },
+    {
+      "parameters": {
         "jsCode": "return { json: { ...$json, final_status: $json.final_status || 'warning' } };"
       },
       "id": "00000019-0000-4000-8000-000000000019",
@@ -1490,6 +1526,20 @@
     },
     {
       "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Log Gesamtlauf pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        0
+      ],
+      "id": "p8-check-00-log-gesamtlauf"
+    },
+    {
+      "parameters": {
         "operation": "executeQuery",
         "query": "SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'DRY_RUN';",
         "options": {}
@@ -1526,7 +1576,8 @@
   ],
   "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "53199f6a-e5c5-43c9-93ae-f34ea9548379"

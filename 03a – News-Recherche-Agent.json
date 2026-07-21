@@ -208,6 +208,17 @@
       "main": [
         [
           {
+            "node": "Persistierung pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persistierung pruefen (sonst werfen)": {
+      "main": [
+        [
+          {
             "node": "Agentenlauf protokollieren (SQL bauen)",
             "type": "main",
             "index": 0
@@ -541,6 +552,20 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Persistierung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        80
+      ],
+      "id": "p8-check-03a-recherche-persist"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
         "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, started_at, finished_at)\n  VALUES (${pgStr('news-recherche-' + getBusinessDate() + '-' + Date.now())}, 'news-recherche-agent', 'recherche',\n          'gpt-5.4-mini', 'news-recherche-agent-v1', ${pgStr('news_id=' + j.news_id)}, ${pgStr(j._action)},\n          ${pgStr(j._action === 'persist' ? 'success' : 'failed')}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Agentenlauf protokollieren (SQL bauen)",
@@ -577,7 +602,8 @@
   ],
   "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "5cd403bc-1cce-45b1-bd01-fa5549c9ae2e"
