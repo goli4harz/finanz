@@ -297,6 +297,16 @@ Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, w
 
 **Zusätzlich in dieser Runde behoben, unabhängig vom 29-Punkte-Auftrag**: der Cutover-Bug in `10`, der den täglichen Report seit der Produktions-Umstellung komplett blockierte (drei zusammenwirkende Ursachen: fragile `.item`-Referenzen über zwei Nodes, ein Node las versehentlich das Ergebnis des vorherigen Postgres-Writes statt der echten Report-Daten, kein definierter Sub-Workflow-Rückgabewert) — siehe Commit `c2cd1b9`.
 
+### Priorität 7, Punkt 18 — einheitlicher {context, config, payload}-Input-Wrapper (erledigt, live getestet, Stand 2026-07-21)
+
+Alle 5 `Execute Workflow`-Aufrufe aus `00` (`02b`, `02`, `06`, `10`, `05`) übergaben bisher fünf verschiedene Ad-hoc-Feldmengen (`{run_id}`, `{run_id, DRY_RUN}`, `{run_id, business_date}`, `{run_id, report_markdown, approved, DRY_RUN}`). Jetzt einheitlich verschachtelt: `context` (`run_id`, `business_date`), `config` (`DRY_RUN`), `payload` (`report_markdown`, `approved`) — reine Umformung, keine neuen Felder.
+
+- `02b`/`02`: einzige Änderung in `Abschluss-Ergebnis bauen` (Rückverweis auf den Trigger).
+- `06`/`05`: einzige Änderung im jeweiligen Choke-Point-Node direkt hinter dem Trigger (`Trigger-Eingabe normalisieren` / `Eingabe normalisieren`). `05`s interner Standalone-Testpfad (ruft `10` für lokale Tests auf) unterstützt weiterhin beide Formen (verschachtelt vom echten Trigger, flach von `10`s eigenem Domänen-Output).
+- `10`: kein einzelner Choke-Point (Trigger fächert direkt in 8 Nodes auf) — drei Stellen geändert, darunter der riskanteste Node `Reportdaten aufbereiten` (dokumentierte `pairedItem`-Zerbrechlichkeit nach 6 Merge-Nodes) — isoliert getestet, `run_id` kam korrekt an, kein Fallback-Wert.
+
+Voller Live-Test über einen echten, unmanipulierten `00`-Lauf bestätigt: dieselbe `run_id` (`daily-2026-07-21-171911-2d92b9`) kam korrekt bei `02b`/`02`/`06`/`10` an (Kernkriterium aus Priorität 7/Punkt 17), `06` korrekt `status: skipped`. `05` isoliert per `pinData` bestätigt (Matrix+E-Mail zugestellt, `payload`/`config` korrekt entpackt).
+
 ### Priorität 8 — zentraler Error-Workflow (Teil 1+2 erledigt, live getestet, Stand 2026-07-21)
 
 Nutzer-Entscheidung: Teil 1 (zentraler Workflow + überall verdrahten) + Teil 2 nur für die schlimmsten stillen Fälle (nicht alle 65 `continueRegularOutput`-Stellen).
@@ -314,7 +324,7 @@ Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hat
 ### Noch offen aus dem 29-Punkte-Auftrag
 
 - **Priorität 6**: erledigt und live getestet (siehe oben) — nur `05`s DRY_RUN-/Ablehnungs-Zweig und `IF: Versand ok?` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
-- **Priorität 7, Punkt 18**: einheitlicher `{context, config, payload}`-Input-Wrapper für alle Sub-Workflow-Aufrufe.
+- **Priorität 7, Punkt 18**: erledigt (siehe oben).
 - **Priorität 8**: erledigt (siehe oben) — offen bleibt nur echtes automatisches Node-Retry (API-Limitation, s. Caveat).
 - **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
 - **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
