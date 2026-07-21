@@ -264,7 +264,7 @@ Architekturentscheidung mit dem Nutzer abgestimmt: `stock_empfehlungen` (n8n Dat
 - `Schreiberfolg verifizieren` zeigt fehlgeschlagene Writes jetzt sichtbar in der Matrix-Nachricht an (vorher wurden sie stillschweigend verworfen).
 - `07 – Status-Uebersicht`: `DB: Empfehlungen laden` ebenfalls auf `trading.recommendations` umgestellt.
 
-### Priorität 6 — Einheitliche Rückgabeformate (teilweise: nur `02`/`02b`)
+### Priorität 6 — Einheitliche Rückgabeformate (vollständig: `02`/`02b`/`06`/`10`/`05`, Stand 2026-07-21)
 
 Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, warnings[], errors[], started_at, finished_at, status}`, `status` ∈ `success/partial_failure/failed/skipped`.
 
@@ -274,7 +274,15 @@ Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, w
   1. *Data-Table-„get"-Node mit templatiertem Pro-Item-Filter* (`{{ $json.symbol }}`) liefert effektiv nur 1 Treffer für den gesamten Node-Lauf, nicht 1 pro Eingabe-Item — unabhängig von `limit`/`alwaysOutputData`/`returnAll`. Betraf `02b`s `DB: Marktumfeld suchen`; behoben nach dem bereits korrekten Muster aus `02` (`DB: Signal suchen`: kein Filter, `returnAll: true`, Lookup-Map in Code statt Index-Pairing).
   2. *Merge-Node, zwei Quellen auf denselben Eingangsindex* kombiniert die Items NICHT — nur eine Quelle überlebt. Betraf `02` (unentdeckt seit dem Cutover, durch günstige Testdaten maskiert) und `02b`; beide auf getrennte Indizes (0/1) korrigiert.
 - Live-Test über `00`: `02b` `processed:8, successful:8, status:success`; `02` `processed:15, successful:14, failed:1, status:partial_failure` (echter Fall: `BASF.DE "Keine Chartdaten vorhanden"`, korrekt als Teilfehler statt Totalausfall behandelt), gemeinsame `run_id` mit dem Orchestrator-Lauf bestätigt.
-- **Offen**: `06`, `10`, `05` haben noch kein einheitliches Envelope — nur `02`/`02b` sind umgestellt.
+
+**2026-07-21: Rest (`06`, `10`, `05`) nachgezogen, plus `00`-Anpassungen — live deployed, funktionaler End-to-End-Test steht noch aus.**
+
+- `06 – Empfehlungswatchlist`: die zwei bisher komplett unverbundenen Terminal-Zweige (echter Schreibpfad vs. DRY_RUN-Simulation) laufen jetzt über einen echten Merge-Node zusammen, gefolgt von `Abschluss-Ergebnis bauen`. `_run_started_at`-Stempel in `Trigger-Eingabe normalisieren` ergänzt.
+- `10 – Report- und Prüfagent`: additiv erweitert — die bestehenden domänenspezifischen Felder (`approved`, `report_markdown`, …) bleiben unverändert (werden von `00` und `05` weiter direkt gelesen), Envelope-Felder kommen daneben. `status: approved ? 'success' : 'failed'` (kein `partial_failure`, da immer genau 1 Ergebnis pro Lauf).
+- `05 – Tagesreport`: der größte Umbau — vier Terminal-Zweige liefen bisher NIE zusammen (Matrix+E-Mail parallel im Erfolgsfall, DRY_RUN-Skip, Ablehnung), `00` bekam dadurch ein faktisch undefiniertes Ergebnis zurück, je nachdem welcher Pfad zuletzt ausgeführt wurde. Fix: drei neue Merge-Nodes plus drei kleine „Ergebnis taggen"-Nodes (da Matrix-/E-Mail-Sendeknoten das Item beim Erfolg durch ihre eigene HTTP-Antwort ersetzen — gleiche Ursache wie der Write-Node-überschreibt-Item-Bug bei `06`s Empfehlungs-Writes). `onError: continueRegularOutput` neu an allen drei Sende-Nodes (Matrix-Report, E-Mail, Matrix-Fehler-Alert) — vorher killte ein SMTP-/Matrix-Ausfall den ganzen Lauf ohne Warnung.
+- `00`: `Log Empfehlungswatchlist (SQL bauen)`, `Log Report-Pruef-Agent (SQL bauen)`, `Log Versand (SQL bauen)` hatten denselben toten Ternary-Bug wie `02` vor dessen Fix (`'success' === 'failed'`, immer `false` → `errorMessage` immer leer) — auf dasselbe `envelope.status`/`envelope.errors[]`-Muster umgestellt. Zwei neue Gates `IF: Empfehlungswatchlist ok?`/`IF: Versand ok?` (gleiches `status != 'failed'`-Muster wie bei `02`/`02b`/`10`) statt neuer Duplikat-Warnungs-Nodes wird der bereits bestehende, gemeinsame `Baue technische Warnung`-Node (der schon alle anderen Gates bedient) um die zwei neuen Fehlerquellen erweitert.
+- Deploy-Skript `scratch/push_envelope_updates.py` (neu, wiederverwendbar): GET Live-Stand → Backup nach `n8n_live_backup/` → Node-Namen-Diff → PUT. Reihenfolge `10` → `06` → `05` → `00` eingehalten (kleinste additive Änderung zuerst, `00` zuletzt da abhängig von den `status`-Feldern der anderen drei). Alle vier PUTs mit exakt erwarteter Node-Anzahl bestätigt (28/28, 25→27, 12→19, 45→47).
+- **Offen**: funktionaler Live-Test steht noch aus (siehe „Noch offen" unten) — bisher nur strukturell verifiziert (Node-Diff nach PUT), kein echter `00`-Lauf mit den neuen Feldern beobachtet.
 
 ### Priorität 7, Punkt 17 — Durchgängige `run_id` (erledigt, live getestet)
 
@@ -284,7 +292,7 @@ Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, w
 
 ### Noch offen aus dem 29-Punkte-Auftrag
 
-- **Priorität 6 (Rest)**: einheitliches Envelope für `06`, `10`, `05`.
+- **Priorität 6**: erledigt (siehe oben) — funktionaler Live-Test (echter `00`-Lauf mit Blick auf die neuen Envelope-Felder und die zwei neuen IF-Gates) steht noch aus.
 - **Priorität 7, Punkt 18**: einheitlicher `{context, config, payload}`-Input-Wrapper für alle Sub-Workflow-Aufrufe.
 - **Priorität 8**: zentraler Error-Workflow, strukturierte Fehlerfelder, einheitliches Retry-Verhalten.
 - **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
