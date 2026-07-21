@@ -297,11 +297,25 @@ Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, w
 
 **Zusätzlich in dieser Runde behoben, unabhängig vom 29-Punkte-Auftrag**: der Cutover-Bug in `10`, der den täglichen Report seit der Produktions-Umstellung komplett blockierte (drei zusammenwirkende Ursachen: fragile `.item`-Referenzen über zwei Nodes, ein Node las versehentlich das Ergebnis des vorherigen Postgres-Writes statt der echten Report-Daten, kein definierter Sub-Workflow-Rückgabewert) — siehe Commit `c2cd1b9`.
 
+### Priorität 8 — zentraler Error-Workflow (Teil 1+2 erledigt, live getestet, Stand 2026-07-21)
+
+Nutzer-Entscheidung: Teil 1 (zentraler Workflow + überall verdrahten) + Teil 2 nur für die schlimmsten stillen Fälle (nicht alle 65 `continueRegularOutput`-Stellen).
+
+Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hatte `settings.errorWorkflow` gesetzt; 15 riskante Nodes hatten gar kein `onError` (n8n-Default `stopWorkflow`, lauter Absturz, aber ungenutzt ohne aktive Beobachtung); 65 Nodes hatten `onError: continueRegularOutput`, aber **kein** nachgelagerter Node las das resultierende `error`-Feld — abgesehen von `05`/`06`, die bereits ein `_write_failed`/`_send_failed`-Muster aus Priorität 5/6 haben.
+
+**Teil 1 — `11 – Zentraler Error-Handler.json`** (neu, n8n-ID `VTBfUuzQfMZNGYDM`): `errorTrigger`-Node → Code-Node extrahiert strukturierte Felder aus dem nativen Error-Trigger-Payload → parallel (a) `INSERT` in neue Tabelle `trading.workflow_errors` (`sql/005_workflow_errors.sql`), (b) Matrix-Alert. Isoliert getestet (gepinntes Fake-Payload). `settings.errorWorkflow` zeigt jetzt auf diesen Workflow in allen 13 Produktiv-Workflows — 12 per API deployt, `01 – Fundamentaldaten täglich` **manuell in der UI** gesetzt (hat live node-eigenes `retryOnFail`/`alwaysOutputData`, das ein API-PUT beim node-level-`settings`-Sanitizing sonst gelöscht hätte).
+
+**Teil 2** — fünf gezielte `"... pruefen (sonst werfen)"`-Code-Nodes nach den konsequentesten stillen Write/Send-Stellen (Audit-Ranking): `03` (`Ergebnis persistieren`, News-Bewertung), `03a` (`Recherche-Ergebnis persistieren`, Zweitpass), `00` ×2 (`Log Gesamtlauf abgeschlossen`, `Matrix: Technische Warnung senden`), `08` (`Tracking-Zeile upserten`). Jeder prüft `$json.error` und wirft bewusst weiter, statt eigene Alert-Logik zu duplizieren — der Wurf wird vom in Teil 1 verdrahteten `errorWorkflow` abgefangen. Die übrigen ~60 `continueRegularOutput`-Stellen sind bewusst unverändert (Reads, redundante Audit-Logs, selbstheilende Cleanup-Operationen).
+
+**Live verifiziert** (Execution 9235): `06`s `DB: Technische Signale laden (Empf.)` absichtlich auf eine ungültige Data-Table-ID gesetzt, über einen echten `Execute Workflow`-Aufruf ausgeführt (`mode: integrated`) → Matrix-Alert kam an, `trading.workflow_errors` korrekt befüllt. **Wichtiger Fund dabei**: n8ns Error-Workflow feuert grundsätzlich **nicht** bei `mode: manual` — auch nicht, wenn eine manuell gestartete Kette einen Sub-Workflow per `Execute Workflow`-Node aufruft (getestet: derselbe kaputte Node über einen manuell gestarteten Caller ausgeführt, `mode` blieb `manual`, kein Alert). Erst ein Aufruf, dessen Wurzel selbst nicht manuell war (hier: `06` als `mode: integrated` innerhalb eines Sub-Workflow-Aufrufs), löst den Handler aus — das ist aber exakt der Modus, in dem `00` seine Stufen im echten Betrieb aufruft, also produktionsrepräsentativ.
+
+**Caveat** (Nutzer explizit mitgeteilt): "einheitliches Retry-Verhalten" wurde **nicht** als automatisches n8n-Node-Retry umgesetzt — die API lehnt node-level `settings` (dort liegt `retryOnFail`/`maxTries`) beim PUT grundsätzlich ab, das lässt sich über die bestehende Deploy-Pipeline nicht zuverlässig ausrollen. Der zentrale Handler liefert stattdessen einheitliche *Sichtbarkeit* aller unhandled Fehler. Echtes Retry bliebe ein manueller UI-Nachtrag pro Node.
+
 ### Noch offen aus dem 29-Punkte-Auftrag
 
 - **Priorität 6**: erledigt und live getestet (siehe oben) — nur `05`s DRY_RUN-/Ablehnungs-Zweig und `IF: Versand ok?` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
 - **Priorität 7, Punkt 18**: einheitlicher `{context, config, payload}`-Input-Wrapper für alle Sub-Workflow-Aufrufe.
-- **Priorität 8**: zentraler Error-Workflow, strukturierte Fehlerfelder, einheitliches Retry-Verhalten.
+- **Priorität 8**: erledigt (siehe oben) — offen bleibt nur echtes automatisches Node-Retry (API-Limitation, s. Caveat).
 - **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
 - **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
 - **Priorität 11**: `pipeline_config` zur vollen zentralen Konfigurationstabelle ausbauen (Watchlist, Schwellenwerte, Modelle, Matrix-Räume, Prompt-Versionen — aktuell nur `DRY_RUN`/`REQUIRE_CONFIRMATION`).
