@@ -327,7 +327,25 @@
       "main": [
         [
           {
+            "node": "IF: Empfehlungswatchlist ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Empfehlungswatchlist ok?": {
+      "main": [
+        [
+          {
             "node": "Ausfuehren: Report- und Pruefagent (10)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
             "type": "main",
             "index": 0
           }
@@ -469,7 +487,25 @@
       "main": [
         [
           {
+            "node": "IF: Versand ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Versand ok?": {
+      "main": [
+        [
+          {
             "node": "Lauf abschliessen (Erfolg)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
             "type": "main",
             "index": 0
           }
@@ -1006,7 +1042,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : 'success';\nconst errorMessage = $json.error ? 'failed' : 'success' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = ($json.dry_run || $json.planned_actions) ? { dry_run: !!$json.dry_run, planned_actions: $json.planned_actions || [] } : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000010-0000-4000-8000-000000000a",
       "name": "Log Empfehlungswatchlist (SQL bauen)",
@@ -1096,7 +1132,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : ($json.approved ? 'success' : 'warning');\nconst errorMessage = $json.error ? 'failed' : ($json.approved ? 'success' : 'warning') === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('10 – Report- und Prüfagent')}, ${pgStr('report_pruef_agent')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst envelope = $json;\n// Prioritaet 6: 10 liefert jetzt zusaetzlich {status, processed, successful,\n// failed, warnings[], errors[]} additiv neben approved/report_markdown/... .\nconst status = envelope.status || (envelope.error ? 'failed' : (envelope.approved ? 'success' : 'failed'));\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('10 – Report- und Prüfagent')}, ${pgStr('report_pruef_agent')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000012-0000-4000-8000-000000000a",
       "name": "Log Report-Pruef-Agent (SQL bauen)",
@@ -1220,7 +1256,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst status = $json.error ? 'failed' : 'success';\nconst errorMessage = $json.error ? 'failed' : 'success' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('05 – Tagesreport')}, ${pgStr('tagesreport_versand')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst envelope = $json;\n// Prioritaet 6: 05 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b/06.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr('05 – Tagesreport')}, ${pgStr('tagesreport_versand')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000015-0000-4000-8000-000000000a",
       "name": "Log Versand (SQL bauen)",
@@ -1252,6 +1288,68 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Ausfuehren: Empfehlungswatchlist (06)').all()[0].json.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-00000000e001",
+      "name": "IF: Empfehlungswatchlist ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        936,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Ausfuehren: Tagesreport-Versand (05)').all()[0].json.status }}",
+              "rightValue": "failed",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-00000000e002",
+      "name": "IF: Versand ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2056,
+        -100
+      ]
     },
     {
       "parameters": {},
@@ -1292,7 +1390,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\n\nlet gruende = [];\ntry { if ($('Ausfuehren: Marktumfeld (02b)').item.json.error) gruende.push('Marktumfeld fehlgeschlagen: ' + $('Ausfuehren: Marktumfeld (02b)').item.json.error); } catch(e) {}\ntry { if ($('Ausfuehren: Technische Signale (02)').item.json.error) gruende.push('Technische Signale fehlgeschlagen: ' + $('Ausfuehren: Technische Signale (02)').item.json.error); } catch(e) {}\ntry { if ($('Pruefe Datenqualitaet').item.json.datenqualitaet_ok === false) gruende.push('Datenqualitaet unzureichend (Signale: ' + $('Pruefe Datenqualitaet').item.json.signale_count + ', News: ' + $('Pruefe Datenqualitaet').item.json.news_count + ')'); } catch(e) {}\ntry { if ($('Ausfuehren: Report- und Pruefagent (10)').item.json.approved === false) gruende.push('Pruef-Agent hat den Bericht abgelehnt: ' + JSON.stringify($('Ausfuehren: Report- und Pruefagent (10)').item.json.required_corrections || [])); } catch(e) {}\nif (gruende.length === 0) gruende.push('Unbekannter Abbruchgrund - siehe trading.pipeline_runs fuer run_id ' + runId);\n\nconst text = '⚠️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde NICHT automatisch versendet:\\n\\n- ' + gruende.join('\\n- ');\n\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning' } };\n"
+        "jsCode": "const runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\n\nlet gruende = [];\ntry { if ($('Ausfuehren: Marktumfeld (02b)').item.json.error) gruende.push('Marktumfeld fehlgeschlagen: ' + $('Ausfuehren: Marktumfeld (02b)').item.json.error); } catch(e) {}\ntry { if ($('Ausfuehren: Technische Signale (02)').item.json.error) gruende.push('Technische Signale fehlgeschlagen: ' + $('Ausfuehren: Technische Signale (02)').item.json.error); } catch(e) {}\ntry { if ($('Pruefe Datenqualitaet').item.json.datenqualitaet_ok === false) gruende.push('Datenqualitaet unzureichend (Signale: ' + $('Pruefe Datenqualitaet').item.json.signale_count + ', News: ' + $('Pruefe Datenqualitaet').item.json.news_count + ')'); } catch(e) {}\ntry { if ($('Ausfuehren: Report- und Pruefagent (10)').item.json.approved === false) gruende.push('Pruef-Agent hat den Bericht abgelehnt: ' + JSON.stringify($('Ausfuehren: Report- und Pruefagent (10)').item.json.required_corrections || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Empfehlungswatchlist (06)').item.json.status === 'failed') gruende.push('Empfehlungswatchlist fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Empfehlungswatchlist (06)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Tagesreport-Versand (05)').item.json.status === 'failed') gruende.push('Tagesreport-Versand fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Tagesreport-Versand (05)').item.json.errors || [])); } catch(e) {}\nif (gruende.length === 0) gruende.push('Unbekannter Abbruchgrund - siehe trading.pipeline_runs fuer run_id ' + runId);\n\nconst text = '⚠️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde NICHT automatisch versendet:\\n\\n- ' + gruende.join('\\n- ');\n\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning' } };\n"
       },
       "id": "00000017-0000-4000-8000-000000000017",
       "name": "Baue technische Warnung",

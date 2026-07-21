@@ -104,6 +104,116 @@
         ]
       ]
     },
+    "Matrix: Tagesreport senden": {
+      "main": [
+        [
+          {
+            "node": "Matrix-Versand: Ergebnis taggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail Report senden": {
+      "main": [
+        [
+          {
+            "node": "Email-Versand: Ergebnis taggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix-Versand: Ergebnis taggen": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email-Versand: Ergebnis taggen": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Versand 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DRY_RUN: Versand uebersprungen": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Versand 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Fehler-Alert": {
+      "main": [
+        [
+          {
+            "node": "Fehler-Alert: Ergebnis taggen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehler-Alert: Ergebnis taggen": {
+      "main": [
+        [
+          {
+            "node": "Merge Versand 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Versand 3": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Ablehnungs-Warnung bauen": {
       "main": [
         [
@@ -200,7 +310,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Vereinheitlicht beide Einstiegspfade auf ein gemeinsames Item.\nconst j = $json || {};\nreturn [{ json: {\n  run_id: j.run_id || 'unbekannt',\n  report_markdown: j.report_markdown || '',\n  approved: j.approved === true || j.approved === 'true',\n  quality_score: j.quality_score,\n  required_corrections: j.required_corrections || [],\n  missing_warnings: j.missing_warnings || [],\n  technische_signale: j.technische_signale || [],\n  empfehlungswatchlist: j.empfehlungswatchlist || {},\n  datenqualitaet: j.datenqualitaet || {},\n  DRY_RUN: j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
+        "jsCode": "// Vereinheitlicht beide Einstiegspfade auf ein gemeinsames Item.\nconst j = $json || {};\nreturn [{ json: {\n  run_id: j.run_id || 'unbekannt',\n  _run_started_at: new Date().toISOString(),\n  report_markdown: j.report_markdown || '',\n  approved: j.approved === true || j.approved === 'true',\n  quality_score: j.quality_score,\n  required_corrections: j.required_corrections || [],\n  missing_warnings: j.missing_warnings || [],\n  technische_signale: j.technische_signale || [],\n  empfehlungswatchlist: j.empfehlungswatchlist || {},\n  datenqualitaet: j.datenqualitaet || {},\n  DRY_RUN: j.DRY_RUN === true || j.DRY_RUN === 'true'\n} }];"
       },
       "name": "Eingabe normalisieren",
       "type": "n8n-nodes-base.code",
@@ -329,6 +439,7 @@
         -2400,
         -208
       ],
+      "onError": "continueRegularOutput",
       "credentials": {
         "httpHeaderAuth": {
           "id": "od1pN1F5wy2irSDs",
@@ -352,6 +463,7 @@
         -2400,
         -48
       ],
+      "onError": "continueRegularOutput",
       "webhookId": "73f48d44-e086-44c1-b79a-9596d953f87f",
       "credentials": {
         "smtp": {
@@ -362,7 +474,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// DRY_RUN=true: kein produktiver Versand, nur Protokollierung.\nreturn [{ json: { ...$json, _dry_run_skip: 'Versand uebersprungen (DRY_RUN)' } }];"
+        "jsCode": "// DRY_RUN=true: kein produktiver Versand, nur Protokollierung.\nreturn [{ json: { ...$json, _dry_run_skip: 'Versand uebersprungen (DRY_RUN)', _zweig: 'dry_run' } }];"
       },
       "name": "DRY_RUN: Versand uebersprungen",
       "type": "n8n-nodes-base.code",
@@ -424,6 +536,7 @@
         -2608,
         160
       ],
+      "onError": "continueRegularOutput",
       "id": "n-00000009-0000-4000-8000-0000000000",
       "credentials": {
         "httpHeaderAuth": {
@@ -431,6 +544,91 @@
           "name": "Header Auth account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _zweig: 'versand', _kanal: 'matrix', _send_failed: !!($json.error), _send_error: $json.error ? String(($json.error && ($json.error.message || $json.error)) || '') : null } }];"
+      },
+      "id": "c1a2b3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "name": "Matrix-Versand: Ergebnis taggen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2192,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _zweig: 'versand', _kanal: 'email', _send_failed: !!($json.error), _send_error: $json.error ? String(($json.error && ($json.error.message || $json.error)) || '') : null } }];"
+      },
+      "id": "d2b3c4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+      "name": "Email-Versand: Ergebnis taggen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2192,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _zweig: 'abgelehnt', _send_failed: !!($json.error), _send_error: $json.error ? String(($json.error && ($json.error.message || $json.error)) || '') : null } }];"
+      },
+      "id": "e3c4d5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+      "name": "Fehler-Alert: Ergebnis taggen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f4d5e6a7-b8c9-4d0e-1f2a-3b4c5d6e7f80",
+      "name": "Merge Versand 1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2000,
+        -128
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a5e6f7b8-c9d0-4e1f-2a3b-4c5d6e7f8091",
+      "name": "Merge Versand 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1800,
+        16
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b6f7a8c9-d0e1-4f2a-3b4c-5d6e7f8091a2",
+      "name": "Merge Versand 3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1600,
+        88
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prioritaet 6: einheitliches Envelope. Pro Lauf feuert genau einer der\n// drei Zweige (Versand echt / DRY_RUN uebersprungen / Ablehnung) -- der\n// Versand-Zweig kann dabei bis zu 2 Items liefern (Matrix + E-Mail).\nconst items = $input.all().map(i => i.json);\n\nlet runId = null, startedAt = null, qualityScore = null;\ntry {\n  const eing = $('Eingabe normalisieren').all()[0].json;\n  runId = eing.run_id;\n  startedAt = eing._run_started_at || null;\n  qualityScore = eing.quality_score;\n} catch (e) {}\n\nconst zweig = items.length > 0 ? items[0]._zweig : null;\n\nlet processed, successful, failed, warnings, errors, status;\n\nif (zweig === 'dry_run') {\n  processed = 1; successful = 0; failed = 0; warnings = []; errors = []; status = 'skipped';\n} else if (zweig === 'abgelehnt') {\n  processed = 1;\n  const sendFailed = items[0]._send_failed === true;\n  successful = 0;\n  failed = 1;\n  warnings = [];\n  errors = [{ node: 'IF: Freigegeben?', message: 'Pruef-Agent hat den Bericht abgelehnt (quality_score ' + qualityScore + ')' }];\n  if (sendFailed) errors.push({ node: 'Matrix: Fehler-Alert', message: items[0]._send_error || 'Unbekannter Fehler' });\n  status = 'failed';\n} else if (zweig === 'versand') {\n  processed = items.length;\n  const failedItems = items.filter(i => i._send_failed === true);\n  failed = failedItems.length;\n  successful = processed - failed;\n  warnings = [];\n  errors = failedItems.map(i => ({ node: i._kanal === 'matrix' ? 'Matrix: Tagesreport senden' : 'E-Mail Report senden', message: i._send_error || 'Unbekannter Fehler' }));\n  status = failed === 0 ? 'success' : (successful === 0 ? 'failed' : 'partial_failure');\n} else {\n  processed = 0; successful = 0; failed = 0; warnings = [];\n  errors = [{ node: 'Abschluss-Ergebnis bauen', message: 'Kein bekannter Zweig erkannt (unerwarteter Workflow-Pfad, ' + items.length + ' Items ohne _zweig-Feld)' }];\n  status = 'failed';\n}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '05 \\u2013 Tagesreport',\n  run_id: runId,\n  processed,\n  successful,\n  failed,\n  warnings,\n  errors,\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+      },
+      "id": "c7a8b9d0-e1f2-4a3b-4c5d-6e7f8091a2b3",
+      "name": "Abschluss-Ergebnis bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        88
+      ]
     }
   ],
   "pinData": {},
