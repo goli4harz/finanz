@@ -1,0 +1,125 @@
+{
+  "name": "11 – Zentraler Error-Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        0
+      ],
+      "id": "n-00000001-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\nconst exec = $json.execution || {};\nconst wf = $json.workflow || {};\nconst err = exec.error || {};\n\nconst workflowName = wf.name || 'unbekannt';\nconst workflowId = wf.id || '';\nconst executionId = exec.id || '';\nconst executionUrl = exec.url || '';\nconst failedNodeName = exec.lastNodeExecuted || '';\nconst failedNodeType = (err.node && err.node.type) || '';\nconst errorMessage = err.message || (typeof err === 'string' ? err : '') || '';\nconst errorName = err.name || '';\nconst errorStack = err.stack || '';\nconst executionMode = exec.mode || '';\n\nconst sql = `INSERT INTO trading.workflow_errors\n  (workflow_name, workflow_id, execution_id, execution_url, failed_node_name, failed_node_type, error_message, error_name, error_stack, execution_mode, raw_payload_json)\n  VALUES (${pgStr(workflowName)}, ${pgStr(workflowId)}, ${pgStr(executionId)}, ${pgStr(executionUrl)}, ${pgStr(failedNodeName)}, ${pgStr(failedNodeType)}, ${pgStr(errorMessage)}, ${pgStr(errorName)}, ${pgStr(errorStack)}, ${pgStr(executionMode)}, ${pgJson($json)});`;\n\nconst matrixText = `⚠️ Workflow-Fehler: ${workflowName}\\n\\nNode: ${failedNodeName || '(unbekannt)'}\\nFehler: ${errorMessage || '(keine Meldung)'}\\nExecution: ${executionUrl || '(keine URL)'}`;\n\nreturn { json: { workflowName, workflowId, executionId, executionUrl, failedNodeName, failedNodeType, errorMessage, errorName, errorStack, executionMode, sql, matrixText } };\n"
+      },
+      "name": "Fehlerdaten aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        0
+      ],
+      "id": "n-00000002-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Fehler protokollieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        -120
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "PLACEHOLDER_POSTGRES_CRED",
+          "name": "Postgres – Trading (TODO Credential zuweisen)"
+        }
+      },
+      "id": "n-00000003-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'error_' + ($json.executionId || Date.now()) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ msgtype: 'm.text', body: $json.matrixText }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "Matrix: Fehler-Alert senden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -352,
+        120
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      },
+      "id": "n-00000004-0000-4000-8000-0000000000"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fehlerdaten aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fehlerdaten aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "Fehler protokollieren (ausfuehren)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Matrix: Fehler-Alert senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "VTBfUuzQfMZNGYDM",
+  "active": false
+}

@@ -19,6 +19,7 @@ WORKFLOW_IDS = {
     "09": "LjZHC5g7thqcCElo",
     "10": "BFlxfLyarzR2xbBT",
     "99": "8PHV9RfaXjfTo3ZK",
+    "11 Error-Handler": "VTBfUuzQfMZNGYDM",
 }
 
 def api(method, path, body=None):
