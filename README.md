@@ -321,6 +321,10 @@ Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hat
 
 **Caveat** (Nutzer explizit mitgeteilt): "einheitliches Retry-Verhalten" wurde **nicht** als automatisches n8n-Node-Retry umgesetzt — die API lehnt node-level `settings` (dort liegt `retryOnFail`/`maxTries`) beim PUT grundsätzlich ab, das lässt sich über die bestehende Deploy-Pipeline nicht zuverlässig ausrollen. Der zentrale Handler liefert stattdessen einheitliche *Sichtbarkeit* aller unhandled Fehler. Echtes Retry bliebe ein manueller UI-Nachtrag pro Node.
 
+### Priorität 12 — Status-Übersicht (07) erweitert (erledigt, live getestet, Stand 2026-07-21)
+
+`07` hatte Pipeline-Laufstatus, Wirkungsanalyse-Fortschritt und Trefferquoten bereits aus einer früheren Session ("Phase 13"-Kommentar im Code, SVG-Balkendiagramme). Einzig fehlendes Stück aus der Priorität-12-Beschreibung: Konfigversion. Neuer Node `DB: Pipeline-Konfiguration laden` (`SELECT ... FROM trading.pipeline_config`) als 13. Zweig in die bestehende `Merge Status 1..12`-Kette eingehängt (`Merge Status 13`); `Baue Uebersicht` bekam eine zusätzliche `<h2>Konfiguration</h2>`-Tabelle (Key, Wert, Beschreibung, zuletzt geändert). Live per gepinntem Webhook-Trigger getestet: `DRY_RUN`/`REQUIRE_CONFIRMATION` samt Beschreibung und Zeitstempel korrekt gerendert.
+
 ### Noch offen aus dem 29-Punkte-Auftrag
 
 - **Priorität 6**: erledigt und live getestet (siehe oben) — nur `05`s DRY_RUN-/Ablehnungs-Zweig und `IF: Versand ok?` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
@@ -329,5 +333,5 @@ Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hat
 - **Priorität 9**: Lernagent-Verfeinerung (Kennzahlen je Horizont, Mindestfallzahlen je Kombination, qualitätsgewichtete Bewertung).
 - **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
 - **Priorität 11**: `pipeline_config` zur vollen zentralen Konfigurationstabelle ausbauen (Watchlist, Schwellenwerte, Modelle, Matrix-Räume, Prompt-Versionen — aktuell nur `DRY_RUN`/`REQUIRE_CONFIRMATION`).
-- **Priorität 12**: Status-Übersicht (07) um Pipeline-Laufstatus, Wirkungsanalyse-Fortschritt, Trefferquoten, Konfigversion, Datenquellen-Aktualität erweitern.
+- **Priorität 12**: erledigt (siehe oben).
 - Offene Klärfrage zu Priorität 2: ob die FastAPI (`172.16.1.14:8099`) historische Kursdaten für einen Datumsbereich liefern kann (Backfill), statt ~20 Handelstage lang natürlich zu warten.
