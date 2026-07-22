@@ -199,11 +199,8 @@
       "id": "ba1aed7f-fed3-4d47-b03b-8620ea10e30b",
       "name": "Fundamentaldaten abrufen (lokaler FastAPI)",
       "retryOnFail": true,
-      "settings": {
-        "retryOnFail": true,
-        "maxTries": 3,
-        "waitBetweenTries": 3000
-      }
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
@@ -229,8 +226,7 @@
       "position": [
         -1120,
         288
-      ],
-      "settings": {}
+      ]
     },
     {
       "parameters": {
@@ -252,9 +248,6 @@
         -896,
         288
       ],
-      "settings": {
-        "alwaysOutputData": true
-      },
       "alwaysOutputData": true
     },
     {
