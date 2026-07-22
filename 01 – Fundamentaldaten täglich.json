@@ -159,16 +159,24 @@
     },
     {
       "parameters": {
-        "jsCode": "const watchlist = [\n  { ticker: 'SAP.DE',  name: 'SAP SE' },\n  { ticker: 'SIE.DE',  name: 'Siemens AG' },\n  { ticker: 'BASF.DE', name: 'BASF SE' },\n  { ticker: 'ALV.DE',  name: 'Allianz SE' },\n  { ticker: 'MBG.DE',  name: 'Mercedes-Benz' },\n  { ticker: 'BMW.DE',  name: 'BMW AG' },\n  { ticker: 'VOW3.DE', name: 'Volkswagen VZ' },\n  { ticker: 'DBK.DE',  name: 'Deutsche Bank' },\n  { ticker: 'DTE.DE',  name: 'Deutsche Telekom' },\n  { ticker: 'RWE.DE',  name: 'RWE AG' },\n  { ticker: 'BAYN.DE', name: 'Bayer AG' },\n  { ticker: 'EOAN.DE', name: 'E.ON SE' },\n  { ticker: 'ADS.DE',  name: 'adidas AG' },\n  { ticker: 'HEN3.DE', name: 'Henkel VZ' },\n  { ticker: 'FRE.DE',  name: 'Fresenius SE' }\n];\nreturn watchlist.map(s => ({ json: s }));"
+        "operation": "executeQuery",
+        "query": "SELECT ticker, name FROM trading.watchlist WHERE active = TRUE ORDER BY ticker;",
+        "options": {}
       },
       "id": "5a9dd2ce-df8d-467c-914d-69a0e2bc7d83",
       "name": "Watchlist laden (Fundamental)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -1792,
         288
-      ]
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {

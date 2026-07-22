@@ -286,16 +286,24 @@
     },
     {
       "parameters": {
-        "jsCode": "const watchlist = [\n  { ticker: 'SAP.DE',  name: 'SAP SE',           sektor: 'Technologie',  keywords: ['SAP'] },\n  { ticker: 'SIE.DE',  name: 'Siemens AG',        sektor: 'Industrie',    keywords: ['Siemens'] },\n  { ticker: 'BASF.DE', name: 'BASF SE',           sektor: 'Chemie',       keywords: ['BASF'] },\n  { ticker: 'ALV.DE',  name: 'Allianz SE',        sektor: 'Versicherung', keywords: ['Allianz'] },\n  { ticker: 'MBG.DE',  name: 'Mercedes-Benz',     sektor: 'Auto',         keywords: ['Mercedes', 'Mercedes-Benz', 'Daimler'] },\n  { ticker: 'BMW.DE',  name: 'BMW AG',            sektor: 'Auto',         keywords: ['BMW'] },\n  { ticker: 'VOW3.DE', name: 'Volkswagen VZ',     sektor: 'Auto',         keywords: ['Volkswagen', 'VW'] },\n  { ticker: 'DBK.DE',  name: 'Deutsche Bank',     sektor: 'Banken',       keywords: ['Deutsche Bank'] },\n  { ticker: 'DTE.DE',  name: 'Deutsche Telekom',  sektor: 'Telekom',      keywords: ['Telekom', 'Deutsche Telekom'] },\n  { ticker: 'RWE.DE',  name: 'RWE AG',            sektor: 'Energie',      keywords: ['RWE'] },\n  { ticker: 'BAYN.DE', name: 'Bayer AG',          sektor: 'Pharma',       keywords: ['Bayer'] },\n  { ticker: 'EOAN.DE', name: 'E.ON SE',           sektor: 'Energie',      keywords: ['E.ON', 'EON'] },\n  { ticker: 'ADS.DE',  name: 'adidas AG',         sektor: 'Sport',        keywords: ['adidas', 'Adidas'] },\n  { ticker: 'HEN3.DE', name: 'Henkel VZ',         sektor: 'Konsumgüter',  keywords: ['Henkel'] },\n  { ticker: 'FRE.DE',  name: 'Fresenius SE',      sektor: 'Gesundheit',   keywords: ['Fresenius'] }\n];\nconst _startedAt = new Date().toISOString();\nreturn watchlist.map(s => ({ json: { ...s, _run_started_at: _startedAt } }));"
+        "operation": "executeQuery",
+        "query": "SELECT ticker, name, sektor, keywords FROM trading.watchlist WHERE active = TRUE ORDER BY ticker;",
+        "options": {}
       },
       "id": "134fbfae-6827-4f0e-b253-e9aeecee42f3",
       "name": "Watchlist laden (Kurse)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -1536,
         656
-      ]
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
     },
     {
       "parameters": {
