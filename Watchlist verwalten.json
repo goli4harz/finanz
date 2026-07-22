@@ -1,0 +1,205 @@
+{
+  "name": "Watchlist verwalten",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aktien-watchlist",
+        "httpMethod": "GET",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wm-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ],
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001"
+    },
+    {
+      "parameters": {
+        "path": "aktien-watchlist",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wm-webhook-post",
+      "name": "Webhook POST (Aenderung)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        240
+      ],
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgArr(v) {\n  const arr = String(v || '').split(',').map(s => s.trim()).filter(Boolean);\n  return `'{` + arr.map(x => `\"` + x.replace(/\"/g, '\\\\\"') + `\"`).join(',') + `}'`;\n}\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst ticker = String(j.ticker || '').trim().toUpperCase();\n\nlet sql;\n\nif (action === 'add') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  if (!ticker || !name) {\n    sql = 'SELECT 1;';\n  } else {\n    sql = `INSERT INTO trading.watchlist (ticker, name, sektor, keywords, exclude_keywords, active)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, ${pgArr(j.keywords)}, ${pgArr(j.exclude_keywords)}, TRUE)\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, keywords = EXCLUDED.keywords,\n        exclude_keywords = EXCLUDED.exclude_keywords, active = TRUE, updated_at = now();`;\n  }\n} else if (action === 'edit') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  sql = `UPDATE trading.watchlist SET\n    name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, keywords = ${pgArr(j.keywords)},\n    exclude_keywords = ${pgArr(j.exclude_keywords)}, updated_at = now()\n    WHERE ticker = ${pgStr(ticker)};`;\n} else if (action === 'toggle_active') {\n  sql = `UPDATE trading.watchlist SET active = NOT active, updated_at = now() WHERE ticker = ${pgStr(ticker)};`;\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn [{ json: { sql } }];\n"
+      },
+      "id": "wm-post-normalize",
+      "name": "POST: Formular normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "wm-post-exec",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ticker, name, sektor, keywords, exclude_keywords, active FROM trading.watchlist ORDER BY ticker;",
+        "options": {}
+      },
+      "id": "wm-db-load",
+      "name": "DB: Watchlist laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -576,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction arrToText(arr) {\n  return (Array.isArray(arr) ? arr : []).join(', ');\n}\n\nconst rowsHtml = rows.map(r => {\n  // formId/toggleId are attribute values (id=/form=) too - must be escaped just like\n  // the value=\"\" attributes, otherwise a ticker containing &/\"/< would break the\n  // markup or the id<->form linkage (caught by testing with a deliberately odd ticker).\n  const formId = esc('f-' + r.ticker);\n  const toggleId = esc('ft-' + r.ticker);\n  const badge = r.active ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge warn\">inaktiv</span>';\n  const toggleLabel = r.active ? 'Deaktivieren' : 'Aktivieren';\n  return `<tr>\n    <td>${esc(r.ticker)}</td>\n    <td><input form=\"${formId}\" name=\"name\" value=\"${esc(r.name)}\"></td>\n    <td><input form=\"${formId}\" name=\"sektor\" value=\"${esc(r.sektor)}\"></td>\n    <td><input form=\"${formId}\" name=\"keywords\" value=\"${esc(arrToText(r.keywords))}\"></td>\n    <td><input form=\"${formId}\" name=\"exclude_keywords\" value=\"${esc(arrToText(r.exclude_keywords))}\"></td>\n    <td>${badge}</td>\n    <td>\n      <button form=\"${formId}\" type=\"submit\">Speichern</button>\n      <button form=\"${toggleId}\" type=\"submit\">${toggleLabel}</button>\n    </td>\n  </tr>\n  <form id=\"${formId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"edit\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${toggleId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"toggle_active\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>`;\n}).join('\\n');\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst activeCount = rows.filter(r => r.active).length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Watchlist verwalten</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  h2 { font-size:15px; margin-top:32px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; vertical-align:middle; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; width:100%; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px; white-space:nowrap; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .add-form { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end; }' +\n'  .add-form label { display:block; font-size:11px; color:#9aa0a6; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'  <h1>Aktien-Watchlist verwalten</h1>' +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Ticker insgesamt (' + activeCount + ' aktiv)</div>' +\n'  <div class=\"hint\">Aenderungen wirken direkt auf 01 (Fundamentaldaten), 02 (Technische Signale) und 03 (News-Ingestion) - Keywords/Ausschluss-Begriffe kommagetrennt eingeben.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Keywords</th><th>Ausschluss-Begriffe</th><th>Status</th><th>Aktionen</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Neuen Ticker hinzufuegen</h2>' +\n'  <form class=\"add-form\" method=\"POST\" action=\"/webhook/aktien-watchlist\">' +\n'    <input type=\"hidden\" name=\"action\" value=\"add\">' +\n'    <div><label>Ticker (z.B. XYZ.DE)</label><input name=\"ticker\" required></div>' +\n'    <div><label>Name</label><input name=\"name\" required></div>' +\n'    <div><label>Sektor</label><input name=\"sektor\"></div>' +\n'    <div><label>Keywords</label><input name=\"keywords\" placeholder=\"z.B. Beispiel AG, Beispiel\"></div>' +\n'    <div><label>Ausschluss-Begriffe</label><input name=\"exclude_keywords\"></div>' +\n'    <div><button type=\"submit\">Hinzufuegen</button></div>' +\n'  </form>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
+      },
+      "id": "wm-build-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "wm-respond",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Aenderung)": {
+      "main": [
+        [
+          {
+            "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Formular normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Watchlist laden": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
