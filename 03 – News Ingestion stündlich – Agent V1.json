@@ -235,6 +235,11 @@
             "node": "Ergebnis persistieren (SQL bauen)",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Batch-Bewertung protokollieren (SQL bauen)",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -295,6 +300,17 @@
         [
           {
             "node": "Batch: 15 News pro KI-Aufruf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch-Bewertung protokollieren (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Batch-Bewertung protokollieren (ausfuehren)",
             "type": "main",
             "index": 0
           }
@@ -880,6 +896,41 @@
           "name": "Header Auth account"
         }
       }
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX (2026-07-22): \"KI: Nachricht bewerten\" ist der einzige Agent in diesem\n// Projekt, der nie in trading.agent_runs protokolliert wird - er erscheint\n// deshalb nie in der Status-Uebersicht (\"Agentenlaeufe\"), obwohl er stuendlich\n// laeuft. Ein API-Call bewertet einen ganzen Batch (bis zu 15 News), daher\n// hier EINE zusammenfassende Zeile pro Batch-Aufruf statt einer Zeile pro\n// Einzel-News (konsistent mit dem \"ein Modellaufruf = eine Zeile\"-Muster in\n// 03a/09/10, nur auf Batch-Ebene).\nfunction pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nconst items = $input.all().map(i => i.json);\nconst total = items.length;\nconst persistCount = items.filter(i => i._action === 'persist').length;\nconst retryCount = total - persistCount;\nconst status = total === 0 ? 'skipped' : (retryCount === 0 ? 'success' : (persistCount === 0 ? 'failed' : 'partial_failure'));\nconst newsIds = items.map(i => i.news_id ?? (i._origin && i._origin.id)).filter(v => v !== undefined && v !== null).join(',');\nconst errorMessage = retryCount > 0\n  ? [...new Set(items.filter(i => i._action !== 'persist').map(i => i._error).filter(Boolean))].join(' | ') || null\n  : null;\n\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, error_message, started_at, finished_at)\n  VALUES (${pgStr('news-bewertung-' + getBusinessDate() + '-' + Date.now())}, 'news-bewertung-agent', 'bewertung',\n          'gpt-5.4-mini', 'news-ingestion-v1', ${pgStr('news_ids=' + newsIds)}, ${pgStr('persist=' + persistCount + ',retry=' + retryCount)},\n          ${pgStr(status)}, ${pgStr(errorMessage)}, now(), now());`;\n\nreturn [{ json: { sql } }];\n"
+      },
+      "name": "Batch-Bewertung protokollieren (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        1650
+      ],
+      "id": "agent-log-03-sqlbau"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Batch-Bewertung protokollieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1400,
+        1650
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "agent-log-03-exec"
     }
   ],
   "pinData": null,
