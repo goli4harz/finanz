@@ -772,7 +772,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  const msg = j.message || (j.error && j.error.message) || (j.error && j.error.description) || j.error;\n  throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));\n}\nreturn $input.item;\n"
       },
       "name": "Persistierung pruefen (sonst werfen)",
       "type": "n8n-nodes-base.code",
