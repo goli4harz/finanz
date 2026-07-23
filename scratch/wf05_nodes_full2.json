@@ -48,7 +48,7 @@
   "Matrix: Fehler-Alert": {
     "parameters": {
       "method": "PUT",
-      "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-fehler-{{ Date.now() }}",
+      "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ $execution.id }}-fehler-{{ Date.now() }}",
       "authentication": "genericCredentialType",
       "genericAuthType": "httpHeaderAuth",
       "sendBody": true,
@@ -86,7 +86,7 @@
     ],
     "credentials": {
       "httpHeaderAuth": {
-        "id": "od1pN1F5wy2irSDs",
+        "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
         "name": "Header Auth account"
       }
     }
@@ -107,7 +107,7 @@
   "Matrix: Tagesreport senden": {
     "parameters": {
       "method": "PUT",
-      "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-report-{{ Date.now() }}",
+      "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ $execution.id }}-report-{{ Date.now() }}",
       "authentication": "genericCredentialType",
       "genericAuthType": "httpHeaderAuth",
       "sendBody": true,
@@ -145,7 +145,7 @@
     ],
     "credentials": {
       "httpHeaderAuth": {
-        "id": "od1pN1F5wy2irSDs",
+        "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
         "name": "Header Auth account"
       }
     }
@@ -166,10 +166,10 @@
       6032,
       4960
     ],
-    "webhookId": "73f48d44-e086-44c1-b79a-9596d953f87f",
+    "webhookId": "00000000-0000-4000-8000-000000000005",
     "credentials": {
       "smtp": {
-        "id": "9z1hWYlOfxcO8avw",
+        "id": "CONFIGURE_SMTP_CREDENTIAL_ID",
         "name": "SMTP account"
       }
     }

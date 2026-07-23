@@ -21,7 +21,7 @@ Basis: `ARCHITEKTUR_BESTAND.md`. Dieser Plan setzt die dort dokumentierten Befun
 
 ## Klärungspunkt PostgreSQL-Zugang — GELÖST (Stand 2026-07-19)
 
-Der Auftrag sieht ein eigenes `trading`-Schema in PostgreSQL vor (nicht n8n Data Tables) für Orchestrator-Protokoll, Agentenprotokoll, Instrumententabelle, News-Wirkungsanalyse und Lernregeln. Der DB-Zugang wurde inzwischen eingerichtet: Credential `Postgres account` (ID `NWckNyl8ZfwVVJCd`) wurde in der n8n-UI angelegt und per API-Referenz allen `executeQuery`-Nodes über 11 Workflows zugewiesen, niemals mit eingebetteten Zugangsdaten. `sql/001_agenten_architektur.sql` wurde live ausgeführt und verifiziert (Schema `trading` mit 9 Tabellen bestätigt); ebenso `sql/002_seed_stock_instruments.sql`. Mehrere Workflows (00, 03, 06, 08, 10) liefen bereits erfolgreich gegen die echte Datenbank — Details in `README.md`, Abschnitt „Live-Testergebnisse".
+Der Auftrag sieht ein eigenes `trading`-Schema in PostgreSQL vor (nicht n8n Data Tables) für Orchestrator-Protokoll, Agentenprotokoll, Instrumententabelle, News-Wirkungsanalyse und Lernregeln. Der DB-Zugang wurde inzwischen eingerichtet: Credential `Postgres account` (ID `CONFIGURE_POSTGRES_CREDENTIAL_ID`) wurde in der n8n-UI angelegt und per API-Referenz allen `executeQuery`-Nodes über 11 Workflows zugewiesen, niemals mit eingebetteten Zugangsdaten. `sql/001_agenten_architektur.sql` wurde live ausgeführt und verifiziert (Schema `trading` mit 9 Tabellen bestätigt); ebenso `sql/002_seed_stock_instruments.sql`. Mehrere Workflows (00, 03, 06, 08, 10) liefen bereits erfolgreich gegen die echte Datenbank — Details in `README.md`, Abschnitt „Live-Testergebnisse".
 
 ---
 

@@ -260,7 +260,7 @@
       ]
     }
   },
-  "id": "vgT6IrPp3ATaJg8s",
+  "id": "CONFIGURE_WORKFLOW_02_ID",
   "meta": null,
   "name": "02 – Technische Signale täglich",
   "nodes": [
@@ -300,14 +300,14 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=3mo&interval=1d",
+        "url": "=http://market-data.internal.example:8099/chart/{{ $json.ticker }}?period=3mo&interval=1d",
         "options": {
           "response": {
             "response": {
@@ -1799,7 +1799,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-signal-{{ $itemIndex }}-{{ Date.now() }}",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ $execution.id }}-signal-{{ $itemIndex }}-{{ Date.now() }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
@@ -1835,7 +1835,7 @@
       "name": "Matrix Alert",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "od1pN1F5wy2irSDs",
+          "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
           "name": "Header Auth account"
         }
       }
@@ -1894,7 +1894,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -1950,7 +1950,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
   },
   "tags": [],
   "versionId": "f5a7f21f-d4dd-43f8-9b4c-aacd96217f5c"

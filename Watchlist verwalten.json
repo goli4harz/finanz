@@ -64,7 +64,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -86,7 +86,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       }

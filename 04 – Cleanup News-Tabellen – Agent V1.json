@@ -123,7 +123,7 @@
       ]
     }
   },
-  "id": "3aeFh4tfDrCi4dUm",
+  "id": "CONFIGURE_WORKFLOW_04_ID",
   "meta": null,
   "name": "04 – Cleanup News-Tabellen – Agent V1",
   "nodes": [
@@ -196,7 +196,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -232,7 +232,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -268,7 +268,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -304,7 +304,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -340,7 +340,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -351,7 +351,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
   },
   "tags": [],
   "versionId": "d96c40bd-72fa-4a75-8166-accc30de1b76"

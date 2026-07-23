@@ -13,7 +13,7 @@
       ]
     }
   },
-  "id": "8PHV9RfaXjfTo3ZK",
+  "id": "CONFIGURE_WORKFLOW_99_ID",
   "meta": null,
   "name": "99 – Einmalig – SQL-Migration ausfuehren",
   "nodes": [
@@ -44,7 +44,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       }

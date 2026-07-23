@@ -173,7 +173,7 @@
       ]
     }
   },
-  "id": "9zO3uZeZeakTnLnX",
+  "id": "CONFIGURE_WORKFLOW_02B_ID",
   "meta": null,
   "name": "02b – Marktumfeld täglich",
   "nodes": [
@@ -213,7 +213,7 @@
     },
     {
       "parameters": {
-        "url": "=http://172.16.1.14:8099/chart/{{ $json.symbol }}?period=3mo&interval=1d",
+        "url": "=http://market-data.internal.example:8099/chart/{{ $json.symbol }}?period=3mo&interval=1d",
         "options": {
           "response": {
             "response": {
@@ -1092,7 +1092,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -1137,7 +1137,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
   },
   "tags": [],
   "versionId": "48ff8a64-3f1a-41dd-b062-9406972f977d"

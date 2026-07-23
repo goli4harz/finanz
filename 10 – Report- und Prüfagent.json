@@ -334,7 +334,7 @@
       ]
     }
   },
-  "id": "BFlxfLyarzR2xbBT",
+  "id": "CONFIGURE_WORKFLOW_10_ID",
   "meta": null,
   "name": "10 – Report- und Prüfagent",
   "nodes": [
@@ -463,7 +463,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -485,7 +485,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -507,7 +507,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -664,7 +664,7 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "openAiApi": {
-          "id": "RiT1gwJpQWzSo6NO",
+          "id": "CONFIGURE_OPENAI_CREDENTIAL_ID",
           "name": "OpenAI account"
         }
       },
@@ -731,7 +731,7 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "openAiApi": {
-          "id": "RiT1gwJpQWzSo6NO",
+          "id": "CONFIGURE_OPENAI_CREDENTIAL_ID",
           "name": "OpenAI account"
         }
       },
@@ -779,7 +779,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -815,7 +815,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       },
@@ -839,7 +839,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
   },
   "tags": [],
   "versionId": "17ccad9f-4c8b-4c02-b46e-1bff45218d4b"

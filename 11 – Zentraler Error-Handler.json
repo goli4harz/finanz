@@ -50,7 +50,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'error_' + ($json.executionId || Date.now()) }}",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ 'error_' + ($json.executionId || Date.now()) }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -80,7 +80,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "od1pN1F5wy2irSDs",
+          "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
           "name": "Header Auth account"
         }
       },
@@ -120,6 +120,6 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "id": "VTBfUuzQfMZNGYDM",
+  "id": "CONFIGURE_ERROR_WORKFLOW_ID",
   "active": false
 }

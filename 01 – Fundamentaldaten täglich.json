@@ -173,14 +173,14 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
+          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
           "name": "Postgres account"
         }
       }
     },
     {
       "parameters": {
-        "url": "=http://172.16.1.14:8099/fundamentals/{{ $json.ticker }}",
+        "url": "=http://market-data.internal.example:8099/fundamentals/{{ $json.ticker }}",
         "options": {
           "response": {
             "response": {
@@ -1052,7 +1052,7 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
   },
   "tags": [],
   "versionId": "85db28d5-c88f-47af-966c-f7722ed4abf6"

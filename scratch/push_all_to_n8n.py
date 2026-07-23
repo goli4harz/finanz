@@ -3,7 +3,7 @@ import json, os, subprocess, sys
 REPO = r"C:\Users\olietz\Documents\finanz"
 SCRATCH = r"C:\Users\olietz\AppData\Local\Temp\claude\c--Users-olietz-Downloads\9e5863c2-f27c-40ea-ad25-5cc547749c68\scratchpad"
 API_KEY = os.environ["N8N_API_KEY"]
-BASE = "http://172.16.1.14:5678/api/v1"
+BASE = "http://market-data.internal.example:5678/api/v1"
 
 import urllib.request
 

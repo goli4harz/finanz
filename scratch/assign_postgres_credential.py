@@ -1,25 +1,25 @@
 import json, os, urllib.request, urllib.error
 
 API_KEY = os.environ["N8N_API_KEY"]
-BASE = "http://172.16.1.14:5678/api/v1"
-REAL_CRED = {"id": "NWckNyl8ZfwVVJCd", "name": "Postgres account"}
-STATUS_WEBHOOK_CRED = {"id": "5lPS4iU0YNbMcjWR", "name": "Status-Webhook Token"}
+BASE = "http://market-data.internal.example:5678/api/v1"
+REAL_CRED = {"id": "CONFIGURE_POSTGRES_CREDENTIAL_ID", "name": "Postgres account"}
+STATUS_WEBHOOK_CRED = {"id": "CONFIGURE_STATUS_CREDENTIAL_ID", "name": "Status-Webhook Token"}
 
 WORKFLOW_IDS = {
-    "00 Orchestrator": "ncMZzkqDHpSiDGPm",
-    "02b Orchestriert": "9zO3uZeZeakTnLnX",
-    "02 Orchestriert": "vgT6IrPp3ATaJg8s",
-    "03 Agent V1": "kXfFAy97N6xgRgQ5",
-    "03a": "SUNb1rfSUTQGUTPN",
-    "04 Agent V1": "3aeFh4tfDrCi4dUm",
-    "05 Agent V1": "VRr5jIHj7G7dsMwi",
-    "06 Agent V1": "aguWZUolRizBnsj4",
-    "07 Agent V1": "7hQ3t6KrSo9uDNML",
-    "08": "EvJKlqkuSIu9CHmR",
-    "09": "LjZHC5g7thqcCElo",
-    "10": "BFlxfLyarzR2xbBT",
-    "99": "8PHV9RfaXjfTo3ZK",
-    "11 Error-Handler": "VTBfUuzQfMZNGYDM",
+    "00 Orchestrator": "CONFIGURE_WORKFLOW_00_ID",
+    "02b Orchestriert": "CONFIGURE_WORKFLOW_02B_ID",
+    "02 Orchestriert": "CONFIGURE_WORKFLOW_02_ID",
+    "03 Agent V1": "CONFIGURE_WORKFLOW_03_ID",
+    "03a": "CONFIGURE_WORKFLOW_03A_ID",
+    "04 Agent V1": "CONFIGURE_WORKFLOW_04_ID",
+    "05 Agent V1": "CONFIGURE_WORKFLOW_05_ID",
+    "06 Agent V1": "CONFIGURE_WORKFLOW_06_ID",
+    "07 Agent V1": "CONFIGURE_WORKFLOW_07_ID",
+    "08": "CONFIGURE_WORKFLOW_08_ID",
+    "09": "CONFIGURE_WORKFLOW_09_ID",
+    "10": "CONFIGURE_WORKFLOW_10_ID",
+    "99": "CONFIGURE_WORKFLOW_99_ID",
+    "11 Error-Handler": "CONFIGURE_ERROR_WORKFLOW_ID",
 }
 
 def api(method, path, body=None):
