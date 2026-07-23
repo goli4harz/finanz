@@ -393,7 +393,7 @@
     {
       "parameters": {
         "path": "aktien-status",
-        "authentication": "headerAuth",
+        "authentication": "none",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -405,13 +405,7 @@
         0
       ],
       "webhookId": "eeeeeeee-0000-4000-8000-100000000001",
-      "id": "n-00000001-0000-4000-8000-0000000000",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "5lPS4iU0YNbMcjWR",
-          "name": "Status-Webhook Token"
-        }
-      }
+      "id": "n-00000001-0000-4000-8000-0000000000"
     },
     {
       "parameters": {

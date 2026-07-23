@@ -80,7 +80,7 @@ Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zus�
 | Credential-Name | Typ | Verwendung | Status |
 |---|---|---|---|
 | `Postgres account` (ID `NWckNyl8ZfwVVJCd`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
-| `Status-Webhook Token` (ID `5lPS4iU0YNbMcjWR`) | Header Auth | Absicherung des Status-Webhooks in 07 (Header `X-Status-Token`) | **Angelegt und zugewiesen, live getestet** — 07 liefert die Status-HTML mit korrektem Header, `403 Authorization data is wrong!` ohne |
+| `Status-Webhook Token` (ID `5lPS4iU0YNbMcjWR`) | Header Auth | Derzeit nicht zugewiesen; Status- und Watchlist-Webseiten sind im LAN bewusst ohne Webhook-Authentifizierung erreichbar | Credential bleibt in n8n für eine spätere Nutzung erhalten |
 | `Header Auth account` (ID `od1pN1F5wy2irSDs`) | Header Auth | Alle Matrix-Sends | Bereits vorhanden, unverändert aus den Originalen übernommen |
 | `OpenAI account` (ID `RiT1gwJpQWzSo6NO`) | OpenAI API | Alle KI-Nodes (03, 03a, 09, 10) | Bereits vorhanden, live bestätigt funktionsfähig |
 | `SMTP account` (ID `9z1hWYlOfxcO8avw`) | SMTP | E-Mail-Versand in 05 | Bereits vorhanden, noch nicht live getestet (05 wurde in den Orchestrator-Testläufen nie mit `approved=true` erreicht) |
@@ -124,7 +124,7 @@ Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten 
 1. ✅ Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` angelegt und verifiziert.
 2. ✅ Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zugewiesen (per API, `scratch/assign_postgres_credential.py` — muss nach jedem vollständigen PUT-Push erneut laufen, da PUT die Credential sonst auf den Platzhalter zurücksetzt).
 3. ✅ `99 – Einmalig – SQL-Migration ausfuehren` ausgeführt.
-4. ✅ Status-Webhook-Token-Credential angelegt und `07` mit Header-Authentifizierung versehen.
+4. ✅ Status- und Watchlist-Webseiten sind bewusst ohne Webhook-Authentifizierung erreichbar, da sie ausschließlich im LAN bereitgestellt werden.
 5. ✅ Die produktiven Workflows sind aktiviert; Einzel- und Gesamtläufe sind im Abschnitt „Live-Testergebnisse“ dokumentiert.
 6. ✅ Eigene Schedule-Trigger der orchestrierten Workflows `02b`/`02`/`05`/`06` sind deaktiviert; sie laufen ausschließlich über `00`.
 
@@ -211,7 +211,7 @@ Die neue Architektur ist live geschaltet. Alle alten Original-Workflows (`01` au
 
 ## Punkte, die weiterhin nur statisch geprüft sind (nicht live getestet)
 
-Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/03a/04/06/07/08/09/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung), 03a (Recherche-Agent), 09 (Lernagent) und 10 (Report- + Prüf-Agent), `n8n-nodes-base.webhook` mit `authentication: headerAuth` in 07, der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`, per gepinnten Testdaten erzwungen), `04`s vier Retention-Zweige und `09`s Mindestfallzahl-Stufen (beide per künstlich zurückdatierten/erzeugten Testzeilen), sowie die D+1-Zeile der Handelstage-Zählung in 08.
+Live bereits bestätigt (siehe „Live-Testergebnisse" oben): `executeQuery`-Postgres-Nodes in 00/03/03a/04/06/07/08/09/10, `executeWorkflow`/`executeWorkflowTrigger`-Orchestrierung inkl. Fehlerzweig (`onError: continueErrorOutput`), die KI-Prompts in 03 (News-Bewertung), 03a (Recherche-Agent), 09 (Lernagent) und 10 (Report- + Prüf-Agent), der Status-Webhook in 07, der echte `05`-Versandpfad (Matrix + E-Mail bei `approved=true`, per gepinnten Testdaten erzwungen), `04`s vier Retention-Zweige und `09`s Mindestfallzahl-Stufen (beide per künstlich zurückdatierten/erzeugten Testzeilen), sowie die D+1-Zeile der Handelstage-Zählung in 08.
 
 Noch offen:
 - Die D+3/D+5/D+10/D+20-Zweige der Handelstage-Zählung in 08: nur D+1 wurde bisher tatsächlich erreicht (es liegt erst 1 Tag Kurshistorie seit der Migration vor), die späteren Zeitfenster sind weiterhin nur gegen die Codelogik durchdacht.

@@ -5,7 +5,7 @@
       "parameters": {
         "path": "aktien-watchlist",
         "httpMethod": "GET",
-        "authentication": "basicAuth",
+        "authentication": "none",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -17,19 +17,13 @@
         -800,
         0
       ],
-      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "9q5E9OtiUgNRXG3Z",
-          "name": "Finanz Watchlist Basic Auth"
-        }
-      }
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001"
     },
     {
       "parameters": {
         "path": "aktien-watchlist",
         "httpMethod": "POST",
-        "authentication": "basicAuth",
+        "authentication": "none",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -41,13 +35,7 @@
         -800,
         240
       ],
-      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002",
-      "credentials": {
-        "httpBasicAuth": {
-          "id": "9q5E9OtiUgNRXG3Z",
-          "name": "Finanz Watchlist Basic Auth"
-        }
-      }
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002"
     },
     {
       "parameters": {
