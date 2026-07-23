@@ -9,11 +9,8 @@
 -- Wiederholbar/idempotent: nutzt ausschliesslich CREATE ... IF NOT EXISTS.
 -- Loescht oder veraendert KEINE bestehenden Tabellen/Daten.
 --
--- Hinweis zur Nummerierung: 003/004 wurden bereits live gegen die
--- Produktionsdatenbank ausgefuehrt (trading.pipeline_config,
--- trading.stock_price_history), sind aber nicht im Git-Repo nachgefuehrt
--- (bekannte Doku-Luecke, siehe README.md). 005 ist die naechste freie
--- Nummer fuer neue, im Repo getrackte Migrationsdateien.
+-- Hinweis zur Nummerierung: 003/004 bilden die bereits produktiv vorhandenen
+-- Tabellen trading.pipeline_config und trading.stock_price_history ab.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS trading.workflow_errors (

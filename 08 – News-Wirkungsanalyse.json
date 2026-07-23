@@ -5,6 +5,17 @@
       "main": [
         [
           {
+            "node": "DB: Weitere News je Ticker laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Weitere News je Ticker laden": {
+      "main": [
+        [
+          {
             "node": "DB: Neue News-Ticker-Paare laden",
             "type": "main",
             "index": 0
@@ -16,11 +27,6 @@
           },
           {
             "node": "DB: Instrumente (Benchmark-Zuordnung)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Weitere News je Ticker laden",
             "type": "main",
             "index": 0
           }

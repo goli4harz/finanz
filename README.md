@@ -124,9 +124,9 @@ Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten 
 1. ✅ Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` angelegt und verifiziert.
 2. ✅ Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zugewiesen (per API, `scratch/assign_postgres_credential.py` — muss nach jedem vollständigen PUT-Push erneut laufen, da PUT die Credential sonst auf den Platzhalter zurücksetzt).
 3. ✅ `99 – Einmalig – SQL-Migration ausfuehren` ausgeführt.
-4. ⏳ Status-Webhook-Token-Credential noch nicht angelegt, `07` noch nicht getestet.
-5. ⏳ Teilweise erledigt — `00`, `03`, `06`, `08`, `10` erfolgreich einzeln und im Gesamtlauf getestet (siehe Live-Testergebnisse unten), `03a`/`04`/`07`/`09` sowie der echte `05`-Versandpfad noch offen. Noch kein Workflow wurde aktiviert (bewusst — Aktivierung erst nach vollständigem Testdurchlauf).
-6. ⏳ Alte Schedule-Trigger in `02b`/`02`/`05`/`06` laufen bewusst weiter unverändert, bis alle neuen Versionen getestet und aktiviert sind.
+4. ✅ Status-Webhook-Token-Credential angelegt und `07` mit Header-Authentifizierung versehen.
+5. ✅ Die produktiven Workflows sind aktiviert; Einzel- und Gesamtläufe sind im Abschnitt „Live-Testergebnisse“ dokumentiert.
+6. ✅ Eigene Schedule-Trigger der orchestrierten Workflows `02b`/`02`/`05`/`06` sind deaktiviert; sie laufen ausschließlich über `00`.
 
 **Bekannte Einschränkung beim Live-Push:** die strikte Workflow-Create-API akzeptiert kein node-level `"settings"`-Feld (z. B. `retryOnFail`/`maxTries` an einzelnen `httpRequest`-Nodes), obwohl das UI-Export-Format es enthält — dieses Feld wurde nur für den API-Push entfernt, die Git-Dateien selbst enthalten es unverändert. Betroffene Nodes haben dadurch in der jetzt live angelegten Version keine node-eigene Retry-Konfiguration (ihre `neverError`/Fehlerbehandlung auf HTTP-Ebene bleibt aber erhalten) — bei Bedarf in der n8n-UI manuell nachtragen.
 
@@ -262,7 +262,8 @@ Architekturentscheidung mit dem Nutzer abgestimmt: `stock_empfehlungen` (n8n Dat
 - `06`: `DB: Bestehende Empfehlungen laden` von Data-Table-`get` auf Postgres-`SELECT` umgestellt; `DB: Empfehlung öffnen`/`schließen` in `SQL bauen`(Code)+`executeQuery`(Postgres, `onError: continueRegularOutput`, `INSERT/UPDATE ... RETURNING *`) aufgeteilt.
 - **Gefundener und behobener Bug-Klasse** („Write-Node überschreibt Item“): nach jedem erfolgreichen Schreiben ging das JS-eigene Feld `_aktion` verloren, weil der DB-Node das Item durch sein eigenes Rückgabeschema ersetzt — neue `Oeffnen/Schliessen: _aktion ergaenzen`-Nodes stellen es wieder her, inkl. Ticker-Kontext-Wiederherstellung bei Schreibfehlern.
 - `Schreiberfolg verifizieren` zeigt fehlgeschlagene Writes jetzt sichtbar in der Matrix-Nachricht an (vorher wurden sie stillschweigend verworfen).
-- `07 – Status-Uebersicht`: `DB: Empfehlungen laden` ebenfalls auf `trading.recommendations` umgestellt.
+- `07 – Status-Uebersicht` und `10 – Report- und Prüfagent`: `DB: Empfehlungen laden` auf `trading.recommendations` umgestellt.
+- `07 – Status-Uebersicht`: Kursverlauf wird aus `trading.stock_price_history` statt aus der alten n8n Data Table gelesen.
 
 ### Priorität 6 — Einheitliche Rückgabeformate (vollständig: `02`/`02b`/`06`/`10`/`05`, Stand 2026-07-21)
 

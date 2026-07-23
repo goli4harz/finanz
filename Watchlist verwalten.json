@@ -5,6 +5,7 @@
       "parameters": {
         "path": "aktien-watchlist",
         "httpMethod": "GET",
+        "authentication": "basicAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -16,12 +17,19 @@
         -800,
         0
       ],
-      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001"
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "9q5E9OtiUgNRXG3Z",
+          "name": "Finanz Watchlist Basic Auth"
+        }
+      }
     },
     {
       "parameters": {
         "path": "aktien-watchlist",
         "httpMethod": "POST",
+        "authentication": "basicAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -33,11 +41,17 @@
         -800,
         240
       ],
-      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002"
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002",
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "9q5E9OtiUgNRXG3Z",
+          "name": "Finanz Watchlist Basic Auth"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgArr(v) {\n  const arr = String(v || '').split(',').map(s => s.trim()).filter(Boolean);\n  return `'{` + arr.map(x => `\"` + x.replace(/\"/g, '\\\\\"') + `\"`).join(',') + `}'`;\n}\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst ticker = String(j.ticker || '').trim().toUpperCase();\n\nlet sql;\n\nif (action === 'add') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  if (!ticker || !name) {\n    sql = 'SELECT 1;';\n  } else {\n    sql = `INSERT INTO trading.watchlist (ticker, name, sektor, keywords, exclude_keywords, active)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, ${pgArr(j.keywords)}, ${pgArr(j.exclude_keywords)}, TRUE)\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, keywords = EXCLUDED.keywords,\n        exclude_keywords = EXCLUDED.exclude_keywords, active = TRUE, updated_at = now();`;\n  }\n} else if (action === 'edit') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  sql = `UPDATE trading.watchlist SET\n    name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, keywords = ${pgArr(j.keywords)},\n    exclude_keywords = ${pgArr(j.exclude_keywords)}, updated_at = now()\n    WHERE ticker = ${pgStr(ticker)};`;\n} else if (action === 'toggle_active') {\n  sql = `UPDATE trading.watchlist SET active = NOT active, updated_at = now() WHERE ticker = ${pgStr(ticker)};`;\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn [{ json: { sql } }];\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction values(v) {\n  return String(v || '').split(',').map(s => s.trim()).filter(Boolean);\n}\nfunction pgArr(v) {\n  return `'{` + values(v).map(x => `\"` + x.replace(/\"/g, '\\\\\"') + `\"`).join(',') + `}'`;\n}\nfunction pgJson(v) {\n  return `'` + JSON.stringify(values(v)).replace(/'/g, `''`) + `'::jsonb`;\n}\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst ticker = String(j.ticker || '').trim().toUpperCase();\n\nlet sql;\n\nif (action === 'add') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  if (!ticker || !name) {\n    sql = 'SELECT 1;';\n  } else {\n    sql = `BEGIN;\n      INSERT INTO trading.watchlist (ticker, name, sektor, keywords, exclude_keywords, active)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, ${pgArr(j.keywords)}, ${pgArr(j.exclude_keywords)}, TRUE)\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, keywords = EXCLUDED.keywords,\n        exclude_keywords = EXCLUDED.exclude_keywords, active = TRUE, updated_at = now();\n      INSERT INTO trading.stock_instruments\n        (ticker, name, sektor, aktiv, aliases_json, exclude_patterns_json, updated_at)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, TRUE, ${pgJson(j.keywords)}, ${pgJson(j.exclude_keywords)}, now())\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, aktiv = TRUE,\n        aliases_json = EXCLUDED.aliases_json, exclude_patterns_json = EXCLUDED.exclude_patterns_json,\n        updated_at = now();\n      COMMIT;`;\n  }\n} else if (action === 'edit') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  sql = `BEGIN;\n    UPDATE trading.watchlist SET\n      name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, keywords = ${pgArr(j.keywords)},\n      exclude_keywords = ${pgArr(j.exclude_keywords)}, updated_at = now()\n      WHERE ticker = ${pgStr(ticker)};\n    UPDATE trading.stock_instruments SET\n      name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, aliases_json = ${pgJson(j.keywords)},\n      exclude_patterns_json = ${pgJson(j.exclude_keywords)}, updated_at = now()\n      WHERE ticker = ${pgStr(ticker)};\n    COMMIT;`;\n} else if (action === 'toggle_active') {\n  sql = `BEGIN;\n    UPDATE trading.watchlist SET active = NOT active, updated_at = now() WHERE ticker = ${pgStr(ticker)};\n    UPDATE trading.stock_instruments si SET aktiv = w.active, updated_at = now()\n      FROM trading.watchlist w WHERE si.ticker = w.ticker AND w.ticker = ${pgStr(ticker)};\n    COMMIT;`;\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn [{ json: { sql } }];\n"
       },
       "id": "wm-post-normalize",
       "name": "POST: Formular normalisieren + SQL bauen",

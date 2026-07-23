@@ -393,7 +393,7 @@
     {
       "parameters": {
         "path": "aktien-status",
-        "authentication": "none",
+        "authentication": "headerAuth",
         "responseMode": "responseNode",
         "options": {}
       },
@@ -405,7 +405,13 @@
         0
       ],
       "webhookId": "eeeeeeee-0000-4000-8000-100000000001",
-      "id": "n-00000001-0000-4000-8000-0000000000"
+      "id": "n-00000001-0000-4000-8000-0000000000",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "5lPS4iU0YNbMcjWR",
+          "name": "Status-Webhook Token"
+        }
+      }
     },
     {
       "parameters": {
@@ -493,23 +499,24 @@
     },
     {
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "Mc3Pem5RGio6bqXt",
-          "mode": "list",
-          "cachedResultName": "stock_price_history"
-        },
-        "returnAll": true
+        "operation": "executeQuery",
+        "query": "SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE trading_date >= current_date - 35 ORDER BY trading_date DESC, symbol;",
+        "options": {}
       },
       "name": "DB: Kursverlauf laden",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
         -3400,
         320
       ],
       "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
       "id": "n-00000006-0000-4000-8000-0000000000"
     },
     {

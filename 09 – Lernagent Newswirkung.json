@@ -8,7 +8,13 @@
             "node": "SQL: Gesamtkennzahlen",
             "type": "main",
             "index": 0
-          },
+          }
+        ]
+      ]
+    },
+    "SQL: Gesamtkennzahlen": {
+      "main": [
+        [
           {
             "node": "SQL: Je Newskategorie",
             "type": "main",
