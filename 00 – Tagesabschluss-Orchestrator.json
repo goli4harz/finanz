@@ -612,7 +612,7 @@
       ]
     }
   },
-  "id": "CONFIGURE_WORKFLOW_00_ID",
+  "id": "ncMZzkqDHpSiDGPm",
   "meta": null,
   "name": "00 – Tagesabschluss-Orchestrator",
   "nodes": [
@@ -654,7 +654,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "CONFIGURE_WORKFLOW_02B_ID",
+          "value": "9zO3uZeZeakTnLnX",
           "mode": "list",
           "cachedResultName": "02b – Marktumfeld täglich"
         },
@@ -711,7 +711,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -776,7 +776,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "CONFIGURE_WORKFLOW_02_ID",
+          "value": "vgT6IrPp3ATaJg8s",
           "mode": "list",
           "cachedResultName": "02 – Technische Signale täglich"
         },
@@ -833,7 +833,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -939,7 +939,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -998,7 +998,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -1040,7 +1040,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "CONFIGURE_WORKFLOW_06_ID",
+          "value": "aguWZUolRizBnsj4",
           "mode": "list",
           "cachedResultName": "06 – Empfehlungswatchlist"
         },
@@ -1097,7 +1097,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -1131,7 +1131,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "CONFIGURE_WORKFLOW_10_ID",
+          "value": "BFlxfLyarzR2xbBT",
           "mode": "list",
           "cachedResultName": "10 – Report- und Prüfagent"
         },
@@ -1188,7 +1188,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -1254,7 +1254,7 @@
         "source": "database",
         "workflowId": {
           "__rl": true,
-          "value": "CONFIGURE_WORKFLOW_05_ID",
+          "value": "VRr5jIHj7G7dsMwi",
           "mode": "list",
           "cachedResultName": "05 – Tagesreport"
         },
@@ -1311,7 +1311,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -1431,7 +1431,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ 'orchestrator_warn_' + $json.run_id }}",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'orchestrator_warn_' + $json.run_id }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -1462,7 +1462,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
+          "id": "od1pN1F5wy2irSDs",
           "name": "Header Auth account"
         }
       }
@@ -1524,7 +1524,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -1559,7 +1559,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -1582,7 +1582,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "53199f6a-e5c5-43c9-93ae-f34ea9548379"

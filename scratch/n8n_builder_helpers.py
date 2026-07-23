@@ -7,9 +7,9 @@ langchain.openAi) oder aus dem real getesteten Migrations-Runner
 import json
 
 PG_CRED = {"id": "PLACEHOLDER_POSTGRES_CRED", "name": "Postgres – Trading (TODO Credential zuweisen)"}
-MATRIX_CRED = {"id": "CONFIGURE_MATRIX_CREDENTIAL_ID", "name": "Header Auth account"}
-OPENAI_CRED = {"id": "CONFIGURE_OPENAI_CREDENTIAL_ID", "name": "OpenAI account"}
-MATRIX_ROOM = "!CONFIGURE_MATRIX_ROOM_ID:example.invalid"
+MATRIX_CRED = {"id": "od1pN1F5wy2irSDs", "name": "Header Auth account"}
+OPENAI_CRED = {"id": "RiT1gwJpQWzSo6NO", "name": "OpenAI account"}
+MATRIX_ROOM = "!uDpcMuCWUvcwXMKJAP:matrix.org"
 
 GET_BUSINESS_DATE_JS = """function getBusinessDate(date = new Date()) {
   return new Intl.DateTimeFormat('sv-SE', {

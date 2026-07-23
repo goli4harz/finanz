@@ -24,7 +24,7 @@
       ]
     }
   },
-  "id": "CONFIGURE_WORKFLOW_98_ID",
+  "id": "rp35CZNrjp4BLrR6",
   "meta": null,
   "name": "98 – Einmalig – Postgres-Verbindungstest",
   "nodes": [
@@ -55,7 +55,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -77,7 +77,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }

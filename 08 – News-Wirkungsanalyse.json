@@ -193,7 +193,7 @@
       ]
     }
   },
-  "id": "CONFIGURE_WORKFLOW_08_ID",
+  "id": "EvJKlqkuSIu9CHmR",
   "meta": null,
   "name": "08 – News-Wirkungsanalyse",
   "nodes": [
@@ -233,7 +233,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -268,7 +268,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -301,7 +301,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -337,7 +337,7 @@
       "id": "n-00000008-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -386,7 +386,7 @@
       "id": "n-00000011-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       }
@@ -458,7 +458,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -495,7 +495,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -506,7 +506,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "2c8f30d2-624a-4b01-890c-c84ee29e7559"

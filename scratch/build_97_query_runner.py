@@ -2,7 +2,7 @@ import json
 
 OUT = r"C:\Users\olietz\Documents\finanz\97 – Einmalig – Beliebige Query ausfuehren.json"
 
-PG_CRED = {"id": "CONFIGURE_POSTGRES_CREDENTIAL_ID", "name": "Postgres account"}
+PG_CRED = {"id": "NWckNyl8ZfwVVJCd", "name": "Postgres account"}
 
 workflow = {
     "name": "97 – Einmalig – Beliebige Query ausfuehren",

@@ -5,15 +5,15 @@ OUT = r"C:\Users\olietz\Documents\finanz\00 – Tagesabschluss-Orchestrator.json
 # Echte n8n-ids der am 2026-07-19 neu erstellten Workflows (nicht der
 # urspruenglichen Original-ids -- alles wurde bewusst additiv als NEUE,
 # separate, inaktive Workflows angelegt statt die Originale zu ersetzen).
-WF_02B = "CONFIGURE_WORKFLOW_02B_ID"   # 02b – Marktumfeld täglich – Orchestriert
-WF_02 = "CONFIGURE_WORKFLOW_02_ID"    # 02 – Technische Signale täglich – Orchestriert
-WF_06_V1 = "CONFIGURE_WORKFLOW_06_ID" # 06 – Empfehlungswatchlist – Agent V1
-WF_10 = "CONFIGURE_WORKFLOW_10_ID"    # 10 – Report- und Prüfagent
-WF_05_V1 = "CONFIGURE_WORKFLOW_05_ID" # 05 – Tagesreport – Agent V1
+WF_02B = "9zO3uZeZeakTnLnX"   # 02b – Marktumfeld täglich – Orchestriert
+WF_02 = "vgT6IrPp3ATaJg8s"    # 02 – Technische Signale täglich – Orchestriert
+WF_06_V1 = "aguWZUolRizBnsj4" # 06 – Empfehlungswatchlist – Agent V1
+WF_10 = "BFlxfLyarzR2xbBT"    # 10 – Report- und Prüfagent
+WF_05_V1 = "VRr5jIHj7G7dsMwi" # 05 – Tagesreport – Agent V1
 
 PG_CRED = {"id": "PLACEHOLDER_POSTGRES_CRED", "name": "Postgres – Trading (TODO Credential zuweisen)"}
-MATRIX_CRED = {"id": "CONFIGURE_MATRIX_CREDENTIAL_ID", "name": "Header Auth account"}
-MATRIX_ROOM = "!CONFIGURE_MATRIX_ROOM_ID:example.invalid"
+MATRIX_CRED = {"id": "od1pN1F5wy2irSDs", "name": "Header Auth account"}
+MATRIX_ROOM = "!uDpcMuCWUvcwXMKJAP:matrix.org"
 
 GET_BUSINESS_DATE_JS = """function getBusinessDate(date = new Date()) {
   return new Intl.DateTimeFormat('sv-SE', {

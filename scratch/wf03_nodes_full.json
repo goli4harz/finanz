@@ -62,7 +62,7 @@
   "Matrix: RSS-Fehler-Alert": {
     "parameters": {
       "method": "PUT",
-      "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ $execution.id }}-rssfehler-{{ Date.now() }}",
+      "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-rssfehler-{{ Date.now() }}",
       "authentication": "genericCredentialType",
       "genericAuthType": "httpHeaderAuth",
       "sendBody": true,
@@ -100,7 +100,7 @@
     ],
     "credentials": {
       "httpHeaderAuth": {
-        "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
+        "id": "od1pN1F5wy2irSDs",
         "name": "Header Auth account"
       }
     }
@@ -231,7 +231,7 @@
     "waitBetweenTries": 5000,
     "credentials": {
       "openAiApi": {
-        "id": "CONFIGURE_OPENAI_CREDENTIAL_ID",
+        "id": "RiT1gwJpQWzSo6NO",
         "name": "OpenAI account"
       }
     }
@@ -285,7 +285,7 @@
   "Matrix Alert: Wichtige Nachricht": {
     "parameters": {
       "method": "PUT",
-      "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ $json.matrixTxnId }}",
+      "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $json.matrixTxnId }}",
       "authentication": "genericCredentialType",
       "genericAuthType": "httpHeaderAuth",
       "sendBody": true,
@@ -329,7 +329,7 @@
     ],
     "credentials": {
       "httpHeaderAuth": {
-        "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
+        "id": "od1pN1F5wy2irSDs",
         "name": "Header Auth account"
       }
     }

@@ -75,20 +75,17 @@ sql/001_agenten_architektur.sql
 
 Alle sieben liegen unverändert im Baseline-Commit `40e5575` auf `main` und zusätzlich unverändert im ersten Commit des `agenten-modernisierung`-Branches.
 
-## Benötigte n8n Credentials
+## Benötigte n8n Credentials — Stand: alle angelegt und zugewiesen
 
 | Credential-Name | Typ | Verwendung | Status |
 |---|---|---|---|
-| `Postgres account` (ID `CONFIGURE_POSTGRES_CREDENTIAL_ID`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
-| `Status-Webhook Token` (ID `CONFIGURE_STATUS_CREDENTIAL_ID`) | Header Auth | Absicherung des Status-Webhooks in 07 (Header `X-Status-Token`) | **Angelegt und zugewiesen, live getestet** — 07 liefert die Status-HTML mit korrektem Header, `403 Authorization data is wrong!` ohne |
-| `Header Auth account` (ID `CONFIGURE_MATRIX_CREDENTIAL_ID`) | Header Auth | Alle Matrix-Sends | Bereits vorhanden, unverändert aus den Originalen übernommen |
-| `OpenAI account` (ID `CONFIGURE_OPENAI_CREDENTIAL_ID`) | OpenAI API | Alle KI-Nodes (03, 03a, 09, 10) | Bereits vorhanden, live bestätigt funktionsfähig |
-| `SMTP account` (ID `CONFIGURE_SMTP_CREDENTIAL_ID`) | SMTP | E-Mail-Versand in 05 | Bereits vorhanden, noch nicht live getestet (05 wurde in den Orchestrator-Testläufen nie mit `approved=true` erreicht) |
+| `Postgres account` (ID `NWckNyl8ZfwVVJCd`) | Postgres | Alle `n8n-nodes-base.postgres`-Nodes (executeQuery) in 00, 03, 03a, 04, 06, 07, 08, 09, 10, 97, 99 | **Angelegt und in allen betroffenen Nodes über 11 Workflows zugewiesen** (per API, `scratch/assign_postgres_credential.py`) |
+| `Status-Webhook Token` (ID `5lPS4iU0YNbMcjWR`) | Header Auth | Absicherung des Status-Webhooks in 07 (Header `X-Status-Token`) | **Angelegt und zugewiesen, live getestet** — 07 liefert die Status-HTML mit korrektem Header, `403 Authorization data is wrong!` ohne |
+| `Header Auth account` (ID `od1pN1F5wy2irSDs`) | Header Auth | Alle Matrix-Sends | Bereits vorhanden, unverändert aus den Originalen übernommen |
+| `OpenAI account` (ID `RiT1gwJpQWzSo6NO`) | OpenAI API | Alle KI-Nodes (03, 03a, 09, 10) | Bereits vorhanden, live bestätigt funktionsfähig |
+| `SMTP account` (ID `9z1hWYlOfxcO8avw`) | SMTP | E-Mail-Versand in 05 | Bereits vorhanden, noch nicht live getestet (05 wurde in den Orchestrator-Testläufen nie mit `approved=true` erreicht) |
 
-**Kein Zugangsdatenwert und keine produktive Credential-ID gehört in Git.**
-Die `CONFIGURE_*`-Werte sind nicht lauffähige Platzhalter und müssen nur in
-einer lokalen Kopie beziehungsweise beim Deployment ersetzt werden. Details
-stehen in `PUBLIC_CONFIGURATION.md`.
+**Kein Zugangsdatenwert steht in irgendeiner Workflow-Datei oder in Git.** Beide neuen Credentials (Postgres, Status-Webhook Token) wurden ausschließlich per API angelegt (Token/Passwort nur im API-Request an n8n selbst, nirgends im Repo) und danach per API-Referenz (Name+ID, kein Zugangsdatenwert) den Nodes zugewiesen — `scratch/assign_postgres_credential.py` deckt inzwischen beide Credential-Typen ab und muss nach jedem vollständigen PUT-Push der betroffenen Workflows erneut laufen.
 
 ## Benötigte Umgebungsvariablen / offene Platzhalter
 
@@ -103,29 +100,26 @@ stehen in `PUBLIC_CONFIGURATION.md`.
 
 ## Importreihenfolge — bereits erledigt (Stand 2026-07-19)
 
-Die produktiven Workflow-IDs werden im öffentlichen Repository nicht
-versioniert. Die folgende Tabelle enthält ausschließlich Deployment-Platzhalter:
+Alle 15 Workflows wurden bereits über die n8n REST API als **neue, separate, inaktive** Workflows angelegt (nicht als Ersatz der laufenden Originale). Reale n8n-Workflow-IDs:
 
 | Datei | n8n-ID |
 |---|---|
-| `00 – Tagesabschluss-Orchestrator` | `CONFIGURE_WORKFLOW_00_ID` |
-| `02b – Marktumfeld täglich – Orchestriert` | `CONFIGURE_WORKFLOW_02B_ID` |
-| `02 – Technische Signale täglich – Orchestriert` | `CONFIGURE_WORKFLOW_02_ID` |
-| `03 – News Ingestion stündlich – Agent V1` | `CONFIGURE_WORKFLOW_03_ID` |
-| `03a – News-Recherche-Agent` | `CONFIGURE_WORKFLOW_03A_ID` |
-| `04 – Cleanup News-Tabellen – Agent V1` | `CONFIGURE_WORKFLOW_04_ID` |
-| `05 – Tagesreport – Agent V1` | `CONFIGURE_WORKFLOW_05_ID` |
-| `06 – Empfehlungswatchlist – Agent V1` | `CONFIGURE_WORKFLOW_06_ID` |
-| `07 – Status-Uebersicht – Agent V1` | `CONFIGURE_WORKFLOW_07_ID` |
-| `08 – News-Wirkungsanalyse` | `CONFIGURE_WORKFLOW_08_ID` |
-| `09 – Lernagent Newswirkung` | `CONFIGURE_WORKFLOW_09_ID` |
-| `10 – Report- und Prüfagent` | `CONFIGURE_WORKFLOW_10_ID` |
-| `98 – Einmalig – Postgres-Verbindungstest` | `CONFIGURE_WORKFLOW_98_ID` |
-| `99 – Einmalig – SQL-Migration ausfuehren` | `CONFIGURE_WORKFLOW_99_ID` |
+| `00 – Tagesabschluss-Orchestrator` | `ncMZzkqDHpSiDGPm` |
+| `02b – Marktumfeld täglich – Orchestriert` | `9zO3uZeZeakTnLnX` |
+| `02 – Technische Signale täglich – Orchestriert` | `vgT6IrPp3ATaJg8s` |
+| `03 – News Ingestion stündlich – Agent V1` | `kXfFAy97N6xgRgQ5` |
+| `03a – News-Recherche-Agent` | `SUNb1rfSUTQGUTPN` |
+| `04 – Cleanup News-Tabellen – Agent V1` | `3aeFh4tfDrCi4dUm` |
+| `05 – Tagesreport – Agent V1` | `VRr5jIHj7G7dsMwi` |
+| `06 – Empfehlungswatchlist – Agent V1` | `aguWZUolRizBnsj4` |
+| `07 – Status-Uebersicht – Agent V1` | `7hQ3t6KrSo9uDNML` |
+| `08 – News-Wirkungsanalyse` | `EvJKlqkuSIu9CHmR` |
+| `09 – Lernagent Newswirkung` | `LjZHC5g7thqcCElo` |
+| `10 – Report- und Prüfagent` | `BFlxfLyarzR2xbBT` |
+| `98 – Einmalig – Postgres-Verbindungstest` | `rp35CZNrjp4BLrR6` |
+| `99 – Einmalig – SQL-Migration ausfuehren` | `8PHV9RfaXjfTo3ZK` |
 
-Alle `Execute Workflow`-Referenzen in `00` und `05` müssen vor dem Deployment
-auf die IDs der Zielinstanz aufgelöst werden. Stand der ursprünglich geplanten
-manuellen Schritte:
+Alle `Execute Workflow`-Referenzen in `00` und `05` nutzen bereits diese echten IDs (in den Git-Dateien nachgetragen). Stand der ursprünglich geplanten manuellen Schritte:
 
 1. ✅ Postgres-Credential über `98 – Einmalig – Postgres-Verbindungstest` angelegt und verifiziert.
 2. ✅ Dieselbe Credential in allen `executeQuery`-Nodes der übrigen Workflows zugewiesen (per API, `scratch/assign_postgres_credential.py` — muss nach jedem vollständigen PUT-Push erneut laufen, da PUT die Credential sonst auf den Platzhalter zurücksetzt).
@@ -246,7 +240,7 @@ Neue Tabelle `trading.stock_price_history` (`sql/004_stock_price_history.sql`: `
 - `02`/`02b` bekamen je einen zusätzlichen `Kurshistorie: SQL bauen`/`Kurshistorie: upserten`-Zweig (additiv, ersetzt nicht die bestehenden `stock_technical_signals`/`stock_market_context`-Writes) — ein Datensatz je (Symbol, Handelstag) und Lauf, `ON CONFLICT (symbol, trading_date) DO UPDATE`.
 - `08 – News-Wirkungsanalyse`: Kursquelle für `DB: Kursverlauf je Ticker laden`/`DB: Benchmark-Kursverlauf laden` von `stock_technical_signals`/`stock_market_context` auf `trading.stock_price_history` umgestellt (Spalten-Alias `symbol AS ticker, trading_date AS datum, close AS aktueller_kurs`, damit die nachgelagerte Gruppierungslogik unverändert bleibt).
 - Damit ist der in `MIGRATIONSPLAN_AGENTEN.md` Phase 6 als „gelöst“ beschriebene Workaround (Wiederverwendung von `stock_technical_signals`/`stock_market_context` als Pseudo-Historie) überholt — echte, dedizierte Tagesreihen sind jetzt die Kursquelle.
-- Offen: rückwirkendes Backfill über die FastAPI (`market-data.internal.example:8099`) wurde nicht geprüft/gebaut — die Tabelle akkumuliert ab jetzt real, D+20-Auswertungen brauchen entsprechend ~20 echte Handelstage.
+- Offen: rückwirkendes Backfill über die FastAPI (`172.16.1.14:8099`) wurde nicht geprüft/gebaut — die Tabelle akkumuliert ab jetzt real, D+20-Auswertungen brauchen entsprechend ~20 echte Handelstage.
 
 ### Priorität 3 — Wirkungsanalyse-Korrektur (erledigt, live getestet)
 
@@ -319,7 +313,7 @@ Nutzer-Entscheidung: Teil 1 (zentraler Workflow + überall verdrahten) + Teil 2 
 
 Audit (Explore-Agent) über alle 13 Produktiv-Workflows ergab: kein Workflow hatte `settings.errorWorkflow` gesetzt; 15 riskante Nodes hatten gar kein `onError` (n8n-Default `stopWorkflow`, lauter Absturz, aber ungenutzt ohne aktive Beobachtung); 65 Nodes hatten `onError: continueRegularOutput`, aber **kein** nachgelagerter Node las das resultierende `error`-Feld — abgesehen von `05`/`06`, die bereits ein `_write_failed`/`_send_failed`-Muster aus Priorität 5/6 haben.
 
-**Teil 1 — `11 – Zentraler Error-Handler.json`** (neu, n8n-ID `CONFIGURE_ERROR_WORKFLOW_ID`): `errorTrigger`-Node → Code-Node extrahiert strukturierte Felder aus dem nativen Error-Trigger-Payload → parallel (a) `INSERT` in neue Tabelle `trading.workflow_errors` (`sql/005_workflow_errors.sql`), (b) Matrix-Alert. Isoliert getestet (gepinntes Fake-Payload). `settings.errorWorkflow` zeigt jetzt auf diesen Workflow in allen 13 Produktiv-Workflows — 12 per API deployt, `01 – Fundamentaldaten täglich` **manuell in der UI** gesetzt (hat live node-eigenes `retryOnFail`/`alwaysOutputData`, das ein API-PUT beim node-level-`settings`-Sanitizing sonst gelöscht hätte).
+**Teil 1 — `11 – Zentraler Error-Handler.json`** (neu, n8n-ID `VTBfUuzQfMZNGYDM`): `errorTrigger`-Node → Code-Node extrahiert strukturierte Felder aus dem nativen Error-Trigger-Payload → parallel (a) `INSERT` in neue Tabelle `trading.workflow_errors` (`sql/005_workflow_errors.sql`), (b) Matrix-Alert. Isoliert getestet (gepinntes Fake-Payload). `settings.errorWorkflow` zeigt jetzt auf diesen Workflow in allen 13 Produktiv-Workflows — 12 per API deployt, `01 – Fundamentaldaten täglich` **manuell in der UI** gesetzt (hat live node-eigenes `retryOnFail`/`alwaysOutputData`, das ein API-PUT beim node-level-`settings`-Sanitizing sonst gelöscht hätte).
 
 **Teil 2** — fünf gezielte `"... pruefen (sonst werfen)"`-Code-Nodes nach den konsequentesten stillen Write/Send-Stellen (Audit-Ranking): `03` (`Ergebnis persistieren`, News-Bewertung), `03a` (`Recherche-Ergebnis persistieren`, Zweitpass), `00` ×2 (`Log Gesamtlauf abgeschlossen`, `Matrix: Technische Warnung senden`), `08` (`Tracking-Zeile upserten`). Jeder prüft `$json.error` und wirft bewusst weiter, statt eigene Alert-Logik zu duplizieren — der Wurf wird vom in Teil 1 verdrahteten `errorWorkflow` abgefangen. Die übrigen ~60 `continueRegularOutput`-Stellen sind bewusst unverändert (Reads, redundante Audit-Logs, selbstheilende Cleanup-Operationen).
 
@@ -357,4 +351,4 @@ Voller Live-Test bestätigt: Query-Struktur korrekt (z. B. 15 Zeilen für `Je Ne
 - **Priorität 10**: Prompt-Injection-Härtung in allen KI-Nodes, strikte Schema-Validierung.
 - **Priorität 11**: `pipeline_config` zur vollen zentralen Konfigurationstabelle ausbauen (Watchlist, Schwellenwerte, Modelle, Matrix-Räume, Prompt-Versionen — aktuell nur `DRY_RUN`/`REQUIRE_CONFIRMATION`).
 - **Priorität 12**: erledigt (siehe oben).
-- Offene Klärfrage zu Priorität 2: ob die FastAPI (`market-data.internal.example:8099`) historische Kursdaten für einen Datumsbereich liefern kann (Backfill), statt ~20 Handelstage lang natürlich zu warten.
+- Offene Klärfrage zu Priorität 2: ob die FastAPI (`172.16.1.14:8099`) historische Kursdaten für einen Datumsbereich liefern kann (Backfill), statt ~20 Handelstage lang natürlich zu warten.

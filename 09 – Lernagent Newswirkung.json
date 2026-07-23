@@ -214,7 +214,7 @@
       ]
     }
   },
-  "id": "CONFIGURE_WORKFLOW_09_ID",
+  "id": "LjZHC5g7thqcCElo",
   "meta": null,
   "name": "09 – Lernagent Newswirkung",
   "nodes": [
@@ -254,7 +254,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -276,7 +276,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -298,7 +298,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -320,7 +320,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -342,7 +342,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -442,7 +442,7 @@
       "waitBetweenTries": 5000,
       "credentials": {
         "openAiApi": {
-          "id": "CONFIGURE_OPENAI_CREDENTIAL_ID",
+          "id": "RiT1gwJpQWzSo6NO",
           "name": "OpenAI account"
         }
       },
@@ -503,7 +503,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -539,7 +539,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "CONFIGURE_POSTGRES_CREDENTIAL_ID",
+          "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
@@ -562,7 +562,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://matrix.org/_matrix/client/v3/rooms/!CONFIGURE_MATRIX_ROOM_ID:example.invalid/send/m.room.message/{{ 'lernbericht_' + $json.analysis_to }}",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'lernbericht_' + $json.analysis_to }}",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -592,7 +592,7 @@
       "onError": "continueRegularOutput",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "CONFIGURE_MATRIX_CREDENTIAL_ID",
+          "id": "od1pN1F5wy2irSDs",
           "name": "Header Auth account"
         }
       },
@@ -602,7 +602,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "CONFIGURE_ERROR_WORKFLOW_ID"
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "00b7af68-a280-48d3-9dd5-b6e46ec6584a"

@@ -10,7 +10,7 @@ with open(ORIG, encoding="utf-8") as f:
     orig = json.load(f)
 orig_nodes = {n["name"]: n for n in orig["nodes"]}
 
-WF_10 = "CONFIGURE_WORKFLOW_10_ID"  # echte n8n-id nach Erstellung 2026-07-19
+WF_10 = "BFlxfLyarzR2xbBT"  # echte n8n-id nach Erstellung 2026-07-19
 
 b = Builder("05 – Tagesreport – Agent V1")
 

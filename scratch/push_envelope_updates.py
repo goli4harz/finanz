@@ -1,15 +1,15 @@
 import json, os, sys, urllib.request, urllib.error, datetime
 
 API_KEY = os.environ["N8N_API_KEY"]
-BASE = "http://market-data.internal.example:5678/api/v1"
+BASE = "http://172.16.1.14:5678/api/v1"
 REPO = r"C:\Users\olietz\Documents\finanz"
 BACKUP_DIR = os.path.join(REPO, "n8n_live_backup")
 
 FILES_TO_IDS = {
-    "10 – Report- und Prüfagent.json": "CONFIGURE_WORKFLOW_10_ID",
-    "06 – Empfehlungswatchlist – Agent V1.json": "CONFIGURE_WORKFLOW_06_ID",
-    "05 – Tagesreport – Agent V1.json": "CONFIGURE_WORKFLOW_05_ID",
-    "00 – Tagesabschluss-Orchestrator.json": "CONFIGURE_WORKFLOW_00_ID",
+    "10 – Report- und Prüfagent.json": "BFlxfLyarzR2xbBT",
+    "06 – Empfehlungswatchlist – Agent V1.json": "aguWZUolRizBnsj4",
+    "05 – Tagesreport – Agent V1.json": "VRr5jIHj7G7dsMwi",
+    "00 – Tagesabschluss-Orchestrator.json": "ncMZzkqDHpSiDGPm",
 }
 
 
