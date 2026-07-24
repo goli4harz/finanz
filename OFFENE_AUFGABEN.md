@@ -2,10 +2,10 @@
 
 Stand: 2026-07-24
 
-## Priorität 1
+## Priorität 1 (erledigt, 2026-07-24)
 
-- Den nächsten regulären Lauf von `08 – News-Wirkungsanalyse` um 19:00 Uhr kontrollieren. Erwartung: Der zuvor auftretende Abhängigkeitsfehler ist behoben und der Lauf endet erfolgreich.
-- Anschließend einen vollständigen automatischen Tageslauf über den Orchestrator `00` bis zum Reportversand prüfen.
+- ✅ `08 – News-Wirkungsanalyse` lief am 24.07. automatisch um 19:00 Uhr erfolgreich durch (kein Fehler-Eintrag, anders als an den drei Tagen zuvor mit `error, mode:trigger` um 17:00 UTC) — die 3-Tage-Fehlserie ist durchbrochen, der Abhängigkeitsfehler ist behoben.
+- ✅ Automatischer Taglauf über `00` (17:50 Uhr) lief bis zum Prüfagenten durch; dieser lehnte den Report inhaltlich begründet ab (Konfidenz 41) — das ist die vorgesehene Governance-Funktion, kein Fehler.
 
 ## Priorität 2
 
