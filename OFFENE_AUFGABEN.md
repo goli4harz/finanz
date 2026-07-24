@@ -10,7 +10,8 @@ Stand: 2026-07-24
 ## Priorität 2
 
 - ✅ Ablehnungs- und DRY_RUN-Pfad in Workflow `05` getestet (2026-07-24, per pinData auf `Execute Workflow Trigger`, danach zurückgesetzt): Ablehnung → `{ok:false, status:'failed'}` inkl. korrektem Matrix-Fehler-Alert; DRY_RUN → `{ok:true, status:'skipped'}`, kein echter Versand, sauber getaggt. Beide wie erwartet.
-- Noch offen: SMTP-E-Mail-Versand (separat, war in einer früheren Session schon einmal isoliert bestätigt — erneuter Test optional), Fehler-/Retry-Pfade.
+- ✅ Fehler-Pfade in `05` geprüft: `onError:continueRegularOutput` korrekt auf allen drei Sende-Nodes (Matrix-Report, E-Mail, Matrix-Fehler-Alert) gesetzt, wie in Priorität 6 spezifiziert. Echtes automatisches Node-Retry existiert bewusst nicht (API lehnt node-level `retryOnFail`/`maxTries` beim Push ab, siehe README) — bekannte, akzeptierte Grenze, kein offener Test.
+- Noch offen: SMTP-E-Mail-Versand erneut bestätigen (optional, war in einer früheren Session schon einmal isoliert bestätigt).
 - `sql/007_runtime_schema_reconciliation.sql` gegen eine leere Testdatenbank ausführen und die vollständige Reproduzierbarkeit des Schemas bestätigen.
 
 ## Priorität 3
