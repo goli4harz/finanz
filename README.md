@@ -24,7 +24,7 @@ Dieses Dokument beschreibt den Zielzustand nach dem Umbau auf `agenten-modernisi
 09 – Lernagent Newswirkung (Samstag 08:00)
    → trading.learning_rule_proposals (nur status='proposed')
 
-07 – Status-Uebersicht – Agent V1 (Webhook, jetzt mit Header-Token; inkl. SVG-Diagramme fuer Wirkungsanalyse-Status und Trefferquote je Quelle)
+07 – Status-Uebersicht – Agent V1 (Webhook, bewusst ohne Authentifizierung im LAN erreichbar, siehe Credential-Tabelle; inkl. SVG-Diagramme fuer Wirkungsanalyse-Status und Trefferquote je Quelle)
 01 – Fundamentaldaten täglich (06:00, unverändert — rein deterministisch, kein Agentenbedarf)
 ```
 
@@ -290,7 +290,7 @@ Einheitliches Envelope: `{ok, workflow, run_id, processed, successful, failed, w
 - Danach live bestätigt (Execution 9186): `06` liefert an einem kandidatenlosen Tag korrekt `{ok:true, processed:0, successful:0, failed:0, status:'skipped'}`, `Log Empfehlungswatchlist (SQL bauen)` schreibt `status:'skipped'` mit befülltem `metadata_json` statt leer, `IF: Empfehlungswatchlist ok?` lässt korrekt durch.
 - `10` über drei aufeinanderfolgende reale Läufe bestätigt: `errors[]`/`warnings[]` korrekt mit den echten Prüf-Agent-Begründungen befüllt (`unsupported_claim`-Einträge, `missing_warnings`), `ok:false`/`status:'failed'` bei echter inhaltlicher Ablehnung — Governance-Verhalten wie gewollt, kein Pipeline-Fehler.
 - `05` konnte nicht über einen echten `00`-Lauf getestet werden (Prüf-Agent hat drei Läufe in Folge abgelehnt) — stattdessen isoliert per `pinData` auf `Execute Workflow Trigger` getestet (`approved:true`, `DRY_RUN:false`, Testbericht klar als `TEST-VERSAND` markiert; Pin-Daten danach zurückgesetzt). Echter Versandpfad bestätigt (Execution 9191): Matrix-Nachricht zugestellt, E-Mail vom Mailserver angenommen (`250 2.0.0 Ok: queued`), beide Sende-Nodes korrekt getaggt, alle drei Merge-Nodes sauber durchlaufen, Endergebnis `{ok:true, processed:2, successful:2, failed:0, status:'success'}`.
-- **Weiterhin ungetestet**: `05`s DRY_RUN- und Ablehnungs-Zweig (nutzen dasselbe, bereits bewährte Tag-Muster wie der getestete Erfolgszweig) sowie `IF: Versand ok?` in `00` selbst (die zugrundeliegende Envelope-Logik ist bewiesen korrekt, das Gate folgt exakt dem bereits getesteten `02`/`06`/`10`-Muster).
+- **2026-07-24 nachgetragen**: `05`s DRY_RUN- und Ablehnungs-Zweig per pinData isoliert getestet (Testdaten danach zurückgesetzt). Ablehnung liefert `{ok:false, status:'failed'}` inkl. korrektem Matrix-Fehler-Alert; DRY_RUN liefert `{ok:true, status:'skipped'}`, kein echter Versand, sauber getaggt (`_zweig:'dry_run'`) — beide wie erwartet. `IF: Versand ok?` in `00` selbst weiterhin ungetestet (die zugrundeliegende Envelope-Logik ist bewiesen korrekt, das Gate folgt exakt dem bereits getesteten `02`/`06`/`10`-Muster).
 
 ### Priorität 7, Punkt 17 — Durchgängige `run_id` (erledigt, live getestet)
 
@@ -345,7 +345,7 @@ Voller Live-Test bestätigt: Query-Struktur korrekt (z. B. 15 Zeilen für `Je Ne
 
 ### Noch offen aus dem 29-Punkte-Auftrag
 
-- **Priorität 6**: erledigt und live getestet (siehe oben) — nur `05`s DRY_RUN-/Ablehnungs-Zweig und `IF: Versand ok?` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
+- **Priorität 6**: erledigt und live getestet (siehe oben) — `05`s DRY_RUN-/Ablehnungs-Zweig am 2026-07-24 nachgetestet, beide bestätigt korrekt. Nur `IF: Versand ok?` in `00` selbst noch ungetestet (niedriges Risiko, gleiches bewährtes Muster wie der getestete Rest).
 - **Priorität 7, Punkt 18**: erledigt (siehe oben).
 - **Priorität 8**: erledigt (siehe oben) — offen bleibt nur echtes automatisches Node-Retry (API-Limitation, s. Caveat).
 - **Priorität 9**: erledigt (siehe oben).
