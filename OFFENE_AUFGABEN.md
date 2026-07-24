@@ -16,8 +16,8 @@ Stand: 2026-07-24
 
 ## Priorität 3
 
-- Veraltete Aussagen in `README.md` und `MIGRATIONSPLAN_AGENTEN.md` zu Authentifizierung, Aktivierung und Teststatus bereinigen.
-- Optional einen kontrollierten Freigabe-/Aktivierungsworkflow für die von Workflow `09` erzeugten Lernvorschläge bauen. Gewichtungen dürfen dabei nicht ungeprüft automatisch aktiviert werden.
+- ✅ Veraltete Aussagen in `README.md` und `MIGRATIONSPLAN_AGENTEN.md` bereinigt (2026-07-24): `07`s Status-Übersicht fälschlich noch als "mit Header-Token" geführt (tatsächlich seit 07-23 ohne Auth), `05`s DRY_RUN-/Ablehnungs-Zweig noch als "ungetestet" vermerkt (heute bestätigt getestet). Aktivierungsstatus (`02`/`02b`/`05`/`06` eigene Trigger deaktiviert) live geprüft und stimmt weiterhin.
+- Noch offen (optional): kontrollierter Freigabe-/Aktivierungsworkflow für die von Workflow `09` erzeugten Lernvorschläge. Gewichtungen dürfen dabei nicht ungeprüft automatisch aktiviert werden.
 
 ## Bereits erledigt
 
