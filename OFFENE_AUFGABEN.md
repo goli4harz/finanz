@@ -1,6 +1,6 @@
 # Offene Aufgaben
 
-Stand: 2026-07-24
+Stand: 2026-07-25
 
 ## Priorität 1 (erledigt, 2026-07-24)
 
@@ -17,7 +17,8 @@ Stand: 2026-07-24
 ## Priorität 3
 
 - ✅ Veraltete Aussagen in `README.md` und `MIGRATIONSPLAN_AGENTEN.md` bereinigt (2026-07-24): `07`s Status-Übersicht fälschlich noch als "mit Header-Token" geführt (tatsächlich seit 07-23 ohne Auth), `05`s DRY_RUN-/Ablehnungs-Zweig noch als "ungetestet" vermerkt (heute bestätigt getestet). Aktivierungsstatus (`02`/`02b`/`05`/`06` eigene Trigger deaktiviert) live geprüft und stimmt weiterhin.
-- Noch offen (optional): kontrollierter Freigabe-/Aktivierungsworkflow für die von Workflow `09` erzeugten Lernvorschläge. Gewichtungen dürfen dabei nicht ungeprüft automatisch aktiviert werden.
+- ✅ Kontrollierter Freigabe-/Aktivierungsworkflow für die von Workflow `09` erzeugten Lernvorschläge (2026-07-25): neuer Workflow `12 – Lernvorschlag-Freigabe`, Web-Oberfläche unter `/webhook/lernvorschlaege` (gleiches Muster wie Watchlist verwalten, auf Nutzerwunsch keine Matrix-Umfrage). „Freigeben & aktivieren" schreibt sofort nach `trading.scoring_weights` und markiert die Proposal-Zeile als `activated`, „Ablehnen" setzt nur den Status. Live getestet (aktuell 0 Vorschläge, da `09` noch keine erzeugt hat). Dabei einen echten n8n-Plattform-Bug gefunden und gefixt: Postgres-Abfragen mit 0 Ergebniszeilen ließen nachgelagerte Nodes gar nicht erst ausführen, wodurch der Webhook lautlos leer antwortete (kein Fehler, keine Execution). Fix: `alwaysOutputData:true` auf dem Postgres-Node + Filter des dadurch erzeugten Platzhalter-Items. Derselbe (bisher nicht ausgelöste) Bug wurde vorsorglich auch in `Watchlist verwalten` behoben.
+- Hinweis: `trading.scoring_weights` wird von der eigentlichen Gewichtungslogik (z.B. in `03`/`09`) noch nicht gelesen — die dort hartkodierte Formel (`high=1.0/medium=0.7/limited=0.4/confounded=0.25`) wird durch eine Aktivierung also noch nicht automatisch wirksam. Separates, noch nicht beauftragtes Folge-Thema, falls gewünscht.
 
 ## Bereits erledigt
 
