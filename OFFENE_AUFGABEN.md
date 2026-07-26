@@ -1,18 +1,18 @@
 # Offene Aufgaben
 
-Stand: 2026-07-25
+Stand: 2026-07-26
 
 ## Priorität 1 (erledigt, 2026-07-24)
 
 - ✅ `08 – News-Wirkungsanalyse` lief am 24.07. automatisch um 19:00 Uhr erfolgreich durch (kein Fehler-Eintrag, anders als an den drei Tagen zuvor mit `error, mode:trigger` um 17:00 UTC) — die 3-Tage-Fehlserie ist durchbrochen, der Abhängigkeitsfehler ist behoben.
 - ✅ Automatischer Taglauf über `00` (17:50 Uhr) lief bis zum Prüfagenten durch; dieser lehnte den Report inhaltlich begründet ab (Konfidenz 41) — das ist die vorgesehene Governance-Funktion, kein Fehler.
 
-## Priorität 2
+## Priorität 2 (erledigt, 2026-07-26)
 
 - ✅ Ablehnungs- und DRY_RUN-Pfad in Workflow `05` getestet (2026-07-24, per pinData auf `Execute Workflow Trigger`, danach zurückgesetzt): Ablehnung → `{ok:false, status:'failed'}` inkl. korrektem Matrix-Fehler-Alert; DRY_RUN → `{ok:true, status:'skipped'}`, kein echter Versand, sauber getaggt. Beide wie erwartet.
 - ✅ Fehler-Pfade in `05` geprüft: `onError:continueRegularOutput` korrekt auf allen drei Sende-Nodes (Matrix-Report, E-Mail, Matrix-Fehler-Alert) gesetzt, wie in Priorität 6 spezifiziert. Echtes automatisches Node-Retry existiert bewusst nicht (API lehnt node-level `retryOnFail`/`maxTries` beim Push ab, siehe README) — bekannte, akzeptierte Grenze, kein offener Test.
-- Noch offen: SMTP-E-Mail-Versand erneut bestätigen (optional, war in einer früheren Session schon einmal isoliert bestätigt).
-- `sql/007_runtime_schema_reconciliation.sql` gegen eine leere Testdatenbank ausführen und die vollständige Reproduzierbarkeit des Schemas bestätigen.
+- ✅ SMTP-E-Mail-Versand real bestätigt (2026-07-26, per pinData mit klar als „TESTLAUF" markierten Daten, danach zurückgesetzt): echte Mail an `oliver.lietz@golietz.de`, Server-Antwort `250 2.0.0 Ok: queued as BB6BE288967`, `accepted:['oliver.lietz@golietz.de']`, `rejected:[]`. Da der reale Sende-Zweig E-Mail und Matrix gemeinsam auslöst, lief die Matrix-Nachricht im selben Test mit durch (echte `event_id` erhalten) — auf Nutzerwunsch nicht isoliert, beides zusammen bestätigt.
+- ✅ `sql/007_runtime_schema_reconciliation.sql` gegen ein leeres Schema geprüft (2026-07-26): alle 7 Migrationsdateien (001–007) in Reihenfolge gegen ein frisches `trading_test`-Schema ausgeführt (per `97 – Einmalig – Beliebige Query ausführen`, `trading.` global auf `trading_test.` umgeschrieben, Original-`trading`-Schema nicht angerührt). Ergebnis: alle 14 erwarteten Tabellen fehlerfrei erstellt (`agent_runs`, `learning_rule_proposals`, `news_assessments`, `news_impact_tracking`, `news_items`, `pipeline_config`, `pipeline_runs`, `prompt_versions`, `recommendations`, `scoring_weights`, `stock_instruments`, `stock_price_history`, `watchlist`, `workflow_errors`) — die Migrationskette ist von Grund auf reproduzierbar. Test-Schema danach vollständig entfernt (`DROP SCHEMA trading_test CASCADE`, verifiziert).
 
 ## Priorität 3
 
