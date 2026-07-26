@@ -2,6 +2,10 @@
 
 Stand: 2026-07-26
 
+## Priorität 4 (erledigt, 2026-07-26)
+
+- ✅ RSS-Quellenverwaltung: die bisher in `03`s Node "RSS-Feeds laden & filtern" hartkodierten 7 Feed-URLs liegen jetzt in `trading.rss_sources` (Migration `sql/008_rss_sources.sql`). Neuer Workflow `RSS-Quellen verwalten`, Web-Oberfläche unter `/webhook/rss-quellen` (gleiches Muster wie Watchlist verwalten): Quellen anlegen/bearbeiten/löschen/aktivieren-deaktivieren, plus ein echter Erreichbarkeits-/Gültigkeitstest je Quelle oder für alle auf einmal ("Alle Quellen testen") — ruft die URL live ab und prüft auf ein gültiges `<rss>`/`<feed>`/`<rdf:RDF>`-Tag samt Eintragsanzahl. `03` liest die aktiven Quellen jetzt über einen neuen Node "RSS-Quellen aus DB laden (News)" (mit `executeOnce:true`, da Postgres-Nodes sonst einmal pro Input-Item statt einmal pro Lauf ausführen — ohne diesen Fix liefen 7 Feeds fälschlich 17x, siehe unten). Live getestet: alle 7 echten Feeds erfolgreich abgerufen (15–54 Einträge je Quelle), Fehlerfall mit bewusst kaputter Test-URL korrekt erkannt, CRUD-Aktionen (add/edit/toggle/delete) alle live bestätigt, kompletter `03`-Lauf danach fehlerfrei mit exakt 7 (nicht mehr 7×17=119) geladenen Quellen.
+
 ## Priorität 1 (erledigt, 2026-07-24)
 
 - ✅ `08 – News-Wirkungsanalyse` lief am 24.07. automatisch um 19:00 Uhr erfolgreich durch (kein Fehler-Eintrag, anders als an den drei Tagen zuvor mit `error, mode:trigger` um 17:00 UTC) — die 3-Tage-Fehlserie ist durchbrochen, der Abhängigkeitsfehler ist behoben.

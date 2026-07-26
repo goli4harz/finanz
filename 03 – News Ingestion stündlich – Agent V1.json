@@ -321,6 +321,17 @@
       "main": [
         [
           {
+            "node": "RSS-Quellen aus DB laden (News)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS-Quellen aus DB laden (News)": {
+      "main": [
+        [
+          {
             "node": "RSS-Feeds laden & filtern",
             "type": "main",
             "index": 0
@@ -349,13 +360,13 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
       "position": [
-        -5000,
+        -5008,
         1712
       ]
     },
     {
       "parameters": {
-        "jsCode": "// RSS-FEEDS LADEN & VORFILTERN\n// n8n Code Node: \"Run Once for All Items\"\n// Ziel:\n// 1. RSS-Feeds laden\n// 2. Direkte Aktiennews erkennen: type = stock_news\n// 3. Markt-/Makro-News erkennen: type = market_news\n// 4. Breitere Kandidaten erkennen: type = market_candidate\n// 5. Nur eindeutig irrelevanten Unsinn ausschließen\n// 6. KI bewertet später final: hoch / mittel / niedrig / irrelevant\n\nconst feeds = [\n  { url: 'https://www.tagesschau.de/xml/rss2', name: 'Tagesschau' },\n  { url: 'https://www.tagesschau.de/wirtschaft/index~rss2.xml', name: 'Tagesschau Wirtschaft' },\n  { url: 'https://www.welt.de/feeds/latest.rss', name: 'Die Welt' },\n  { url: 'https://www.spiegel.de/wirtschaft/index.rss', name: 'Spiegel Wirtschaft' },\n  { url: 'https://www.stern.de/feed/standard/all/', name: 'Stern' },\n  { url: 'https://newsfeed.zeit.de/wirtschaft/index', name: 'Zeit Wirtschaft' },\n  { url: 'https://www.n-tv.de/wirtschaft/rss', name: 'n-tv Wirtschaft' }\n];\n\n// Direkte Aktien-Watchlist, aus trading.watchlist (DB) geladen statt hartcodiert -\n// siehe \"Watchlist verwalten\" (neuer Verwaltungs-Workflow, 2026-07-22). Patterns/\n// excludePatterns werden hier aus den einfachen Keyword-Listen als Wortgrenzen-Regex\n// gebaut. RWE traegt zusaetzlich einen kleinen, bewusst NICHT formularpflegbaren\n// Restposten an Kontext-Regex (Verwechslung mit dem Fussballverein Rot-Weiss Essen -\n// \"RWE in der Naehe von Fuerth/Relegation/Fussball\" laesst sich nicht als einfacher\n// Ausschluss-Begriff abbilden, da es auf die Naehe zweier Woerter ankommt, nicht auf\n// ein einzelnes Wort).\nfunction escapeRegExpForWatchlist(s) { return String(s).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }\nfunction toWordBoundaryRegex(phrase) { return new RegExp('\\\\b' + escapeRegExpForWatchlist(phrase) + '\\\\b', 'i'); }\n\nconst RWE_RESIDUAL_EXCLUDE_PATTERNS = [\n  /\\bRWE\\b.*\\bFürth\\b/i,\n  /\\bRWE\\b.*\\bGreuther\\b/i,\n  /\\bRelegation\\b.*\\bRWE\\b/i,\n  /\\bFußball\\b.*\\bRWE\\b/i,\n  /\\bFussball\\b.*\\bRWE\\b/i\n];\n\nconst watchlistRows = $('Watchlist aus DB laden (News)').all().map(i => i.json);\nconst watchlist = watchlistRows.map(row => ({\n  ticker: row.ticker,\n  name: row.name,\n  patterns: (Array.isArray(row.keywords) ? row.keywords : []).map(toWordBoundaryRegex),\n  excludePatterns: [\n    ...(Array.isArray(row.exclude_keywords) ? row.exclude_keywords : []).map(toWordBoundaryRegex),\n    ...(row.ticker === 'RWE.DE' ? RWE_RESIDUAL_EXCLUDE_PATTERNS : [])\n  ]\n}));\n\n// Klare Markt-/Wirtschaftsbegriffe.\n// Diese gehen als market_news durch.\nconst marketPatterns = [\n  /\\bDAX\\b/i,\n  /\\bMDAX\\b/i,\n  /\\bTecDAX\\b/i,\n  /\\bEuroStoxx\\b/i,\n  /\\bDow Jones\\b/i,\n  /\\bNasdaq\\b/i,\n  /\\bS&P 500\\b/i,\n  /\\bWall Street\\b/i,\n\n  /\\bMarktbericht\\b/i,\n  /\\bBörse\\b/i,\n  /\\bBoerse\\b/i,\n  /\\bAktienmarkt\\b/i,\n  /\\bFinanzmarkt\\b/i,\n  /\\bKapitalmarkt\\b/i,\n  /\\bAnleger\\b/i,\n  /\\bInvestoren\\b/i,\n  /\\bAktienkurs\\b/i,\n  /\\bAktienkurse\\b/i,\n\n  /\\bEZB\\b/i,\n  /\\bFed\\b/i,\n  /\\bNotenbank\\b/i,\n  /\\bZinsen\\b/i,\n  /\\bLeitzins\\b/i,\n  /\\bZinserhöhung\\b/i,\n  /\\bZinssenkung\\b/i,\n  /\\bInflation\\b/i,\n\n  /\\bKonjunktur\\b/i,\n  /\\bWirtschaftswachstum\\b/i,\n  /\\bRezession\\b/i,\n  /\\bFrühjahrsgutachten\\b/i,\n  /\\bWirtschaftsweise\\b/i,\n  /\\bBIP\\b/i,\n\n  /\\bÖlpreis\\b/i,\n  /\\bOelpreis\\b/i,\n  /\\bGaspreis\\b/i,\n  /\\bEnergiepreis\\b/i,\n  /\\bRohstoff\\b/i,\n  /\\bRohstoffe\\b/i,\n  /\\bSeltene Erden\\b/i,\n\n  /\\bZoll\\b/i,\n  /\\bZölle\\b/i,\n  /\\bZoelle\\b/i,\n  /\\bHandelskrieg\\b/i,\n  /\\bSanktionen\\b/i,\n  /\\bLieferkette\\b/i,\n  /\\bLieferketten\\b/i,\n  /\\bExport\\b/i,\n  /\\bImport\\b/i\n];\n\n// Breitere geopolitische und wirtschaftliche Kandidaten.\n// Diese gehen als market_candidate durch und werden später von der KI kritisch bewertet.\nconst candidatePatterns = [\n  /\\bUSA\\b/i,\n  /\\bUS-\\b/i,\n  /\\bChina\\b/i,\n  /\\bIran\\b/i,\n  /\\bNahost\\b/i,\n  /\\bUkraine\\b/i,\n  /\\bRussland\\b/i,\n  /\\bTaiwan\\b/i,\n  /\\bEU\\b/i,\n  /\\bEuropa\\b/i,\n\n  /\\bKrieg\\b/i,\n  /\\bKrise\\b/i,\n  /\\bKonflikt\\b/i,\n  /\\bEskalation\\b/i,\n  /\\bAngriff\\b/i,\n\n  /\\bIndustrie\\b/i,\n  /\\bUnternehmen\\b/i,\n  /\\bWirtschaft\\b/i,\n  /\\bArbeitsplätze\\b/i,\n  /\\bArbeitsplaetze\\b/i,\n  /\\bJobabbau\\b/i,\n  /\\bStandort\\b/i,\n\n  /\\bKI\\b/i,\n  /\\bKünstliche Intelligenz\\b/i,\n  /\\bKuenstliche Intelligenz\\b/i,\n  /\\bHalbleiter\\b/i,\n  /\\bChip\\b/i,\n  /\\bChips\\b/i,\n  /\\bTechnologie\\b/i\n];\n\n// Nur klar irrelevante Bereiche ausschließen.\n// Nicht zu hart filtern, weil KI später bewertet.\nconst globalExcludePatterns = [\n  /\\bFußball\\b/i,\n  /\\bFussball\\b/i,\n  /\\bBundesliga\\b/i,\n  /\\bChampions League\\b/i,\n  /\\bRelegation\\b/i,\n  /\\bTrainer\\b/i,\n  /\\bAbwehrchef\\b/i,\n\n  /\\bPromi\\b/i,\n  /\\bReality-TV\\b/i,\n  /\\bDschungelcamp\\b/i,\n  /\\bTatort\\b/i,\n  /\\bKrimi\\b/i,\n\n  /\\bRezept\\b/i,\n  /\\bKochen\\b/i,\n  /\\bBacken\\b/i,\n\n  /\\bHoroskop\\b/i,\n  /\\bQuiz\\b/i\n];\n\n// Diese Begriffe sind nicht pauschal ausgeschlossen.\n// Sie werden nur ausgeschlossen, wenn kein Markt-/Wirtschaftsbezug erkennbar ist.\nconst softNoisePatterns = [\n  /\\bKonzert\\b/i,\n  /\\bKonzerte\\b/i,\n  /\\bMusik\\b/i,\n  /\\bFestival\\b/i,\n  /\\bFilm\\b/i,\n  /\\bKino\\b/i,\n  /\\bSport\\b/i,\n  /\\bWahlkreis\\b/i,\n  /\\bWahlkreiszuschnitte\\b/i\n];\n\nconst headers = {\n  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',\n  'Accept': 'application/rss+xml, application/xml, text/xml, */*'\n};\n\nfunction cleanText(value) {\n  return String(value || '')\n    .replace(/<!\\[CDATA\\[/g, '')\n    .replace(/\\]\\]>/g, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&#8211;/g, '–')\n    .replace(/&#8212;/g, '—')\n    .replace(/&#8230;/g, '…')\n    .replace(/&#8222;/g, '„')\n    .replace(/&#8220;/g, '“')\n    .replace(/&#8221;/g, '”')\n    .replace(/&#8216;/g, '‘')\n    .replace(/&#8217;/g, '’')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction extractTag(xml, tag) {\n  const rx = new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`, 'i');\n  return cleanText(xml.match(rx)?.[1] || '');\n}\n\nfunction extractLink(rawItem) {\n  let link = extractTag(rawItem, 'link');\n\n  if (!link) {\n    const atomLink = rawItem.match(/<link[^>]+href=[\"']([^\"']+)[\"']/i);\n    if (atomLink?.[1]) {\n      link = cleanText(atomLink[1]);\n    }\n  }\n\n  return link;\n}\n\nfunction normalizeDate(datumRaw) {\n  if (!datumRaw) return '';\n  const d = new Date(datumRaw);\n  if (isNaN(d.getTime())) return datumRaw;\n  return d.toISOString();\n}\n\nfunction shorten(value, maxLength = 500) {\n  const text = cleanText(value);\n  if (text.length <= maxLength) return text;\n  return text.substring(0, maxLength - 1).trim() + '…';\n}\n\nfunction getMatchedPattern(patterns, text) {\n  for (const rx of patterns || []) {\n    rx.lastIndex = 0;\n    if (rx.test(text)) {\n      return String(rx);\n    }\n  }\n  return '';\n}\n\nfunction hasAny(patterns, text) {\n  return Boolean(getMatchedPattern(patterns, text));\n}\n\nfunction classifyArticle(suchtext, stockMatches) {\n  const hardExcluded = hasAny(globalExcludePatterns, suchtext);\n  const directMarket = getMatchedPattern(marketPatterns, suchtext);\n  const candidate = getMatchedPattern(candidatePatterns, suchtext);\n  const softNoise = hasAny(softNoisePatterns, suchtext);\n\n  // Direkte Aktiennews dürfen trotz weicher Noise-Wörter durch,\n  // außer es ist ein harter Ausschluss.\n  if (stockMatches.length > 0 && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'stock_news',\n      matchGrund: stockMatches.map(m => `${m.ticker}:${m.matchGrund}`).join(', ')\n    };\n  }\n\n  // Klare Marktnews gehen durch, außer harter Ausschluss.\n  if (directMarket && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'market_news',\n      matchGrund: directMarket\n    };\n  }\n\n  // Breitere Kandidaten gehen durch,\n  // aber nicht, wenn es nur weicher Lärm ohne Marktbezug ist.\n  if (candidate && !hardExcluded && !softNoise) {\n    return {\n      allow: true,\n      type: 'market_candidate',\n      matchGrund: candidate\n    };\n  }\n\n  return {\n    allow: false,\n    type: 'ignored',\n    matchGrund: hardExcluded ? 'globalExclude' : (softNoise ? 'softNoiseWithoutMarketContext' : 'noMatch')\n  };\n}\n\nconst debugFeeds = [];\nconst alleArtikel = [];\nconst treffer = [];\n\nfor (const feed of feeds) {\n  let xml = '';\n\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: feed.url,\n      headers,\n      ignoreHttpStatusErrors: true,\n      timeout: 15000\n    });\n\n    xml = typeof response === 'string'\n      ? response\n      : JSON.stringify(response || '');\n\n  } catch (e) {\n    debugFeeds.push({\n      feed: feed.name,\n      url: feed.url,\n      status: 'FEHLER',\n      error: e.message\n    });\n    continue;\n  }\n\n  const itemMatches = xml.match(/<item\\b[\\s\\S]*?<\\/item>/gi) || [];\n  const entryMatches = xml.match(/<entry\\b[\\s\\S]*?<\\/entry>/gi) || [];\n  const items = [...itemMatches, ...entryMatches];\n\n  debugFeeds.push({\n    feed: feed.name,\n    url: feed.url,\n    status: 'OK',\n    xmlLength: xml.length,\n    itemCount: itemMatches.length,\n    entryCount: entryMatches.length\n  });\n\n  for (const rawItem of items) {\n    const titel = extractTag(rawItem, 'title');\n\n    const beschreibung =\n      extractTag(rawItem, 'description') ||\n      extractTag(rawItem, 'summary') ||\n      extractTag(rawItem, 'content');\n\n    const datumRaw =\n      extractTag(rawItem, 'pubDate') ||\n      extractTag(rawItem, 'updated') ||\n      extractTag(rawItem, 'published');\n\n    const link = extractLink(rawItem);\n\n    if (!titel || titel.length < 5) continue;\n\n    const artikel = {\n      titel: cleanText(titel),\n      beschreibung: shorten(beschreibung, 500),\n      quelle: feed.name,\n      datum: datumRaw,\n      datum_iso: normalizeDate(datumRaw),\n      link\n    };\n\n    alleArtikel.push(artikel);\n\n    const suchtext = `${artikel.titel} ${artikel.beschreibung}`;\n\n    // Direkte Aktienmatches sammeln\n    const stockMatches = [];\n\n    for (const aktie of watchlist) {\n      const matchedPattern = getMatchedPattern(aktie.patterns, suchtext);\n      const excludedPattern = getMatchedPattern(aktie.excludePatterns || [], suchtext);\n\n      if (matchedPattern && !excludedPattern) {\n        stockMatches.push({\n          ticker: aktie.ticker,\n          name: aktie.name,\n          matchGrund: matchedPattern\n        });\n      }\n    }\n\n    const classification = classifyArticle(suchtext, stockMatches);\n\n    if (!classification.allow) {\n      continue;\n    }\n\n    // Wenn direkte Aktienmatches vorhanden sind: pro Aktie ein eigenes Item ausgeben\n    if (stockMatches.length > 0) {\n      for (const match of stockMatches) {\n        treffer.push({\n          json: {\n            type: 'stock_news',\n            ticker: match.ticker,\n            name: match.name,\n            titel: artikel.titel,\n            beschreibung: artikel.beschreibung,\n            quelle: artikel.quelle,\n            datum: artikel.datum,\n            datum_iso: artikel.datum_iso,\n            link: artikel.link,\n            matchGrund: match.matchGrund,\n            vorfilter: 'direkter_aktienbezug',\n            zeitstempel: new Date().toISOString()\n          }\n        });\n      }\n\n      continue;\n    }\n\n    // Sonst allgemeine Marktnews oder Kandidaten ausgeben\n    treffer.push({\n      json: {\n        type: classification.type,\n        ticker: 'MARKT',\n        name: classification.type === 'market_news'\n          ? 'Allgemeine Marktlage'\n          : 'Markt-Kandidat zur KI-Prüfung',\n        titel: artikel.titel,\n        beschreibung: artikel.beschreibung,\n        quelle: artikel.quelle,\n        datum: artikel.datum,\n        datum_iso: artikel.datum_iso,\n        link: artikel.link,\n        matchGrund: classification.matchGrund,\n        vorfilter: classification.type === 'market_news'\n          ? 'klarer_marktbezug'\n          : 'breiter_kandidat',\n        zeitstempel: new Date().toISOString()\n      }\n    });\n  }\n}\n\n// Duplikate entfernen.\n// Wichtig: Quelle nicht mehr in den Key, damit Tagesschau + Tagesschau Wirtschaft nicht doppelt bleiben.\nconst seen = new Set();\n\nconst unique = treffer.filter(e => {\n  const key = [\n    e.json.type,\n    e.json.ticker,\n    e.json.link || e.json.titel.substring(0, 120)\n  ].join('|');\n\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// Sortierung: stock_news zuerst, dann market_news, dann market_candidate, jeweils neueste zuerst\nunique.sort((a, b) => {\n  const typeScore = {\n    stock_news: 1,\n    market_news: 2,\n    market_candidate: 3\n  };\n\n  const ta = typeScore[a.json.type] || 9;\n  const tb = typeScore[b.json.type] || 9;\n\n  if (ta !== tb) return ta - tb;\n\n  const da = new Date(a.json.datum_iso || 0).getTime();\n  const db = new Date(b.json.datum_iso || 0).getTime();\n\n  return db - da;\n});\n\n\n// RSS-Status ermitteln\nconst feedsOk     = debugFeeds.filter(f => f.status === 'OK').length;\nconst feedsFehler = debugFeeds.filter(f => f.status === 'FEHLER').length;\n\nconst rss_status =\n  feedsOk === 0                      ? 'komplett_fehler' :\n  feedsFehler > 0                    ? 'teilweise_fehler' :\n                                       'ok';\n\n// Treffer vorhanden: direkt zurückgeben (keine seenNewsLinks-Filterung mehr)\nif (unique.length > 0) {\n  return unique;\n}\n\n// Keine Treffer: Debug-Item mit rss_status\nreturn [\n  {\n    json: {\n      rss_status:      rss_status === 'komplett_fehler' ? 'komplett_fehler' : 'keine_treffer',\n      info:            'Keine relevanten Aktien-, Markt- oder Kandidaten-Nachrichten gefunden',\n      feedsOk,\n      feedsFehler,\n      feedsGetestet:   feeds.length,\n      feedsDebug:      debugFeeds,\n      artikelGesamt:   alleArtikel.length,\n      zeitstempel:     new Date().toISOString()\n    }\n  }\n];"
+        "jsCode": "// RSS-FEEDS LADEN & VORFILTERN\n// n8n Code Node: \"Run Once for All Items\"\n// Ziel:\n// 1. RSS-Feeds laden\n// 2. Direkte Aktiennews erkennen: type = stock_news\n// 3. Markt-/Makro-News erkennen: type = market_news\n// 4. Breitere Kandidaten erkennen: type = market_candidate\n// 5. Nur eindeutig irrelevanten Unsinn ausschließen\n// 6. KI bewertet später final: hoch / mittel / niedrig / irrelevant\n\n// RSS-Quellen aus DB laden statt hartcodiert - siehe \"RSS-Quellen verwalten\"\n// (neuer Verwaltungs-Workflow, 2026-07-26), analog zur Watchlist.\nconst feeds = $('RSS-Quellen aus DB laden (News)').all().map(i => ({ url: i.json.url, name: i.json.name }));\n\n// Direkte Aktien-Watchlist, aus trading.watchlist (DB) geladen statt hartcodiert -\n// siehe \"Watchlist verwalten\" (neuer Verwaltungs-Workflow, 2026-07-22). Patterns/\n// excludePatterns werden hier aus den einfachen Keyword-Listen als Wortgrenzen-Regex\n// gebaut. RWE traegt zusaetzlich einen kleinen, bewusst NICHT formularpflegbaren\n// Restposten an Kontext-Regex (Verwechslung mit dem Fussballverein Rot-Weiss Essen -\n// \"RWE in der Naehe von Fuerth/Relegation/Fussball\" laesst sich nicht als einfacher\n// Ausschluss-Begriff abbilden, da es auf die Naehe zweier Woerter ankommt, nicht auf\n// ein einzelnes Wort).\nfunction escapeRegExpForWatchlist(s) { return String(s).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); }\nfunction toWordBoundaryRegex(phrase) { return new RegExp('\\\\b' + escapeRegExpForWatchlist(phrase) + '\\\\b', 'i'); }\n\nconst RWE_RESIDUAL_EXCLUDE_PATTERNS = [\n  /\\bRWE\\b.*\\bFürth\\b/i,\n  /\\bRWE\\b.*\\bGreuther\\b/i,\n  /\\bRelegation\\b.*\\bRWE\\b/i,\n  /\\bFußball\\b.*\\bRWE\\b/i,\n  /\\bFussball\\b.*\\bRWE\\b/i\n];\n\nconst watchlistRows = $('Watchlist aus DB laden (News)').all().map(i => i.json);\nconst watchlist = watchlistRows.map(row => ({\n  ticker: row.ticker,\n  name: row.name,\n  patterns: (Array.isArray(row.keywords) ? row.keywords : []).map(toWordBoundaryRegex),\n  excludePatterns: [\n    ...(Array.isArray(row.exclude_keywords) ? row.exclude_keywords : []).map(toWordBoundaryRegex),\n    ...(row.ticker === 'RWE.DE' ? RWE_RESIDUAL_EXCLUDE_PATTERNS : [])\n  ]\n}));\n\n// Klare Markt-/Wirtschaftsbegriffe.\n// Diese gehen als market_news durch.\nconst marketPatterns = [\n  /\\bDAX\\b/i,\n  /\\bMDAX\\b/i,\n  /\\bTecDAX\\b/i,\n  /\\bEuroStoxx\\b/i,\n  /\\bDow Jones\\b/i,\n  /\\bNasdaq\\b/i,\n  /\\bS&P 500\\b/i,\n  /\\bWall Street\\b/i,\n\n  /\\bMarktbericht\\b/i,\n  /\\bBörse\\b/i,\n  /\\bBoerse\\b/i,\n  /\\bAktienmarkt\\b/i,\n  /\\bFinanzmarkt\\b/i,\n  /\\bKapitalmarkt\\b/i,\n  /\\bAnleger\\b/i,\n  /\\bInvestoren\\b/i,\n  /\\bAktienkurs\\b/i,\n  /\\bAktienkurse\\b/i,\n\n  /\\bEZB\\b/i,\n  /\\bFed\\b/i,\n  /\\bNotenbank\\b/i,\n  /\\bZinsen\\b/i,\n  /\\bLeitzins\\b/i,\n  /\\bZinserhöhung\\b/i,\n  /\\bZinssenkung\\b/i,\n  /\\bInflation\\b/i,\n\n  /\\bKonjunktur\\b/i,\n  /\\bWirtschaftswachstum\\b/i,\n  /\\bRezession\\b/i,\n  /\\bFrühjahrsgutachten\\b/i,\n  /\\bWirtschaftsweise\\b/i,\n  /\\bBIP\\b/i,\n\n  /\\bÖlpreis\\b/i,\n  /\\bOelpreis\\b/i,\n  /\\bGaspreis\\b/i,\n  /\\bEnergiepreis\\b/i,\n  /\\bRohstoff\\b/i,\n  /\\bRohstoffe\\b/i,\n  /\\bSeltene Erden\\b/i,\n\n  /\\bZoll\\b/i,\n  /\\bZölle\\b/i,\n  /\\bZoelle\\b/i,\n  /\\bHandelskrieg\\b/i,\n  /\\bSanktionen\\b/i,\n  /\\bLieferkette\\b/i,\n  /\\bLieferketten\\b/i,\n  /\\bExport\\b/i,\n  /\\bImport\\b/i\n];\n\n// Breitere geopolitische und wirtschaftliche Kandidaten.\n// Diese gehen als market_candidate durch und werden später von der KI kritisch bewertet.\nconst candidatePatterns = [\n  /\\bUSA\\b/i,\n  /\\bUS-\\b/i,\n  /\\bChina\\b/i,\n  /\\bIran\\b/i,\n  /\\bNahost\\b/i,\n  /\\bUkraine\\b/i,\n  /\\bRussland\\b/i,\n  /\\bTaiwan\\b/i,\n  /\\bEU\\b/i,\n  /\\bEuropa\\b/i,\n\n  /\\bKrieg\\b/i,\n  /\\bKrise\\b/i,\n  /\\bKonflikt\\b/i,\n  /\\bEskalation\\b/i,\n  /\\bAngriff\\b/i,\n\n  /\\bIndustrie\\b/i,\n  /\\bUnternehmen\\b/i,\n  /\\bWirtschaft\\b/i,\n  /\\bArbeitsplätze\\b/i,\n  /\\bArbeitsplaetze\\b/i,\n  /\\bJobabbau\\b/i,\n  /\\bStandort\\b/i,\n\n  /\\bKI\\b/i,\n  /\\bKünstliche Intelligenz\\b/i,\n  /\\bKuenstliche Intelligenz\\b/i,\n  /\\bHalbleiter\\b/i,\n  /\\bChip\\b/i,\n  /\\bChips\\b/i,\n  /\\bTechnologie\\b/i\n];\n\n// Nur klar irrelevante Bereiche ausschließen.\n// Nicht zu hart filtern, weil KI später bewertet.\nconst globalExcludePatterns = [\n  /\\bFußball\\b/i,\n  /\\bFussball\\b/i,\n  /\\bBundesliga\\b/i,\n  /\\bChampions League\\b/i,\n  /\\bRelegation\\b/i,\n  /\\bTrainer\\b/i,\n  /\\bAbwehrchef\\b/i,\n\n  /\\bPromi\\b/i,\n  /\\bReality-TV\\b/i,\n  /\\bDschungelcamp\\b/i,\n  /\\bTatort\\b/i,\n  /\\bKrimi\\b/i,\n\n  /\\bRezept\\b/i,\n  /\\bKochen\\b/i,\n  /\\bBacken\\b/i,\n\n  /\\bHoroskop\\b/i,\n  /\\bQuiz\\b/i\n];\n\n// Diese Begriffe sind nicht pauschal ausgeschlossen.\n// Sie werden nur ausgeschlossen, wenn kein Markt-/Wirtschaftsbezug erkennbar ist.\nconst softNoisePatterns = [\n  /\\bKonzert\\b/i,\n  /\\bKonzerte\\b/i,\n  /\\bMusik\\b/i,\n  /\\bFestival\\b/i,\n  /\\bFilm\\b/i,\n  /\\bKino\\b/i,\n  /\\bSport\\b/i,\n  /\\bWahlkreis\\b/i,\n  /\\bWahlkreiszuschnitte\\b/i\n];\n\nconst headers = {\n  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',\n  'Accept': 'application/rss+xml, application/xml, text/xml, */*'\n};\n\nfunction cleanText(value) {\n  return String(value || '')\n    .replace(/<!\\[CDATA\\[/g, '')\n    .replace(/\\]\\]>/g, '')\n    .replace(/<[^>]+>/g, ' ')\n    .replace(/&amp;/g, '&')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&#8211;/g, '–')\n    .replace(/&#8212;/g, '—')\n    .replace(/&#8230;/g, '…')\n    .replace(/&#8222;/g, '„')\n    .replace(/&#8220;/g, '“')\n    .replace(/&#8221;/g, '”')\n    .replace(/&#8216;/g, '‘')\n    .replace(/&#8217;/g, '’')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&nbsp;/g, ' ')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction extractTag(xml, tag) {\n  const rx = new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`, 'i');\n  return cleanText(xml.match(rx)?.[1] || '');\n}\n\nfunction extractLink(rawItem) {\n  let link = extractTag(rawItem, 'link');\n\n  if (!link) {\n    const atomLink = rawItem.match(/<link[^>]+href=[\"']([^\"']+)[\"']/i);\n    if (atomLink?.[1]) {\n      link = cleanText(atomLink[1]);\n    }\n  }\n\n  return link;\n}\n\nfunction normalizeDate(datumRaw) {\n  if (!datumRaw) return '';\n  const d = new Date(datumRaw);\n  if (isNaN(d.getTime())) return datumRaw;\n  return d.toISOString();\n}\n\nfunction shorten(value, maxLength = 500) {\n  const text = cleanText(value);\n  if (text.length <= maxLength) return text;\n  return text.substring(0, maxLength - 1).trim() + '…';\n}\n\nfunction getMatchedPattern(patterns, text) {\n  for (const rx of patterns || []) {\n    rx.lastIndex = 0;\n    if (rx.test(text)) {\n      return String(rx);\n    }\n  }\n  return '';\n}\n\nfunction hasAny(patterns, text) {\n  return Boolean(getMatchedPattern(patterns, text));\n}\n\nfunction classifyArticle(suchtext, stockMatches) {\n  const hardExcluded = hasAny(globalExcludePatterns, suchtext);\n  const directMarket = getMatchedPattern(marketPatterns, suchtext);\n  const candidate = getMatchedPattern(candidatePatterns, suchtext);\n  const softNoise = hasAny(softNoisePatterns, suchtext);\n\n  // Direkte Aktiennews dürfen trotz weicher Noise-Wörter durch,\n  // außer es ist ein harter Ausschluss.\n  if (stockMatches.length > 0 && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'stock_news',\n      matchGrund: stockMatches.map(m => `${m.ticker}:${m.matchGrund}`).join(', ')\n    };\n  }\n\n  // Klare Marktnews gehen durch, außer harter Ausschluss.\n  if (directMarket && !hardExcluded) {\n    return {\n      allow: true,\n      type: 'market_news',\n      matchGrund: directMarket\n    };\n  }\n\n  // Breitere Kandidaten gehen durch,\n  // aber nicht, wenn es nur weicher Lärm ohne Marktbezug ist.\n  if (candidate && !hardExcluded && !softNoise) {\n    return {\n      allow: true,\n      type: 'market_candidate',\n      matchGrund: candidate\n    };\n  }\n\n  return {\n    allow: false,\n    type: 'ignored',\n    matchGrund: hardExcluded ? 'globalExclude' : (softNoise ? 'softNoiseWithoutMarketContext' : 'noMatch')\n  };\n}\n\nconst debugFeeds = [];\nconst alleArtikel = [];\nconst treffer = [];\n\nfor (const feed of feeds) {\n  let xml = '';\n\n  try {\n    const response = await this.helpers.httpRequest({\n      method: 'GET',\n      url: feed.url,\n      headers,\n      ignoreHttpStatusErrors: true,\n      timeout: 15000\n    });\n\n    xml = typeof response === 'string'\n      ? response\n      : JSON.stringify(response || '');\n\n  } catch (e) {\n    debugFeeds.push({\n      feed: feed.name,\n      url: feed.url,\n      status: 'FEHLER',\n      error: e.message\n    });\n    continue;\n  }\n\n  const itemMatches = xml.match(/<item\\b[\\s\\S]*?<\\/item>/gi) || [];\n  const entryMatches = xml.match(/<entry\\b[\\s\\S]*?<\\/entry>/gi) || [];\n  const items = [...itemMatches, ...entryMatches];\n\n  debugFeeds.push({\n    feed: feed.name,\n    url: feed.url,\n    status: 'OK',\n    xmlLength: xml.length,\n    itemCount: itemMatches.length,\n    entryCount: entryMatches.length\n  });\n\n  for (const rawItem of items) {\n    const titel = extractTag(rawItem, 'title');\n\n    const beschreibung =\n      extractTag(rawItem, 'description') ||\n      extractTag(rawItem, 'summary') ||\n      extractTag(rawItem, 'content');\n\n    const datumRaw =\n      extractTag(rawItem, 'pubDate') ||\n      extractTag(rawItem, 'updated') ||\n      extractTag(rawItem, 'published');\n\n    const link = extractLink(rawItem);\n\n    if (!titel || titel.length < 5) continue;\n\n    const artikel = {\n      titel: cleanText(titel),\n      beschreibung: shorten(beschreibung, 500),\n      quelle: feed.name,\n      datum: datumRaw,\n      datum_iso: normalizeDate(datumRaw),\n      link\n    };\n\n    alleArtikel.push(artikel);\n\n    const suchtext = `${artikel.titel} ${artikel.beschreibung}`;\n\n    // Direkte Aktienmatches sammeln\n    const stockMatches = [];\n\n    for (const aktie of watchlist) {\n      const matchedPattern = getMatchedPattern(aktie.patterns, suchtext);\n      const excludedPattern = getMatchedPattern(aktie.excludePatterns || [], suchtext);\n\n      if (matchedPattern && !excludedPattern) {\n        stockMatches.push({\n          ticker: aktie.ticker,\n          name: aktie.name,\n          matchGrund: matchedPattern\n        });\n      }\n    }\n\n    const classification = classifyArticle(suchtext, stockMatches);\n\n    if (!classification.allow) {\n      continue;\n    }\n\n    // Wenn direkte Aktienmatches vorhanden sind: pro Aktie ein eigenes Item ausgeben\n    if (stockMatches.length > 0) {\n      for (const match of stockMatches) {\n        treffer.push({\n          json: {\n            type: 'stock_news',\n            ticker: match.ticker,\n            name: match.name,\n            titel: artikel.titel,\n            beschreibung: artikel.beschreibung,\n            quelle: artikel.quelle,\n            datum: artikel.datum,\n            datum_iso: artikel.datum_iso,\n            link: artikel.link,\n            matchGrund: match.matchGrund,\n            vorfilter: 'direkter_aktienbezug',\n            zeitstempel: new Date().toISOString()\n          }\n        });\n      }\n\n      continue;\n    }\n\n    // Sonst allgemeine Marktnews oder Kandidaten ausgeben\n    treffer.push({\n      json: {\n        type: classification.type,\n        ticker: 'MARKT',\n        name: classification.type === 'market_news'\n          ? 'Allgemeine Marktlage'\n          : 'Markt-Kandidat zur KI-Prüfung',\n        titel: artikel.titel,\n        beschreibung: artikel.beschreibung,\n        quelle: artikel.quelle,\n        datum: artikel.datum,\n        datum_iso: artikel.datum_iso,\n        link: artikel.link,\n        matchGrund: classification.matchGrund,\n        vorfilter: classification.type === 'market_news'\n          ? 'klarer_marktbezug'\n          : 'breiter_kandidat',\n        zeitstempel: new Date().toISOString()\n      }\n    });\n  }\n}\n\n// Duplikate entfernen.\n// Wichtig: Quelle nicht mehr in den Key, damit Tagesschau + Tagesschau Wirtschaft nicht doppelt bleiben.\nconst seen = new Set();\n\nconst unique = treffer.filter(e => {\n  const key = [\n    e.json.type,\n    e.json.ticker,\n    e.json.link || e.json.titel.substring(0, 120)\n  ].join('|');\n\n  if (seen.has(key)) return false;\n  seen.add(key);\n  return true;\n});\n\n// Sortierung: stock_news zuerst, dann market_news, dann market_candidate, jeweils neueste zuerst\nunique.sort((a, b) => {\n  const typeScore = {\n    stock_news: 1,\n    market_news: 2,\n    market_candidate: 3\n  };\n\n  const ta = typeScore[a.json.type] || 9;\n  const tb = typeScore[b.json.type] || 9;\n\n  if (ta !== tb) return ta - tb;\n\n  const da = new Date(a.json.datum_iso || 0).getTime();\n  const db = new Date(b.json.datum_iso || 0).getTime();\n\n  return db - da;\n});\n\n\n// RSS-Status ermitteln\nconst feedsOk     = debugFeeds.filter(f => f.status === 'OK').length;\nconst feedsFehler = debugFeeds.filter(f => f.status === 'FEHLER').length;\n\nconst rss_status =\n  feedsOk === 0                      ? 'komplett_fehler' :\n  feedsFehler > 0                    ? 'teilweise_fehler' :\n                                       'ok';\n\n// Treffer vorhanden: direkt zurückgeben (keine seenNewsLinks-Filterung mehr)\nif (unique.length > 0) {\n  return unique;\n}\n\n// Keine Treffer: Debug-Item mit rss_status\nreturn [\n  {\n    json: {\n      rss_status:      rss_status === 'komplett_fehler' ? 'komplett_fehler' : 'keine_treffer',\n      info:            'Keine relevanten Aktien-, Markt- oder Kandidaten-Nachrichten gefunden',\n      feedsOk,\n      feedsFehler,\n      feedsGetestet:   feeds.length,\n      feedsDebug:      debugFeeds,\n      artikelGesamt:   alleArtikel.length,\n      zeitstempel:     new Date().toISOString()\n    }\n  }\n];"
       },
       "id": "0b053b62-271b-4231-9ac5-ce3fef66d0ac",
       "name": "RSS-Feeds laden & filtern",
@@ -376,7 +387,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4600,
+        -4608,
         1712
       ]
     },
@@ -449,8 +460,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        -4200,
-        1800
+        -4208,
+        1808
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -487,7 +498,7 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        -4200,
+        -4208,
         1600
       ]
     },
@@ -514,31 +525,31 @@
       "typeVersion": 2,
       "position": [
         -4000,
-        1400
+        1408
       ],
       "id": "n-00000002-0000-4000-8000-0000000000"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT news_key, url AS link, title AS titel FROM trading.news_items WHERE created_at >= now() - interval '35 days';",
+        "query": "SELECT news_key, url AS link, title AS titel FROM trading.news_items WHERE created_at >= now() - interval '35 days';",
         "options": {}
       },
       "name": "DB: Bekannte News laden (35 Tage)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -3800,
-        1300
+        -3808,
+        1312
       ],
-      "onError": "continueRegularOutput",
+      "id": "n-00000003-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "id": "n-00000003-0000-4000-8000-0000000000"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -549,7 +560,7 @@
       "typeVersion": 2,
       "position": [
         -3600,
-        1300
+        1312
       ],
       "id": "n-00000004-0000-4000-8000-0000000000"
     },
@@ -559,8 +570,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3400,
-        1450
+        -3408,
+        1456
       ],
       "id": "n-00000005-0000-4000-8000-0000000000"
     },
@@ -574,7 +585,7 @@
       "typeVersion": 2,
       "position": [
         -3200,
-        1450
+        1456
       ]
     },
     {
@@ -606,8 +617,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -3000,
-        1450
+        -3008,
+        1456
       ]
     },
     {
@@ -619,32 +630,32 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2800,
-        1450
+        -5008,
+        2016
       ],
       "id": "n-00000006-0000-4000-8000-0000000000"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "name": "Neue News speichern (ausfuehren)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -2624,
-        1450
+        -4832,
+        2016
       ],
+      "id": "n-00000007-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-00000007-0000-4000-8000-0000000000"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -654,32 +665,32 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2600,
-        1450
+        -5008,
+        2240
       ],
       "id": "n-00000008-0000-4000-8000-0000000000"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT id, news_key, title AS titel, url AS link, source AS quelle, published_at AS datum_iso, retry_count\nFROM trading.news_items\nWHERE status = 'pending' OR (status = 'retry' AND (next_retry_at IS NULL OR next_retry_at <= now()))\nORDER BY created_at ASC\nLIMIT 300;",
+        "query": "SELECT id, news_key, title AS titel, url AS link, source AS quelle, published_at AS datum_iso, retry_count\nFROM trading.news_items\nWHERE status = 'pending' OR (status = 'retry' AND (next_retry_at IS NULL OR next_retry_at <= now()))\nORDER BY created_at ASC\nLIMIT 300;",
         "options": {}
       },
       "name": "DB: Faellige News laden",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -2400,
-        1450
+        -4608,
+        2016
       ],
-      "onError": "continueRegularOutput",
+      "id": "n-00000009-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "id": "n-00000009-0000-4000-8000-0000000000"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -690,8 +701,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -2200,
-        1450
+        -4416,
+        2016
       ],
       "id": "n-00000010-0000-4000-8000-0000000000"
     },
@@ -703,8 +714,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2000,
-        1450
+        -4208,
+        2016
       ],
       "id": "n-00000011-0000-4000-8000-0000000000"
     },
@@ -735,8 +746,8 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
       "position": [
-        -1800,
-        1450
+        -4064,
+        2016
       ],
       "retryOnFail": true,
       "waitBetweenTries": 5000,
@@ -755,8 +766,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1600,
-        1450
+        -3792,
+        2016
       ],
       "id": "n-00000012-0000-4000-8000-0000000000"
     },
@@ -769,32 +780,32 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1400,
-        1450
+        -3616,
+        2016
       ],
       "id": "n-00000013-0000-4000-8000-0000000000"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "name": "Ergebnis persistieren (ausfuehren)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1224,
-        1450
+        -3440,
+        2016
       ],
+      "id": "n-00000014-0000-4000-8000-0000000000",
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-00000014-0000-4000-8000-0000000000"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -805,8 +816,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1048,
-        1450
+        -3264,
+        2016
       ],
       "id": "n-00000015-0000-4000-8000-0000000000"
     },
@@ -838,8 +849,8 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        -1200,
-        1300
+        -3408,
+        1872
       ]
     },
     {
@@ -850,8 +861,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1000,
-        1300
+        -3216,
+        1872
       ],
       "id": "253d5871-663b-4233-aa10-b75566d06a4b",
       "name": "Code in JavaScript"
@@ -898,8 +909,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        -800,
-        1300
+        -3008,
+        1872
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -916,32 +927,32 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1600,
-        1650
+        -3808,
+        2224
       ],
       "id": "agent-log-03-sqlbau"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "name": "Batch-Bewertung protokollieren (ausfuehren)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1400,
-        1650
+        -3616,
+        2224
       ],
+      "id": "agent-log-03-exec",
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "agent-log-03-exec"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -953,23 +964,46 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -2400,
-        656
+        -2752,
+        1568
       ],
+      "id": "watchlist-db-03-news",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, name, url FROM trading.rss_sources WHERE active = TRUE ORDER BY id;",
+        "options": {}
+      },
+      "name": "RSS-Quellen aus DB laden (News)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2752,
+        1776
+      ],
+      "id": "rss-sources-db-03-news",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "id": "watchlist-db-03-news"
+      "executeOnce": true
     }
   ],
-  "pinData": null,
+  "pinData": {},
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "9d80707a-1626-43e4-b0ac-876b1d769dd6"
+  "versionId": "d20553cb-4dad-4eaa-b7e1-bf534cc4ed69"
 }
