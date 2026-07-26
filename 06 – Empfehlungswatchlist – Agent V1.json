@@ -440,7 +440,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT ni.title AS titel, ni.published_at, ni.created_at, na.betroffene_ticker_json,\n       na.wirkungsebene, na.wirkungsrichtung, na.wirkung_staerke,\n       na.ticker_begruendung, na.wirkungs_begruendung\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.relevant = TRUE AND na.wirkung_staerke = 'hoch'\n  AND (ni.published_at AT TIME ZONE 'Europe/Berlin')::date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
+        "query": "=SELECT ni.title AS titel, ni.published_at, ni.created_at, v.ticker_json AS betroffene_ticker_json,\n       v.wirkungsebene, v.direction AS wirkungsrichtung, v.effect_level AS wirkung_staerke,\n       v.ticker_begruendung, v.wirkungs_begruendung\nFROM trading.v_news_latest_assessment v\nJOIN trading.news_items ni ON ni.id = v.news_id\nWHERE v.relevance = TRUE AND v.effect_level = 'hoch'\n  AND (ni.published_at AT TIME ZONE 'Europe/Berlin')::date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: News laden (Empf., trading.*)",
@@ -902,5 +902,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "115d5e43-c8fd-40c6-b399-7fdea8beb1ab"
+  "versionId": "cd2d4593-2795-49dd-89cb-622bdaaeecb9"
 }

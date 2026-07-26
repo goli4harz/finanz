@@ -516,7 +516,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ni.published_at, ni.created_at, na.wirkung_staerke, na.relevant\nFROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id;",
+        "query": "SELECT ni.published_at, ni.created_at, v.effect_level AS wirkung_staerke, v.relevance AS relevant\nFROM trading.v_news_latest_assessment v JOIN trading.news_items ni ON ni.id = v.news_id;",
         "options": {}
       },
       "name": "DB: News laden (trading.*)",
@@ -898,5 +898,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "6e328153-d62b-4dbe-8394-87e5c0383158"
+  "versionId": "7974a427-042f-4314-b20a-7315c856c0e9"
 }

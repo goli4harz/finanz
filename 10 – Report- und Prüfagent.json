@@ -451,7 +451,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT ni.title AS titel, ni.url AS link, ni.published_at, ni.created_at,\n       na.relevant, na.wirkungsebene, na.betroffene_ticker_json, na.wirkungsrichtung,\n       na.wirkung_staerke, na.ticker_begruendung, na.wirkungs_begruendung, na.sentiment\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.relevant = TRUE AND na.wirkung_staerke IN ('hoch','mittel')\n  AND ni.created_at >= now() - interval '2 days'\nORDER BY ni.created_at DESC;",
+        "query": "=SELECT ni.title AS titel, ni.url AS link, ni.published_at, ni.created_at,\n       v.relevance AS relevant, v.wirkungsebene, v.ticker_json AS betroffene_ticker_json, v.direction AS wirkungsrichtung,\n       v.effect_level AS wirkung_staerke, v.ticker_begruendung, v.wirkungs_begruendung, v.sentiment\nFROM trading.v_news_latest_assessment v\nJOIN trading.news_items ni ON ni.id = v.news_id\nWHERE v.relevance = TRUE AND v.effect_level IN ('hoch','mittel')\n  AND ni.created_at >= now() - interval '2 days'\nORDER BY ni.created_at DESC;",
         "options": {}
       },
       "name": "DB: Relevante News laden (trading.*)",
@@ -837,11 +837,11 @@
       ]
     }
   ],
-  "pinData": null,
+  "pinData": {},
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "17ccad9f-4c8b-4c02-b46e-1bff45218d4b"
+  "versionId": "92bcb825-4bd4-4230-8a9b-a795bb2e29be"
 }
