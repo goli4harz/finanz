@@ -1,6 +1,20 @@
 # Offene Aufgaben
 
-Stand: 2026-07-26
+Stand: 2026-07-27
+
+## Fachliche Überarbeitung (Paket 1-8, erledigt 2026-07-26/27)
+
+Umsetzung des 12-Phasen-Auftrags "Fachliche Überarbeitung der Aktienanalyse- und Lernpipeline" (Bestandsaufnahme: `docs/FACHLICHE_BESTANDSAUFNAHME.md`), package-weise additiv umgesetzt und live verifiziert:
+
+- ✅ **Paket 1** (Phase 1+3+4, `sql/009-011`): `news_items` um vollständige Datenbasis (article_text/content_hash/...) + Recherche-Tracking (research_status/...) erweitert; `news_assessments` um getrennte Konfidenz-/Wahrscheinlichkeitsfelder.
+- ✅ **Paket 2+3** (Phase 2, `sql/012-013`): View `trading.v_news_latest_assessment` für "genau eine gültige Bewertung je Nachricht" — behebt einen live bestätigten Bug (06/07/10 jointen `news_assessments` bisher ohne Deduplizierung, Risiko doppelter Empfehlungs-Trigger).
+- ✅ **Paket 4** (Phase 10a, `sql/014`): `pipeline_runs.business_date` wird jetzt persistiert (Feld existierte zur Laufzeit schon, nur nicht gespeichert). Bewusst kein harter UNIQUE-Constraint (würde manuelle Test-Reruns als Duplikat-Fehler zählen).
+- ✅ **Paket 5** (Phase 10b, `sql/015`): `trading.market_reference` (XETRA/NASDAQ/NYSE-Sessionzeiten), `stock_instruments.exchange` befüllt. Schema-only, aktuell kein Consumer.
+- ✅ **Paket 6** (Phase 12, `sql/016`): `agent_runs.rule_version`/`configuration_version` (JSONB-Snapshot). Schema-only.
+- ✅ **Paket 7** (Phase 8, `sql/017`): `recommendations` um Risikofelder erweitert (stop_price/target_price/decision_score/is_theoretical/...). Schema-only, **keine** Verdrahtung in `06`s Entscheidungslogik (bewusst separat gehalten wegen dessen dokumentierter Historie fragiler Merge-/DRY_RUN-Stellen).
+- ✅ **Paket 8** (Phase 5/6/7, erster Schritt, `sql/018`): additive Point-in-Time-Historie für `stock_fundamentals`/`stock_market_context`/`stock_technical_signals` (3 neue Tabellen, parallel zu den bestehenden Data Tables beschrieben, kein Consumer geändert). **Dabei gefunden und mitgefixt**: ein vorbestehender, ~2 Wochen alter Bug in den originalen `02`/`02b`-„Kurshistorie"-Nodes (fehlendes `mode: runOnceForEachItem` ließ nur 1 Ticker/Tag statt aller erfassen) — betraf auch `stock_price_history` selbst, jetzt live auf volle Ticker-Abdeckung bestätigt.
+
+**Offen, explizit zurückgestellt**: ob/wann `06`/`07`/`10` ihre Leseseite (teilweise) auf die neue Historie aus Paket 8 umstellen (z.B. Mehrtages-Trend statt nur Tages-Snapshot) — eigene, noch nicht getroffene Folgeentscheidung.
 
 ## Priorität 4 (erledigt, 2026-07-26)
 
