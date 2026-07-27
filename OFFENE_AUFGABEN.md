@@ -14,7 +14,9 @@ Umsetzung des 12-Phasen-Auftrags "Fachliche Überarbeitung der Aktienanalyse- un
 - ✅ **Paket 7** (Phase 8, `sql/017`): `recommendations` um Risikofelder erweitert (stop_price/target_price/decision_score/is_theoretical/...). Schema-only, **keine** Verdrahtung in `06`s Entscheidungslogik (bewusst separat gehalten wegen dessen dokumentierter Historie fragiler Merge-/DRY_RUN-Stellen).
 - ✅ **Paket 8** (Phase 5/6/7, erster Schritt, `sql/018`): additive Point-in-Time-Historie für `stock_fundamentals`/`stock_market_context`/`stock_technical_signals` (3 neue Tabellen, parallel zu den bestehenden Data Tables beschrieben, kein Consumer geändert). **Dabei gefunden und mitgefixt**: ein vorbestehender, ~2 Wochen alter Bug in den originalen `02`/`02b`-„Kurshistorie"-Nodes (fehlendes `mode: runOnceForEachItem` ließ nur 1 Ticker/Tag statt aller erfassen) — betraf auch `stock_price_history` selbst, jetzt live auf volle Ticker-Abdeckung bestätigt.
 
-**Offen, explizit zurückgestellt**: ob/wann `06`/`07`/`10` ihre Leseseite (teilweise) auf die neue Historie aus Paket 8 umstellen (z.B. Mehrtages-Trend statt nur Tages-Snapshot) — eigene, noch nicht getroffene Folgeentscheidung.
+- ✅ **Paket 9** (Consumer-Migration Teil 1): `07`/`10` nutzen jetzt die Paket-8-Historie für einen 5-Handelstage-Trend-Kontext (Dashboard-Spalte bzw. eigene Report-Sektion). Live über den öffentlichen Webhook (07) und einen echten Execute-Workflow-Lauf inkl. KI-Aufruf (10) verifiziert. Dabei nebenbei einen zweiten Nebenbefund behoben: `07`s `DB: Kursverlauf laden` (stock_price_history, 35 Tage) wurde bisher nur für eine Frische-Prüfung geladen, nie angezeigt — jetzt als Balkendiagramm sichtbar.
+
+**Offen, explizit zurückgestellt**: `06`s Entscheidungslogik bleibt unverändert (Tagesabgleich, kein Trend-Bezug) — eine echte Verhaltensänderung dort braucht eine eigene, separat abzunehmende Entscheidung wegen dessen dokumentierter Historie fragiler Merge-/DRY_RUN-Stellen.
 
 ## Priorität 4 (erledigt, 2026-07-26)
 
