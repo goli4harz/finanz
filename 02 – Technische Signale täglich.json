@@ -102,6 +102,11 @@
             "node": "Merge Ergebnis 1",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Signal-Historie: SQL bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -123,6 +128,11 @@
             "node": "Merge Ergebnis 1",
             "type": "main",
             "index": 1
+          },
+          {
+            "node": "Signal-Historie: SQL bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -249,6 +259,39 @@
       ]
     },
     "Merge Ergebnis 3": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal-Historie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Signal-Historie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal-Historie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 4": {
       "main": [
         [
           {
@@ -1945,6 +1988,51 @@
       "position": [
         884,
         600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.technical_signals_history\n  (ticker, snapshot_date, name, sektor, zeitstempel, type, aktueller_kurs, veraenderung, rsi, rsi_signal, macd, macd_signal_linie, macd_histogramm, macd_signal, macd_kreuzung, macd_null_linie, macd_histogramm_trend, trend, ema20, bb_oben, bb_mitte, bb_unten, kurs_bei_bollinger, hoch_52w, tief_52w, abstand_vom_tief, volumen_faktor, signal_punkte, signal_gruende, signal_staerke, richtung, handels_status, handels_status_text, entscheidung_kurz, entscheidung_lang, ziel_kurs, stop_kurs, ziel_logik, stop_logik, gebuehren_puffer_pct, min_brutto_potenzial_pct, brutto_potenzial_pct, netto_potenzial_pct, risiko_pct, crv, potenzial_ausreichend, potenzial_gut, crv_ok, macd_bestaetigt_richtung, referenz_index, referenz_index_name, index_veraenderung_pct, index_trend, index_markt_status, relative_staerke_pct, markt_bestaetigt_signal, markt_hinweis, hinweis, status, fehler, extra_kontext_hinweis)\n  VALUES (${pgStr(j.ticker)}, ${pgStr(j.datum)}, ${pgStr(j.name)}, ${pgStr(j.sektor)}, ${pgStr(j.zeitstempel)}, ${pgStr(j.type)}, ${pgStr(j.aktueller_kurs)}, ${pgStr(j.veraenderung)}, ${pgStr(j.rsi)}, ${pgStr(j.rsi_signal)}, ${pgStr(j.macd)}, ${pgStr(j.macd_signal_linie)}, ${pgStr(j.macd_histogramm)}, ${pgStr(j.macd_signal)}, ${pgStr(j.macd_kreuzung)}, ${pgStr(j.macd_null_linie)}, ${pgStr(j.macd_histogramm_trend)}, ${pgStr(j.trend)}, ${pgStr(j.ema20)}, ${pgStr(j.bb_oben)}, ${pgStr(j.bb_mitte)}, ${pgStr(j.bb_unten)}, ${pgStr(j.kurs_bei_bollinger)}, ${pgStr(j.hoch_52w)}, ${pgStr(j.tief_52w)}, ${pgStr(j.abstand_vom_tief)}, ${pgStr(j.volumen_faktor)}, ${pgStr(j.signal_punkte)}, ${pgStr(j.signal_gruende)}, ${pgStr(j.signal_staerke)}, ${pgStr(j.richtung)}, ${pgStr(j.handels_status)}, ${pgStr(j.handels_status_text)}, ${pgStr(j.entscheidung_kurz)}, ${pgStr(j.entscheidung_lang)}, ${pgStr(j.ziel_kurs)}, ${pgStr(j.stop_kurs)}, ${pgStr(j.ziel_logik)}, ${pgStr(j.stop_logik)}, ${pgStr(j.gebuehren_puffer_pct)}, ${pgStr(j.min_brutto_potenzial_pct)}, ${pgStr(j.brutto_potenzial_pct)}, ${pgStr(j.netto_potenzial_pct)}, ${pgStr(j.risiko_pct)}, ${pgStr(j.crv)}, ${pgStr(j.potenzial_ausreichend)}, ${pgStr(j.potenzial_gut)}, ${pgStr(j.crv_ok)}, ${pgStr(j.macd_bestaetigt_richtung)}, ${pgStr(j.referenz_index)}, ${pgStr(j.referenz_index_name)}, ${pgStr(j.index_veraenderung_pct)}, ${pgStr(j.index_trend)}, ${pgStr(j.index_markt_status)}, ${pgStr(j.relative_staerke_pct)}, ${pgStr(j.markt_bestaetigt_signal)}, ${pgStr(j.markt_hinweis)}, ${pgStr(j.hinweis)}, ${pgStr(j.status)}, ${pgStr(j.fehler)}, ${pgStr(j.extra_kontext_hinweis)})\n  ON CONFLICT (ticker, snapshot_date) DO UPDATE SET\n    name = EXCLUDED.name,\n    sektor = EXCLUDED.sektor,\n    zeitstempel = EXCLUDED.zeitstempel,\n    type = EXCLUDED.type,\n    aktueller_kurs = EXCLUDED.aktueller_kurs,\n    veraenderung = EXCLUDED.veraenderung,\n    rsi = EXCLUDED.rsi,\n    rsi_signal = EXCLUDED.rsi_signal,\n    macd = EXCLUDED.macd,\n    macd_signal_linie = EXCLUDED.macd_signal_linie,\n    macd_histogramm = EXCLUDED.macd_histogramm,\n    macd_signal = EXCLUDED.macd_signal,\n    macd_kreuzung = EXCLUDED.macd_kreuzung,\n    macd_null_linie = EXCLUDED.macd_null_linie,\n    macd_histogramm_trend = EXCLUDED.macd_histogramm_trend,\n    trend = EXCLUDED.trend,\n    ema20 = EXCLUDED.ema20,\n    bb_oben = EXCLUDED.bb_oben,\n    bb_mitte = EXCLUDED.bb_mitte,\n    bb_unten = EXCLUDED.bb_unten,\n    kurs_bei_bollinger = EXCLUDED.kurs_bei_bollinger,\n    hoch_52w = EXCLUDED.hoch_52w,\n    tief_52w = EXCLUDED.tief_52w,\n    abstand_vom_tief = EXCLUDED.abstand_vom_tief,\n    volumen_faktor = EXCLUDED.volumen_faktor,\n    signal_punkte = EXCLUDED.signal_punkte,\n    signal_gruende = EXCLUDED.signal_gruende,\n    signal_staerke = EXCLUDED.signal_staerke,\n    richtung = EXCLUDED.richtung,\n    handels_status = EXCLUDED.handels_status,\n    handels_status_text = EXCLUDED.handels_status_text,\n    entscheidung_kurz = EXCLUDED.entscheidung_kurz,\n    entscheidung_lang = EXCLUDED.entscheidung_lang,\n    ziel_kurs = EXCLUDED.ziel_kurs,\n    stop_kurs = EXCLUDED.stop_kurs,\n    ziel_logik = EXCLUDED.ziel_logik,\n    stop_logik = EXCLUDED.stop_logik,\n    gebuehren_puffer_pct = EXCLUDED.gebuehren_puffer_pct,\n    min_brutto_potenzial_pct = EXCLUDED.min_brutto_potenzial_pct,\n    brutto_potenzial_pct = EXCLUDED.brutto_potenzial_pct,\n    netto_potenzial_pct = EXCLUDED.netto_potenzial_pct,\n    risiko_pct = EXCLUDED.risiko_pct,\n    crv = EXCLUDED.crv,\n    potenzial_ausreichend = EXCLUDED.potenzial_ausreichend,\n    potenzial_gut = EXCLUDED.potenzial_gut,\n    crv_ok = EXCLUDED.crv_ok,\n    macd_bestaetigt_richtung = EXCLUDED.macd_bestaetigt_richtung,\n    referenz_index = EXCLUDED.referenz_index,\n    referenz_index_name = EXCLUDED.referenz_index_name,\n    index_veraenderung_pct = EXCLUDED.index_veraenderung_pct,\n    index_trend = EXCLUDED.index_trend,\n    index_markt_status = EXCLUDED.index_markt_status,\n    relative_staerke_pct = EXCLUDED.relative_staerke_pct,\n    markt_bestaetigt_signal = EXCLUDED.markt_bestaetigt_signal,\n    markt_hinweis = EXCLUDED.markt_hinweis,\n    hinweis = EXCLUDED.hinweis,\n    status = EXCLUDED.status,\n    fehler = EXCLUDED.fehler,\n    extra_kontext_hinweis = EXCLUDED.extra_kontext_hinweis,\n    fetched_at = now();`;\n\nreturn { json: { ...j, sql } };\n"
+      },
+      "id": "4a5d64e1-00ba-4331-be9a-dc68333057c9",
+      "name": "Signal-Historie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        924,
+        840
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "35f9089e-6450-43c5-be49-e8c209cde7bc",
+      "name": "Signal-Historie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1144,
+        840
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "9ac6c4a9-477f-4dc7-8af1-8f5e9e939ec6",
+      "name": "Merge Ergebnis 4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1364,
+        650
       ]
     }
   ],

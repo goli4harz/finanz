@@ -108,6 +108,11 @@
             "node": "Merge Ergebnis",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Marktkontext-Historie: SQL bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -124,6 +129,11 @@
             "node": "Merge Ergebnis",
             "type": "main",
             "index": 1
+          },
+          {
+            "node": "Marktkontext-Historie: SQL bauen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -162,6 +172,39 @@
       ]
     },
     "Merge Ergebnis 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktkontext-Historie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Marktkontext-Historie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktkontext-Historie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 3": {
       "main": [
         [
           {
@@ -1130,6 +1173,51 @@
       "typeVersion": 3,
       "position": [
         440,
+        -50
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.market_context_history\n  (symbol, snapshot_date, name, markt_typ, region, waehrung, referenz_fuer, zeitstempel, type, aktueller_kurs, veraenderung_abs, veraenderung_pct, rsi, rsi_signal, macd, macd_signal_linie, macd_histogramm, macd_signal, trend, ema20, bb_oben, bb_mitte, bb_unten, kurs_bei_bollinger, signal_punkte, signal_gruende, signal_staerke, markt_status, risk_level, markt_hinweis, quelle, status, fehler)\n  VALUES (${pgStr(j.symbol)}, ${pgStr(j.datum)}, ${pgStr(j.name)}, ${pgStr(j.markt_typ)}, ${pgStr(j.region)}, ${pgStr(j.waehrung)}, ${pgStr(j.referenz_fuer)}, ${pgStr(j.zeitstempel)}, ${pgStr(j.type)}, ${pgStr(j.aktueller_kurs)}, ${pgStr(j.veraenderung_abs)}, ${pgStr(j.veraenderung_pct)}, ${pgStr(j.rsi)}, ${pgStr(j.rsi_signal)}, ${pgStr(j.macd)}, ${pgStr(j.macd_signal_linie)}, ${pgStr(j.macd_histogramm)}, ${pgStr(j.macd_signal)}, ${pgStr(j.trend)}, ${pgStr(j.ema20)}, ${pgStr(j.bb_oben)}, ${pgStr(j.bb_mitte)}, ${pgStr(j.bb_unten)}, ${pgStr(j.kurs_bei_bollinger)}, ${pgStr(j.signal_punkte)}, ${pgStr(j.signal_gruende)}, ${pgStr(j.signal_staerke)}, ${pgStr(j.markt_status)}, ${pgStr(j.risk_level)}, ${pgStr(j.markt_hinweis)}, ${pgStr(j.quelle)}, ${pgStr(j.status)}, ${pgStr(j.fehler)})\n  ON CONFLICT (symbol, snapshot_date) DO UPDATE SET\n    name = EXCLUDED.name,\n    markt_typ = EXCLUDED.markt_typ,\n    region = EXCLUDED.region,\n    waehrung = EXCLUDED.waehrung,\n    referenz_fuer = EXCLUDED.referenz_fuer,\n    zeitstempel = EXCLUDED.zeitstempel,\n    type = EXCLUDED.type,\n    aktueller_kurs = EXCLUDED.aktueller_kurs,\n    veraenderung_abs = EXCLUDED.veraenderung_abs,\n    veraenderung_pct = EXCLUDED.veraenderung_pct,\n    rsi = EXCLUDED.rsi,\n    rsi_signal = EXCLUDED.rsi_signal,\n    macd = EXCLUDED.macd,\n    macd_signal_linie = EXCLUDED.macd_signal_linie,\n    macd_histogramm = EXCLUDED.macd_histogramm,\n    macd_signal = EXCLUDED.macd_signal,\n    trend = EXCLUDED.trend,\n    ema20 = EXCLUDED.ema20,\n    bb_oben = EXCLUDED.bb_oben,\n    bb_mitte = EXCLUDED.bb_mitte,\n    bb_unten = EXCLUDED.bb_unten,\n    kurs_bei_bollinger = EXCLUDED.kurs_bei_bollinger,\n    signal_punkte = EXCLUDED.signal_punkte,\n    signal_gruende = EXCLUDED.signal_gruende,\n    signal_staerke = EXCLUDED.signal_staerke,\n    markt_status = EXCLUDED.markt_status,\n    risk_level = EXCLUDED.risk_level,\n    markt_hinweis = EXCLUDED.markt_hinweis,\n    quelle = EXCLUDED.quelle,\n    status = EXCLUDED.status,\n    fehler = EXCLUDED.fehler,\n    fetched_at = now();`;\n\nreturn { json: { ...j, sql } };\n"
+      },
+      "id": "dd90cc18-155f-41aa-bb40-caff39bdc44e",
+      "name": "Marktkontext-Historie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        380
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "311f86aa-7aa2-48aa-8b2d-c022e7d95cc7",
+      "name": "Marktkontext-Historie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        380
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "1fd6b74a-c446-4bdb-b3c5-56e762a8d127",
+      "name": "Merge Ergebnis 3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        660,
         -50
       ]
     }
