@@ -43,6 +43,21 @@
             "node": "Trigger-Werte fuer Merge-Kette",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "DB: Trend-Fundamentaldaten laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Trend-Marktumfeld laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Trend-Signale laden",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -205,7 +220,7 @@
       "main": [
         [
           {
-            "node": "Reportdaten aufbereiten",
+            "node": "Merge Grunddaten 8",
             "type": "main",
             "index": 0
           }
@@ -327,6 +342,72 @@
         [
           {
             "node": "Ergebnis fuer Aufrufer aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trend-Fundamentaldaten laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 8",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Grunddaten 8": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trend-Marktumfeld laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 9",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Grunddaten 9": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trend-Signale laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 10",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Grunddaten 10": {
+      "main": [
+        [
+          {
+            "node": "Reportdaten aufbereiten",
             "type": "main",
             "index": 0
           }
@@ -606,7 +687,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose\n} }];\n"
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\n\nfunction buildTrend(rows, keyField) {\n  const byKey = {};\n  for (const r of rows) {\n    const k = String(r[keyField] || '').trim();\n    if (!k) continue;\n    if (!byKey[k]) byKey[k] = [];\n    byKey[k].push(r);\n  }\n  for (const k of Object.keys(byKey)) byKey[k].sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));\n  return byKey;\n}\n\n// Paket 9: Mehrtages-Trend aus Paket 8s Historie-Tabellen (letzte 5 Handelstage,\n// gruppiert je Ticker/Symbol statt aller Rohzeilen, um den Prompt-Umfang klein zu halten).\nconst trendHistorie = {\n  fundamentaldaten: buildTrend(safeAll('DB: Trend-Fundamentaldaten laden'), 'ticker'),\n  marktumfeld: buildTrend(safeAll('DB: Trend-Marktumfeld laden'), 'symbol'),\n  technische_signale: buildTrend(safeAll('DB: Trend-Signale laden'), 'ticker')\n};\n\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose,\n  trend_historie: trendHistorie\n} }];\n"
       },
       "name": "Reportdaten aufbereiten",
       "type": "n8n-nodes-base.code",
@@ -619,7 +700,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const d = $input.item.json;\nconst mu = d.marktumfeld || {};\nconst dq = d.datenqualitaet || {};\n\nconst systemPrompt = `Du bist ein vorsichtiger, sachlicher Aktienbeobachter fuer deutsche Aktien.\nDu richtest dich an Einsteiger und erklaerst Fachbegriffe kurz in einfachen Worten.\nDu analysierst technische Signale, Fundamentaldaten, Marktumfeld, Nachrichten und Lernhinweise aus\nder Vergangenheit. Du gibst KEINE Finanzberatung. Du machst KEINE Kauf- oder Verkaufsempfehlungen.\nDu erfindest keine Fakten. Du kennzeichnest Datenluecken klar. Du berechnest KEINE eigenen\ntechnischen Indikatoren neu, sondern interpretierst die bereits berechneten Werte.\n\nFORMATVORGABEN (zwingend einhalten):\n- Antworte ausschliesslich in sauberem Markdown.\n- Ueberschriften ausschliesslich mit ##.\n- Aufzaehlungen ausschliesslich mit \"- \".\n- Kein HTML, keine Code-Bloecke, keine Tabellen (ausser inhaltlich zwingend noetig).`;\n\nconst dqText = dq.warnungen && dq.warnungen.length > 0 ? `\\n\\nDATENQUALITAET-WARNUNGEN:\\n${dq.warnungen.join('\\n')}` : '';\nconst lernText = (d.lernhinweise && d.lernhinweise.length > 0)\n  ? `\\n\\nAKTUELLE LERNHINWEISE (aus dem Lernagenten, noch nicht produktiv aktiv, nur zur Einordnung):\\n${JSON.stringify(d.lernhinweise)}`\n  : '';\n\nconst userPrompt = `Erstelle einen konkreten Aktien-Tagesreport fuer Einsteiger auf Basis dieser Daten:\n\n${JSON.stringify(d, null, 2)}${dqText}${lernText}\n\nSTRUKTUR:\n## 1. Marktlage heute (einfache Worte)\n## 2. Top-Auffaelligkeiten des Tages (max 5)\n## 3. Technische Beobachtungen je Aktie (Kurs, Referenzindex, relative Staerke, Marktbestaetigung, RSI/MACD/Trend erklaert, passende News, vorsichtige Beobachtung)\n## 4. Signale mit Marktbestaetigung\n## 5. Signale gegen das Marktumfeld\n## 6. Nachrichtenlage (positiv/negativ/makro, je relevanter News: betroffene Ticker, Wirkungsebene, Richtung, Staerke, Begruendung)\n## 7. Fundamentale Auffaelligkeiten\n## 8. Watchlist fuer morgen (Long-/Short-/Neutral-Beobachtung mit Begruendung)\n## 9. Lernhinweise aus der Vergangenheit (falls vorhanden: kurz einordnen, klar als noch nicht produktiv aktiv kennzeichnen)\n## 10. Risiken und Datenluecken\n## 11. Fazit (3 konkrete Beobachtungspunkte)\n\nHaftungshinweis am Ende: Kein Handelssignal. Keine Anlageberatung. Nur automatisierte Markt- und Aktienbeobachtung.\nAlle Empfehlungswatchlist-Positionen sind SIMULATION, keine realen Trades - das muss im Text erkennbar bleiben.`;\n\nreturn [{ json: { ...d, systemPrompt, userPrompt } }];\n"
+        "jsCode": "const d = $input.item.json;\nconst mu = d.marktumfeld || {};\nconst dq = d.datenqualitaet || {};\n\nconst systemPrompt = `Du bist ein vorsichtiger, sachlicher Aktienbeobachter fuer deutsche Aktien.\nDu richtest dich an Einsteiger und erklaerst Fachbegriffe kurz in einfachen Worten.\nDu analysierst technische Signale, Fundamentaldaten, Marktumfeld, Nachrichten und Lernhinweise aus\nder Vergangenheit. Du gibst KEINE Finanzberatung. Du machst KEINE Kauf- oder Verkaufsempfehlungen.\nDu erfindest keine Fakten. Du kennzeichnest Datenluecken klar. Du berechnest KEINE eigenen\ntechnischen Indikatoren neu, sondern interpretierst die bereits berechneten Werte.\n\nFORMATVORGABEN (zwingend einhalten):\n- Antworte ausschliesslich in sauberem Markdown.\n- Ueberschriften ausschliesslich mit ##.\n- Aufzaehlungen ausschliesslich mit \"- \".\n- Kein HTML, keine Code-Bloecke, keine Tabellen (ausser inhaltlich zwingend noetig).`;\n\nconst dqText = dq.warnungen && dq.warnungen.length > 0 ? `\\n\\nDATENQUALITAET-WARNUNGEN:\\n${dq.warnungen.join('\\n')}` : '';\nconst lernText = (d.lernhinweise && d.lernhinweise.length > 0)\n  ? `\\n\\nAKTUELLE LERNHINWEISE (aus dem Lernagenten, noch nicht produktiv aktiv, nur zur Einordnung):\\n${JSON.stringify(d.lernhinweise)}`\n  : '';\n\nconst userPrompt = `Erstelle einen konkreten Aktien-Tagesreport fuer Einsteiger auf Basis dieser Daten:\n\n${JSON.stringify(d, null, 2)}${dqText}${lernText}\n\nSTRUKTUR:\n## 1. Marktlage heute (einfache Worte)\n## 2. Top-Auffaelligkeiten des Tages (max 5)\n## 3. Technische Beobachtungen je Aktie (Kurs, Referenzindex, relative Staerke, Marktbestaetigung, RSI/MACD/Trend erklaert, passende News, vorsichtige Beobachtung)\n## 4. Signale mit Marktbestaetigung\n## 5. Signale gegen das Marktumfeld\n## 6. Nachrichtenlage (positiv/negativ/makro, je relevanter News: betroffene Ticker, Wirkungsebene, Richtung, Staerke, Begruendung)\n## 7. Fundamentale Auffaelligkeiten\n## 8. Watchlist fuer morgen (Long-/Short-/Neutral-Beobachtung mit Begruendung)\n## 9. Lernhinweise aus der Vergangenheit (falls vorhanden: kurz einordnen, klar als noch nicht produktiv aktiv kennzeichnen)\n## 10. Risiken und Datenluecken\n## 11. Fazit (3 konkrete Beobachtungspunkte)\n## 12. Mehrtages-Trend (letzte 5 Handelstage, aus trend_historie im Datenblock - je Ticker/Symbol Kurs-/RSI-Verlauf kurz einordnen, bei nur 1 Datenpunkt ausdruecklich als \"noch zu kurze Historie\" kennzeichnen statt einen Trend zu erfinden)\n\nHaftungshinweis am Ende: Kein Handelssignal. Keine Anlageberatung. Nur automatisierte Markt- und Aktienbeobachtung.\nAlle Empfehlungswatchlist-Positionen sind SIMULATION, keine realen Trades - das muss im Text erkennbar bleiben.`;\n\nreturn [{ json: { ...d, systemPrompt, userPrompt } }];\n"
       },
       "name": "Report-Prompt aufbauen",
       "type": "n8n-nodes-base.code",
@@ -686,7 +767,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
+        "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}\n\nROHDATEN (Mehrtages-Trend, 5 Handelstage):\n${JSON.stringify(d.trend_historie || {})}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
       },
       "name": "Pruef-Prompt aufbauen",
       "type": "n8n-nodes-base.code",
@@ -834,6 +915,102 @@
       "position": [
         426,
         240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
+        "options": {}
+      },
+      "id": "ca673372-6e94-46e0-a1c7-6cf25478cb49",
+      "name": "DB: Trend-Fundamentaldaten laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        900
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY symbol, snapshot_date;",
+        "options": {}
+      },
+      "id": "097126d1-0cb4-45cb-abf1-9bc59a0ad3f0",
+      "name": "DB: Trend-Marktumfeld laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        980
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
+        "options": {}
+      },
+      "id": "cb0285e6-d74a-4f64-a526-a5581b439d8a",
+      "name": "DB: Trend-Signale laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        1060
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "fda559d6-a3c8-4ad0-a3be-bd75a2550d11",
+      "name": "Merge Grunddaten 8",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2400,
+        700
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ce739647-5e2c-4b84-bcde-1e03225b433c",
+      "name": "Merge Grunddaten 9",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2200,
+        700
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "fcae861c-7251-4780-95b6-9e4e06decfcc",
+      "name": "Merge Grunddaten 10",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2000,
+        700
       ]
     }
   ],
