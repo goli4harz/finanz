@@ -16,7 +16,9 @@ Umsetzung des 12-Phasen-Auftrags "Fachliche Überarbeitung der Aktienanalyse- un
 
 - ✅ **Paket 9** (Consumer-Migration Teil 1): `07`/`10` nutzen jetzt die Paket-8-Historie für einen 5-Handelstage-Trend-Kontext (Dashboard-Spalte bzw. eigene Report-Sektion). Live über den öffentlichen Webhook (07) und einen echten Execute-Workflow-Lauf inkl. KI-Aufruf (10) verifiziert. Dabei nebenbei einen zweiten Nebenbefund behoben: `07`s `DB: Kursverlauf laden` (stock_price_history, 35 Tage) wurde bisher nur für eine Frische-Prüfung geladen, nie angezeigt — jetzt als Balkendiagramm sichtbar.
 
-**Offen, explizit zurückgestellt**: `06`s Entscheidungslogik bleibt unverändert (Tagesabgleich, kein Trend-Bezug) — eine echte Verhaltensänderung dort braucht eine eigene, separat abzunehmende Entscheidung wegen dessen dokumentierter Historie fragiler Merge-/DRY_RUN-Stellen.
+- ✅ **Paket 10** (Consumer-Migration Teil 2): `06` schreibt jetzt bei jeder neuen Position `decision_score`/`decision_blockers`/`market_regime` aus dem 5-Tage-Trend — **rein informativ**, die eigentliche Kauf-/Verkauf-Entscheidung bleibt unverändert (dieselbe Ticker-Menge, dieselbe Empfehlung). Neuer Trend-Node seriell in 06s bestehende (nicht Merge-basierte) Datenkette eingefügt, DRY_RUN/REQUIRE_CONFIRMATION unberührt. Funktional simuliert + live per DRY_RUN=true-Test bestätigt.
+
+**Offen, bewusst zurückgestellt**: ob der Trend jemals die Kauf-/Verkauf-Entscheidung selbst gaten soll (nicht nur begleiten), ist eine eigene, separat abzunehmende Folge-Entscheidung. Ebenfalls offen: `recommendations.run_id` ist bei jeder Zeile NULL (unabhängiger, kleiner Bug, noch nicht behoben).
 
 ## Priorität 4 (erledigt, 2026-07-26)
 
