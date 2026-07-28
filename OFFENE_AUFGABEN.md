@@ -18,7 +18,9 @@ Umsetzung des 12-Phasen-Auftrags "Fachliche Überarbeitung der Aktienanalyse- un
 
 - ✅ **Paket 10** (Consumer-Migration Teil 2): `06` schreibt jetzt bei jeder neuen Position `decision_score`/`decision_blockers`/`market_regime` aus dem 5-Tage-Trend — **rein informativ**, die eigentliche Kauf-/Verkauf-Entscheidung bleibt unverändert (dieselbe Ticker-Menge, dieselbe Empfehlung). Neuer Trend-Node seriell in 06s bestehende (nicht Merge-basierte) Datenkette eingefügt, DRY_RUN/REQUIRE_CONFIRMATION unberührt. Funktional simuliert + live per DRY_RUN=true-Test bestätigt.
 
-**Offen, bewusst zurückgestellt**: ob der Trend jemals die Kauf-/Verkauf-Entscheidung selbst gaten soll (nicht nur begleiten), ist eine eigene, separat abzunehmende Folge-Entscheidung. Ebenfalls offen: `recommendations.run_id` ist bei jeder Zeile NULL (unabhängiger, kleiner Bug, noch nicht behoben).
+- ✅ **Paket 11** (Folge-Entscheidung zu Paket 10, `sql/020`, 2026-07-28): starker 5-Tage-RSI-Gegentrend (Schwelle konfigurierbar über `TREND_KONFLIKT_SCHWELLE`, Default 10) stuft eine sonst ausgelöste Kauf-/Verkauf-Entscheidung automatisch zum Vorschlag herab (kein sofortiger Write), über den bereits bestehenden `REQUIRE_CONFIRMATION`/"Als Vorschlag markieren"-Pfad. Schwacher Gegentrend bleibt weiterhin nur informativ (`decision_score`/`decision_blockers` unverändert). Positions-Schließungen werden bewusst nicht gegatet. Migration `sql/020` noch über `97` einzuspielen (Fallback-Default greift bis dahin identisch).
+- ✅ `recommendations.run_id` war bei jeder Zeile NULL (Node `Empfehlungen: Abgleich berechnen` reichte den Trigger-Kontext nie durch) — behoben, `sql`-unabhängig, reiner Code-Fix.
+- ✅ `trading.scoring_weights` wurde von der eigentlichen Gewichtungslogik (hartkodierte Formel in `09 - Lernagent Newswirkung`, 20 Stellen) nicht gelesen — jetzt per `CROSS JOIN` verdrahtet, `sql/019` seedet die bisherigen Werte als aktive Zeilen (verhaltensneutral bis zur ersten echten Aktivierung).
 
 ## Priorität 4 (erledigt, 2026-07-26)
 
