@@ -329,7 +329,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}' ORDER BY trading_date;",
+        "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
         "options": {}
       },
       "name": "DB: Kursverlauf je Ticker laden",
@@ -378,7 +378,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}' ORDER BY trading_date;",
+        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
         "options": {}
       },
       "name": "DB: Benchmark-Kursverlauf laden",

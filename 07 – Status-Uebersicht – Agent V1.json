@@ -575,7 +575,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE trading_date >= current_date - 35 ORDER BY trading_date DESC, symbol;",
+        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE trading_date >= current_date - 35 AND valid_to IS NULL ORDER BY trading_date DESC, symbol;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden",
