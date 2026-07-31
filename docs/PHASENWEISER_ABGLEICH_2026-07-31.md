@@ -85,7 +85,7 @@ Umgesetzt in `02`s `Technische Analyse (RSI/MACD/BB)`: ATR-14 (Wilder-Glättung)
 
 ## Phase 8: Empfehlungslogik erweitern
 
-**Status: teilweise erfüllt (Update 2026-07-31 nachmittags, Paket 15) — 2 von 7 harten Vetos jetzt echt, Rest weiterhin offen.**
+**Status: teilweise erfüllt (Update 2026-07-31 abends, Pakete 15+17) — 3 von 7 harten Vetos jetzt echt, Rest weiterhin offen.**
 
 `recommendations` hat: `stop_price`, `target_price`, `thesis_expires_at`, `expected_holding_days`, `data_quality_score`, `market_regime`, `decision_score`, `decision_blockers` (jsonb), `invalidation_reason`, `is_theoretical`.
 
@@ -93,7 +93,7 @@ Fehlend: `decision` (expliziter Entscheidungswert), `decision_reasons` (nur `dec
 
 **Ursprünglicher Fund**: `decision_score`/`decision_blockers` wurden in `06`s Code berechnet und geschrieben, aber nicht zum Blockieren verwendet. Einzige Gating-Wirkung war Paket 11s RSI-Gegentrend-Abstufung zum Vorschlag (weich, kein hartes Veto).
 
-**Paket 15 (07-31)**: 2 der 7 im Auftrag genannten harten Veto-Gründe jetzt echt umgesetzt in `06`s `Empfehlungen: Abgleich berechnen` — **fehlender/ungültiger Referenzkurs** (blockiert Öffnen UND Schließen komplett) und **widersprüchliche gültige Bewertung** (war schon vorher ein fauler harter Block, jetzt sichtbar statt still über `console.warn`). Die restlichen 5 (unzureichende Datenqualität, veraltete Nachricht, unplausibler Stop/Ziel, abgelaufene These, offene DB-Fehler) bleiben offen. Stop/Ziel-Plausibilität hat jetzt seit Paket 16 (Phase 7) eine Datengrundlage (`atr_stop_numeric`/`atr_target_numeric` in `technical_signals_history`), aber **die Verdrahtung als Veto in `06` selbst wurde noch nicht nachgezogen** — reiner Datenverfügbarkeits-Fortschritt, keine Logikänderung. Bewusst NICHT als neue Matrix-Sektion umgesetzt (Sichtbarkeit nur im Execution-Log) — der bestehende Routing-Graph (globale DRY_RUN-Weiche, `_aktion`/`_require_confirmation`-basiertes IF-Routing) hätte für einen neuen Item-Typ Änderungen an mehreren nachgelagerten Nodes gebraucht, als Risiko fürs produktive Order-Schreiben eingeschätzt und mit dem Nutzer abgestimmt. Noch **nicht live gegen einen echten Trigger getestet** (nur statische JS-Syntaxprüfung) — `06` läuft nur über den `00`-Orchestrator oder einen UI-Trigger, der von hier aus nicht risikofrei auslösbar ist.
+**Paket 15 (07-31)**: 2 der 7 im Auftrag genannten harten Veto-Gründe jetzt echt umgesetzt in `06`s `Empfehlungen: Abgleich berechnen` — **fehlender/ungültiger Referenzkurs** (blockiert Öffnen UND Schließen komplett) und **widersprüchliche gültige Bewertung** (war schon vorher ein fauler harter Block, jetzt sichtbar statt still über `console.warn`). **Paket 17 (07-31, direkt danach)**: dritter harter Veto — fehlender/unverwertbarer ATR-Stop/-Ziel (deckt "unzureichende Datenqualität" UND "unplausibler Stop/Ziel" gemeinsam ab, da beide letztlich auf denselben fehlenden ATR-Wert zurückgehen) blockiert die Eröffnung. Nebenbei `recommendations.stop_price`/`target_price` (seit Paket 7 leere Schema-Spalten) erstmals real befüllt. Verbleibend offen: veraltete Nachricht, abgelaufene These, offene DB-Fehler (2 davon brauchen `thesis_expires_at`, das nirgends gesetzt wird — kein Konsument dieser Spalte existiert bislang). Bewusst NICHT als neue Matrix-Sektion umgesetzt (Sichtbarkeit nur im Execution-Log) — der bestehende Routing-Graph (globale DRY_RUN-Weiche, `_aktion`/`_require_confirmation`-basiertes IF-Routing) hätte für einen neuen Item-Typ Änderungen an mehreren nachgelagerten Nodes gebraucht, als Risiko fürs produktive Order-Schreiben eingeschätzt und mit dem Nutzer abgestimmt. Noch **nicht live gegen einen echten Trigger getestet** (nur statische JS-Syntaxprüfung) — `06` läuft nur über den `00`-Orchestrator oder einen UI-Trigger, der von hier aus nicht risikofrei auslösbar ist.
 
 ## Phase 9: Hebelproduktberechnung entschärfen
 
@@ -151,10 +151,10 @@ Live geprüft, keines existiert:
 | 5 | Fundamentaldaten numerisch/historisch | 🟢 erfüllt (Pakete 13+14, 07-31) |
 | 6 | Technische Strategien trennen | 🔴 nicht erfüllt |
 | 7 | ATR/Volatilität | 🟢 erfüllt (Paket 16, 07-31) |
-| 8 | Empfehlungslogik/harte Vetos | 🟡 2/7 Vetos echt (07-31), Rest braucht Phase 7 |
+| 8 | Empfehlungslogik/harte Vetos | 🟡 3/7 Vetos echt (Pakete 15+17, 07-31) |
 | 9 | Hebelprodukt entschärfen | 🟢 größtenteils erfüllt |
 | 10 | Orchestrator/Idempotenz | 🟡 größtenteils, bewusste Abweichung |
 | 11 | Cleanup → Archivierung | 🔴 nicht erfüllt |
 | 12 | Point-in-Time-Vorbereitung | 🟡 Felder teilweise, Dokument fehlt |
 
-**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag nachmittags/abends**: Phase 5 über Pakete 13+14 vollständig, Phase 7 über Paket 16 vollständig, Phase 8 über Paket 15 teilweise (2/7 Vetos, ATR-Datengrundlage jetzt da aber noch nicht in 06 verdrahtet) — Stand jetzt 5 grün, 6 gelb, 2 rot. Verbleibende rote Phasen: 6 (getrennte technische Strategiesignale), 11 (Archivierung). Naheliegende nächste Schritte: Phase 8s Stop/Ziel-Veto jetzt nachziehen (Daten sind da), oder Phase 6/11 als neue rote Phasen angehen.
+**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag abends**: Phase 5 über Pakete 13+14 vollständig, Phase 7 über Paket 16 vollständig, Phase 8 über Pakete 15+17 auf 3/7 Vetos — Stand jetzt 5 grün, 6 gelb, 2 rot. Verbleibende rote Phasen: 6 (getrennte technische Strategiesignale), 11 (Archivierung).
