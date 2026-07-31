@@ -1,6 +1,21 @@
 # Offene Aufgaben
 
-Stand: 2026-07-31 (abends — vollständiger Original-Auftrag Pakete 1-19, keine Phase mehr rot, siehe `docs/PHASENWEISER_ABGLEICH_2026-07-31.md`)
+Stand: 2026-07-31 (spät abends — zusätzlich zum Original-Auftrag jetzt "Welle 1" umgesetzt, siehe Abschnitt unten)
+
+## Welle 1 – Verlässliche Datenbasis, harte Vetos, Einzeltrade-Risiko (2026-07-31)
+
+Neuer, separater Auftrag nach Abschluss des ursprünglichen 12-Phasen-Auftrags. Sieben Arbeitspakete (AP1-AP7), vollständig implementiert und lokal getestet, **live-Push und Test gegen die echte n8n-Instanz noch ausstehend** (siehe unten).
+
+- ✅ **AP1** (vollständige OHLCV-Historie): `trading.stock_price_history` speichert jetzt open/high/low/volume/adjusted_close/exchange/source_timestamp (vorher nur close+source), mit Point-in-Time-Revisionierung statt stillem Überschreiben (`sql/025`). `02`/`02b` schreiben vollständig, `07`/`08` als Leser auf `valid_to IS NULL` angepasst.
+- ✅ **AP2+AP3** (Kerzenbildung/Datenqualität/Mindesthistorie): `02` baut Kerzen jetzt über den gemeinsamen Zeitstempel statt vier unabhängig gefilterter Arrays, klassifiziert in valid/limited/invalid/stale/session_incomplete (`sql/026`), erzwingt echte 252/60/20-Tage-Mindesthistorien. Live gegen den FastAPI-Kursdienst geprüft: `period=3mo` lieferte nur ~63 Handelstage, auf `period=1y` umgestellt (252+ Tage, verifiziert an AAPL/SAP.DE).
+- ✅ **AP4** (Börsensitzungs-Status): neue zentrale View `trading.v_market_session_status` (`sql/027`), nutzt die seit Paket 5 vorhandenen, bis dahin ungenutzten `market_reference`/`exchange`-Daten.
+- ✅ **AP5** (alle 12 harten Vetos): strukturiert in `06` umgesetzt (Code/severity/source/message/observed_value/required_value), geloggt in `trading.recommendation_veto_log` (`sql/028`) statt nur console.warn. Dabei zwei echte Bestandsfehler gefunden+gefixt: (1) `stop_price`/`target_price` wurden seit Paket 17 berechnet, aber nie in die INSERT-Spaltenliste aufgenommen; (2) der Kurs-Ungültig-Check blockierte bisher Öffnen UND Schließen gemeinsam — Schließungen haben jetzt einen sicheren Fallback-Pfad.
+- ✅ **AP6** (Einzeltrade-Risikomodell): deterministische Formel (risk_amount/unit_risk/theoretical_quantity/position_value/reward_risk_ratio/estimated_fees/estimated_slippage/max_planned_loss), konservative Default-Konfiguration in `trading.pipeline_config` (`sql/029`).
+- ✅ **AP7** (These/Zeitstop): deterministische, versionierte Regeln je Strategiefamilie (`sql/030`) — die KI legt keine Zeitpunkte frei fest.
+- ✅ Dashboard (`07`) und Report/Prüfagent (`10`) um Datenqualität/harte Blocker/Risiko/These/Sitzungsstatus erweitert, Prüf-Agent bekommt vier neue explizite Ablehnungsregeln.
+- ✅ 12 von 14 geforderten Testfällen lokal automatisiert getestet (`tests/test_welle1_reine_funktionen.js`, 13/13 Assertions bestanden), 2 (DRY_RUN/REQUIRE_CONFIRMATION) unverändert aus früheren Paketen übernommen. Details: `docs/TESTPLAN_WELLE_1.md`.
+- ✅ Dokumentation: `docs/DATENQUALITAET_UND_SESSIONS.md`, `docs/RISIKOMODELL_EINZELTRADE.md`, `docs/HARTE_VETOS.md`, `docs/TESTPLAN_WELLE_1.md`.
+- 🔴 **Noch nicht live gepusht/getestet**: alle Workflow-Änderungen (`02`, `02b`, `06`, `07`, `08`, `10`) sind lokal committet, aber noch nicht per n8n-API auf die laufende Instanz übertragen — dafür wird ein frischer n8n-API-Key benötigt (session-gebunden, nicht gespeichert). Die neuen SQL-Migrationen (`sql/025-030`) sind ebenfalls noch nicht gegen die echte DB ausgeführt. Bewusste Architekturentscheidung, um eine Data-Table-Schema-Abhängigkeit zu vermeiden: `06` liest die neuen Datenqualitätsfelder NICHT aus der `stock_technical_signals`-Data-Table, sondern aus der bereits bestehenden Postgres-Historie `technical_signals_history` (dieselbe Quelle, aus der schon der 5-Tage-Trend/ATR gelesen wird) — keine neuen Data-Table-Spalten nötig. Siehe Abschlussbericht für den genauen Restplan.
 
 ## Fachliche Überarbeitung (Paket 1-8, erledigt 2026-07-26/27)
 
