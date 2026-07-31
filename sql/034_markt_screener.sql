@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS trading.scan_runs (
 
 CREATE TABLE IF NOT EXISTS trading.scan_candidates (
   id             BIGSERIAL PRIMARY KEY,
-  scan_run_id    BIGINT NOT NULL REFERENCES trading.scan_runs(id),
+  run_id         TEXT NOT NULL,
   ticker         TEXT NOT NULL,
   stage          TEXT NOT NULL CHECK (stage IN ('A','B')),
   included       BOOLEAN NOT NULL,
@@ -29,7 +29,9 @@ CREATE TABLE IF NOT EXISTS trading.scan_candidates (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS ix_scan_candidates_run ON trading.scan_candidates (scan_run_id);
+COMMENT ON COLUMN trading.scan_candidates.run_id IS 'Denormalisierter Verweis auf trading.scan_runs.run_id (bewusst kein Fremdschluessel auf die generierte id - vermeidet eine Zwei-Phasen-Schreibreihenfolge im n8n-Workflow, gleiches Muster wie trading.recommendation_veto_log).';
+
+CREATE INDEX IF NOT EXISTS ix_scan_candidates_run ON trading.scan_candidates (run_id);
 CREATE INDEX IF NOT EXISTS ix_scan_candidates_ticker ON trading.scan_candidates (ticker, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_scan_runs_date ON trading.scan_runs (business_date DESC);
 
