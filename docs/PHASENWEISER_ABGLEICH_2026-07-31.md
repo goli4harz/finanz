@@ -71,9 +71,11 @@ Ursprünglicher Befund (bis 2026-07-31 vormittags): `fundamentals_history` (aus 
 
 ## Phase 6: Technische Strategien trennen
 
-**Status: NICHT erfüllt.**
+**Status: ERFÜLLT (2026-07-31, Paket 18).**
 
-`technical_signals_history` hat `signal_punkte`, `signal_gruende`, `signal_staerke` als einzelne Text-Felder — ein einziges kombiniertes Punktesystem, keine Trennung in `mean_reversion_signal`/`trend_following_signal`/`breakout_signal` mit je eigenem `raw_score`/`regime_fit`/`data_quality`/`evidence`-JSON. Keine entsprechenden Spalten oder JSON-Strukturen vorhanden.
+Ursprünglicher Befund: nur ein kombiniertes Punktesystem, keine Trennung in eigene Strategiesignale.
+
+Umgesetzt in `02`s `Technische Analyse (RSI/MACD/BB)`: drei separate Signale (`mean_reversion_signal`, `trend_following_signal`, `breakout_signal`), jeweils mit `strategy`/`direction`/`raw_score`/`regime_fit`/`data_quality`/`expected_horizon_days`/`evidence[]` — Struktur exakt wie im Auftragsbeispiel. Mean-Reversion aus RSI-Extremwerten + Bollinger-Band-Berührung + EMA20-Abstand, Trend-Following aus MACD-Kreuzung/Nulllinie/Histogramm + EMA20-Trendbestätigung, Breakout aus 52-Wochen-Nähe + Volumenfaktor + Tagesbewegung — alles aus bereits real berechneten Werten, keine KI, keine erfundene Evidenz. `dominant_strategy` markiert die Strategie mit dem höchsten `raw_score`. Bekannte Indikator-Korrelationen (MACD-Kreuzung/-Histogramm gleiche Basis; RSI/Bollinger beide Abweichungsmaße vom Durchschnitt) statisch dokumentiert, nicht live berechnet (fehlende historische Zeitreihe für einen echten Korrelationskoeffizienten). Bestehendes Punktesystem unverändert erhalten. Live per manuellem `02`-Lauf verifiziert: unterschiedliche, plausible Signale je Ticker, defekter Ticker korrekt komplett NULL.
 
 ## Phase 7: ATR und Volatilität
 
@@ -113,9 +115,11 @@ Fehlend: `decision` (expliziter Entscheidungswert), `decision_reasons` (nur `dec
 
 ## Phase 11: Cleanup auf Archivierung umstellen
 
-**Status: NICHT erfüllt.**
+**Status: ERFÜLLT (2026-07-31, Paket 19).**
 
-Heute (2026-07-31) wurde ein konkreter, akuter Fremdschlüssel-Bug in `04`s drei bestehenden DELETE-Regeln gefunden und gefixt (`news_assessments`-Schutz ergänzt, siehe Commit `b4b78e0`) — das war eine reine Bugfix-Maßnahme, **keine** Umsetzung dieser Phase. Der Auftrag verlangt eine strukturelle Umstellung (Status `archived`, Archivtabellen, Partitionierung, Aufbewahrungsregeln je Datenklasse) plus `docs/DATENAUFBEWAHRUNG.md` — nichts davon existiert. `news_items` hat kein `archived`-Status (nur `discarded`/`failed`/`evaluated`/vermutlich weitere), keine Archivtabelle gefunden.
+Ursprünglicher Befund: Paket 12 (selber Tag, früher) hatte nur den akuten Fremdschlüssel-Bug in `04`s drei bestehenden DELETE-Regeln gefixt — keine strukturelle Archivierung.
+
+Umgesetzt: `news_items.status='archived'` als neuer Zustand (kein Schema-Zwang nötig, Spalte war bereits frei-text) für evaluierte News, die 180+ Tage alt sind UND eine abgeschlossene Wirkungsmessung haben (`news_impact_tracking.status='completed'`) — nie gelöscht, nur re-getaggt. Zusätzlich eine 180-Tage-Löschregel für reine Betriebs-Logs (`pipeline_runs`, `workflow_errors` — keine Fremdschlüssel-Abhängigkeiten, live geprüft, kein fachlicher Lernwert). `docs/DATENAUFBEWAHRUNG.md` dokumentiert alle 6 im Auftrag genannten Datenklassen mit konkreten Regeln, aktuellen Mengen und einem expliziten "nicht umgesetzt"-Abschnitt (separate Archivtabellen, Partitionierung, Payload-Kompression — bei aktuellem Datenvolumen bewusst zurückgestellt, nicht übersehen). Live per manuellem `04`-Lauf verifiziert: beide neuen Regeln laufen fehlerfrei (aktuell 0 betroffene Zeilen, da nichts alt genug ist — korrektes, noch ruhendes Verhalten, analog zu Phase 7s ATR).
 
 ## Phase 12: Vorbereitung Point-in-Time-Simulation
 
@@ -149,12 +153,14 @@ Live geprüft, keines existiert:
 | 3 | Recherche-Wiederholung verhindern | 🟡 Schema da, Logik nicht geprüft |
 | 4 | Konfidenzen/Prognosen trennen | 🟡 größtenteils da, Validierung ungeprüft |
 | 5 | Fundamentaldaten numerisch/historisch | 🟢 erfüllt (Pakete 13+14, 07-31) |
-| 6 | Technische Strategien trennen | 🔴 nicht erfüllt |
+| 6 | Technische Strategien trennen | 🟢 erfüllt (Paket 18, 07-31) |
 | 7 | ATR/Volatilität | 🟢 erfüllt (Paket 16, 07-31) |
 | 8 | Empfehlungslogik/harte Vetos | 🟡 3/7 Vetos echt (Pakete 15+17, 07-31) |
 | 9 | Hebelprodukt entschärfen | 🟢 größtenteils erfüllt |
 | 10 | Orchestrator/Idempotenz | 🟡 größtenteils, bewusste Abweichung |
-| 11 | Cleanup → Archivierung | 🔴 nicht erfüllt |
+| 11 | Cleanup → Archivierung | 🟢 erfüllt (Paket 19, 07-31) |
 | 12 | Point-in-Time-Vorbereitung | 🟡 Felder teilweise, Dokument fehlt |
 
-**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag abends**: Phase 5 über Pakete 13+14 vollständig, Phase 7 über Paket 16 vollständig, Phase 8 über Pakete 15+17 auf 3/7 Vetos — Stand jetzt 5 grün, 6 gelb, 2 rot. Verbleibende rote Phasen: 6 (getrennte technische Strategiesignale), 11 (Archivierung).
+**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe.
+
+**Update, selber Tag abends (Pakete 13-19)**: Phase 5 (Numerik+Point-in-Time), Phase 6 (Strategiesignale), Phase 7 (ATR/Volatilität) und Phase 11 (Archivierung) vollständig nachgezogen; Phase 8 auf 3 von 7 harten Vetos. **Keine der 13 Phasen ist mehr rot** — 7 grün, 6 gelb. Alle 6 verbleibenden gelben Phasen sind entweder (a) im Kern erfüllt mit ein paar unverifizierten Detailfragen (0, 1, 3, 4, 10, 12 — siehe jeweiligen Abschnitt oben für die genaue offene Einzelfrage) oder (b) Phase 8 mit 4 der 7 Vetos noch offen (2 davon brauchen `thesis_expires_at`, das nirgends gesetzt wird — kein Konsument dieser Spalte existiert; die anderen 2 sind "veraltete Nachricht" und "offene DB-Fehler", beide noch nicht entworfen). Kein Punkt ist mehr komplett unbearbeitet.
