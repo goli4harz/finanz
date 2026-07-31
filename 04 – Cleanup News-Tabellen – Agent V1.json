@@ -115,6 +115,50 @@
       "main": [
         [
           {
+            "node": "Archiviere abgeschlossene News (180 Tage) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archiviere abgeschlossene News (180 Tage) (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Archiviere abgeschlossene News (180 Tage) (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Archiviere abgeschlossene News (180 Tage) (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Loesche alte Betriebs-Logs (180 Tage) (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche alte Betriebs-Logs (180 Tage) (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Loesche alte Betriebs-Logs (180 Tage) (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loesche alte Betriebs-Logs (180 Tage) (ausfuehren)": {
+      "main": [
+        [
+          {
             "node": "Log Cleanup-Lauf (SQL bauen)",
             "type": "main",
             "index": 0
@@ -346,6 +390,78 @@
       },
       "onError": "continueRegularOutput",
       "id": "n-00000012-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\n\n// Paket 19 (Phase 11 der fachlichen Ueberarbeitung, 2026-07-31): Archivierung statt Loeschung.\n// Voll ausgewertete News, deren Wirkungsmessung abgeschlossen ist (news_impact_tracking.status\n// = 'completed', nicht nur \"irgendeine Zeile existiert\" wie bei der 365-Tage-Regel oben) und\n// die alt genug sind, um nicht mehr aktiv gebraucht zu werden, werden auf status='archived'\n// umgestellt statt geloescht - die Zeile bleibt fuer Audit/Lernen/spaetere Simulation vollstaendig\n// erhalten (siehe docs/DATENAUFBEWAHRUNG.md), zaehlt aber nicht mehr als \"aktiv\" mit.\n// Aktuell dormant: die Wirkungsmessung braucht bis zu 20 Handelstage bis 'completed', das\n// System ist erst ~12 Tage alt - noch keine Zeile erfuellt beide Bedingungen. Korrektes\n// Verhalten fuer spaeter, kein Fehler.\nconst sql = `UPDATE trading.news_items ni\n  SET status = 'archived'\n  WHERE ni.status = 'evaluated'\n    AND ni.created_at < now() - interval '180 days'\n    AND EXISTS (\n      SELECT 1 FROM trading.news_impact_tracking nit\n      WHERE nit.news_id = ni.id AND nit.status = 'completed'\n    );`;\nreturn { json: { ...$json, sql, stufe: 'archivierung_evaluiert' } };\n"
+      },
+      "name": "Archiviere abgeschlossene News (180 Tage) (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        320
+      ],
+      "id": "n-00000011-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Archiviere abgeschlossene News (180 Tage) (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        128,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000012-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Paket 19 (Phase 11): reine Betriebs-Logs (pipeline_runs/workflow_errors) sind keine\n// fachlichen Daten mit Lernwert - anders als Bewertungen/Wirkungsdaten duerfen sie nach einer\n// grosszuegigen Frist geloescht werden (siehe docs/DATENAUFBEWAHRUNG.md, Kategorie\n// \"Fehlerprotokolle\"/\"temporaere Payloads\"). Keine Fremdschluessel von anderen Tabellen auf\n// diese beiden Tabellen (live per information_schema geprueft, 2026-07-31) - Loeschung ist\n// unbedenklich.\nconst sql = `DELETE FROM trading.pipeline_runs WHERE created_at < now() - interval '180 days';\nDELETE FROM trading.workflow_errors WHERE occurred_at < now() - interval '180 days';`;\nreturn { json: { ...$json, sql, stufe: 'betriebslog_bereinigung' } };\n"
+      },
+      "name": "Loesche alte Betriebs-Logs (180 Tage) (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        320
+      ],
+      "id": "n-00000013-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Loesche alte Betriebs-Logs (180 Tage) (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "id": "n-00000014-0000-4000-8000-0000000000"
     }
   ],
   "pinData": null,
@@ -354,5 +470,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "e1630180-b7c8-449a-b120-eef06226aa7a"
+  "versionId": "dd28be63-a0ee-4d9c-8df4-6f0d85a5350b"
 }
