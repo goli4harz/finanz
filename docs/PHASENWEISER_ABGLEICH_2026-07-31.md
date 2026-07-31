@@ -83,13 +83,15 @@ Keine `atr_14`, keine realisierte Volatilität (20/60 Tage), keine durchschnittl
 
 ## Phase 8: Empfehlungslogik erweitern
 
-**Status: Schema teilweise erfüllt, Kern-Anforderung (harte Vetos) NICHT erfüllt.**
+**Status: teilweise erfüllt (Update 2026-07-31 nachmittags, Paket 15) — 2 von 7 harten Vetos jetzt echt, Rest weiterhin offen.**
 
 `recommendations` hat: `stop_price`, `target_price`, `thesis_expires_at`, `expected_holding_days`, `data_quality_score`, `market_regime`, `decision_score`, `decision_blockers` (jsonb), `invalidation_reason`, `is_theoretical`.
 
 Fehlend: `decision` (expliziter Entscheidungswert), `decision_reasons` (nur `decision_blockers` vorhanden, keine getrennten Gründe), `strategy` (kein Bezug zu Phase 6, die ohnehin fehlt), `regime_fit`, `fundamental_risk`, `invalidation_price`, `expected_return`/`expected_loss`/`expected_value`.
 
-**Wichtigster Fund**: `decision_score`/`decision_blockers` werden in `06`s Code (`Empfehlungen: Abgleich berechnen`) berechnet und geschrieben, aber **nicht zum Blockieren verwendet** — bestätigt durch `OFFENE_AUFGABEN.md`s eigene Formulierung zu Paket 10 ("rein informativ, die eigentliche Kauf-/Verkauf-Entscheidung bleibt unverändert") und Paket 7 ("keine Verdrahtung in 06s Entscheidungslogik"). Einzige tatsächliche Gating-Wirkung: Paket 11s RSI-Gegentrend stuft bei starkem Gegentrend zum Vorschlag herab (über den bereits vorhandenen `REQUIRE_CONFIRMATION`-Pfad) — das ist eine weiche Abstufung, kein hartes Veto im Sinne des Auftrags. Keiner der im Auftrag aufgelisteten harten Veto-Gründe (unzureichende Datenqualität, veraltete Nachricht, widersprüchliche gültige Bewertung, fehlender Referenzkurs, unplausibler Stop/Ziel, abgelaufene These, offene DB-Fehler) ist als tatsächliche Blockade im Code gefunden worden.
+**Ursprünglicher Fund**: `decision_score`/`decision_blockers` wurden in `06`s Code berechnet und geschrieben, aber nicht zum Blockieren verwendet. Einzige Gating-Wirkung war Paket 11s RSI-Gegentrend-Abstufung zum Vorschlag (weich, kein hartes Veto).
+
+**Paket 15 (07-31)**: 2 der 7 im Auftrag genannten harten Veto-Gründe jetzt echt umgesetzt in `06`s `Empfehlungen: Abgleich berechnen` — **fehlender/ungültiger Referenzkurs** (blockiert Öffnen UND Schließen komplett) und **widersprüchliche gültige Bewertung** (war schon vorher ein fauler harter Block, jetzt sichtbar statt still über `console.warn`). Die restlichen 5 (unzureichende Datenqualität, veraltete Nachricht, unplausibler Stop/Ziel, abgelaufene These, offene DB-Fehler) bleiben offen — Stop/Ziel/These-Vetos brauchen Phase 7 (ATR) als Datengrundlage, die noch nicht existiert. Bewusst NICHT als neue Matrix-Sektion umgesetzt (Sichtbarkeit nur im Execution-Log) — der bestehende Routing-Graph (globale DRY_RUN-Weiche, `_aktion`/`_require_confirmation`-basiertes IF-Routing) hätte für einen neuen Item-Typ Änderungen an mehreren nachgelagerten Nodes gebraucht, als Risiko fürs produktive Order-Schreiben eingeschätzt und mit dem Nutzer abgestimmt. Noch **nicht live gegen einen echten Trigger getestet** (nur statische JS-Syntaxprüfung) — `06` läuft nur über den `00`-Orchestrator oder einen UI-Trigger, der von hier aus nicht risikofrei auslösbar ist.
 
 ## Phase 9: Hebelproduktberechnung entschärfen
 
@@ -147,10 +149,10 @@ Live geprüft, keines existiert:
 | 5 | Fundamentaldaten numerisch/historisch | 🟢 erfüllt (Pakete 13+14, 07-31) |
 | 6 | Technische Strategien trennen | 🔴 nicht erfüllt |
 | 7 | ATR/Volatilität | 🔴 nicht erfüllt |
-| 8 | Empfehlungslogik/harte Vetos | 🔴 Schema teilweise, Vetos fehlen |
+| 8 | Empfehlungslogik/harte Vetos | 🟡 2/7 Vetos echt (07-31), Rest braucht Phase 7 |
 | 9 | Hebelprodukt entschärfen | 🟢 größtenteils erfüllt |
 | 10 | Orchestrator/Idempotenz | 🟡 größtenteils, bewusste Abweichung |
 | 11 | Cleanup → Archivierung | 🔴 nicht erfüllt |
 | 12 | Point-in-Time-Vorbereitung | 🟡 Felder teilweise, Dokument fehlt |
 
-**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag nachmittags**: Phase 5 (der größte Einzelbefund) über Pakete 13+14 vollständig nachgezogen — Stand jetzt 3 grün, 6 gelb, 4 rot. Nächster naheliegender Kandidat für denselben Rot→Grün-Umbau: Phase 8s harte Veto-Logik (Schema existiert bereits, siehe oben) oder Phase 11 (Archivierung, siehe [[finanz-paket12-phase11-cleanup-fk-bug-2026-07-31]] für den bisherigen Teil-Fix).
+**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag nachmittags**: Phase 5 (der größte Einzelbefund) über Pakete 13+14 vollständig nachgezogen, Phase 8 über Paket 15 teilweise (2/7 Vetos) — Stand jetzt 3 grün, 7 gelb, 3 rot. Verbleibende rote Phasen: 6, 7, 11. Phase 8 vollständig abzuschließen braucht zuerst Phase 7 (ATR/Stop/Ziel), da 3 der 5 restlichen Vetos darauf aufbauen.
