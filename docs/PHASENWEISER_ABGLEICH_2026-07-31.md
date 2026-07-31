@@ -61,11 +61,13 @@ Alle geforderten Felder vorhanden: `research_status`, `research_attempts`, `last
 
 ## Phase 5: Fundamentaldaten numerisch und historisch
 
-**Status: NICHT erfüllt — größter Einzelbefund dieses Abgleichs.**
+**Status: ERFÜLLT (2026-07-31, Pakete 13+14, zwei Schritte).**
 
-`fundamentals_history` (aus Paket 8) existiert, aber **alle** fachlichen Werte sind als `text` typisiert: `kgv:text, kgvForward:text, kbv:text, dividendeRendite:text, dividendeJe:text, ..., marktkapitalisierung:text, ...`. Keine `_numeric`-Spalten, keine getrennte `currency`-Spalte, kein `known_at`, kein `valid_from`/`valid_to`, kein `revision_number`, kein generisches `metric_name`/`metric_value_numeric`-Modell. Die Tabelle ist eine reine Spiegelung des alten Data-Table-Zeilenformats (inkl. deutscher String-Werte wie vermutlich `"16.3%"`) in eine historische Tabelle — genau das Anti-Pattern, das der Auftrag explizit ausschließt ("Speichere keine analyserelevanten Werte ausschließlich als Strings").
+Ursprünglicher Befund (bis 2026-07-31 vormittags): `fundamentals_history` (aus Paket 8) existierte, aber **alle** fachlichen Werte waren als `text` typisiert, kein `_numeric`, kein `known_at`/`valid_from`/`valid_to`/`revision_number` — reine Spiegelung des alten Data-Table-Formats, genau das vom Auftrag ausgeschlossene Anti-Pattern.
 
-Die Bestandsaufnahme selbst hatte das als "architektonischen Bruch, der explizit entschieden werden sollte" markiert — laut `OFFENE_AUFGABEN.md` wurde diese Entscheidung getroffen, aber das Ergebnis (Paket 8) setzt nur die Historisierung um, nicht die geforderte Numerik-/Point-in-Time-Struktur.
+**Schritt 1** (`sql/021`, Paket 13): additive `_numeric`-Spalten + `currency`, Rohwerte exakt wie von der lokalen FastAPI geliefert (kein Anzeige-Rundenformat). `01`s Aufbereitungs- und Historie-Nodes angepasst. Zwei Bugs live gefunden+gefixt (Data-Table-Roundtrip verlor die neuen Felder; `.item`-Fragilität lieferte anfangs für jeden Ticker denselben Wert).
+
+**Schritt 2** (`sql/022`, Paket 14): `known_at`/`valid_from`/`valid_to`/`revision_number` ergänzt, `UNIQUE(ticker, snapshot_date)` durch `UNIQUE(ticker, snapshot_date, revision_number)` + partiellen Unique-Index (genau eine aktuelle Revision je Tag) ersetzt. Das bisherige `ON CONFLICT DO UPDATE` (überschrieb frühere Werte am selben Tag ersatzlos, live bestätigt) durch Schließen+Neuanlegen ersetzt. Die beiden einzigen Konsumenten (`07`, `10`, per grep gefunden) auf `valid_to IS NULL` angepasst, damit sie weiterhin eine Zeile je Tag sehen. Alles live über mehrere Testläufe verifiziert.
 
 ## Phase 6: Technische Strategien trennen
 
@@ -142,7 +144,7 @@ Live geprüft, keines existiert:
 | 2 | Eine gültige Bewertung | 🟢 erfüllt, live verifiziert |
 | 3 | Recherche-Wiederholung verhindern | 🟡 Schema da, Logik nicht geprüft |
 | 4 | Konfidenzen/Prognosen trennen | 🟡 größtenteils da, Validierung ungeprüft |
-| 5 | Fundamentaldaten numerisch/historisch | 🔴 nicht erfüllt |
+| 5 | Fundamentaldaten numerisch/historisch | 🟢 erfüllt (Pakete 13+14, 07-31) |
 | 6 | Technische Strategien trennen | 🔴 nicht erfüllt |
 | 7 | ATR/Volatilität | 🔴 nicht erfüllt |
 | 8 | Empfehlungslogik/harte Vetos | 🔴 Schema teilweise, Vetos fehlen |
@@ -151,4 +153,4 @@ Live geprüft, keines existiert:
 | 11 | Cleanup → Archivierung | 🔴 nicht erfüllt |
 | 12 | Point-in-Time-Vorbereitung | 🟡 Felder teilweise, Dokument fehlt |
 
-**Fazit**: von 13 geprüften Punkten sind 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe.
+**Fazit (Stand ursprünglich 2026-07-31 vormittags)**: von 13 geprüften Punkten waren 2 grün, 6 gelb (teilweise/ungeprüfte Details), 5 rot (nicht umgesetzt). Der bisherige "Pakete 1-11 erledigt"-Stand war real, aber deutlich unterhalb der im Original-Auftrag geforderten Tiefe. **Update, selber Tag nachmittags**: Phase 5 (der größte Einzelbefund) über Pakete 13+14 vollständig nachgezogen — Stand jetzt 3 grün, 6 gelb, 4 rot. Nächster naheliegender Kandidat für denselben Rot→Grün-Umbau: Phase 8s harte Veto-Logik (Schema existiert bereits, siehe oben) oder Phase 11 (Archivierung, siehe [[finanz-paket12-phase11-cleanup-fk-bug-2026-07-31]] für den bisherigen Teil-Fix).
