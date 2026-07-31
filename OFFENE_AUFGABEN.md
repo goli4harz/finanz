@@ -1,6 +1,6 @@
 # Offene Aufgaben
 
-Stand: 2026-07-27
+Stand: 2026-07-31
 
 ## Fachliche Überarbeitung (Paket 1-8, erledigt 2026-07-26/27)
 
@@ -21,6 +21,7 @@ Umsetzung des 12-Phasen-Auftrags "Fachliche Überarbeitung der Aktienanalyse- un
 - ✅ **Paket 11** (Folge-Entscheidung zu Paket 10, `sql/020`, 2026-07-28): starker 5-Tage-RSI-Gegentrend (Schwelle konfigurierbar über `TREND_KONFLIKT_SCHWELLE`, Default 10) stuft eine sonst ausgelöste Kauf-/Verkauf-Entscheidung automatisch zum Vorschlag herab (kein sofortiger Write), über den bereits bestehenden `REQUIRE_CONFIRMATION`/"Als Vorschlag markieren"-Pfad. Schwacher Gegentrend bleibt weiterhin nur informativ (`decision_score`/`decision_blockers` unverändert). Positions-Schließungen werden bewusst nicht gegatet. Migration `sql/020` noch über `97` einzuspielen (Fallback-Default greift bis dahin identisch).
 - ✅ `recommendations.run_id` war bei jeder Zeile NULL (Node `Empfehlungen: Abgleich berechnen` reichte den Trigger-Kontext nie durch) — behoben, `sql`-unabhängig, reiner Code-Fix.
 - ✅ `trading.scoring_weights` wurde von der eigentlichen Gewichtungslogik (hartkodierte Formel in `09 - Lernagent Newswirkung`, 20 Stellen) nicht gelesen — jetzt per `CROSS JOIN` verdrahtet, `sql/019` seedet die bisherigen Werte als aktive Zeilen (verhaltensneutral bis zur ersten echten Aktivierung).
+- ✅ **Paket 12** (Phase 11, 2026-07-31): `04`s Cleanup-Regeln waren laut Bestandsaufnahme (Abschnitt 8/9) nie Zeile für Zeile geprüft. Live per `information_schema`-Abfrage gefunden: `news_assessments.news_id` ist ein `FOREIGN KEY (NO ACTION)` auf `news_items.id` — alle drei DELETE-Regeln (discarded/21d, failed/30d, evaluated/365d) hätten mit einem Fremdschlüssel-Fehler abgebrochen, sobald die erste betroffene Zeile ins jeweilige Zeitfenster fällt (bisher latent, da das System erst ~12 Tage alt ist, noch unter der kürzesten 21-Tage-Frist). Live bestätigt: 817/817 evaluated- und 452/452 discarded-Zeilen haben bereits eine Bewertung. Nutzerentscheidung: eine bewertete News wird nie gelöscht, unabhängig vom Alter — allen drei Regeln denselben `NOT EXISTS (news_assessments)`-Schutz hinzugefügt (analog zum bereits vorhandenen Schutz gegen `news_impact_tracking`). Praktische Folge: die 21- und 365-Tage-Regeln greifen dadurch faktisch fast nie mehr (Assessments sind nahezu universell), bleiben aber als Sicherheitsnetz für unbewertete Zeilen bestehen.
 
 ## Priorität 4 (erledigt, 2026-07-26)
 
