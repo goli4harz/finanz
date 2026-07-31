@@ -1,6 +1,22 @@
 # Offene Aufgaben
 
-Stand: 2026-07-31 (spät abends — zusätzlich zum Original-Auftrag jetzt "Welle 1" umgesetzt, siehe Abschnitt unten)
+Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1 UND Welle 2 umgesetzt, siehe Abschnitte unten)
+
+## Welle 2 – Strategiemotor, Marktregime und systematische Kandidatensuche (2026-08-01)
+
+Acht Arbeitspakete (AP1-AP8), vollständig implementiert und lokal getestet, **live-Push und Test gegen die echte n8n-Instanz noch ausstehend** (siehe unten).
+
+- ✅ **AP1** (normalisiertes Strategiesignal): neue Tabelle `trading.strategy_signals` (Point-in-Time revisioniert wie `fundamentals_history`, `sql/031`). `02` schreibt die drei bestehenden technischen Strategiesignale (mean_reversion/trend_following/breakout, seit Paket 18) jetzt zusätzlich normalisiert dorthin, inkl. neu ergänztem strategie-spezifischem Stop/Ziel/Entry-Zone/Zeitstop (statt nur einem einzigen ATR-Stop für alle drei).
+- ✅ **AP2** (4 Strategien getrennt): `news_event` als vierte Strategie neu in `06` berechnet (dort liegen News+technische Bestätigung erst gemeinsam vor), ebenfalls nach `strategy_signals` geschrieben. Bestehendes Gesamtpunktesystem unverändert erhalten (Rückwärtskompatibilität).
+- ✅ **AP3** (Marktregime): `02b` berechnet jetzt Trend-/Volatilitäts-/Stress-Regime je Region (Europa/USA) aus den 8 bereits vorhandenen Referenzsymbolen (`trading.market_regime`, `sql/032`), plus eine versionierte Strategie-Regime-Matrix (4 Strategien × 7 Regime-Zustände). Marktbreite/Liquiditätsregime bewusst NICHT erfunden (keine Datenquelle) — bleiben `not_available`. FastAPI-Periode in `02b` ebenfalls auf `1y` umgestellt (für EMA200).
+- ✅ **AP4** (Opportunity/Risk/Evidence): drei neue, fachlich getrennte Scores auf `recommendations` (`sql/033`) ersetzen die fachliche Bedeutung von `decision_score` (bleibt nur noch als abgeleiteter, klar veralteter Wert). Dokumentierte Evidenzgruppen-Logik verhindert Doppelzählung korrelierter Indikatoren (RSI+Bollinger, MACD-Varianten).
+- ✅ **AP5** (Fundamentaltrend): ROE-/Margen-/Verschuldungs-/Kurszieltrend real aus der Point-in-Time-Historie berechnet. Umsatz-/Gewinntrend (absolut) bleiben explizit `not_available` — die FastAPI-Quelle liefert keine absoluten Werte, nur Kennzahlen/Ratios.
+- ✅ **AP6** (Markt-Screener): neuer Workflow `13 – Markt-Screener täglich`, zweistufig (günstiges Screening → vertiefte Auswahl unter konfigurierbaren Obergrenzen), historisiert in `trading.scan_runs`/`trading.scan_candidates` (`sql/034`), jeder ausgeschlossene Kandidat mit Grund. Schreibt NICHT in `recommendations`, aktiviert/löscht keine Watchlist-Titel — rein beobachtend. Bekannte Einschränkung: Datenuniversum == Watchlist aktuell (siehe `docs/MARKTSCANNER.md`).
+- ✅ **AP7** (`06` umgestellt): komplette Ablösung der alten "News+Technik-Kombo" durch strategiesignal-getriebene Auswahl der dominanten, regime-bereinigten Strategie je Ticker, andere passende Strategien als Alternativszenarien gespeichert. Hebelprodukt-Logik bleibt schema-kompatibel, aber nicht mehr Teil der allgemeinen Entscheidung. Welle 1s 12 harte Vetos, Risikomodell, Schließungs-Fallback vollständig erhalten und angepasst.
+- ✅ **AP8**: Dashboard (`07`) und Report/Prüfagent (`10`) um Top-Strategiesignale, Marktregime je Region, Scanner-Ergebnisse (inkl. Ausschlussgründe), Opportunity/Risk/Evidence, Einstiegskorridor erweitert. Prüf-Agent bekommt zwei weitere Ablehnungsregeln (Opportunity fälschlich als Erfolgswahrscheinlichkeit dargestellt, regime-blockierte Strategie als aussichtsreich dargestellt).
+- ✅ 14 von 16 geforderten Testfällen lokal automatisiert getestet (`tests/test_welle2_reine_funktionen.js`, 14/14 Assertions bestanden), 2 (DRY_RUN/REQUIRE_CONFIRMATION) unverändert aus Welle 1 übernommen. Details: `docs/TESTPLAN_WELLE_2.md`.
+- ✅ Dokumentation: `docs/STRATEGIEMODELL.md`, `docs/MARKTREGIME.md`, `docs/OPPORTUNITY_RISK_EVIDENCE.md`, `docs/MARKTSCANNER.md`, `docs/TESTPLAN_WELLE_2.md`.
+- 🔴 **Noch nicht live gepusht/getestet**: Migrationen `sql/031-034` und die 6 geänderten/neuen Workflows (`02`, `02b`, `06`, `07`, `10`, neu `13`) sind lokal committet, Live-Push steht noch aus (siehe Abschlussbericht).
 
 ## Welle 1 – Verlässliche Datenbasis, harte Vetos, Einzeltrade-Risiko (2026-07-31)
 
