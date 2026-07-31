@@ -975,7 +975,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "f20095cf-1016-49b3-a258-6c5e6df2771d",
@@ -1075,5 +1075,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "7974a427-042f-4314-b20a-7315c856c0e9"
+  "versionId": "108a7c78-5874-4518-addb-0d5a0a4d870b"
 }
