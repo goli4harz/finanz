@@ -55,7 +55,7 @@
       "main": [
         [
           {
-            "node": "HTTP: RSS-Feed abrufen",
+            "node": "Pruefe URL-Sicherheit (SSRF)",
             "type": "main",
             "index": 0
           }
@@ -133,6 +133,46 @@
         [
           {
             "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe URL-Sicherheit (SSRF)": {
+      "main": [
+        [
+          {
+            "node": "IF: URL sicher?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: URL sicher?": {
+      "main": [
+        [
+          {
+            "node": "HTTP: RSS-Feed abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue SSRF-Blockiert Ergebnis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue SSRF-Blockiert Ergebnis": {
+      "main": [
+        [
+          {
+            "node": "Baue Test-Update SQL",
             "type": "main",
             "index": 0
           }
@@ -400,6 +440,67 @@
       "position": [
         1200,
         220
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// FIX 2026-08-01 (Fehleranalyse A11, SSRF-Schutz): serverseitige Pruefung der Feed-URL vor dem\n// eigentlichen Abruf. Nur http/https erlaubt, literale IP-Adressen in privaten/lokalen\n// Bereichen sowie bekannte Loopback-/Metadaten-Hostnamen werden blockiert. Kein DNS-Rebinding-\n// Schutz moeglich (n8n Code-Node hat ohne NODE_FUNCTION_ALLOW_BUILTIN keinen dns/net-Modul-\n// zugriff) - stattdessen werden Redirects am HTTP-Request-Node komplett deaktiviert (siehe\n// \"HTTP: RSS-Feed abrufen\"), damit ein zunaechst oeffentlich aufgeloester Host nicht per\n// Redirect auf ein internes Ziel umleiten kann.\n// FIX 2026-08-01 Teil 2 (live bestaetigt): der globale URL-Konstruktor ist im n8n-Code-Node-\n// Sandbox nicht verfuegbar (jeder Aufruf warf, jede URL - auch gueltige - wurde faelschlich\n// als 'Ungueltige URL' blockiert). Manuelles Parsing per Regex statt new URL().\nfunction parseUrlManually(raw) {\n  const s = String(raw || '').trim();\n  const m = s.match(/^([a-zA-Z][a-zA-Z0-9+.-]*):\\/\\/([^\\/?#]+)/);\n  if (!m) return null;\n  const protocol = m[1].toLowerCase() + ':';\n  let authority = m[2];\n  const atIdx = authority.lastIndexOf('@');\n  if (atIdx !== -1) authority = authority.slice(atIdx + 1);\n  let hostname;\n  if (authority.startsWith('[')) {\n    const end = authority.indexOf(']');\n    if (end === -1) return null;\n    hostname = authority.slice(1, end);\n  } else {\n    const colonIdx = authority.indexOf(':');\n    hostname = colonIdx !== -1 ? authority.slice(0, colonIdx) : authority;\n  }\n  if (!hostname) return null;\n  return { protocol, hostname: hostname.toLowerCase() };\n}\n\nfunction checkUrlSafety(rawUrl) {\n  const parsed = parseUrlManually(rawUrl);\n  if (!parsed) return { safe: false, reason: 'Ungueltige URL.' };\n\n  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {\n    return { safe: false, reason: 'Nur http/https erlaubt (gefunden: ' + parsed.protocol + ').' };\n  }\n\n  const host = parsed.hostname;\n\n  const BLOCKED_HOSTNAMES = new Set(['localhost', '0.0.0.0', 'metadata.google.internal']);\n  if (BLOCKED_HOSTNAMES.has(host) || host.endsWith('.localhost')) {\n    return { safe: false, reason: 'Interner/lokaler Hostname nicht erlaubt: ' + host };\n  }\n\n  const ipv4Match = host.match(/^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$/);\n  if (ipv4Match) {\n    const o = ipv4Match.slice(1, 5).map(Number);\n    if (o.some(n => n > 255)) return { safe: false, reason: 'Ungueltige IPv4-Adresse.' };\n    const isPrivate =\n      o[0] === 127 ||\n      o[0] === 10 ||\n      (o[0] === 172 && o[1] >= 16 && o[1] <= 31) ||\n      (o[0] === 192 && o[1] === 168) ||\n      (o[0] === 169 && o[1] === 254) ||\n      o[0] === 0 ||\n      o[0] >= 224;\n    if (isPrivate) return { safe: false, reason: 'Private/lokale IPv4-Adresse nicht erlaubt: ' + host };\n  }\n\n  if (host.includes(':')) {\n    const h = host.replace(/^\\[|\\]$/g, '');\n    if (h === '::1' || h === '::') {\n      return { safe: false, reason: 'Loopback-IPv6-Adresse nicht erlaubt.' };\n    }\n    if (/^fe80:/i.test(h) || /^fc00:/i.test(h) || /^fd[0-9a-f]{2}:/i.test(h)) {\n      return { safe: false, reason: 'Link-Local/ULA-IPv6-Adresse nicht erlaubt.' };\n    }\n  }\n\n  return { safe: true, reason: '' };\n}\n\nconst j = $json;\nconst check = checkUrlSafety(j.url);\n\nreturn {\n  json: {\n    ...j,\n    _urlSafe: check.safe,\n    _urlUnsafeReason: check.reason\n  }\n};"
+      },
+      "id": "rss-ssrf-check",
+      "name": "Pruefe URL-Sicherheit (SSRF)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ssrf-ok",
+              "leftValue": "={{ $json._urlSafe }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rss-ssrf-if",
+      "name": "IF: URL sicher?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// FIX 2026-08-01 (Fehleranalyse A11): Ergebnis fuer eine per SSRF-Pruefung blockierte URL -\n// gleiche Feldform wie \"Pruefe RSS-Antwort\", damit \"Baue Test-Update SQL\" beide Pfade\n// identisch behandelt.\nconst src = $json;\nreturn {\n  json: {\n    id: src.id,\n    name: src.name,\n    url: src.url,\n    testStatus: 'fehler',\n    testMessage: 'Sicherheitspruefung fehlgeschlagen: ' + (src._urlUnsafeReason || 'unbekannter Grund'),\n    testItemCount: null\n  }\n};"
+      },
+      "id": "rss-ssrf-blocked-result",
+      "name": "Baue SSRF-Blockiert Ergebnis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        20
       ]
     }
   ],

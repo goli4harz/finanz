@@ -39,7 +39,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst id = pgNum(j.id);\nconst reviewer = String(j.reviewer || '').trim() || 'unbekannt';\n\nlet sql;\n\nif (action === 'reject') {\n  sql = `UPDATE trading.learning_rule_proposals\n    SET status = 'rejected', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}\n    WHERE id = ${id} AND status = 'proposed';`;\n} else if (action === 'approve') {\n  const eligible = `EXISTS (SELECT 1 FROM trading.learning_rule_proposals WHERE id = ${id} AND status = 'proposed')`;\n  const proposalType = String(j.proposal_type || 'weight_adjustment').trim();\n  const targetType = String(j.target_type || '').trim();\n  const targetValue = String(j.target_value || '').trim();\n  const proposedValueRaw = j.proposed_value;\n\n  // Welle 3, AP9: der Handelslernagent (09b) erzeugt vier weitere Vorschlagstypen\n  // neben dem bestehenden weight_adjustment. Jeder Typ hat einen eigenen, echten\n  // Aktivierungspfad (kein reines Statusfeld ohne Wirkung) - siehe\n  // docs/LERNAGENT_HANDELSSTRATEGIEN.md fuer die vollstaendige Zuordnung.\n  if (proposalType === 'threshold_adjustment') {\n    // target_type = config_key aus trading.pipeline_config (z.B. MIN_REWARD_RISK_RATIO,\n    // MAX_RISK_PER_TRADE_PCT, MAX_POSITION_VALUE_PCT) - deckt AP9s \"Schwellenwertanpassung\",\n    // \"Verringerung der Positionsgroesse\" und \"Aenderung der CRV-Mindestanforderung\" ab.\n    const proposedValue = pgNum(proposedValueRaw);\n    sql = `BEGIN;\n      UPDATE trading.pipeline_config SET value_numeric = ${proposedValue}, updated_at = now()\n        WHERE config_key = ${pgStr(targetType)} AND ${eligible};\n      UPDATE trading.learning_rule_proposals\n        SET status = 'activated', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}, activated_at = now()\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'strategy_parameter_change') {\n    // target_type = Strategie (z.B. trend_following), target_value = parameter_key\n    // (z.B. horizon_days) - deckt AP9s \"Aenderung des Zeitstops\" ab. HINWEIS: die\n    // Aktivierung schreibt korrekt nach trading.strategy_parameters, \"02\" liest diese\n    // Tabelle aber noch nicht (siehe docs/LERNAGENT_HANDELSSTRATEGIEN.md, bewusste\n    // Einschraenkung) - der Vorschlag ist freigebbar, aber ohne Wirkung bis \"02\" folgt.\n    const proposedValue = pgNum(proposedValueRaw);\n    sql = `BEGIN;\n      UPDATE trading.strategy_parameters SET parameter_value = ${proposedValue}, version = version + 1, source_proposal_id = ${id}, updated_at = now()\n        WHERE strategy = ${pgStr(targetType)} AND parameter_key = ${pgStr(targetValue)} AND ${eligible};\n      UPDATE trading.learning_rule_proposals\n        SET status = 'activated', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}, activated_at = now()\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'regime_restriction') {\n    // target_type = Strategie, target_value = combined_regime, proposed_value = neuer\n    // fit_multiplier (0 = de facto blockiert). Deckt AP9s \"Regimebeschraenkung\" ab.\n    const proposedValue = pgNum(proposedValueRaw);\n    sql = `BEGIN;\n      UPDATE trading.strategy_regime_matrix\n        SET fit_multiplier = ${proposedValue}, blocked = (${proposedValue} <= 0), notes = COALESCE(notes, '') || ' [Welle 3 Lernvorschlag #${id} aktiviert]'\n        WHERE rule_version = 'regime-matrix-v1' AND strategy = ${pgStr(targetType)} AND combined_regime = ${pgStr(targetValue)} AND ${eligible};\n      UPDATE trading.learning_rule_proposals\n        SET status = 'activated', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}, activated_at = now()\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'strategy_deactivation') {\n    // target_type = Strategie. Deckt AP9s \"Deaktivierung einer Strategie\" ab -\n    // \"06\" prueft trading.strategy_status vor jeder Kandidatenauswahl (Welle 3).\n    sql = `BEGIN;\n      UPDATE trading.strategy_status\n        SET aktiv = FALSE, deactivated_at = now(), deactivated_reason = ${pgStr('Lernvorschlag #' + id)}, source_proposal_id = ${id}, updated_at = now()\n        WHERE strategy = ${pgStr(targetType)} AND ${eligible};\n      UPDATE trading.learning_rule_proposals\n        SET status = 'activated', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}, activated_at = now()\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else {\n    // weight_adjustment (Original-Verhalten, unveraendert) - Weight-Key deterministisch\n    // aus target_type+target_value(+time_horizon) gebaut, trading.scoring_weights hat\n    // nur ein einzelnes Textfeld als Schluessel, kein zusammengesetzter Fremdschluessel.\n    const timeHorizon = String(j.time_horizon || '').trim();\n    const weightKey = [targetType, targetValue, timeHorizon].filter(Boolean).join(':');\n    const proposedValue = pgNum(proposedValueRaw);\n    sql = `BEGIN;\n      UPDATE trading.scoring_weights SET active = FALSE\n        WHERE weight_key = ${pgStr(weightKey)} AND active = TRUE AND ${eligible};\n      INSERT INTO trading.scoring_weights\n        (weight_key, weight_value, version, active, source_proposal_id, activated_at, activated_by, metadata_json)\n      SELECT ${pgStr(weightKey)}, ${proposedValue}, COALESCE(MAX(version), 0) + 1, TRUE, ${id}, now(), ${pgStr(reviewer)}, '{}'::jsonb\n        FROM trading.scoring_weights\n        WHERE weight_key = ${pgStr(weightKey)} AND ${eligible};\n      UPDATE trading.learning_rule_proposals\n        SET status = 'activated', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}, activated_at = now()\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  }\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn [{ json: { sql } }];\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }\n\n// FIX 2026-08-01 (Fehleranalyse A5): proposal_type/target_type/target_value/proposed_value/\n// time_horizon kommen ab hier ausschliesslich aus der frisch geladenen DB-Zeile (voriger Node\n// \"DB: Proposal laden (fuer Freigabe)\"), nie aus dem POST-Body - siehe \"POST: Baue Load-Query\".\nconst loaded = $json;\nconst ctx = $('POST: Baue Load-Query').item.json;\nconst action = ctx.action;\nconst reviewer = ctx.reviewer;\nconst id = (loaded && loaded.id !== undefined && loaded.id !== null) ? Number(loaded.id) : null;\n\nlet sql;\n\nif (id === null || loaded.status !== 'proposed') {\n  // Kein passender, noch offener Vorschlag gefunden - egal was action/id im Body behaupten.\n  sql = 'SELECT 1;';\n} else if (action === 'reject') {\n  sql = `UPDATE trading.learning_rule_proposals\n    SET status = 'rejected', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}\n    WHERE id = ${id} AND status = 'proposed';`;\n} else if (action === 'approve') {\n  const proposalType = String(loaded.proposal_type || 'weight_adjustment').trim();\n  const targetType = String(loaded.target_type || '').trim();\n  const targetValue = String(loaded.target_value || '').trim();\n  const timeHorizon = String(loaded.time_horizon || '').trim();\n  // Live-Guard gegen konkurrierende Freigaben derselben id zwischen Laden und Schreiben\n  // (Fehleranalyse A10, teilweise): das Ziel-Update greift nur, wenn der Vorschlag zum\n  // tatsaechlichen Ausfuehrungszeitpunkt noch 'proposed' ist.\n  const eligible = `EXISTS (SELECT 1 FROM trading.learning_rule_proposals WHERE id = ${id} AND status = 'proposed')`;\n\n  // FIX 2026-08-01 (Fehleranalyse A9): ein nicht-numerischer/leerer proposed_value darf nie\n  // stillschweigend als NULL in eine produktive Config-/Parameter-/Gewichtsspalte geschrieben\n  // werden - vorher abfangen statt sich auf eine DB-Constraint zu verlassen (die bei\n  // pipeline_config bisher gar nicht existierte).\n  const numericTypes = new Set(['threshold_adjustment', 'strategy_parameter_change', 'regime_restriction', 'weight_adjustment']);\n  const proposedValue = pgNum(loaded.proposed_value);\n  const numericInvalid = numericTypes.has(proposalType) && proposedValue === null;\n\n  // FIX 2026-08-01 (Fehleranalyse A7, Teilabdeckung): Allowlist fuer Config-Schluessel bei\n  // threshold_adjustment - verhindert zumindest den Zugriff auf einen beliebigen Freitext-\n  // Schluessel. Eine vollstaendige Wertebereichs-/Schrittweiten-Regeltabelle je Schluessel\n  // (Fehleranalyse A8) ist ein separater, noch offener Punkt.\n  const ALLOWED_CONFIG_KEYS = new Set([\n    'MIN_REWARD_RISK_RATIO', 'MAX_RISK_PER_TRADE_PCT', 'MAX_POSITION_VALUE_PCT',\n    'MAX_OPEN_POSITIONS', 'MAX_SECTOR_EXPOSURE_PCT', 'MAX_DIRECTIONAL_EXPOSURE_PCT',\n    'MAX_PORTFOLIO_DRAWDOWN_PCT', 'DRY_RUN', 'REQUIRE_CONFIRMATION'\n  ]);\n  const configKeyInvalid = proposalType === 'threshold_adjustment' && !ALLOWED_CONFIG_KEYS.has(targetType);\n\n  // FIX 2026-08-01 (Fehleranalyse A6): Aktivierung markiert den Vorschlag nur noch dann als\n  // 'activated', wenn das Ziel-Update (per RETURNING/CTE geprueft) tatsaechlich mindestens eine\n  // Zeile getroffen hat - sonst 'activation_failed' (sql/038). Vorher lief die Status-Aenderung\n  // unbedingt, unabhaengig vom Ergebnis des eigentlichen Ziel-Updates.\n  if (numericInvalid || configKeyInvalid) {\n    sql = `UPDATE trading.learning_rule_proposals\n      SET status = 'activation_failed', reviewed_at = now(), reviewed_by = ${pgStr(reviewer)}\n      WHERE id = ${id} AND status = 'proposed';`;\n  } else if (proposalType === 'threshold_adjustment') {\n    sql = `BEGIN;\n      WITH upd AS (\n        UPDATE trading.pipeline_config SET value_numeric = ${proposedValue}, updated_at = now()\n          WHERE config_key = ${pgStr(targetType)} AND ${eligible}\n          RETURNING 1\n      )\n      UPDATE trading.learning_rule_proposals\n        SET status = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN 'activated' ELSE 'activation_failed' END,\n            reviewed_at = now(), reviewed_by = ${pgStr(reviewer)},\n            activated_at = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN now() ELSE NULL END\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'strategy_parameter_change') {\n    sql = `BEGIN;\n      WITH upd AS (\n        UPDATE trading.strategy_parameters SET parameter_value = ${proposedValue}, version = version + 1, source_proposal_id = ${id}, updated_at = now()\n          WHERE strategy = ${pgStr(targetType)} AND parameter_key = ${pgStr(targetValue)} AND ${eligible}\n          RETURNING 1\n      )\n      UPDATE trading.learning_rule_proposals\n        SET status = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN 'activated' ELSE 'activation_failed' END,\n            reviewed_at = now(), reviewed_by = ${pgStr(reviewer)},\n            activated_at = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN now() ELSE NULL END\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'regime_restriction') {\n    sql = `BEGIN;\n      WITH upd AS (\n        UPDATE trading.strategy_regime_matrix\n          SET fit_multiplier = ${proposedValue}, blocked = (${proposedValue} <= 0), notes = COALESCE(notes, '') || ' [Welle 3 Lernvorschlag #${id} aktiviert]'\n          WHERE rule_version = 'regime-matrix-v1' AND strategy = ${pgStr(targetType)} AND combined_regime = ${pgStr(targetValue)} AND ${eligible}\n          RETURNING 1\n      )\n      UPDATE trading.learning_rule_proposals\n        SET status = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN 'activated' ELSE 'activation_failed' END,\n            reviewed_at = now(), reviewed_by = ${pgStr(reviewer)},\n            activated_at = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN now() ELSE NULL END\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else if (proposalType === 'strategy_deactivation') {\n    sql = `BEGIN;\n      WITH upd AS (\n        UPDATE trading.strategy_status\n          SET aktiv = FALSE, deactivated_at = now(), deactivated_reason = ${pgStr('Lernvorschlag #' + id)}, source_proposal_id = ${id}, updated_at = now()\n          WHERE strategy = ${pgStr(targetType)} AND ${eligible}\n          RETURNING 1\n      )\n      UPDATE trading.learning_rule_proposals\n        SET status = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN 'activated' ELSE 'activation_failed' END,\n            reviewed_at = now(), reviewed_by = ${pgStr(reviewer)},\n            activated_at = CASE WHEN EXISTS(SELECT 1 FROM upd) THEN now() ELSE NULL END\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  } else {\n    const weightKey = [targetType, targetValue, timeHorizon].filter(Boolean).join(':');\n    sql = `BEGIN;\n      WITH deactivated AS (\n        UPDATE trading.scoring_weights SET active = FALSE\n          WHERE weight_key = ${pgStr(weightKey)} AND active = TRUE AND ${eligible}\n          RETURNING 1\n      ), inserted AS (\n        INSERT INTO trading.scoring_weights\n          (weight_key, weight_value, version, active, source_proposal_id, activated_at, activated_by, metadata_json)\n        SELECT ${pgStr(weightKey)}, ${proposedValue}, COALESCE(MAX(version), 0) + 1, TRUE, ${id}, now(), ${pgStr(reviewer)}, '{}'::jsonb\n          FROM trading.scoring_weights\n          WHERE weight_key = ${pgStr(weightKey)} AND ${eligible}\n        RETURNING 1\n      )\n      UPDATE trading.learning_rule_proposals\n        SET status = CASE WHEN EXISTS(SELECT 1 FROM inserted) THEN 'activated' ELSE 'activation_failed' END,\n            reviewed_at = now(), reviewed_by = ${pgStr(reviewer)},\n            activated_at = CASE WHEN EXISTS(SELECT 1 FROM inserted) THEN now() ELSE NULL END\n        WHERE id = ${id} AND status = 'proposed';\n      COMMIT;`;\n  }\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn [{ json: { sql } }];"
       },
       "id": "lv-post-normalize",
       "name": "POST: Formular normalisieren + SQL bauen",
@@ -131,6 +131,42 @@
         -128,
         0
       ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }\n\n// FIX 2026-08-01 (Fehleranalyse A5): ab hier vertraut der Workflow dem Browser nur noch fuer\n// id/action/reviewer/reason. Alle inhaltlichen Vorschlagsfelder (proposal_type/target_type/\n// target_value/proposed_value/time_horizon) werden im naechsten Schritt frisch aus der DB\n// geladen, nie aus dem POST-Body uebernommen - jedes versteckte Formularfeld mit einem\n// abweichenden Wert wird dadurch wirkungslos.\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst id = pgNum(j.id);\nconst reviewer = String(j.reviewer || '').trim() || 'unbekannt';\nconst reason = String(j.reason || '').trim();\n\nreturn {\n  json: {\n    action,\n    reviewer,\n    reason,\n    id,\n    load_sql: id !== null\n      ? `SELECT id, proposal_type, target_type, target_value, proposed_value, time_horizon, status\n         FROM trading.learning_rule_proposals WHERE id = ${id};`\n      : `SELECT NULL::bigint AS id WHERE FALSE;`\n  }\n};"
+      },
+      "id": "lv-post-buildload",
+      "name": "POST: Baue Load-Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -750,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.load_sql }}",
+        "options": {}
+      },
+      "id": "lv-post-loaddb",
+      "name": "DB: Proposal laden (fuer Freigabe)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -650,
+        100
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -149,7 +185,7 @@
       "main": [
         [
           {
-            "node": "POST: Formular normalisieren + SQL bauen",
+            "node": "POST: Baue Load-Query",
             "type": "main",
             "index": 0
           }
@@ -194,6 +230,28 @@
         [
           {
             "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Baue Load-Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Proposal laden (fuer Freigabe)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Proposal laden (fuer Freigabe)": {
+      "main": [
+        [
+          {
+            "node": "POST: Formular normalisieren + SQL bauen",
             "type": "main",
             "index": 0
           }

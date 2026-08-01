@@ -17,7 +17,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Ein `keywords`-Feld mit Apostroph bricht die SQL-Zeichenkette auf (`a'); DROP TABLE trading.watchlist;--`). Da der Postgres-Node Mehrfach-Statements als einen String ausführt, wird injizierter SQL-Text als eigenes Statement ausgeführt. Jeder LAN-Client (kein Auth) kann beliebiges SQL einschleusen.
 - **Korrektur:** `pgArr` durch korrektes Escaping ersetzen oder auf feste Stored Function `trading.watchlist_upsert(...)` mit typisierten Array-Parametern umstellen.
 - **Test:** Ticker/Keywords mit `'`, `\`, `--`, `;` in Add/Edit senden, erwartet: Fehler oder korrektes Escaping, keine zweite Anweisung ausgeführt.
-- **Status:** offen
+- **Status:** behoben, live verifiziert 2026-08-01 (Injection-Payload wird als Text gespeichert, kein SQL-Bruch; Testticker ZZTEST1 angelegt+geloescht)
 
 ### A2 — Kein echter Query-Parameter, ausschließlich String-Interpolation
 - **Schweregrad:** hoch
@@ -35,7 +35,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Leeres `name` überschreibt stillschweigend vorhandenen Namen; beliebige Zeichen in Ticker/Sektor möglich.
 - **Korrektur:** Server-seitige Regex-/Längenprüfung je Feld, `CHECK`-Constraints in der DB ergänzen.
 - **Test:** Leeres `name` bei `edit` senden → erwartet Fehlerstatus, kein stiller Overwrite.
-- **Status:** offen
+- **Status:** behoben, live verifiziert 2026-08-01 (Ticker-Regex, Name-Pflicht bei add+edit, Laengenlimits)
 
 ### A4 — Ungültige Eingaben erzeugen keinen Fehlerstatus (`SELECT 1`-Fallback)
 - **Schweregrad:** mittel
@@ -44,7 +44,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Nutzer bekommt keine Rückmeldung über fehlgeschlagene Aktionen, auch nicht über einen ausgenutzten Injection-Versuch.
 - **Korrektur:** Bei Validierungsfehlern eigenes Fehler-Item mit sichtbarer Meldung; Postgres-Fehler im HTML als Banner anzeigen.
 - **Test:** Ungültige Eingabe senden → erwartet sichtbare Fehlermeldung statt Erfolgsseite.
-- **Status:** offen
+- **Status:** behoben, live verifiziert 2026-08-01 (sichtbares Fehlerbanner statt stiller SELECT-1-Erfolgsseite)
 
 ### A5 — Lernvorschlag-Freigabe: Client-Felder statt Server-Neuladen
 - **Schweregrad:** kritisch
@@ -53,7 +53,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Eine beliebige `id` mit Status `proposed` kann als Autorisierungs-Token missbraucht werden, um einen völlig anderen `proposal_type`/`target_type`/`proposed_value` einzuschleusen als ursprünglich vorgeschlagen (z. B. `MAX_RISK_PER_TRADE_PCT` auf einen beliebigen Wert setzen).
 - **Korrektur:** Proposal-Zeile per `id` serverseitig neu laden (`SELECT ... WHERE id=$1 AND status='proposed' FOR UPDATE`), Browser-Felder komplett verwerfen.
 - **Test:** POST mit `id` eines echten `weight_adjustment`-Vorschlags, aber `proposal_type=strategy_deactivation` im Body → erwartet: Server ignoriert Body-Wert, verwendet nur den DB-Wert.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (neue Nodes "POST: Baue Load-Query" + "DB: Proposal laden (fuer Freigabe)" laden proposal_type/target_type/target_value/proposed_value/time_horizon frisch aus der DB; lokal per Simulation verifiziert, End-to-End-Wiring live bestaetigt (id=999999-Test, HTTP 200, kein Fehler); Test mit echter proposed-Zeile steht noch aus, da aktuell 0 Vorschlaege in der DB)
 
 ### A6 — Aktivierung ohne Zeilenzahl-Prüfung
 - **Schweregrad:** kritisch
@@ -62,7 +62,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Trifft das Ziel-Update keine Zeile (Tippfehler, veralteter Snapshot, A5 ausgenutzt), wird der Vorschlag trotzdem als `activated` markiert, obwohl inhaltlich nichts passiert ist.
 - **Korrektur:** Rowcount des Ziel-Updates prüfen (`WITH upd AS (UPDATE ... RETURNING 1) UPDATE proposals SET status='activated' WHERE EXISTS(SELECT 1 FROM upd)`), sonst expliziten Fehlerstatus setzen.
 - **Test:** Proposal mit nicht existierendem `target_value` freigeben → erwartet: Status bleibt nicht `activated`, sondern Fehler.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (RETURNING/CTE-Rowcount-Check je Zielupdate, neuer Status activation_failed via sql/038 - Migration erstellt+in Workflow 97 eingetragen+gepusht, **manuelle Ausfuehrung durch Nutzer noch ausstehend**)
 
 ### A7 — Keine Allowlist für Zielobjekte in der Freigabe
 - **Schweregrad:** hoch
@@ -70,7 +70,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `config_key`/`strategy`/`parameter_key`/`combined_regime` sind Freitext-Spalten ohne `CHECK`-Constraint und werden nicht gegen eine feste Liste erlaubter Schlüssel geprüft.
 - **Korrektur:** Feste Allowlist-Tabelle oder `CHECK`-Constraint je Zielobjekttyp.
 - **Test:** Freigabe mit unbekanntem `config_key` → erwartet Ablehnung.
-- **Status:** offen
+- **Status:** teilweise behoben 2026-08-01 (Allowlist fuer threshold_adjustment-Config-Schluessel ergaenzt und live verifiziert; strategy/parameter_key/combined_regime weiterhin ungeprueft - volle Regeltabelle ist A8)
 
 ### A8 — Keine Wertebereichs-/Schrittweiten-/NULL-Prüfung in der Freigabe
 - **Schweregrad:** hoch
@@ -88,7 +88,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Ein leerer/ungültiger `proposed_value` wird klaglos als NULL in einen produktiven Risikoparameter geschrieben.
 - **Korrektur:** Vor UPDATE `IF proposedValue IS NULL THEN ABORT`; zusätzlich `NOT NULL`/`CHECK` auf `value_numeric` je Config-Key.
 - **Test:** `threshold_adjustment` mit leerem `proposed_value` freigeben → erwartet Ablehnung, kein NULL-Write.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (JS-seitiger NULL/NaN-Guard vor jedem Ziel-Update, lokal verifiziert - fuehrt bei ungueltigem Wert zu activation_failed statt NULL-Write; DB-seitige CHECK/NOT-NULL-Absicherung auf pipeline_config.value_numeric selbst noch nicht ergaenzt, siehe A8)
 
 ### A10 — Kein Versionskonflikt-Schutz in der Freigabe
 - **Schweregrad:** mittel
@@ -104,7 +104,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Jeder LAN-Client kann eine RSS-Quelle auf eine interne Ziel-URL umbiegen und über „Testen" den n8n-Host als SSRF-Sonde gegen andere LAN-Hosts missbrauchen. „Alle Quellen testen" verstärkt das (ein manipulierter Eintrag läuft automatisch mit).
 - **Korrektur:** Prüf-Node vor dem HTTP-Request: nur `http`/`https`, IP-Auflösung + Blockliste (Loopback/Link-Local/RFC1918/ULA/`169.254.169.254`), Redirect-Re-Validierung pro Hop oder Redirects deaktivieren, Antwortgrößen-Limit, Content-Type-Prüfung.
 - **Test:** URL `http://127.0.0.1:5678/` bzw. `http://169.254.169.254/` als Quelle testen → erwartet Ablehnung vor dem eigentlichen Abruf.
-- **Status:** offen
+- **Status:** behoben, live verifiziert 2026-08-01 (Protokoll-/Hostname-/IP-Allowlist vor jedem Abruf; Testquelle mit http://127.0.0.1:5678 angelegt+blockiert+geloescht, echter Feed tagesschau.de weiterhin funktionsfaehig verifiziert. WICHTIGER HINWEIS: der globale URL-Konstruktor ist im n8n-Code-Node-Sandbox nicht verfuegbar - musste durch manuelles Regex-Parsing ersetzt werden, sonst wurde jede URL faelschlich blockiert. Redirects bleiben aktiv (Deaktivierung brach echte Feeds mit legitimem 301, z.B. tagesschau.de) - kein Re-Check der Zieladresse nach Redirect, dokumentierte Restluecke gegen redirect-basiertes SSRF.)
 
 ---
 
