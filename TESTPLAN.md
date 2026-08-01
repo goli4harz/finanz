@@ -26,6 +26,10 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | ORCH-2 | B1-Fix (lokal) | `status='partial_failure'` | Gate lässt durch | Bestätigt | bestanden |
 | ORCH-3 | B4-Fix (lokal) | Config-Query liefert 0 Zeilen | `DRY_RUN=true` | Bestätigt (beide Stellen, 00 und 06) | bestanden |
 | ORCH-4 | — | Echter Orchestrator-Lauf (00) end-to-end | — | **nicht ausgeführt** - würde reale Sub-Workflows anstoßen, außerhalb des Rahmens dieser Session | nicht ausgeführt |
+| ORCH-5 | B2-Fix (lokal) | Alle 4 Stufen `success` | `hat_teilausfall=false`, `final_status='success'`, keine `partial_failure_details` in der generierten SQL | Bestätigt | bestanden |
+| ORCH-6 | B2-Fix (lokal) | Eine Stufe `partial_failure` | Teilausfall erkannt, Matrix-Text enthält die Stufe, `final_status='warning'` (CHECK-konform), Details überleben simulierten Matrix-HTTP-Datenverlust und landen in `metadata_json` | Bestätigt | bestanden |
+| ORCH-7 | B2-Fix (lokal) | Regulärer Abbruchpfad (alter „Baue technische Warnung"-Zweig, kein Teilausfall-Node gelaufen) | Unverändertes bisheriges Verhalten (`final_status='warning'`, leere `partial_failure_details`) | Bestätigt | bestanden |
+| ORCH-8 | B2-Fix (lokal) | Zwei Stufen betroffen (`skipped` + `partial_failure`) | Beide Stufen in `partial_failure_details` | Bestätigt | bestanden |
 
 ## Candles/Datenqualität
 
