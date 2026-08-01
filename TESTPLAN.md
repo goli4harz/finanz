@@ -96,6 +96,10 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | NEWS-25 | D8-Fix (lokal) | Erster Fehlversuch (`research_attempts` fehlt) | `research_attempts=1`, `research_status='failed'`, Backoff 4h | Bestätigt | bestanden |
 | NEWS-26 | D8-Fix (lokal) | Fünfter Fehlversuch (`research_attempts=4`) | `research_attempts=5`, `research_status='max_attempts_reached'`, kein weiterer Backoff | Bestätigt | bestanden |
 | NEWS-27 | D8-Fix (lokal) | Dritter Fehlversuch (`research_attempts=2`) | `research_attempts=3`, Backoff 12h | Bestätigt | bestanden |
+| NEWS-28 | D10-Fix (lokal) | Exakter Key-Match | Als Duplikat markiert, `match_news_key` gesetzt, SQL enthält `UPDATE ... last_seen_at` | Bestätigt | bestanden |
+| NEWS-29 | D10-Fix (lokal) | content_hash-Match | `match_content_hash` gesetzt, SQL enthält passendes `UPDATE` | Bestätigt | bestanden |
+| NEWS-30 | D10-Fix (lokal) | Nur Jaccard-Titel-Match (kein eindeutiger Schlüssel) | Als Duplikat markiert, aber SQL ist No-Op (`SELECT 1;`) | Bestätigt | bestanden |
+| NEWS-31 | D10-Fix (lokal) | Apostroph im `news_key` | Korrekt escaped in der generierten UPDATE-SQL | Bestätigt | bestanden |
 
 ## Lernagenten
 

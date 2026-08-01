@@ -325,7 +325,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** mittel
 - **Datei/Node:** `03`
 - **Korrektur:** `content_hash`-Vergleich als dritte Dedup-Stufe, `last_seen_at` bei erkanntem Duplikat aktualisieren.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. "News: Duplikat-Check" verwirft Duplikate nicht mehr per `continue`, sondern gibt sie mit `_isDuplicate:true` und (soweit vorhanden) einem eindeutigen DB-Schluessel aus (`dedup_reason: exact_key_or_link|content_hash|jaccard_title`). Der bisher tote false-Zweig von "IF: News neu?" (`_isDuplicate===false`) ist jetzt live verdrahtet: neue Nodes "Baue Update last_seen_at (SQL)" -> "Update last_seen_at (ausfuehren)" -> "last_seen_at pruefen (sonst werfen)" (identisches Fehlerbehandlungsmuster wie beim Haupt-INSERT). Aktualisiert `last_seen_at` NUR bei exaktem Key/Link- oder content_hash-Match (eindeutiger Schluessel) - ein reiner Jaccard-Titel-Treffer erzeugt bewusst ein No-Op (`SELECT 1;`), da Titel in der DB nicht unique sind und ein Update darueber falsch zugeordnet werden koennte. Lokal mit 8 Testfaellen verifiziert: alle drei Dedup-Gruende korrekt markiert/durchgereicht, echte neue News weiterhin unveraendert, SQL-Generierung fuer alle drei Faelle (inkl. No-Op fuer Jaccard), Escaping bei Sonderzeichen im Schluessel.
 
 ### D11 — Aktie/Benchmark werden über Array-Position statt echtes Datum verglichen
 - **Schweregrad:** hoch

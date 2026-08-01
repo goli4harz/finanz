@@ -240,7 +240,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// NEWS-DUPLIKAT-CHECK – Run Once for All Items\n// Prüft: 1) Exakter Key/Link-Match (auf kanonisierten URLs, siehe D9)\n//         2) content_hash-Match (D9) - exakter Titel+Beschreibung-Fingerprint\n//         3) Titel-Ähnlichkeit (Jaccard) gegen bekannte + aktuelle Titel\n//\n// FIX 2026-08-02 (Fehleranalyse D10, mittel): Duplikate wurden bisher per\n// \"continue\" komplett verworfen - eine Agenturmeldung/aktualisierte Fassung\n// desselben Artikels aktualisierte last_seen_at der Original-Zeile nie,\n// obwohl die Spalte genau dafuer angelegt ist (sql/009). Duplikate werden\n// jetzt NICHT mehr verworfen, sondern mit _isDuplicate:true + einem\n// verlaesslichen Match-Schluessel (news_key/link/content_hash) ausgegeben -\n// \"IF: News neu?\" (bestehende Bedingung _isDuplicate===false) leitet sie in\n// einen neuen Zweig, der NUR bei einem eindeutigen Schluessel (exakter Key/\n// Link/content_hash) last_seen_at aktualisiert. Ein reiner Jaccard-Titel-\n// Treffer hat keinen eindeutigen DB-Schluessel (Titel sind nicht unique) und\n// wird bewusst NICHT geschrieben - lieber kein Update als ein falsch\n// zugeordnetes.\n\nconst items = $input.all();\n\nlet knownKeysArray = [];\nlet knownTitlesArray = [];\nlet knownContentHashesArray = [];\nconst newsItems = [];\n\nfor (const item of items) {\n  const j = item.json || {};\n  if (Array.isArray(j.known_keys)) {\n    knownKeysArray = j.known_keys;\n    if (Array.isArray(j.known_titles)) {\n      knownTitlesArray = j.known_titles;\n    }\n    if (Array.isArray(j.known_content_hashes)) {\n      knownContentHashesArray = j.known_content_hashes;\n    }\n  } else if (j.news_key || j.titel || j.link) {\n    newsItems.push(j);\n  }\n}\n\nconst knownKeys = new Set(\n  knownKeysArray.filter(Boolean).map(k => String(k).trim())\n);\nconst knownContentHashes = new Set(\n  knownContentHashesArray.filter(Boolean).map(h => String(h).trim())\n);\n\n// Bekannte Titel direkt aus der DB (titel-Spalte) statt aus dem Key-Format geraten –\n// vorher wurden Titel nur aus dem \"kein Link\"-Key-Format (3 Teile) extrahiert, das\n// bei Artikeln mit Link (fast immer) nie zutraf → History-Vergleich lief faktisch leer.\nconst knownTitles = knownTitlesArray.filter(Boolean).map(t => String(t).trim());\n\n// ── Hilfsfunktionen Ähnlichkeit ────────────────────────────────────────────────\nfunction normalizeForSim(text) {\n  return String(text || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9äöüß\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tokenize(text) {\n  return new Set(normalizeForSim(text).split(' ').filter(w => w.length > 2));\n}\n\nfunction jaccardSimilarity(titleA, titleB) {\n  const setA = tokenize(titleA);\n  const setB = tokenize(titleB);\n  if (setA.size === 0 && setB.size === 0) return 1;\n  if (setA.size === 0 || setB.size === 0) return 0;\n\n  let intersection = 0;\n  for (const word of setA) {\n    if (setB.has(word)) intersection++;\n  }\n  const union = setA.size + setB.size - intersection;\n  return intersection / union;\n}\n\n// Schwellenwert: 0.6 = 60% Wort-Überlappung → als Duplikat werten\n// (Tagesschau + Tagesschau Wirtschaft haben oft identische Titel → ~1.0)\n// Kannst du auf 0.5 senken für aggressivere Deduplizierung\nconst SIMILARITY_THRESHOLD = 0.6;\n\n// ── Duplikat-Check ─────────────────────────────────────────────────────────────\nconst seenThisRun = new Set();\nconst seenContentHashesThisRun = new Set();\nconst seenTitlesThisRun = [];  // Array für Ähnlichkeitsvergleich innerhalb des Runs\nconst output = [];\n\nfor (const j of newsItems) {\n  const key  = String(j.news_key || '').trim();\n  const link = String(j.link     || '').trim();\n  const titel = String(j.titel   || '').trim();\n  const contentHash = String(j.content_hash || '').trim();\n\n  // 1) Exakter Key/Link-Check (Link seit D9 bereits kanonisiert in \"News: news_key erzeugen\")\n  const matchedKey = (key && (knownKeys.has(key) || seenThisRun.has(key))) ? key : null;\n  const matchedLink = (!matchedKey && link && (knownKeys.has(link) || seenThisRun.has(link))) ? link : null;\n\n  if (matchedKey || matchedLink) {\n    output.push({ json: { ...j, _isDuplicate: true, dedup_status: 'duplicate', dedup_reason: 'exact_key_or_link', match_news_key: matchedKey, match_link: matchedLink } });\n    continue;\n  }\n\n  // 2) content_hash-Check - derselbe Titel+Beschreibung-Inhalt unter\n  // einem voellig anderen Link (z.B. Kurz-URL vs. Volltext-URL derselben Meldung).\n  const isContentHashDuplicate =\n    contentHash && (knownContentHashes.has(contentHash) || seenContentHashesThisRun.has(contentHash));\n\n  if (isContentHashDuplicate) {\n    output.push({ json: { ...j, _isDuplicate: true, dedup_status: 'duplicate', dedup_reason: 'content_hash', match_content_hash: contentHash } });\n    continue;\n  }\n\n  // 3) Titel-Ähnlichkeits-Check\n  let isSimilarDuplicate = false;\n\n  // Gegen bekannte Titel aus DB\n  for (const knownTitle of knownTitles) {\n    if (jaccardSimilarity(titel, knownTitle) >= SIMILARITY_THRESHOLD) { isSimilarDuplicate = true; break; }\n  }\n\n  // Gegen bereits akzeptierte Artikel in diesem Run\n  if (!isSimilarDuplicate) {\n    for (const seenTitle of seenTitlesThisRun) {\n      if (jaccardSimilarity(titel, seenTitle) >= SIMILARITY_THRESHOLD) { isSimilarDuplicate = true; break; }\n    }\n  }\n\n  if (isSimilarDuplicate) {\n    // Kein eindeutiger DB-Schluessel fuer einen reinen Titel-Treffer (Titel\n    // sind nicht unique) - last_seen_at wird hier bewusst NICHT aktualisiert,\n    // nur als Duplikat markiert/verworfen (unveraendertes bisheriges Verhalten\n    // fuer diesen speziellen Fall).\n    output.push({ json: { ...j, _isDuplicate: true, dedup_status: 'duplicate', dedup_reason: 'jaccard_title' } });\n    continue;\n  }\n\n  // Neu und einzigartig → durchlassen\n  if (key)  seenThisRun.add(key);\n  if (link) seenThisRun.add(link);\n  if (contentHash) seenContentHashesThisRun.add(contentHash);\n  seenTitlesThisRun.push(normalizeForSim(titel));\n\n  output.push({\n    json: {\n      ...j,\n      _isDuplicate: false,\n      dedup_status: 'new'\n    }\n  });\n}\n\nreturn output;\n"
+        "jsCode": "// NEWS-DUPLIKAT-CHECK – Run Once for All Items\n// Prüft: 1) Exakter Key/Link-Match (wie bisher, jetzt auf kanonisierten URLs, siehe D9)\n//         2) content_hash-Match (NEU, D9) - exakter Titel+Beschreibung-Fingerprint,\n//            faengt Faelle ab, die trotz kanonisierter URL noch unter zwei\n//            verschiedenen Links laufen (z.B. eine Kurz- und eine Volltext-URL)\n//         3) Titel-Ähnlichkeit (Jaccard) gegen bekannte + aktuelle Titel\n\nconst items = $input.all();\n\nlet knownKeysArray = [];\nlet knownTitlesArray = [];\nlet knownContentHashesArray = [];\nconst newsItems = [];\n\nfor (const item of items) {\n  const j = item.json || {};\n  if (Array.isArray(j.known_keys)) {\n    knownKeysArray = j.known_keys;\n    if (Array.isArray(j.known_titles)) {\n      knownTitlesArray = j.known_titles;\n    }\n    if (Array.isArray(j.known_content_hashes)) {\n      knownContentHashesArray = j.known_content_hashes;\n    }\n  } else if (j.news_key || j.titel || j.link) {\n    newsItems.push(j);\n  }\n}\n\nconst knownKeys = new Set(\n  knownKeysArray.filter(Boolean).map(k => String(k).trim())\n);\nconst knownContentHashes = new Set(\n  knownContentHashesArray.filter(Boolean).map(h => String(h).trim())\n);\n\n// Bekannte Titel direkt aus der DB (titel-Spalte) statt aus dem Key-Format geraten –\n// vorher wurden Titel nur aus dem \"kein Link\"-Key-Format (3 Teile) extrahiert, das\n// bei Artikeln mit Link (fast immer) nie zutraf → History-Vergleich lief faktisch leer.\nconst knownTitles = knownTitlesArray.filter(Boolean).map(t => String(t).trim());\n\n// ── Hilfsfunktionen Ähnlichkeit ────────────────────────────────────────────────\nfunction normalizeForSim(text) {\n  return String(text || '')\n    .toLowerCase()\n    .replace(/[^a-z0-9äöüß\\s]/g, ' ')\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\nfunction tokenize(text) {\n  return new Set(normalizeForSim(text).split(' ').filter(w => w.length > 2));\n}\n\nfunction jaccardSimilarity(titleA, titleB) {\n  const setA = tokenize(titleA);\n  const setB = tokenize(titleB);\n  if (setA.size === 0 && setB.size === 0) return 1;\n  if (setA.size === 0 || setB.size === 0) return 0;\n\n  let intersection = 0;\n  for (const word of setA) {\n    if (setB.has(word)) intersection++;\n  }\n  const union = setA.size + setB.size - intersection;\n  return intersection / union;\n}\n\n// Schwellenwert: 0.6 = 60% Wort-Überlappung → als Duplikat werten\n// (Tagesschau + Tagesschau Wirtschaft haben oft identische Titel → ~1.0)\n// Kannst du auf 0.5 senken für aggressivere Deduplizierung\nconst SIMILARITY_THRESHOLD = 0.6;\n\n// ── Duplikat-Check ─────────────────────────────────────────────────────────────\nconst seenThisRun = new Set();\nconst seenContentHashesThisRun = new Set();\nconst seenTitlesThisRun = [];  // Array für Ähnlichkeitsvergleich innerhalb des Runs\nconst output = [];\n\nfor (const j of newsItems) {\n  const key  = String(j.news_key || '').trim();\n  const link = String(j.link     || '').trim();\n  const titel = String(j.titel   || '').trim();\n  const contentHash = String(j.content_hash || '').trim();\n\n  // 1) Exakter Key/Link-Check (Link seit D9 bereits kanonisiert in \"News: news_key erzeugen\")\n  const isExactDuplicate =\n    (key  && (knownKeys.has(key)  || seenThisRun.has(key)))  ||\n    (link && (knownKeys.has(link) || seenThisRun.has(link)));\n\n  if (isExactDuplicate) continue;\n\n  // 2) NEU (D9): content_hash-Check - derselbe Titel+Beschreibung-Inhalt unter\n  // einem voellig anderen Link (z.B. Kurz-URL vs. Volltext-URL derselben Meldung).\n  const isContentHashDuplicate =\n    contentHash && (knownContentHashes.has(contentHash) || seenContentHashesThisRun.has(contentHash));\n\n  if (isContentHashDuplicate) continue;\n\n  // 3) Titel-Ähnlichkeits-Check\n  let isSimilarDuplicate = false;\n  let similarScore = 0;\n\n  // Gegen bekannte Titel aus DB\n  for (const knownTitle of knownTitles) {\n    const sim = jaccardSimilarity(titel, knownTitle);\n    if (sim >= SIMILARITY_THRESHOLD) {\n      isSimilarDuplicate = true;\n      similarScore = sim;\n      break;\n    }\n  }\n\n  // Gegen bereits akzeptierte Artikel in diesem Run\n  if (!isSimilarDuplicate) {\n    for (const seenTitle of seenTitlesThisRun) {\n      const sim = jaccardSimilarity(titel, seenTitle);\n      if (sim >= SIMILARITY_THRESHOLD) {\n        isSimilarDuplicate = true;\n        similarScore = sim;\n        break;\n      }\n    }\n  }\n\n  if (isSimilarDuplicate) continue;\n\n  // Neu und einzigartig → durchlassen\n  if (key)  seenThisRun.add(key);\n  if (link) seenThisRun.add(link);\n  if (contentHash) seenContentHashesThisRun.add(contentHash);\n  seenTitlesThisRun.push(normalizeForSim(titel));\n\n  output.push({\n    json: {\n      ...j,\n      _isDuplicate: false,\n      dedup_status: 'new'\n    }\n  });\n}\n\nreturn output;\n"
       },
       "id": "b3d547ef-ded0-4820-87cb-b00a9684ce9f",
       "name": "News: Duplikat-Check",
@@ -681,53 +681,6 @@
           "name": "Postgres account"
         }
       }
-    },
-    {
-      "parameters": {
-        "jsCode": "// FIX 2026-08-02 (Fehleranalyse D10, mittel): baut die last_seen_at-\n// Aktualisierung fuer erkannte Duplikate mit eindeutigem DB-Schluessel.\n// Ein reiner Jaccard-Titel-Treffer (kein eindeutiger Schluessel, Titel sind\n// nicht unique) erzeugt bewusst ein No-Op statt eines mehrdeutigen UPDATEs.\nfunction pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nconst j = $json;\nlet sql;\n\nif (j.dedup_reason === 'exact_key_or_link') {\n  const conds = [];\n  if (j.match_news_key) conds.push(`news_key = ${pgStr(j.match_news_key)}`);\n  if (j.match_link) conds.push(`url = ${pgStr(j.match_link)}`);\n  sql = conds.length ? `UPDATE trading.news_items SET last_seen_at = now() WHERE ${conds.join(' OR ')};` : 'SELECT 1;';\n} else if (j.dedup_reason === 'content_hash' && j.match_content_hash) {\n  sql = `UPDATE trading.news_items SET last_seen_at = now() WHERE content_hash = ${pgStr(j.match_content_hash)};`;\n} else {\n  sql = 'SELECT 1;';\n}\n\nreturn { json: { ...j, sql } };\n"
-      },
-      "id": "d10fix-baue-update-lastseen-0001",
-      "name": "Baue Update last_seen_at (SQL)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2808,
-        1706
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "{{ $json.sql }}",
-        "options": {}
-      },
-      "id": "d10fix-update-lastseen-ausf-0002",
-      "name": "Update last_seen_at (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2608,
-        1706
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  const msg = j.message || (j.error && j.error.message) || (j.error && j.error.description) || j.error;\n  throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));\n}\nreturn $input.item;"
-      },
-      "id": "d10fix-lastseen-pruefen-0003",
-      "name": "last_seen_at pruefen (sonst werfen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2408,
-        1706
-      ]
     }
   ],
   "connections": {
@@ -885,13 +838,6 @@
         [
           {
             "node": "Neue News speichern (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue Update last_seen_at (SQL)",
             "type": "main",
             "index": 0
           }
@@ -1075,28 +1021,6 @@
         [
           {
             "node": "RSS-Feeds laden & filtern",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Update last_seen_at (SQL)": {
-      "main": [
-        [
-          {
-            "node": "Update last_seen_at (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Update last_seen_at (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "last_seen_at pruefen (sonst werfen)",
             "type": "main",
             "index": 0
           }
