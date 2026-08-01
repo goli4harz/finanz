@@ -261,13 +261,13 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Statischer Prompt-Text mit 15 Tickern statt Laufzeit-Aufbau aus DB (wie in `03a` bereits korrekt gemacht).
 - **Auswirkung:** Ein neu angelegter/deaktivierter Ticker wird von der KI-Zuordnung erst nach manuellem Workflow-Edit erkannt.
 - **Korrektur:** String analog zu `03a` per Code-Node aus der Watchlist-DB-Abfrage zur Laufzeit aufbauen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (neuer Node "DB: Watchlist fuer KI-Prompt laden" laedt aktive Ticker zur Laufzeit, System-Prompt von "KI: Nachricht bewerten" auf Expression umgestellt: "Watchlist fuer Ticker-Zuordnung: {{ $('DB: Watchlist fuer KI-Prompt laden').all().map(i => i.json.ticker).join(', ') }}" statt hartkodierter 15-Ticker-Liste, analog zu 03a).
 
 ### D2 — Von der KI zurückgegebene Ticker werden nicht gegen die Watchlist validiert
 - **Schweregrad:** hoch
 - **Datei/Node:** `03`, `03a`
 - **Korrektur:** Nach Parsing gegen geladene Ticker-Menge filtern, verworfene Ticker loggen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (Node "KI-Bewertung aufbereiten": von der KI gemeldete betroffene_ticker werden gegen die geladene Watchlist gefiltert; nicht in der Watchlist enthaltene Ticker landen in neuem Feld betroffene_ticker_verworfen statt unbemerkt durchzureichen - sichtbar in der Execution, kein zusaetzlicher DB-Alarmkanal fuer diesen internen Diagnosefall angelegt. Sicherer Default bei fehlendem Watchlist-Node: alle Ticker gelten als nicht bestaetigt statt ungeprueft durchgereicht zu werden. Lokal mit echtem+erfundenem Ticker getestet.
 
 ### D3 — Beschreibung wird vor dem KI-Aufruf hart auf leer gesetzt
 - **Schweregrad:** kritisch
@@ -297,7 +297,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Weder `score` noch `konfidenz` in der INSERT-Spaltenliste. Das komplette Konfidenz-Trennungs-Schema aus `sql/011` bleibt für Erstbewertungen ungenutzt.
 - **Auswirkung:** `konfidenz` bleibt für praktisch alle Erstbewertungen dauerhaft NULL.
 - **Korrektur:** Felder in INSERT-Spaltenliste aufnehmen, KI-Prompt um separierte Konfidenzfelder erweitern.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (KI-Prompt um relevanz_konfidenz, wahrscheinlichkeit_positiv/negativ/neutral, staerke_konfidenz, datenqualitaet_score erweitert - mappen auf die bereits seit sql/011 bestehenden, bis dahin ungenutzten Spalten relevance_confidence/probability_.../strength_confidence/data_quality_score. "KI-Bewertung aufbereiten": Konfidenzwerte per Number.isFinite validiert und geclampt (fehlend -> NULL statt 0, D7-Muster uebernommen), Wahrscheinlichkeitsverteilung nur uebernommen wenn alle drei Werte numerisch sind UND in Summe 0.99-1.01 ergeben (sonst NULL statt einer erfundenen/inkonsistenten Verteilung - deckungsgleich mit dem CHECK-Constraint aus sql/011, aber schon vor dem INSERT erkannt). "Ergebnis persistieren (SQL bauen)": sechs neue Spalten in der INSERT-Liste. Lokal mit gueltiger Verteilung, ungueltiger Verteilung (Summe 2.7) und fehlenden Feldern getestet (8 Testfaelle, alle bestanden).
 
 ### D7 — Fallback verschluckt Unterschied zwischen „fehlend" und „echt 0"
 - **Schweregrad:** mittel

@@ -55,6 +55,11 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | NEWS-1 | D3/D4-Fix (lokal) | DB-Zeile mit echter `beschreibung`/`type` | Batch-Payload nutzt echte Werte statt Hardcoding | Bestätigt | bestanden |
 | NEWS-2 | D5-Fix (lokal) | Artikel mit Apostroph im Titel/Beschreibung, Ticker-Match | Korrekt escapte INSERT-SQL mit allen Spalten | Bestätigt | bestanden |
 | NEWS-3 | D13-Fix | SQL-Syntax der geänderten Query | Gültige PostgreSQL-Syntax (korrelierte EXISTS/NOT EXISTS mit `jsonb_array_elements_text`) | Manuell verifiziert, kein Postgres-Zugriff für EXPLAIN in dieser Session verfügbar | bestanden (Syntax), nicht ausgeführt (Laufzeit) |
+| NEWS-4 | D2-Fix (lokal) | KI meldet `betroffene_ticker: ['BMW.DE','FAKE.XX']`, Watchlist enthält nur `BMW.DE`/`SAP.DE`/`MBG.DE` | `betroffene_ticker=['BMW.DE']`, `betroffene_ticker_verworfen=['FAKE.XX']` | Bestätigt | bestanden |
+| NEWS-5 | D2-Fix (lokal) | Watchlist-Node in `$(...)` nicht auffindbar (simuliert) | Alle gemeldeten Ticker gelten als nicht bestätigt, kein Crash | Bestätigt: `betroffene_ticker=[]` | bestanden |
+| NEWS-6 | D6-Fix (lokal) | KI meldet `wahrscheinlichkeit_positiv/negativ/neutral = 0.6/0.2/0.2` | Werte unverändert in `probability_positive/negative/neutral` und in der generierten SQL | Bestätigt | bestanden |
+| NEWS-7 | D6-Fix (lokal) | KI meldet `wahrscheinlichkeit_positiv/negativ/neutral = 0.9/0.9/0.9` (Summe 2.7) | Alle drei Wahrscheinlichkeitsfelder `NULL` statt einer inkonsistenten Verteilung | Bestätigt | bestanden |
+| NEWS-8 | D6-Fix (lokal) | KI liefert kein `relevanz_konfidenz`-Feld | `relevance_confidence=NULL` (nicht `0`, D7-Muster) | Bestätigt | bestanden |
 
 ## Lernagenten
 
