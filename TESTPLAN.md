@@ -35,6 +35,7 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | CANDLE-2 | C4-Fix (lokal) | Sauberer 260-Tage-Datensatz | `data_quality_status='valid'`, plausible EMA200/Regime | Bestätigt | bestanden |
 | CANDLE-3 | C1-Fix live | Echter Abruf `GET /chart/AAPL?period=1y&interval=1d` und `GET /chart/SAP.DE?period=1y&interval=1d` gegen die reale lokale FastAPI | ≥251 Handelstage statt ~63, `breakoutHistoryAusreichend` erreichbar (direkt oder über `fiftyTwoWeekHigh`-Meta) | Bestätigt: AAPL 251 Tage (zusätzlich `fiftyTwoWeekHigh=344.57` als Fallback), SAP.DE 253 Tage (direkt ≥252) | bestanden |
 | CANDLE-4 | C6-Fix (lokal) | 6 Testfälle: `data_quality_status` = `session_incomplete`/`stale`/`limited`/`valid`/`invalid` sowie kein Match in `Signal: flach aufbereiten` | Alle fünf Werte landen unverändert in der generierten SQL, kein Match → `SELECT 1;` (kein Schreibversuch) | Bestätigt für alle 6 Fälle | bestanden |
+| CANDLE-5 | C8-Fix (lokal, mit gemocktem `Date`) | 7 Szenarien: Wochenende, vor Sitzungsbeginn, während Sitzung, nach Sitzungsschluss mit/ohne heutiger Kerze, zwei Regionen mit unterschiedlichem Status gleichzeitig, keine Symbole verfügbar | `session_status` korrekt aus 3 auf 5 Zustände erweitert, `combined_regime='vorlaeufig'` nur bei `open_intraday` | Bestätigt für alle 7 Szenarien | bestanden |
 
 ## Portfolio-Risiko/Paper-Trading (Workflow 14)
 

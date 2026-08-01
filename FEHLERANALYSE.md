@@ -233,7 +233,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** hoch
 - **Datei/Node:** alle fünf Workflows
 - **Korrektur:** Abfrage mindestens in `14` (Ausführungs-/Exit-Logik) ergänzen.
-- **Status:** offen
+- **Status:** teilweise behoben 2026-08-01: `14` erhaelt Sitzungsbewusstsein jetzt indirekt und fachlich praeziser als eine direkte View-Abfrage waere - ueber die konkrete Kerze (`stock_price_history.data_quality_status`, seit C6 unverfaelscht durchgereicht, seit C9 in 14 tatsaechlich ausgewertet). `02b` hat seit C8 eine eigene, zur View aequivalente 5-Zustands-Erkennung (ohne die View direkt abzufragen, siehe C8-Begruendung). **`08` und `13` fragen weiterhin an keiner Stelle einen Sitzungsstatus ab** - aktuell folgenlos, da alle 15 Watchlist-Ticker XETRA sind und damit nie eine laufende Fremdboersen-Sitzung betrifft (identische Einschraenkung wie D12, siehe dort), aber strukturell weiterhin offen fuer den Tag, an dem ein nicht-europaeischer Ticker aufgenommen wird.
 
 ### C8 — `02b` implementiert eigene, unvollständige Sitzungsstatus-Logik und respektiert sie selbst nicht
 - **Schweregrad:** hoch
@@ -241,7 +241,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Eigene 3-Zustands-Logik statt `trading.v_market_session_status` (5 Zustände, DB-Abgleich). Zeitzonenbehandlung selbst korrekt (USA nutzt `America/New_York`, keine pauschale Uhrzeit), aber `session_status` beeinflusst `combined_regime` an keiner Stelle.
 - **Auswirkung:** Läuft der Orchestrator während laufender US-Sitzung, wird `combined_regime` für Region USA aus unvollständiger Tageskerze berechnet — ohne Kennzeichnung. **Dieser Teil ist bereits aktiv wirksam** (nicht nur Vorwärtsrisiko), da ^IXIC/^GSPC bei jedem Lauf betroffen sein können.
 - **Korrektur:** `sessionStatusFor` entfernen, `v_market_session_status` abfragen (Referenzsymbole brauchen dafür `stock_instruments`/`market_reference`-Einträge); bei `open_intraday` `combined_regime` auf „vorläufig" setzen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (Node "Marktregime berechnen" in 02b: sessionStatusFor kennt jetzt alle 5 Zustaende der Semantik von trading.v_market_session_status/sql/027 (holiday/closed_complete/open_intraday/stale, 'unknown' im rows-leer-Fallback) - OHNE die View direkt abzufragen und ohne neue stock_instruments/market_reference-Eintraege fuer die 8 Referenzsymbole (^GDAXI etc. existieren dort nicht, siehe Diagnose-Query gegen die echte DB: 0 Treffer; neue Eintraege haetten 03as instrumentengetriebenen KI-Prompt verunreinigt). Stattdessen wird die Kerzenfrische aus den bereits im selben Lauf berechneten kerze_timestamp-Werten (Marktanalyse berechnen, seit C4 vorhanden) abgeleitet - identische Semantik, kein zusaetzlicher DB-Zugriff. session_status beeinflusst jetzt auch tatsaechlich combined_regime: bei open_intraday wird combined_regime auf 'vorlaeufig' gesetzt (bewusst nicht 'unknown', da fachlich unterschiedliche Bedeutung); 06s bestehender Regime-Matrix-Fallback (matrixByKey[strategy+'|'+combinedRegime] || matrixByKey[strategy+'|unknown']) faengt den neuen Wert automatisch konservativ ab, kein neuer Matrix-Eintrag noetig (gegengeprueft im Code von 06). Lokal mit 7 Szenarien getestet (Wochenende/vor Sitzung/waehrend Sitzung/nach Sitzung mit und ohne heutige Kerze/zwei Regionen gleichzeitig verschiedene Status/keine Symbole verfuegbar).
 
 ### C9 — `14` prüft Sitzungsstatus an keiner Stelle
 - **Schweregrad:** kritisch
