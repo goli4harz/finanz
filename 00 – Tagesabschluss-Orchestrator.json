@@ -746,15 +746,15 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict"
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Ausfuehren: Marktumfeld (02b)').all()[0].json.status }}",
-              "rightValue": "failed",
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Marktumfeld (02b)').all()[0]?.json?.status) }",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "notEquals"
+                "type": "boolean",
+                "operation": "equals"
               }
             }
           ],
@@ -868,15 +868,15 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict"
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Ausfuehren: Technische Signale (02)').all()[0].json.status }}",
-              "rightValue": "failed",
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Technische Signale (02)').all()[0]?.json?.status) }",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "notEquals"
+                "type": "boolean",
+                "operation": "equals"
               }
             }
           ],
@@ -1322,15 +1322,15 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict"
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Ausfuehren: Empfehlungswatchlist (06)').all()[0].json.status }}",
-              "rightValue": "failed",
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Empfehlungswatchlist (06)').all()[0]?.json?.status) }",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "notEquals"
+                "type": "boolean",
+                "operation": "equals"
               }
             }
           ],
@@ -1353,15 +1353,15 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict"
           },
           "conditions": [
             {
-              "leftValue": "={{ $('Ausfuehren: Tagesreport-Versand (05)').all()[0].json.status }}",
-              "rightValue": "failed",
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Tagesreport-Versand (05)').all()[0]?.json?.status) }",
+              "rightValue": true,
               "operator": {
-                "type": "string",
-                "operation": "notEquals"
+                "type": "boolean",
+                "operation": "equals"
               }
             }
           ],
@@ -1563,11 +1563,12 @@
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\nconst dryRun = cfg && typeof cfg.value_bool === 'boolean' ? cfg.value_bool : false;\nreturn [{ json: { ...base, DRY_RUN: dryRun } }];"
+        "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\n// FIX 2026-08-01 (Fehleranalyse B4, kritisch): der alte Fallback sprang bei fehlender/\n// ungueltiger Config (0 Zeilen, DB-Fehler, NULL-Wert) auf DRY_RUN=false - also den unsicheren\n// Echtpfad - statt auf den sicheren DRY_RUN=true zurueck. Eine reine Konfigurationsstoerung\n// haette so lautlos den Realpfad aktiviert. Fallback jetzt auf true gedreht, Quelle protokolliert.\nconst dryRunFromDb = cfg && typeof cfg.value_bool === 'boolean';\nconst dryRun = dryRunFromDb ? cfg.value_bool : true;\nconst dryRunSource = dryRunFromDb ? 'db' : 'fallback_unsicher_config_fehlt_oder_ungueltig';\nreturn [{ json: { ...base, DRY_RUN: dryRun, DRY_RUN_SOURCE: dryRunSource } }];"
       },
       "id": "88be6e21-2351-42c4-a53a-ee63b4b7c1a8",
       "name": "Kontext zusammenfuehren",

@@ -117,7 +117,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Stürzt ein Sub-Workflow intern ab, bevor er sein eigenes Ergebnis-Objekt baut, liefert `onError: continueErrorOutput` ein Item ohne `status` — das Gate lässt es trotzdem passieren, der Lauf arbeitet mit unvollständigen/veralteten Daten weiter.
 - **Korrektur:** Explizite Erfolgs-Allowlist (`status === 'success' || status === 'partial_failure'`), alles andere inkl. fehlend = Fehler.
 - **Test:** Sub-Workflow-Aufruf mit Item ohne `status`-Feld simulieren → erwartet: Gate blockiert.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (explizite Allowlist [success,partial_failure,skipped] statt notEquals-failed, lokal fuer alle Statuswerte durchsimuliert; echter Orchestrator-Lauf zur Verhaltensbestaetigung steht noch aus, da ein manueller Testlauf von 00 mehrere reale Sub-Workflows anstossen wuerde)
 
 ### B2 — Keine Differenzierung success/partial_failure/skipped in den Gates
 - **Schweregrad:** hoch
@@ -141,7 +141,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Eine reine Konfigurationsstörung (DB kurzzeitig nicht erreichbar) aktiviert lautlos den echten Schreibpfad, ohne Warnung. Asymmetrie im selben Codeblock: `REQUIRE_CONFIRMATION` fällt korrekt auf `true` zurück, `DRY_RUN` im selben Block auf `false`.
 - **Korrektur:** Fallback auf `true` drehen; Fallback-Nutzung loggen/alarmieren.
 - **Test:** Config-Query liefert 0 Zeilen simulieren → erwartet `DRY_RUN=true`.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 in beiden Stellen (00 und 06), Fallback auf true gedreht + Quelle protokolliert (00), lokal fuer alle Config-Zustaende durchsimuliert
 
 ### B5 — Fehlendes `alwaysOutputData` auf `00`s Config-Node
 - **Schweregrad:** hoch
@@ -149,7 +149,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Kein `alwaysOutputData: true`. Liefert die Query 0 Zeilen, wird laut bereits im Projekt dokumentiertem n8n-Zero-Rows-Verhalten der gesamte nachgelagerte Pfad übersprungen.
 - **Auswirkung:** Kompletter Tagesabschluss würde lautlos gar nicht laufen, ohne Fehlereintrag.
 - **Korrektur:** `alwaysOutputData: true` ergänzen (analog zu `06`, wo bereits gesetzt).
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (alwaysOutputData:true ergaenzt)
 
 ### B6 — `14` hat keine eigene DRY_RUN-Prüfung
 - **Schweregrad:** mittel
