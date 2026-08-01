@@ -18,7 +18,7 @@ Zwölf Arbeitspakete, größtenteils vollständig implementiert; zwei bewusst nu
 - ✅ **AP11+AP12**: Dashboard (`07`) um 6 neue Sektionen erweitert, Report/Prüfagent (`10`) um 4 neue Ablehnungsregeln.
 - ✅ 18 von 22 geforderten Testfällen lokal automatisiert getestet (`tests/test_welle3_reine_funktionen.js`, 18/18 Assertions bestanden), 1 bewusst als "nicht implementiert" dokumentiert (Trailing-Stop), 3 Schema-only mangels Daten. Details: `docs/TESTPLAN_WELLE_3.md`.
 - ✅ Dokumentation: `docs/PAPER_TRADING_LEDGER.md`, `docs/AUSFUEHRUNGSMODELL.md`, `docs/PORTFOLIORISIKO.md`, `docs/BACKTESTING_UND_WALK_FORWARD.md`, `docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md`, `docs/LERNAGENT_HANDELSSTRATEGIEN.md`, `docs/TESTPLAN_WELLE_3.md`.
-- 🔴 **Noch nicht live gepusht**: Migrationen `sql/035-037`, geänderte Workflows `06`/`07`/`10`/`12`, neue Workflows `09b`/`14` sind lokal committet, Live-Push steht noch aus.
+- ✅ **Live gepusht und verifiziert** (2026-08-01): alle 3 Migrationen (`sql/035-037`) live ausgeführt und per Verifikationsquery bestätigt (alle 20 erwarteten Tabellen/Spalten/Config-Keys/Seed-Zeilen exakt vorhanden). 4 geänderte Workflows (`06`, `07`, `10`, `12`) gepusht, 2 neue Workflows angelegt (`09b – Lernagent Handelsstrategien` id `N91C38VeoNXUBWmB`, `14 – Portfolio-Risiko und Paper-Trading` id `H0iZrWQy1HQi6iro`), beide bewusst **inaktiv**. **Noch offen**: kein echter Lauf beobachtet — beide neuen Workflows brauchen einen ersten manuellen Test, bevor an eine Aktivierung der Zeitpläne zu denken ist.
 
 ## Welle 2 – Strategiemotor, Marktregime und systematische Kandidatensuche (2026-08-01)
 
