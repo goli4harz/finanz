@@ -191,7 +191,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** `period=3mo` liefert nur ~63 Handelstage (laut eigenem früherem Live-Test dokumentiert). Das 252-Tage-Kriterium für Breakout-Signale ist damit praktisch nie erfüllbar (außer über das `fiftyTwoWeekHigh`-Metafeld), die 60-Tage-Volatilitätsberechnung läuft ohne Sicherheitsmarge.
 - **Korrektur:** `period=3mo` → `period=1y` in `02` ändern, analog zu `02b`. Live-Test mit AAPL/SAP.DE wiederholen.
 - **Test:** Nach Umstellung: Response-Länge für AAPL/SAP.DE prüfen, ≥252 gültige Handelstage nach Bereinigung.
-- **Status:** offen — **höchste Priorität innerhalb Teil C, da funktionaler Bug mit Doku-Widerspruch**
+- **Status:** behoben, live gepusht 2026-08-01 (Node "Kurs abrufen (lokaler FastAPI)" in Workflow 02: period=3mo -> period=1y, analog zu 02b). Live gegen die echte FastAPI getestet: AAPL liefert jetzt 251 Handelstage (vorher ~63), zusaetzlich abgesichert durch meta.fiftyTwoWeekHigh=344.57 (greift die closes.length>=252-Schwelle nicht direkt, deckt der bereits vorhandene hatMeta52w-Fallback ab); SAP.DE liefert 253 Handelstage, erfuellt die 252-Tage-Schwelle direkt. Der bestehende Code in 02 (Kerzenbildung/Datenqualitaet/Mindesthistorien-Logik, siehe C4/C5 in 02b) war bereits laengenunabhaengig korrekt gebaut - keine weiteren Codeaenderungen noetig, nur der URL-Parameter.
 
 ### C2 — 52-Wochen-Hoch/-Tief-Fallback unflagged bei unzureichender Historie
 - **Schweregrad:** mittel
@@ -499,7 +499,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** hoch (Folgefehler von E7)
 - **Datei/Node:** `09b`, Effektstärke-Gate (`expectancy_r`)
 - **Korrektur:** Nach Fix von E7 automatisch behoben, da `realized_r_multiple` dann korrekt ist.
-- **Status:** offen (abhängig von E7)
+- **Status:** automatisch mitbehoben 2026-08-01 (E7-Fix in Workflow 14 stellt sicher, dass net_pnl/realized_r_multiple bereits vollstaendige Entry-/Exit-Kosten enthalten, worauf dieses Effektstaerke-Gate direkt aufbaut - kein separater Code-Fix in 09b noetig, nur Bestaetigung des Zusammenhangs).
 
 ### F9 — Stabilität über Zeit, Drawdown, Anteil blockierter Signale nicht geprüft
 - **Schweregrad:** mittel
@@ -508,7 +508,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 
 ### F10 — `pipeline_config.value_numeric` kann durch `12` auf NULL gesetzt werden
 - **Schweregrad:** kritisch (identisch mit A9, hier aus Lernagenten-Perspektive bestätigt)
-- **Status:** offen (siehe A9)
+- **Status:** faktisch behoben ueber A9 2026-08-01, siehe dort (Duplikat, kein eigener Fix noetig).
 
 ### F11 — Kein zentrales Regelwerk (Typ/Min/Max/Default/Schrittweite/NULL-Policy) in `12`
 - **Schweregrad:** hoch (identisch mit A8)

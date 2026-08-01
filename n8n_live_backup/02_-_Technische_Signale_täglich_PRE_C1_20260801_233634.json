@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=1y&interval=1d",
+        "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=3mo&interval=1d",
         "options": {
           "response": {
             "response": {

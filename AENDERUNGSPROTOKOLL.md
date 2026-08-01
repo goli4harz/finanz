@@ -48,6 +48,13 @@ Für jede Datei: vorheriges Verhalten, neues Verhalten, mögliche Nebenwirkungen
 - **Migration:** keine.
 - **Reimport:** bereits live gepusht (commit `6dbbbfc`).
 
+## `02 – Technische Signale täglich.json`
+- **Vorher:** Node „Kurs abrufen (lokaler FastAPI)" rief `period=3mo` ab (~63 Handelstage) statt des in `docs/DATENQUALITAET_UND_SESSIONS.md`/`OFFENE_AUFGABEN.md` dokumentierten `period=1y`. Die bereits vorhandene, längenunabhängige Kerzenbildungs-/Datenqualitätslogik (identisch zu `02b`) bekam dadurch strukturell nie genug Historie: `breakoutHistoryAusreichend` (≥252 Handelstage) war praktisch nie erreichbar außer über das `fiftyTwoWeekHigh`-Metafeld, `volatilityHistoryAusreichend` (≥60 Tage) war grenzwertig.
+- **Nachher:** `period=1y` (analog `02b`). Kein Code in der Analyse selbst geändert - die bestehende Logik skaliert bereits korrekt mit der tatsächlichen Antwortlänge.
+- **Nebenwirkungen:** Größere Antworten pro Ticker-Abruf (≈251-253 statt ≈63 Zeilen) - mehr Datenvolumen pro Lauf, aber gleiche Anzahl API-Aufrufe. Breakout-Signale werden jetzt tatsächlich auslösbar, wo sie zuvor faktisch permanent blockiert waren.
+- **Migration:** keine.
+- **Reimport:** bereits live gepusht (Backup `n8n_live_backup/02_-_Technische_Signale_täglich_PRE_C1_20260801_233634.json`).
+
 ## `14 – Portfolio-Risiko und Paper-Trading.json`
 - **Vorher:** Neun kritische Lücken (siehe `FEHLERANALYSE.md` E1-E12, C9) - u.a. keine deterministische Kandidaten-Reihenfolge, Portfoliozustand nicht innerhalb eines Laufs fortgeschrieben, Sektorlimit durch fehlende Spalte wirkungslos, Drawdown bei anfänglicher Verlustserie als 0% berechnet, Einstiegskosten fehlten in `net_pnl`, `data_error` als dauerhafte Sackgasse, kein Fill+Exit-Check derselben Kerze, keine Transaktionsatomarität.
 - **Nachher:** Alle neun behoben (siehe Commit `0aaf567` für Details je Punkt).
