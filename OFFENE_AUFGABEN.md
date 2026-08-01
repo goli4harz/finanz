@@ -1,6 +1,33 @@
 # Offene Aufgaben
 
-Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2 UND Welle 3 umgesetzt, siehe Abschnitte unten)
+Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1-Fixes umgesetzt, siehe Abschnitte unten)
+
+## Härtungsauftrag "Vollständige Fehlerbereinigung" - Priorität 1 (kritisch), 2026-08-01
+
+Vollständiges Audit (7 parallele Code-Reviews) gegen SQL-Sicherheit, Orchestrator, Kursdaten/
+Marktumfeld, News-Pipeline, Portfolio-Risiko/Paper-Trading, Lernagenten, Migrationen/Doku-
+Konsistenz. Ergebnis: 21 eindeutige kritische Funde, 19 hoch, 21 mittel, 6 niedrig -
+vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
+
+- ✅ **Alle 23 kritischen Funde behoben** (A1/A5/A6/A9/A11, B1/B4, C4/C9, D3/D5/D13,
+  E1/E2/E4/E5/E7/E8/E9/E12, F1/F2/F4), live gepusht, lokal mit gezielten Testfällen
+  verifiziert (SQL-Injection-Payloads live gegen echte Webhooks getestet). Details je Fix:
+  `AENDERUNGSPROTOKOLL.md`, Testfälle: `TESTPLAN.md`, Ampel-Bewertung: `PRODUKTIONSFREIGABE.md`.
+- Als Nebeneffekt weitere ~9 hoch/mittel eingestufte Funde direkt mitbehoben (A3/A4/A7-teilw./
+  B5/C5/D4/F5), da im selben Node/derselben Datei ohnehin bearbeitet.
+- 🟡 **Zwei neue Migrationen (`sql/038`, `sql/039`) sind additiv vorbereitet und im Workflow
+  `97 – Einmalig – Beliebige Query ausfuehren` kombiniert eingetragen, aber noch nicht
+  manuell ausgefuehrt.** Workflow `14` (Portfolio-Risiko/Paper-Trading) referenziert bereits
+  Spalten aus `sql/039` und darf vor der Migration nicht getestet werden. `12`
+  (Lernvorschlag-Freigabe) funktioniert bereits ohne die Migration, nutzt den neuen Status
+  `activation_failed` (sql/038) aber erst danach.
+- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** die 19 "hoch" und 21
+  "mittel" eingestuften Funde aus `FEHLERANALYSE.md`, u.a. C1 (period=3mo statt 1y in `02`,
+  funktionaler Bug mit Doku-Widerspruch), C6-C8 (Datenqualitaetsstatus/Sitzungsstatus in
+  02/02b nicht vollstaendig respektiert), D1/D2/D6/D9-D12 (News-Pipeline-Feinheiten), G4
+  (Live-IDs fuer 09b/12/13/14 im Repo nicht verifizierbar). Danach: automatisierte
+  Pruefabfragen/Tests fuer die verbleibenden Bereiche, Aktualisierung der ueberholten
+  Dokumentationsaussagen.
 
 ## Welle 3 – Paper-Trading-Ledger, Portfoliorisiko, Backtesting und kalibriertes Lernen (2026-08-01)
 
