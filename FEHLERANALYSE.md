@@ -26,7 +26,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Architektur bleibt fragil — ein einziger vergessener Escape-Schritt (siehe A1) führt sofort zu Injection.
 - **Korrektur:** Feste Stored Functions/Procedures pro Aktion mit typisierten Parametern.
 - **Test:** Codereview — kein `pgStr`/`pgArr` mehr im finalen SQL-Text für nutzergenerierte Werte.
-- **Status:** offen
+- **Status:** zurueckgestellt 2026-08-02 (Nutzerentscheidung nach Ruecksprache) - Begruendung: A2 fordert einen vollen Architekturumbau (feste Stored Procedures pro Aktion + Neuverdrahtung aller Postgres-Nodes in `Watchlist verwalten`/`RSS-Quellen verwalten`/`12`, kompletter Retest), kein punktueller Fix wie die uebrigen hoch-Funde. Die akute Injection-/Validierungsluecke selbst ist in dieser Runde bereits geschlossen (A1/A3/A4/A9/A11 kritisch, A8 hoch) - A2 beschreibt eine strukturelle Verteidigungstiefe-Verbesserung fuer kuenftige Aenderungen, kein aktuell ausnutzbares Loch. Ein Umbau dieser Groessenordnung in derselben Sitzung wie 22 andere Live-Aenderungen an bereits mehrfach ueberarbeiteten, produktiv laufenden Webhooks haette ein unverhaeltnismaessiges Regressionsrisiko bedeutet. Als eigenstaendiges Vorhaben fuer eine kuenftige Sitzung in OFFENE_AUFGABEN.md aufgenommen.
 
 ### A3 — Keine serverseitige Feldvalidierung in der Watchlist
 - **Schweregrad:** hoch

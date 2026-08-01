@@ -1,6 +1,6 @@
 # Offene Aufgaben
 
-Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1-Fixes umgesetzt, siehe Abschnitte unten)
+Stand: 2026-08-02 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1+2-Fixes umgesetzt, siehe Abschnitte unten)
 
 ## Härtungsauftrag "Vollständige Fehlerbereinigung" - Priorität 1 (kritisch), 2026-08-01
 
@@ -21,13 +21,33 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   Spalten aus `sql/039` und darf vor der Migration nicht getestet werden. `12`
   (Lernvorschlag-Freigabe) funktioniert bereits ohne die Migration, nutzt den neuen Status
   `activation_failed` (sql/038) aber erst danach.
-- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** die 19 "hoch" und 21
-  "mittel" eingestuften Funde aus `FEHLERANALYSE.md`, u.a. C1 (period=3mo statt 1y in `02`,
-  funktionaler Bug mit Doku-Widerspruch), C6-C8 (Datenqualitaetsstatus/Sitzungsstatus in
-  02/02b nicht vollstaendig respektiert), D1/D2/D6/D9-D12 (News-Pipeline-Feinheiten), G4
-  (Live-IDs fuer 09b/12/13/14 im Repo nicht verifizierbar). Danach: automatisierte
-  Pruefabfragen/Tests fuer die verbleibenden Bereiche, Aktualisierung der ueberholten
-  Dokumentationsaussagen.
+- ✅ **14 von 15 eindeutigen "hoch"-Funden behoben** (2026-08-01/02): C1 (period=3mo→1y in
+  `02`), C6 (Datenqualitaetsstatus-Kollaps in `02`, macht C9 in `14` scharf), C7/C8
+  (vollstaendige Sitzungsstatus-Erkennung in `02b`, beeinflusst jetzt `combined_regime`),
+  D1/D2/D6 (dynamische Watchlist im KI-Prompt + Ticker-Validierung + Konfidenzfelder in `03`),
+  D9 (URL-Kanonisierung + `content_hash` als dritte Dedup-Schicht in `03`), D11/D12
+  (Datum- statt Index-Abgleich + echte Handelszeiten je Boerse in `08`), B2 (Teilausfall
+  trotz Gesamterfolg im Orchestrator sichtbar gemacht), A8 (zentrale Wertebereichs-Regeltabelle
+  in `12`, loest gleichzeitig A7 vollstaendig ab und F11). Details je Fix: `AENDERUNGSPROTOKOLL.md`,
+  Testfaelle: `TESTPLAN.md`.
+- 🟡 **A2 (hoch) bewusst zurueckgestellt** (Nutzerentscheidung 2026-08-02): "Feste Stored
+  Procedures pro Aktion mit typisierten Parametern statt String-Interpolation" fuer
+  `Watchlist verwalten`/`RSS-Quellen verwalten`/`12` - ein voller Architekturumbau, kein
+  punktueller Fix. Die akute Injection-/Validierungsluecke selbst ist bereits geschlossen
+  (A1/A3/A4/A9/A11 kritisch, A8 hoch); A2 ist eine strukturelle Verteidigungstiefe-Verbesserung
+  fuer kuenftige Aenderungen. **Eigenstaendiges Vorhaben fuer eine kuenftige Sitzung**, wenn
+  gewuenscht: SQL-Funktionen je Schreibaktion entwerfen (Watchlist anlegen/aendern/loeschen,
+  RSS-Quelle testen/anlegen, alle 5 Lernvorschlags-Aktivierungspfade aus `12`), dann
+  Postgres-Nodes auf `n8n`s native Query-Parameter statt `executeQuery`+String-Interpolation
+  umstellen, vollstaendiger Retest aller 3 Workflows inkl. der Live-Webhook-Tests aus
+  `TESTPLAN.md` (SEC-1 bis SEC-16).
+- 🟡 **`sql/040` (reine `COMMENT ON COLUMN`-Korrektur, keine Schema-Aenderung) steht noch zur
+  manuellen Ausfuehrung in Workflow `97 – Einmalig – Beliebige Query ausfuehren` bereit** -
+  war zwischenzeitlich fuer eine Diagnose-Query (C8) zweckentfremdet, jetzt wiederhergestellt.
+- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** die 21 "mittel" und 6
+  "niedrig" eingestuften Funde aus `FEHLERANALYSE.md`. Danach: automatisierte
+  Pruefabfragen/Tests fuer die verbleibenden Bereiche, `PRODUKTIONSFREIGABE.md` mit dem neuen
+  Stand neu bewerten.
 
 ## Welle 3 – Paper-Trading-Ledger, Portfoliorisiko, Backtesting und kalibriertes Lernen (2026-08-01)
 
