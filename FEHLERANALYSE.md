@@ -170,7 +170,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `UNIQUE(ticker, snapshot_date)` + `ON CONFLICT DO UPDATE` — dasselbe Muster, das bei `fundamentals_history` bewusst durch echte Point-in-Time-Revisionierung ersetzt wurde (Paket 14, `sql/022`), wurde hier nicht mitgezogen.
 - **Auswirkung:** Ein zweiter `02`-Lauf am selben Tag überschreibt die technischen Signale des ersten Laufs rückstandslos — Verlust der Revisionshistorie.
 - **Korrektur:** Gleiches Revisionsmuster wie `fundamentals_history`/`strategy_signals` übernehmen oder Abweichung bewusst dokumentieren.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. Node "Signal-Historie: SQL bauen" in `02` auf dasselbe Point-in-Time-Revisionsmuster wie `fundamentals_history`/`stock_price_history` umgestellt (UPDATE valid_to=now() fuer die bisherige aktuelle Revision + INSERT einer neuen mit `revision_number = COALESCE(MAX(...),0)+1`) statt `ON CONFLICT DO UPDATE`. Migration `sql/041` (identisches additives Muster wie sql/022) legt `known_at`/`valid_from`/`valid_to`/`revision_number` an, ersetzt den alten UNIQUE(ticker,snapshot_date) durch UNIQUE(ticker,snapshot_date,revision_number) + einen partiellen UNIQUE-Index fuer genau eine aktuelle Zeile je Tag. **Notwendiger Begleitfix (sonst neuer Bug):** alle vier lesenden Workflows (`06`/`07`/`10`/`13`) haetten nach der Migration potenziell mehrere Zeilen je (ticker,snapshot_date) zurueckbekommen - deren Queries wurden im selben Zug um `AND valid_to IS NULL` ergaenzt, live gepusht. **Migration `sql/041` steht noch zur Ausfuehrung aus (kombiniert mit sql/040 in Workflow 97) - dringend, da `07`s Status-Uebersicht ein jederzeit abrufbarer Webhook ist und ab dem naechsten `00`-Lauf (17:50) auch `02`/`06`/`10` betroffen waeren.** Lokal mit 4 Testfaellen fuer die neue SQL-Generierung verifiziert (UPDATE+INSERT-Struktur, Revisions-Subquery, ATR-Nachladen weiterhin korrekt, WHERE-Klausel).
 
 ### B9 — Ungeschützte Audit-/Log-Tabellen in `14`
 - **Schweregrad:** niedrig-mittel
@@ -199,7 +199,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Fallback-Berechnung aus vorhandenen `highs`/`lows` ignoriert `breakoutHistoryAusreichend`.
 - **Auswirkung:** Dashboard/Report können ein "52-Wochen-Hoch" zeigen, das in Wahrheit nur ein 3-Monats-Hoch ist, ohne Kennzeichnung.
 - **Korrektur:** `hoch52w`/`tief52w` bei `!breakoutHistoryAusreichend` auf `null` setzen oder als `unreliable` markieren.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02 (neues Feld `historie52wZuverlaessig` auf dem Signal-Objekt, identisch zu `breakoutHistoryAusreichend` - `hoch52w`/`tief52w` selbst bleiben erhalten (kein `null`, um Anzeige-Templates nicht zu ueberraschen), aber jetzt mit explizitem Zuverlaessigkeits-Flag. Lokal mit 3 Faellen getestet: kurze Historie ohne Meta-Feld -> false, kurze Historie MIT echtem Meta-52w -> true, lange Historie (260 Tage) ohne Meta -> true.
 
 ### C3 — Volumen-Kennzahlen nutzen unabhängig gefiltertes Rohvolumen
 - **Schweregrad:** niedrig

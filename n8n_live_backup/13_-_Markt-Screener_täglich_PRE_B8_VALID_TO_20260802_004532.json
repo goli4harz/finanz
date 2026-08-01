@@ -87,7 +87,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = CURRENT_DATE;",
         "options": {}
       },
       "name": "DB: Technische Signale heute laden (Scanner)",

@@ -579,7 +579,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "f1c6baa4-8e8b-4f2e-b559-7f6ae61a0332",
