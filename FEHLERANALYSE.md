@@ -213,13 +213,13 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Jeder OHLCV-Array wird unabhängig an seiner eigenen letzten Array-Position gelesen (expliziter Code-Kommentar: „bewusst nur die letzten Rohwerte, keine vollständige Kerzenausrichtung wie in 02"). Keine High≥Low/Close-Innerhalb-Range/Volumen-Prüfung.
 - **Auswirkung:** Bei `null`-Close am aktuellen Tag (unvollständige Session) bezieht sich `close` auf den Vortag, `open`/`high`/`low`/`volume` aber auf den aktuellen (ausgefallenen) Tag — eine gespeicherte Zeile in `stock_price_history` kann aus zwei verschiedenen Handelstagen gemischt sein.
 - **Korrektur:** Dieselbe timestamp-indizierte Kerzenbildung wie `02` übernehmen (idealerweise als gemeinsame Funktion für beide Workflows).
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (identische timestamp-indizierte Kerzenbildung + Zeilenvalidierung wie in 02 uebernommen). Lokal mit synthetischem Datensatz verifiziert: korrupte letzte Kerze (close=null, aber O/H/L/V vorhanden mit abweichendem Preisniveau) wird jetzt komplett verworfen statt vermischt zu werden; sauberer 260-Tage-Datensatz unveraendert korrekt (EMA200/Regime plausibel). Echter Lauf gegen die reale FastAPI-Quelle noch nicht beobachtet.
 
 ### C5 — `02b`s `data_quality_status` ist hartkodierter Literal `'limited'`
 - **Schweregrad:** mittel
 - **Datei/Node:** `02b`, Node „Kurshistorie: SQL bauen"
 - **Korrektur:** Mindestens vorhandene Prüfung (`closes.length < 26`) in echten Status übersetzen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (echter Status aus der Kerzenvalidierung, lokal verifiziert: valid bei sauberen Daten, limited bei verworfenen Zeilen)
 
 ### C6 — `02`s Datenqualitätsstatus wird beim Schreiben nach `stock_price_history` auf 2 Werte kollabiert
 - **Schweregrad:** hoch
