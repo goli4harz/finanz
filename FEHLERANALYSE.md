@@ -475,7 +475,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `oosConfirmed = oosRuns.length > 0` ist ein einziges Boolean für alle Strategien/Regime — `strategy_filter`/`configuration_version`/`rule_version` aus `sql/037` werden nicht abgefragt.
 - **Auswirkung:** Sobald irgendwann EIN abgeschlossener OOS-Backtest existiert (z. B. für `breakout`), gilt `oos_confirmed=true` für **alle** anderen Strategien/Regime-Kombinationen gleichzeitig — aktuell durch die leere Tabelle maskiert, wird beim ersten echten Backtest sofort scharf.
 - **Korrektur:** OOS-Bestätigung je `(strategy, rule_version, configuration_version[, combined_regime])` prüfen.
-- **Status:** offen — **muss vor dem ersten Backtest-Lauf behoben sein**
+- **Status:** behoben, live gepusht 2026-08-01 (OOS-Bestaetigung jetzt je Strategie ueber trading.backtest_runs.strategy_filter statt eines einzigen globalen Booleans; ein Lauf ohne konkreten strategy_filter bestaetigt bewusst keine einzelne Strategie). Beim eigenen Test einen weiteren echten Bug gefunden+behoben: die urspruengliche Aenderung liess das globale oosConfirmed im finalen Return-Objekt verwaist zurueck (ReferenceError) - jetzt oos_confirmed_strategies als Liste + oos_confirmed als Zusammenfassung (mindestens eine Strategie bestaetigt). Lokal verifiziert: OOS-Test nur fuer 'breakout' bestaetigt korrekt nur 'breakout' (oos_confirmed=true, proposal_eligible=true), 'mean_reversion' bleibt korrekt unbestaetigt (oos_confirmed=false, proposal_eligible=false) - vorher haette EIN Test fuer irgendeine Strategie ALLE bestaetigt. — **muss vor dem ersten Backtest-Lauf behoben sein**
 
 ### F5 — `regime_restriction`-Kandidat auch bei positivem Ergebnis erzeugt
 - **Schweregrad:** mittel
@@ -483,7 +483,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `eligible` erlaubt sowohl `expR<=-0.15` als auch `expR>=0.3`, aber für den positiven Fall entsteht trotzdem ein `regime_restriction`-Kandidat mit `proposed_value:null`.
 - **Auswirkung:** Führt zu F11 (NOT-NULL-Verletzung).
 - **Korrektur:** Kandidatenerzeugung explizit an `expR<=-0.15` binden.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (regime_restriction-Kandidat entsteht nur noch fuer den tatsaechlich negativen Fall expR<=-0.15, nicht mehr auch fuer den positiven Fall mit proposed_value:null). Lokal verifiziert: positiver Erwartungswert erzeugt jetzt korrekt keinen Kandidaten mehr.
 
 ### F6 — Regime-Konzentration wird nicht geprüft (nur Ticker-Konzentration)
 - **Schweregrad:** mittel
