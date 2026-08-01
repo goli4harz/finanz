@@ -1,0 +1,87 @@
+{
+  "updatedAt": "2026-08-01T00:34:49.834Z",
+  "createdAt": "2026-07-19T13:27:11.388Z",
+  "id": "NInmI0f9TfdndwI1",
+  "name": "97 – Einmalig – Beliebige Query ausfuehren",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "30000000-0000-4000-8000-000000000001",
+      "name": "Manueller Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='trading' AND table_name IN ('paper_trades','paper_trade_events','paper_trade_valuations','paper_trade_costs')) AS ap1_tabellen_erwartet_4,\n  (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='trading' AND table_name='paper_trades' AND column_name IN ('gross_pnl','net_pnl','realized_r_multiple','maximum_favorable_excursion','maximum_adverse_excursion','ambiguous_execution')) AS ap4_spalten_erwartet_6,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='trading' AND table_name IN ('portfolio_risk_checks','stress_scenarios','strategy_status','strategy_parameters')) AS ap5_ap6_ap9_tabellen_erwartet_4,\n  (SELECT COUNT(*) FROM trading.pipeline_config WHERE config_key IN ('MAX_TOTAL_OPEN_RISK_PCT','MAX_SECTOR_EXPOSURE_PCT','MAX_SINGLE_POSITION_PCT','MAX_OPEN_POSITIONS','MAX_DIRECTIONAL_EXPOSURE_PCT','MAX_PORTFOLIO_DRAWDOWN_PCT','CORRELATION_LOOKBACK_DAYS','MAX_PAIRWISE_CORRELATION','STRESS_RISK_REDUCTION_FACTOR')) AS ap5_config_erwartet_9,\n  (SELECT COUNT(*) FROM trading.strategy_status) AS ap9_status_zeilen_erwartet_4,\n  (SELECT COUNT(*) FROM trading.strategy_parameters) AS ap9_parameter_zeilen_erwartet_10,\n  (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='trading' AND table_name IN ('backtest_runs','backtest_trades','probability_estimates','calibration_checks')) AS ap7_ap8_tabellen_erwartet_4,\n  (SELECT COUNT(*) FROM trading.pipeline_config WHERE config_key IN ('PROBABILITY_MIN_SAMPLE_SIZE','LEARNING_MIN_TRADE_SAMPLE_SIZE','BACKTEST_MIN_WINDOW_DAYS')) AS ap7_ap8_config_erwartet_3;\n",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000002",
+      "name": "Query ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -176,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "908ab6b8-8e61-4a91-b46b-f796bde9ef2b",
+  "activeVersionId": null,
+  "versionCounter": 114,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-19T13:27:11.388Z",
+      "createdAt": "2026-07-19T13:27:11.388Z",
+      "role": "workflow:owner",
+      "workflowId": "NInmI0f9TfdndwI1",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}
