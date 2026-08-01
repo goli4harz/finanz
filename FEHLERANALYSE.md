@@ -304,7 +304,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `03a`, Node „Antwort validieren (Schema)"
 - **Ursache:** `Number(parsed.konfidenz) || 0`.
 - **Korrektur:** `Number.isFinite(...) ? ... : null`.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02 (`Number(parsed.konfidenz) || 0` durch `Number.isFinite(Number(parsed.konfidenz)) ? Number(parsed.konfidenz) : null` ersetzt in "Antwort validieren (Schema)" - eine fehlende Konfidenzangabe der KI landet jetzt als NULL statt als 0 in der DB. Lokal mit 4 Faellen getestet: numerischer Wert, fehlender Wert (-> null), echte 0 (bleibt 0, wird nicht faelschlich als 'fehlt' behandelt), nicht-numerischer Wert (-> null).
 
 ### D8 — Recherche-Tracking-Felder unbenutzt, kein Retry-Limit in `03a`
 - **Schweregrad:** mittel
@@ -312,7 +312,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `research_status`/`research_attempts`/`next_research_at` (`sql/010`) werden nicht beschrieben.
 - **Auswirkung:** Ein Kandidat mit dauerhaft nicht parsebarer KI-Antwort wird alle zwei Stunden erneut (erfolglos) prozessiert, ohne Backoff/Cap.
 - **Korrektur:** Fehlerzweig auf `research_status`/`research_attempts`/`next_research_at` umstellen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. "Recherche-Ergebnis persistieren (SQL bauen)": Erfolgsfall setzt jetzt `research_status='success', last_research_at=now(), next_research_at=NULL, research_error=NULL`; Fehlerfall erhoeht `research_attempts`, setzt bei Erreichen von `MAX_RESEARCH_ATTEMPTS=5` `research_status='max_attempts_reached'` (kein weiterer `next_research_at`), sonst `research_status='failed'` mit eskalierendem Backoff (`Versuche * 4 Stunden`, skaliert auf 03as 2-Stunden-Cron-Takt). Vorher wurden hier faelschlich die fuer 03s Ingestion-Retry gedachten Spalten `last_error`/`last_attempt_at` beschrieben (sql/010 legt fuer 03a bewusst eine eigene Spaltenfamilie an). "DB: Zweitpass-Kandidaten laden" um `research_attempts` in der SELECT-Liste sowie die Backoff-/Cap-Bedingungen (`research_status NOT IN ('success','max_attempts_reached')` und `next_research_at IS NULL OR next_research_at <= now()`) erweitert. "Antwort validieren (Schema)" reicht `research_attempts` im Retry-Fall durch. Lokal mit 5 Testfaellen verifiziert (Konfidenz-Weiterleitung bei Parse-Fehler, Erfolgsfall-UPDATE, erster Fehlversuch mit 4h-Backoff, fuenfter Fehlversuch erreicht Cap, dritter Fehlversuch mit 12h-Backoff).
 
 ### D9 — Keine URL-Kanonisierung, `content_hash` ungenutzt
 - **Schweregrad:** hoch

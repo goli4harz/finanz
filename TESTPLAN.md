@@ -90,6 +90,12 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | NEWS-19 | D9-Fix (lokal) | Jaccard-Titel-Ähnlichkeit ohne exakten Key-/Hash-Match (Regressionstest) | Weiterhin als Duplikat erkannt | Bestätigt | bestanden |
 | NEWS-20 | D9-Fix (lokal) | Zwei Items im selben Lauf mit identischem `content_hash` | Nur das erste kommt durch | Bestätigt | bestanden |
 | NEWS-21 | D9-Fix (lokal) | Generierte INSERT-SQL für eine neue News | Enthält `content_hash`-Spalte und -Wert | Bestätigt | bestanden |
+| NEWS-22 | D7-Fix (lokal) | `konfidenz` numerisch/fehlend/echte 0/nicht-numerisch (4 Fälle) | Korrekt `Wert`/`null`/`0`/`null` | Bestätigt für alle 4 Fälle | bestanden |
+| NEWS-23 | D8-Fix (lokal) | Parse-Fehler mit `research_attempts=2` im Kandidaten | Wert wird in den Retry-Zweig durchgereicht | Bestätigt | bestanden |
+| NEWS-24 | D8-Fix (lokal) | Erfolgreiche Persistierung | `research_status='success'`, `next_research_at=NULL` in der SQL | Bestätigt | bestanden |
+| NEWS-25 | D8-Fix (lokal) | Erster Fehlversuch (`research_attempts` fehlt) | `research_attempts=1`, `research_status='failed'`, Backoff 4h | Bestätigt | bestanden |
+| NEWS-26 | D8-Fix (lokal) | Fünfter Fehlversuch (`research_attempts=4`) | `research_attempts=5`, `research_status='max_attempts_reached'`, kein weiterer Backoff | Bestätigt | bestanden |
+| NEWS-27 | D8-Fix (lokal) | Dritter Fehlversuch (`research_attempts=2`) | `research_attempts=3`, Backoff 12h | Bestätigt | bestanden |
 
 ## Lernagenten
 
