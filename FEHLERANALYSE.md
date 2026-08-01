@@ -95,7 +95,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `12 – Lernvorschlag-Freigabe.json`
 - **Ursache:** `trading.learning_rule_proposals.version` existiert, wird aber nie gelesen/inkrementiert.
 - **Korrektur:** Optimistic-Locking über `version`-Feld beim Freigeben.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. `version` (existierte bereits, NOT NULL DEFAULT 1, aber nie gelesen/inkrementiert) wird jetzt als Optimistic-Locking-Token genutzt: "Baue HTML" bettet den aktuellen Wert als verstecktes Formularfeld je Vorschlagszeile ein, "POST: Baue Load-Query" liest den vom Browser zurueckgesendeten Wert (`submittedVersion` - reines Konkurrenz-Token, keine Inhaltsquelle, A5 bleibt vollstaendig in Kraft), "POST: Formular normalisieren + SQL bauen" vergleicht ihn gegen die frisch aus der DB geladene aktuelle `version`; bei Abweichung greift dieselbe Behandlung wie bei einem bereits nicht mehr 'proposed' Status (`SELECT 1;`, kein Schreibversuch). Jedes tatsaechliche Status-Update (reject/activation_failed/alle 5 Aktivierungspfade) inkrementiert `version` jetzt mit. Abwaertskompatibel: fehlt `submittedVersion` (z.B. eine alte im Browser gecachte Seite ohne das neue Feld), wird NICHT blockiert. `DB: Vorschlaege laden` liefert `version` fuer die Listenansicht mit. Live bestaetigt: GET-Seite laedt weiterhin fehlerfrei (HTTP 200). Lokal mit 7 Testfaellen verifiziert (uebereinstimmende/abweichende/fehlende Version, Konflikt bei approve, Inkrementierung im Erfolgs- und im activation_failed-Zweig, Regression fuer bereits nicht mehr proposed).
 
 ### A11 — RSS-Quellen: kein SSRF-Schutz vor dem Feed-Abruf
 - **Schweregrad:** kritisch

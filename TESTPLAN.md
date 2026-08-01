@@ -26,6 +26,12 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | SEC-14 | A8-Fix (lokal) | `weight_adjustment` (Default-Zweig), Wert 5.0 bzw. 0.05 (außerhalb 0.1-3.0) | Jeweils `activation_failed` | Bestätigt (2 Teilfälle) | bestanden |
 | SEC-15 | A8-Fix (lokal) | Je ein gültiger Fall pro Vorschlagstyp (5 Typen) | Aktivierungs-SQL wird gebaut (kein `activation_failed`) | Bestätigt für alle 5 Typen | bestanden |
 | SEC-16 | A8-Fix (lokal) | Regression: `reject`-Aktion, fehlende `id` | Unverändertes Verhalten | Bestätigt | bestanden |
+| SEC-17 | A10-Fix (lokal) | `submittedVersion` stimmt mit DB-`version` überein | `reject` wird normal ausgeführt, `version` wird inkrementiert | Bestätigt | bestanden |
+| SEC-18 | A10-Fix (lokal) | `submittedVersion` weicht von DB-`version` ab (zwischenzeitlich geändert) | `SELECT 1;`, kein Schreibversuch | Bestätigt | bestanden |
+| SEC-19 | A10-Fix (lokal) | `submittedVersion` fehlt (alte gecachte Seite) | Kein Blockieren (abwärtskompatibel) | Bestätigt | bestanden |
+| SEC-20 | A10-Fix (lokal) | Versionskonflikt bei `approve`-Aktion | Ebenfalls `SELECT 1;` | Bestätigt | bestanden |
+| SEC-21 | A10-Fix (lokal) | Erfolgreiche `approve`- bzw. `activation_failed`-SQL | Beide enthalten `version = version + 1` im finalen UPDATE | Bestätigt (2 Teilfälle) | bestanden |
+| SEC-22 | A10-Fix live | `GET /webhook/lernvorschlaege` nach dem Push | HTTP 200, kein Absturz | Bestätigt | bestanden |
 
 ## Orchestrator
 
