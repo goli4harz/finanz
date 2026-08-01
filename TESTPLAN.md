@@ -65,6 +65,12 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | NEWS-6 | D6-Fix (lokal) | KI meldet `wahrscheinlichkeit_positiv/negativ/neutral = 0.6/0.2/0.2` | Werte unverändert in `probability_positive/negative/neutral` und in der generierten SQL | Bestätigt | bestanden |
 | NEWS-7 | D6-Fix (lokal) | KI meldet `wahrscheinlichkeit_positiv/negativ/neutral = 0.9/0.9/0.9` (Summe 2.7) | Alle drei Wahrscheinlichkeitsfelder `NULL` statt einer inkonsistenten Verteilung | Bestätigt | bestanden |
 | NEWS-8 | D6-Fix (lokal) | KI liefert kein `relevanz_konfidenz`-Feld | `relevance_confidence=NULL` (nicht `0`, D7-Muster) | Bestätigt | bestanden |
+| NEWS-9 | D12-Fix (lokal) | XETRA-Ticker mit Referenzdaten, News 20:00 Berlin | `baseline_case='nach_handelsende'`, `session_timezone_source='exchange_mapping'` | Bestätigt | bestanden |
+| NEWS-10 | D12-Fix (lokal) | US-Ticker (America/New_York) mit eigener Referenz, News zeitgleich (18:00 UTC = 20:00 Berlin = 14:00 New York) | `baseline_case='waehrend_handelszeit'` (NICHT `nach_handelsende` wie bei pauschal Berlin/XETRA) | Bestätigt | bestanden |
+| NEWS-11 | D12-Fix (lokal) | Ticker ohne Referenzdaten | Fallback auf Europe/Berlin/XETRA, als `session_timezone_source='fallback_default'` markiert | Bestätigt | bestanden |
+| NEWS-12 | D11-Fix (lokal) | Lückenlose Kurs-/Benchmarkreihe (30 Tage) | Identisches Ergebnis zur alten, indexbasierten Fassung (Regressionstest) | Bestätigt: `abnormal_return_d5` identisch in alter und neuer Fassung | bestanden |
+| NEWS-13 | D11-Fix (lokal), direkter Alt-/Neu-Vergleich | Aktie hat eine fehlende Zeile vor D+5, Benchmark lückenlos | Alte Fassung berechnet `benchmark_return_d5` gegen den falschen Kalendertag (0.0125), neue Fassung korrekt (0.015) | Bestätigt: reproduziert den Fund eins zu eins | bestanden |
+| NEWS-14 | D11-Fix (lokal) | Benchmark hat an genau dem D+3-Datum der Aktie keine Zeile | `benchmark_return_d3`/`abnormal_return_d3` = `NULL` statt falscher Nachbartag-Zuordnung | Bestätigt | bestanden |
 
 ## Lernagenten
 

@@ -333,14 +333,14 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `targetIdx = baselineIdx + h` ohne Prüfung, dass Aktie und Benchmark am selben `datum` liegen.
 - **Auswirkung:** Fehlt für Aktie oder Benchmark eine einzelne Kurszeile im Fenster, verschiebt sich der Index dauerhaft gegen den Benchmark — `abnormal_return_d5` wird gegen den falschen Kalendertag berechnet.
 - **Korrektur:** Nach `datum` statt Index abgleichen, bei fehlendem Match `null` statt falscher Zuordnung.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (Node "D+1..D+20 berechnen + Stoerfaktoren": Benchmark-Punkt je Horizont wird jetzt ueber `benchmarkByDatum[point.datum]` gesucht statt ueber `bverlauf[bBaselineIdx+h]` - fehlt in einem der beiden Kursverlaeufe eine einzelne Zeile, driftete vorher der Positionsversatz zwischen Aktie und Benchmark dauerhaft auseinander, jetzt wird ausschliesslich das tatsaechliche Kalenderdatum abgeglichen; fehlt der Benchmark an genau diesem Datum, wird `null` statt eines falsch zugeordneten Nachbartags geschrieben. Lokal mit 3 Szenarien getestet, davon eines direkt gegen die ALTE Code-Fassung verglichen: bei einer einzelnen fehlenden Aktienzeile lieferte die alte Fassung `benchmark_return_d5=0.0125` (falscher Tag), die neue korrekt `0.015` (richtiger Tag) - reproduziert den Fund eins zu eins.
 
 ### D12 — Pauschale deutsche Handelszeiten für alle Börsen in `08`
 - **Schweregrad:** hoch (aktuell latent)
 - **Datei/Node:** `08`, Node „Baseline-Fall je (News,Ticker) bestimmen"
 - **Auswirkung:** Aktuell folgenlos (alle 15 Watchlist-Ticker XETRA). Sobald ein US-Ticker aufgenommen wird: falsche Baseline-Tag-Zuordnung für abends veröffentlichte News.
 - **Korrektur:** `v_market_session_status`/`market_reference` je Ticker/Exchange abfragen statt fixer Konstanten.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (Node "Baseline-Fall je (News,Ticker) bestimmen": Sitzungszeiten/-zone jetzt je Ticker aus `trading.stock_instruments`/`market_reference` aufgeloest statt pauschal Europe/Berlin+09:00/17:30 fuer jeden Ticker - Query von "DB: Instrumente (Benchmark-Zuordnung)" um `exchange`/`exchange_timezone`/`session_open_local`/`session_close_local` erweitert (LEFT JOIN, kein neuer DB-Zugriff). Fehlt fuer einen Ticker die Referenz, greift der bisherige Default (Europe/Berlin/XETRA) als bewusst konservativer Fallback, zusaetzlich sichtbar markiert ueber neues Feld `session_timezone_source` ('exchange_mapping'/'fallback_default'). Lokal mit 3 Faellen getestet: XETRA-Ticker mit Referenzdaten, US-Ticker mit eigener Zeitzone (zeigt den vorher falschen Fall - eine News, die pauschal als 'nach Handelsende' gegolten haette, liegt fuer NYSE tatsaechlich noch waehrend der Handelszeit), Ticker ohne Referenzdaten (Fallback greift und wird markiert).
 
 ### D13 — Grobes „News bereits bearbeitet"-Flag statt Pro-Ticker-Tracking
 - **Schweregrad:** kritisch
