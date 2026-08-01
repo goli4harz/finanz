@@ -455,14 +455,14 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `trading.scoring_weights` wird zwar referenziert, aber nur für Fallgewichtung nach `baseline_quality_*` — der eigentliche per-Dimension aktive Gewichtswert wird nie gelesen. Die KI darf `current_value` selbst behaupten (`p.current_value ?? 1.0`).
 - **Auswirkung:** Liegt ein Gewicht bereits bei 0.6, suggeriert der Prompt „current_value=1.0" — ein KI-Vorschlag „0.8" sieht nach Absenkung aus, ist real eine Anhebung um +33%.
 - **Korrektur:** Vor Prompt-Bau `SELECT weight_value FROM scoring_weights WHERE weight_key=... AND active=TRUE` je Kandidat joinen, `current_value` fest aus DB setzen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (neuer Node "DB: Aktive Gewichte laden" liefert echte aktive Werte je dimension:value:horizon, jedem Finding als current_value mitgegeben; Prompt-Anweisung "current_value ist immer 1.0" entfernt und durch "uebernimm current_value exakt aus dem Finding" ersetzt). Lokal verifiziert: current_value fuer source:Reuters:D+1 korrekt 0.6 statt 1.0, unbekannte Kombination faellt korrekt auf 1.0-Default zurueck.
 
 ### F2 — `proposed_value` wird von der KI erfunden, kein Bounds-/Schrittweiten-Check im Code
 - **Schweregrad:** kritisch
 - **Datei/Node:** `09`, Node „Vorschlaege gegen Fallzahlen validieren"
 - **Ursache:** „Änderungen typischerweise 0.1–0.3, nie mehr als 0.5" ist nur Prompt-Text; Code-Sicherheitsnetz prüft nur `dimension|value|horizon`-Matching, nicht den Wert selbst. `scoring_weights.weight_value` hat kein CHECK.
 - **Korrektur:** Nach KI-Call `proposed_value` gegen `current_value ± max_step` und festen Wertebereich clampen/verwerfen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (current_value der KI wird nicht mehr uebernommen, sondern immer durch den echten match.current_value ersetzt; proposed_value wird gegen MAX_STEP=0.5 und absoluten Bereich [0.1,3.0] geprueft, bei Verstoss verworfen statt durchgereicht). Lokal 4 Faelle verifiziert: current_value-Luege der KI wird korrekt ignoriert, zu grosse Schrittweite/Wert ausserhalb Bereich/nicht-numerischer Wert werden korrekt verworfen.
 
 ### F3 — Mindestfallzahl in `09` hartkodiert statt aus `pipeline_config`
 - **Schweregrad:** niedrig
