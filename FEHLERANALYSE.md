@@ -227,7 +227,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `qualityStatus = (status==='invalid') ? 'invalid' : 'valid'` — `stale`, `limited`, `session_incomplete` werden strukturell zu `valid`.
 - **Auswirkung:** Konsumenten von `stock_price_history` (u. a. `14`) können nicht erkennen, dass eine Kerze aus einer laufenden Sitzung stammt oder veraltet ist — Information geht verloren, bevor sie einen Gate-Punkt erreichen kann.
 - **Korrektur:** Alle fünf Klassen unverändert durchreichen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (Node "Kurshistorie: SQL bauen" in Workflow 02: qualityStatus-Kollaps entfernt, `j.data_quality_status || 'limited'` statt `(status==='invalid')?'invalid':'valid'`, analog zu 02b seit C4/C5). Lokal mit allen 5 Klassen getestet (valid/limited/invalid/stale/session_incomplete durchgereicht, kein Match -> weiterhin sicheres `SELECT 1;` ohne Schreibversuch). `trading.stock_price_history.data_quality_status` ist eine reine TEXT-Spalte ohne CHECK-Constraint (sql/025) - keine Schema-Migration noetig, nur veralteter Spaltenkommentar per sql/040 korrigiert (Workflow 97 vorbereitet, Nutzer muss noch ausfuehren). **Wichtiger Nebeneffekt: macht den bereits deployten C9-Fix in Workflow 14 jetzt scharf** (14 kann `session_incomplete` jetzt tatsaechlich aus `stock_price_history` lesen).
 
 ### C7 — Sitzungsstatus-View wird nur von `02` genutzt, nicht von `02b`/`08`/`13`/`14`
 - **Schweregrad:** hoch
@@ -249,7 +249,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Weder `v_market_session_status` noch `market_regime.session_status` werden gelesen; einzige verfügbare Qualitätsinfo (`stock_price_history.data_quality_status`) ist durch C6 bereits kollabiert.
 - **Auswirkung:** Für künftige nicht-europäische Ticker (im Projekt bereits als kommender Fall benannt) würde `14` eine Einstiegszonen-Berührung oder einen Stop/Ziel-Treffer auf Basis einer unvollständigen Tageskerze feststellen und den Trade füllen/schließen.
 - **Korrektur:** `session_status` in Marktregime-Query aufnehmen und/oder `v_market_session_status` je Ticker laden; bei `open_intraday` Fill/Exit überspringen.
-- **Status:** behoben, live gepusht 2026-08-01 (Job B prueft bar.data_quality_status==='session_incomplete' vor Fill/Exit-Entscheidungen). Greift aktuell noch nicht scharf, da 02 diesen Wert erst nach Fix C6 (noch offen, siehe dort) tatsaechlich liefert - Code-Pfad ist aber vollstaendig vorbereitet und wird automatisch wirksam, sobald C6 behoben ist. — **aktuell durch XETRA-only-Watchlist + späten Lauf entschärft, aber strukturell offen**
+- **Status:** behoben, live gepusht 2026-08-01 (Job B prueft bar.data_quality_status==='session_incomplete' vor Fill/Exit-Entscheidungen). C6 wurde am 2026-08-01 ebenfalls behoben (siehe dort) - dieser Fix ist damit ab sofort scharf, nicht mehr nur vorbereitet: `14` erhaelt `session_incomplete` jetzt tatsaechlich aus `stock_price_history.data_quality_status`.
 
 ---
 

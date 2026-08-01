@@ -34,6 +34,7 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | CANDLE-1 | C4-Fix (lokal) | 40-Tage-Datensatz, letzter Tag: `close=null`, aber `open/high/low/volume` mit abweichendem Preisniveau vorhanden | Korrupte Kerze komplett verworfen, letzte gültige Kerze konsistent | Bestätigt: `kerze_close=100`, `kerze_open=99.8` (Vortag), nicht die korrupten 999/1005 | bestanden |
 | CANDLE-2 | C4-Fix (lokal) | Sauberer 260-Tage-Datensatz | `data_quality_status='valid'`, plausible EMA200/Regime | Bestätigt | bestanden |
 | CANDLE-3 | C1-Fix live | Echter Abruf `GET /chart/AAPL?period=1y&interval=1d` und `GET /chart/SAP.DE?period=1y&interval=1d` gegen die reale lokale FastAPI | ≥251 Handelstage statt ~63, `breakoutHistoryAusreichend` erreichbar (direkt oder über `fiftyTwoWeekHigh`-Meta) | Bestätigt: AAPL 251 Tage (zusätzlich `fiftyTwoWeekHigh=344.57` als Fallback), SAP.DE 253 Tage (direkt ≥252) | bestanden |
+| CANDLE-4 | C6-Fix (lokal) | 6 Testfälle: `data_quality_status` = `session_incomplete`/`stale`/`limited`/`valid`/`invalid` sowie kein Match in `Signal: flach aufbereiten` | Alle fünf Werte landen unverändert in der generierten SQL, kein Match → `SELECT 1;` (kein Schreibversuch) | Bestätigt für alle 6 Fälle | bestanden |
 
 ## Portfolio-Risiko/Paper-Trading (Workflow 14)
 

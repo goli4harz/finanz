@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-31T23:33:45.700Z",
+  "updatedAt": "2026-08-01T21:36:34.948Z",
   "createdAt": "2026-07-19T13:06:15.525Z",
   "id": "vgT6IrPp3ATaJg8s",
   "name": "02 – Technische Signale täglich",
@@ -1611,7 +1611,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\n// Welle 1, AP1 (2026-07-31): $json ist hier der Rueckgabewert von \"DB: Signal\n// aktualisieren\"/\"neu anlegen\" (Data-Table-Node, gibt nur die EIGENEN Spalten\n// zurueck) - open/high/low/volume/adjusted_close/data_quality_status\n// existieren dort nicht (gleiche Data-Table-Roundtrip-Falle wie bei ATR/\n// Strategiesignalen). Direkt aus \"Signal: flach aufbereiten\" nachladen\n// (.all()+Ticker-Matching, kein .item), exchange aus \"Watchlist laden (Kurse)\".\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nfunction exchangeFor(ticker) {\n  try {\n    const all = $('Watchlist laden (Kurse)').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match && match.json ? match.json.exchange : null;\n  } catch (e) { return null; }\n}\n\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst exchange = exchangeFor(outer.ticker);\n\n// Ohne verwertbaren Close kein sinnvoller Kurs-Datensatz - kein Schreiben\n// statt einer kaputten Zeile (Auftragsvorgabe: kein technischer Fehler als\n// neutrales/stilles Signal, aber auch kein erfundener Ersatzwert).\nif (j.kerze_close === undefined || j.kerze_close === null || j.kerze_close === '' || isNaN(Number(j.kerze_close))) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst tradingDate = j.datum;\nconst sourceTs = j.kerze_timestamp ? new Date(Number(j.kerze_timestamp) * 1000).toISOString() : null;\nconst qualityStatus = j.data_quality_status || 'limited';\n\n// Point-in-Time-Revisionierung wie fundamentals_history (sql/022/025): aktuelle\n// Revision schliessen, neue Revision anlegen - kein ON CONFLICT DO UPDATE mehr,\n// das bisher jeden Vortageswert kommentarlos ueberschrieben hat.\nconst sql = `UPDATE trading.stock_price_history\n  SET valid_to = now()\n  WHERE symbol = ${pgStr(j.ticker)} AND trading_date = ${pgStr(tradingDate)} AND valid_to IS NULL;\n\nINSERT INTO trading.stock_price_history\n  (symbol, trading_date, open, high, low, close, adjusted_close, volume, currency, exchange, source, source_timestamp, data_quality_status, revision_number)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(tradingDate)}, ${pgNum(j.kerze_open)}, ${pgNum(j.kerze_high)}, ${pgNum(j.kerze_low)}, ${pgNum(j.kerze_close)}, ${pgNum(j.kerze_adjusted_close)}, ${pgNum(j.kerze_volume)}, ${pgStr(j.waehrung)}, ${pgStr(exchange)}, 'technische-signale-02', ${pgStr(sourceTs)}, ${pgStr(qualityStatus)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.stock_price_history WHERE symbol = ${pgStr(j.ticker)} AND trading_date = ${pgStr(tradingDate)}), 0) + 1;`;\n\nreturn { json: { ...outer, sql } };",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\n// Welle 1, AP1 (2026-07-31): $json ist hier der Rueckgabewert von \"DB: Signal\n// aktualisieren\"/\"neu anlegen\" (Data-Table-Node, gibt nur die EIGENEN Spalten\n// zurueck) - open/high/low/volume/adjusted_close/data_quality_status\n// existieren dort nicht (gleiche Data-Table-Roundtrip-Falle wie bei ATR/\n// Strategiesignalen). Direkt aus \"Signal: flach aufbereiten\" nachladen\n// (.all()+Ticker-Matching, kein .item), exchange aus \"Watchlist laden (Kurse)\".\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nfunction exchangeFor(ticker) {\n  try {\n    const all = $('Watchlist laden (Kurse)').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match && match.json ? match.json.exchange : null;\n  } catch (e) { return null; }\n}\n\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst exchange = exchangeFor(outer.ticker);\n\n// Ohne verwertbaren Close kein sinnvoller Kurs-Datensatz - kein Schreiben\n// statt einer kaputten Zeile (Auftragsvorgabe: kein technischer Fehler als\n// neutrales/stilles Signal, aber auch kein erfundener Ersatzwert).\nif (j.kerze_close === undefined || j.kerze_close === null || j.kerze_close === '' || isNaN(Number(j.kerze_close))) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst tradingDate = j.datum;\nconst sourceTs = j.kerze_timestamp ? new Date(Number(j.kerze_timestamp) * 1000).toISOString() : null;\nconst qualityStatus = (j.data_quality_status === 'invalid') ? 'invalid' : 'valid';\n\n// Point-in-Time-Revisionierung wie fundamentals_history (sql/022/025): aktuelle\n// Revision schliessen, neue Revision anlegen - kein ON CONFLICT DO UPDATE mehr,\n// das bisher jeden Vortageswert kommentarlos ueberschrieben hat.\nconst sql = `UPDATE trading.stock_price_history\n  SET valid_to = now()\n  WHERE symbol = ${pgStr(j.ticker)} AND trading_date = ${pgStr(tradingDate)} AND valid_to IS NULL;\n\nINSERT INTO trading.stock_price_history\n  (symbol, trading_date, open, high, low, close, adjusted_close, volume, currency, exchange, source, source_timestamp, data_quality_status, revision_number)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(tradingDate)}, ${pgNum(j.kerze_open)}, ${pgNum(j.kerze_high)}, ${pgNum(j.kerze_low)}, ${pgNum(j.kerze_close)}, ${pgNum(j.kerze_adjusted_close)}, ${pgNum(j.kerze_volume)}, ${pgStr(j.waehrung)}, ${pgStr(exchange)}, 'technische-signale-02', ${pgStr(sourceTs)}, ${pgStr(qualityStatus)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.stock_price_history WHERE symbol = ${pgStr(j.ticker)} AND trading_date = ${pgStr(tradingDate)}), 0) + 1;`;\n\nreturn { json: { ...outer, sql } };",
         "mode": "runOnceForEachItem"
       },
       "id": "27583414-7421-4672-baf0-88eb1f699f2b",
@@ -3054,9 +3054,9 @@
   },
   "meta": null,
   "pinData": null,
-  "versionId": "7d36772a-ffbb-4fa2-919f-6aa9e07b823a",
-  "activeVersionId": "7d36772a-ffbb-4fa2-919f-6aa9e07b823a",
-  "versionCounter": 152,
+  "versionId": "ca815ddf-d149-47f1-9c25-ed1bf7ba6afb",
+  "activeVersionId": "ca815ddf-d149-47f1-9c25-ed1bf7ba6afb",
+  "versionCounter": 155,
   "triggerCount": 0,
   "shared": [
     {
@@ -3079,9 +3079,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-07-31T23:33:45.718Z",
-    "createdAt": "2026-07-31T23:33:45.718Z",
-    "versionId": "7d36772a-ffbb-4fa2-919f-6aa9e07b823a",
+    "updatedAt": "2026-08-01T21:36:34.987Z",
+    "createdAt": "2026-08-01T21:36:34.987Z",
+    "versionId": "ca815ddf-d149-47f1-9c25-ed1bf7ba6afb",
     "workflowId": "vgT6IrPp3ATaJg8s",
     "nodes": [
       {
@@ -3128,7 +3128,7 @@
       },
       {
         "parameters": {
-          "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=3mo&interval=1d",
+          "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=1y&interval=1d",
           "options": {
             "response": {
               "response": {
@@ -5204,19 +5204,19 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-07-31T23:33:46.080Z",
-        "id": 2103,
+        "createdAt": "2026-08-01T21:36:35.562Z",
+        "id": 2228,
         "workflowId": "vgT6IrPp3ATaJg8s",
-        "versionId": "7d36772a-ffbb-4fa2-919f-6aa9e07b823a",
-        "event": "deactivated",
+        "versionId": "ca815ddf-d149-47f1-9c25-ed1bf7ba6afb",
+        "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-07-31T23:33:46.211Z",
-        "id": 2104,
+        "createdAt": "2026-08-01T21:36:35.489Z",
+        "id": 2227,
         "workflowId": "vgT6IrPp3ATaJg8s",
-        "versionId": "7d36772a-ffbb-4fa2-919f-6aa9e07b823a",
-        "event": "activated",
+        "versionId": "ca815ddf-d149-47f1-9c25-ed1bf7ba6afb",
+        "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }
     ]
