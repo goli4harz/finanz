@@ -1,0 +1,87 @@
+{
+  "updatedAt": "2026-08-01T21:41:49.579Z",
+  "createdAt": "2026-07-19T13:27:11.388Z",
+  "id": "NInmI0f9TfdndwI1",
+  "name": "97 – Einmalig – Beliebige Query ausfuehren",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "30000000-0000-4000-8000-000000000001",
+      "name": "Manueller Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- 040: Dokumentations-Korrektur (C6, Haertungsauftrag 2026-08-01).\n-- trading.stock_price_history.data_quality_status ist eine reine TEXT-Spalte\n-- ohne CHECK-Constraint (siehe sql/025) - keine Schema-Aenderung noetig, nur\n-- der Spaltenkommentar war seit sql/025 veraltet: er beschrieb ein 2-Zustands-\n-- Feld (valid/invalid je Kerze), obwohl \"02b\" (seit C4/C5, 2026-08-01) und\n-- jetzt auch \"02\" (seit C6, 2026-08-01) hier bereits den vollen 5-Zustands-\n-- Seriencode (valid/limited/invalid/stale/session_incomplete) schreiben, damit\n-- Konsumenten wie \"14\" (siehe C9) eine laufende Sitzung oder veraltete Kerze\n-- erkennen koennen.\nCOMMENT ON COLUMN trading.stock_price_history.data_quality_status IS 'Seit C6/C9 (Haertungsauftrag 2026-08-01): voller Serien-Status je Kerze, einer von valid/limited/invalid/stale/session_incomplete (nicht mehr nur valid/invalid). Wird von \"02\"/\"02b\" beim Schreiben unveraendert durchgereicht (Quelle: technical_signal.dataQualityStatus). Konsumenten (u.a. \"14\") muessen alle fuenf Werte behandeln, nicht nur valid/invalid.';\n",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000002",
+      "name": "Query ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -176,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "76595951-8810-4cf6-8140-13d4a23ef803",
+  "activeVersionId": null,
+  "versionCounter": 117,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-19T13:27:11.388Z",
+      "createdAt": "2026-07-19T13:27:11.388Z",
+      "role": "workflow:owner",
+      "workflowId": "NInmI0f9TfdndwI1",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}
