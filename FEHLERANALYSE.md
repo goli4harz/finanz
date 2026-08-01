@@ -348,7 +348,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `NOT EXISTS (news_impact_tracking WHERE news_id=ni.id)` filtert pro `news_id`, nicht pro `(news_id, ticker)`.
 - **Auswirkung:** Bei einer News mit zwei Tickern, von denen einer übersprungen wird (z. B. neuer Ticker ohne Kurshistorie), entsteht nur eine Tracking-Zeile — im nächsten Lauf gilt die News als komplett bearbeitet, das fehlende Ticker-Paar wird nie nachgezogen.
 - **Korrektur:** Guard auf Ticker-Ebene umstellen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (WHERE-Bedingung von "irgendeine Tracking-Zeile fuer diese news_id existiert" auf "mindestens ein betroffener Ticker hat noch keine Tracking-Zeile" umgestellt, per jsonb_array_elements_text+EXISTS/NOT EXISTS. Nachgelagerter Node und Schreibpfad unveraendert - ON CONFLICT (news_id,ticker) DO UPDATE macht ein erneutes Verarbeiten bereits getrackter Ticker verlustfrei. SQL-Syntax manuell verifiziert (kein Postgres-Zugriff fuer EXPLAIN in dieser Session verfuegbar), echter Lauf steht noch aus.
 
 ---
 
