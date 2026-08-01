@@ -249,7 +249,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Weder `v_market_session_status` noch `market_regime.session_status` werden gelesen; einzige verfügbare Qualitätsinfo (`stock_price_history.data_quality_status`) ist durch C6 bereits kollabiert.
 - **Auswirkung:** Für künftige nicht-europäische Ticker (im Projekt bereits als kommender Fall benannt) würde `14` eine Einstiegszonen-Berührung oder einen Stop/Ziel-Treffer auf Basis einer unvollständigen Tageskerze feststellen und den Trade füllen/schließen.
 - **Korrektur:** `session_status` in Marktregime-Query aufnehmen und/oder `v_market_session_status` je Ticker laden; bei `open_intraday` Fill/Exit überspringen.
-- **Status:** offen — **aktuell durch XETRA-only-Watchlist + späten Lauf entschärft, aber strukturell offen**
+- **Status:** behoben, live gepusht 2026-08-01 (Job B prueft bar.data_quality_status==='session_incomplete' vor Fill/Exit-Entscheidungen). Greift aktuell noch nicht scharf, da 02 diesen Wert erst nach Fix C6 (noch offen, siehe dort) tatsaechlich liefert - Code-Pfad ist aber vollstaendig vorbereitet und wird automatisch wirksam, sobald C6 behoben ist. — **aktuell durch XETRA-only-Watchlist + späten Lauf entschärft, aber strukturell offen**
 
 ---
 
@@ -359,7 +359,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `14`, Query „DB: Heutige neue Empfehlungen laden"
 - **Ursache:** Kein `ORDER BY` — Verarbeitungsreihenfolge ist undefinierte physische Postgres-Zeilenreihenfolge.
 - **Korrektur:** `ORDER BY` nach Freigabestatus/Qualität/Chance-Risiko/Konfidenz/Ticker.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (deterministische Sortierung vor der Schleife). Lokal verifiziert: 3 Kandidaten mit MAX_OPEN_POSITIONS=10/9 bereits offen -> nur der beste (hoechster opportunity_score) wird genehmigt, die anderen 2 korrekt geblockt.
 
 ### E2 — Portfoliostand wird nicht zwischen mehreren neuen Positionen im selben Lauf fortgeschrieben
 - **Schweregrad:** kritisch
@@ -368,13 +368,13 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung (konkret nachvollzogen):** `MAX_OPEN_POSITIONS=10`, aktuell 9 offen, drei neue Kandidaten am selben Tag → jeder prüft `9+1>10=false` einzeln → alle drei genehmigt, Endstand 12 statt max. 10. Identisch für `TOTAL_RISK`, `SECTOR`, `DIRECTIONAL`, `CORRELATION`.
 - **Korrektur:** Nach jeder Genehmigung `offenePaperTrades.push(neuerTrade)` vor der nächsten Iteration (abhängig von E4-Fix für korrekten Sektor).
 - **Test:** 3 Empfehlungen simulieren, die einzeln unter, gemeinsam aber über einem Limit liegen → erwartet: ab dem Limit-überschreitenden Kandidaten wird blockiert.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (genehmigter Kandidat wird sofort in den lokalen Portfoliozustand uebernommen). Lokal verifiziert am selben Testfall wie E1 - vorher haetten alle 3 Kandidaten das Limit gemeinsam ueberschritten.
 
 ### E3 — Vorher/Nachher-Portfoliozustand nur unvollständig gespeichert
 - **Schweregrad:** mittel
 - **Datei/Node:** `14`, `trading.portfolio_risk_checks`
 - **Korrektur:** Nach E2-Fix zusätzlich laufende Sequenznummer + Zustands-Snapshot je Prüfung.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (sequence_index + portfolio_state_snapshot_json, sql/039)
 
 ### E4 — `sektor` wird auf `paper_trades` nie persistiert — Sektorlimit faktisch wirkungslos
 - **Schweregrad:** kritisch
@@ -382,7 +382,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `06` schreibt `sektor` korrekt als Snapshot auf `recommendations.sektor`, `14` liest es korrekt in `empf.sektor` — verwirft es aber beim INSERT nach `paper_trades`.
 - **Auswirkung:** `offeneSumme(..., t => t.sektor === empf.sektor)` vergleicht `undefined === 'Technologie'` → immer `false`. Da `MAX_SINGLE_POSITION_PCT` (8%) < `MAX_SECTOR_EXPOSURE_PCT` (15%), kann `SECTOR_LIMIT` **praktisch nie auslösen**.
 - **Korrektur:** `sektor`-Spalte per Migration ergänzen, in Dispatcher-A-INSERT aufnehmen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (sektor-Spalte ergaenzt, sql/039, in INSERT-Spaltenliste aufgenommen). Lokal Dispatcher-SQL verifiziert.
 
 ### E5 — Equity-Kurve startet bei 0 statt `MODEL_PORTFOLIO_VALUE`
 - **Schweregrad:** kritisch
@@ -391,7 +391,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Bei einer anfänglichen Verlustserie (plausibel, System ~2 Wochen alt) bleibt `equity` negativ, `peak` bleibt 0, `drawdown_pct` wird bei **jedem** Lauf als 0 berechnet — der Drawdown-Blocker kann in dieser Phase nicht auslösen, egal wie hoch der reale Verlust ist.
 - **Korrektur:** `let equity = MODEL_PORTFOLIO_VALUE, peak = MODEL_PORTFOLIO_VALUE;`
 - **Test:** Sofortiger erster Verlust simulieren → erwartet: `drawdown_pct > 0`, nicht 0.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (equity/peak starten bei MODEL_PORTFOLIO_VALUE). Lokal verifiziert: 3 aufeinanderfolgende Verluste (-8000/-5000/-3000 auf 100000 Startkapital) ergeben jetzt korrekt 16% Drawdown und loesen DRAWDOWN_LIMIT aus - vorher waere 0% berechnet worden.
 
 ### E6 — Drawdown-Nenner ist Konstante statt `peak_t`
 - **Schweregrad:** mittel
@@ -406,7 +406,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** Jeder Trade weist `net_pnl` um `entryFee+entrySlippage` zu hoch aus — pflanzt sich fort in `return_pct`, `realized_r_multiple`, Profit Factor, Trefferquote, Erwartungswert, Drawdown (E5) und Lernagenten-Gates (F8/E-Serie).
 - **Korrektur:** `netPnl = grossPnl - entryFee - entrySlippage - exitFee - exitSlippage`, Entry-Kosten beim Fill auf dem Trade-Objekt mitführen statt nur in `paper_trade_costs` zu versenken.
 - **Test:** Trade mit bekannten Fill-/Exit-Preisen und Kosten durchrechnen → `net_pnl` muss alle 4 Kostenkomponenten enthalten.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (entry_fee_amount/entry_slippage_amount auf paper_trades, sql/039, beim Fill gespeichert und beim Close zusaetzlich zu den Austrittskosten von net_pnl abgezogen). Lokal verifiziert: net_pnl 196.70 bei grossPnl 200 (Differenz 3.30 = Entry 1.5 + Exit 1.8 Kosten) statt vorher 198.20 (nur Exit-Kosten).
 
 ### E8 — `data_error` ist eine dauerhafte Sackgasse, kein Retry-Zustand
 - **Schweregrad:** kritisch
@@ -414,7 +414,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Ladequery selektiert nur `status IN ('open','proposed')` — ein auf `data_error` gesetzter Trade matcht danach nie wieder. Kein `retry_count`/`next_retry_at`/Eskalationsmechanismus, `data_error` wird von keinem anderen Workflow gelesen.
 - **Auswirkung:** Fehlt an einem Tag die Tageskerze für einen offenen Trade, wird er unwiderruflich eingefroren — nur manuelle SQL-Intervention hilft.
 - **Korrektur:** `retry_count`/`first_error_at`/`last_attempt_at`/`next_retry_at`-Felder ergänzen, Ladequery um `OR (status='data_error' AND retry_count<MAX)` erweitern, nach Überschreiten echte Eskalation (Matrix-Alert/`workflow_errors`).
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (data_error_count/first_at/last_at, sql/039, neuer Endzustand data_error_final nach MAX_DATA_ERROR_RETRIES mit Eskalation nach trading.workflow_errors). Lokal verifiziert: Zaehler 2->3 bei MAX=3 loest korrekt Eskalation aus.
 
 ### E9 — Fill-Tag prüft nicht auf Stop-/Ziel-Berührung derselben Kerze
 - **Schweregrad:** kritisch
@@ -422,7 +422,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Der `proposed`-Zweig endet nach dem Fill mit `continue;`, geht nicht in den Exit-Engine-Block (`open`-Zweig) über.
 - **Auswirkung:** Ein heute erstmals gefüllter Trade wird in diesem Lauf nicht auf Stop/Ziel derselben Kerze geprüft — erst am nächsten Tag, mit der Kerze von morgen und potenziell völlig anderem Exit-Preis. Unterläuft die AMBIGUOUS_BAR_POLICY strukturell für den Fill-Tag selbst.
 - **Korrektur:** Nach erfolgreichem Fill im selben Durchlauf sofort Stop/Ziel gegen dieselbe Tageskerze prüfen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (kein `continue` mehr nach einem Fill - derselbe Trade faellt lokal als offen durch in die Exit-Pruefung derselben Kerze, Mehrdeutigkeit `same_bar_fill_and_exit` dokumentiert). Lokal verifiziert: Fill bei 101 + Stop-Beruehrung bei 98 auf derselben Kerze wird jetzt im selben Lauf als geschlossen erkannt statt erst am naechsten Tag.
 
 ### E10 — `AMBIGUOUS_BAR_POLICY` ist hartkodierte JS-Konstante, nicht konfigurierbar
 - **Schweregrad:** mittel
@@ -443,7 +443,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Trade-Zustandsänderung, Event, Kosten werden als mehrere unabhängige n8n-Postgres-Aufrufe ausgeführt, nicht atomar. `paper_trade_costs`/`paper_trade_events` haben keinen UNIQUE-Constraint.
 - **Auswirkung:** Schlägt z. B. die Kosten-INSERT nach erfolgreichem Close-UPDATE fehl, gilt der Trade als geschlossen, die fehlende Kostenzeile wird nie nachgeholt (Trade wird von der Ladequery nicht mehr erfasst).
 - **Korrektur:** Mindestens `UNIQUE(trade_id, cost_type)` + `ON CONFLICT DO NOTHING` auf Kosten; mittelfristig eine Postgres-Funktion (`trading.fn_close_trade(...)`), die Statuswechsel+Event+Kosten in einer Transaktion kapselt.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (fill_cluster/close_cluster buendeln UPDATE+Kosten+Event in je einem BEGIN/COMMIT statt 3-4 unabhaengigen Dispatches; UNIQUE(trade_id,cost_type) + ON CONFLICT DO NOTHING gegen Doppel-Kosten bei Retries, sql/039). Lokal generierte SQL fuer beide Cluster-Typen verifiziert.
 
 ---
 
