@@ -17,6 +17,15 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | SEC-5 | A5-Fix (lokal simuliert) | Proposal-DB-Zeile ist `weight_adjustment`, Body behauptet `strategy_deactivation` | Server verwendet ausschließlich die DB-Wahrheit | Bestätigt: generierte SQL nutzt `weight_adjustment`-Zweig unabhängig vom Body | bestanden |
 | SEC-6 | A6-Fix (lokal simuliert) | Ziel-Update trifft 0 Zeilen (nicht existenter `target_value`) | Status wird nicht `activated` | Bestätigt: CASE-Ausdruck liefert `activation_failed` | bestanden |
 | SEC-7 | A9-Fix (lokal simuliert) | `proposed_value` leer/NaN bei `threshold_adjustment` | Kein NULL-Write, sofortiger `activation_failed` | Bestätigt | bestanden |
+| SEC-8 | A8-Fix (lokal) | `threshold_adjustment`, `MAX_RISK_PER_TRADE_PCT=99` (das im Fund genannte Beispiel) | `activation_failed`, kein Schreibversuch | Bestätigt | bestanden |
+| SEC-9 | A8-Fix (lokal) | `threshold_adjustment`, unbekannter `config_key` | `activation_failed` | Bestätigt | bestanden |
+| SEC-10 | A8-Fix (lokal) | `threshold_adjustment`, `MAX_OPEN_POSITIONS=5.5` (nicht ganzzahlig) | `activation_failed` | Bestätigt | bestanden |
+| SEC-11 | A8-Fix (lokal) | `strategy_parameter_change`, unbekannte Strategie bzw. unbekannter `parameter_key` bzw. Wert außerhalb Bereich (je einzeln) | Jeweils `activation_failed` | Bestätigt (3 Teilfälle) | bestanden |
+| SEC-12 | A8-Fix (lokal) | `regime_restriction`, `fit_multiplier=1.5` bzw. unbekanntes `combined_regime` bzw. unbekannte Strategie | Jeweils `activation_failed` | Bestätigt (3 Teilfälle) | bestanden |
+| SEC-13 | A8-Fix (lokal) | `strategy_deactivation`, unbekannte Strategie | `activation_failed` | Bestätigt | bestanden |
+| SEC-14 | A8-Fix (lokal) | `weight_adjustment` (Default-Zweig), Wert 5.0 bzw. 0.05 (außerhalb 0.1-3.0) | Jeweils `activation_failed` | Bestätigt (2 Teilfälle) | bestanden |
+| SEC-15 | A8-Fix (lokal) | Je ein gültiger Fall pro Vorschlagstyp (5 Typen) | Aktivierungs-SQL wird gebaut (kein `activation_failed`) | Bestätigt für alle 5 Typen | bestanden |
+| SEC-16 | A8-Fix (lokal) | Regression: `reject`-Aktion, fehlende `id` | Unverändertes Verhalten | Bestätigt | bestanden |
 
 ## Orchestrator
 

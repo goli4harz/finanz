@@ -70,7 +70,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `config_key`/`strategy`/`parameter_key`/`combined_regime` sind Freitext-Spalten ohne `CHECK`-Constraint und werden nicht gegen eine feste Liste erlaubter Schlüssel geprüft.
 - **Korrektur:** Feste Allowlist-Tabelle oder `CHECK`-Constraint je Zielobjekttyp.
 - **Test:** Freigabe mit unbekanntem `config_key` → erwartet Ablehnung.
-- **Status:** teilweise behoben 2026-08-01 (Allowlist fuer threshold_adjustment-Config-Schluessel ergaenzt und live verifiziert; strategy/parameter_key/combined_regime weiterhin ungeprueft - volle Regeltabelle ist A8)
+- **Status:** vollstaendig behoben 2026-08-01 ueber A8 (die dortige RULE_TABLE deckt jetzt config_key/strategy/parameter_key/combined_regime fuer alle 5 Vorschlagstypen ab, siehe dort)
 
 ### A8 — Keine Wertebereichs-/Schrittweiten-/NULL-Prüfung in der Freigabe
 - **Schweregrad:** hoch
@@ -79,7 +79,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Auswirkung:** `MAX_RISK_PER_TRADE_PCT` könnte theoretisch von 1% auf 99% gesetzt werden. Siehe auch F10/A9 (NULL-Schreibfähigkeit bei `pipeline_config`).
 - **Korrektur:** Zentrale Regeltabelle (Datentyp/Min/Max/Default/max. Schrittweite/NULL erlaubt) serverseitig durchsetzen (siehe auch Abschnitt F26).
 - **Test:** Siehe F-Serie (Lernagenten), Testfall „Wert außerhalb des zulässigen Bereichs".
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01. Zentrale RULE_TABLE in "POST: Formular normalisieren + SQL bauen" ersetzt die bisherige Einzel-Allowlist (A7): fuer threshold_adjustment alle 9 config_keys mit Min/Max/Ganzzahl-Flag (MAX_RISK_PER_TRADE_PCT z.B. 0.1-10, DRY_RUN/REQUIRE_CONFIRMATION 0/1); fuer strategy_parameter_change alle 3 tatsaechlich existierenden parameter_keys je Strategie (stop_atr_multiplier/target_atr_multiplier/horizon_days, aus sql/036 - vollstaendig enumerierbar, kein Freitext); fuer regime_restriction feste Strategie-/combined_regime-Allowlist + fit_multiplier 0-1 (aus dem Tabellenkommentar von strategy_regime_matrix, sql/032); fuer strategy_deactivation feste Strategie-Allowlist; fuer weight_adjustment (Default-Zweig) Wertebereich 0.1-3.0 (identisch zur bereits getesteten Validierung in Workflow 09, F2-Fix). Jede Verletzung fuehrt zu `activation_failed` statt eines unbeschraenkten Schreibvorgangs. Bewusst NICHT umgesetzt: eine maximale Schrittweite gegenueber dem aktuellen Live-Wert (haette eine zusaetzliche Vorab-Query je Ziel erfordert) - die absoluten Grenzen schliessen aber bereits das im Fund konkret genannte Beispiel (MAX_RISK_PER_TRADE_PCT von 1% auf 99%) zuverlaessig aus. Loest A7 vollstaendig ab (Einzel-Allowlist durch die umfassendere RULE_TABLE ersetzt) und F11 (identischer Fund aus Lernagenten-Perspektive). Lokal mit 20 Testfaellen ueber alle 5 Vorschlagstypen verifiziert (je ein gueltiger + mehrere ungueltige Faelle pro Typ), inkl. Regressionstest fuer reject-Aktion und fehlende id. Test mit einer echten `proposed`-Zeile steht weiterhin aus (aktuell 0 Vorschlaege in der DB, siehe A5/A6/A9).
 
 ### A9 — `pipeline_config.value_numeric` kann durch Freigabe auf NULL gesetzt werden
 - **Schweregrad:** kritisch
@@ -512,7 +512,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 
 ### F11 — Kein zentrales Regelwerk (Typ/Min/Max/Default/Schrittweite/NULL-Policy) in `12`
 - **Schweregrad:** hoch (identisch mit A8)
-- **Status:** offen (siehe A8)
+- **Status:** behoben ueber A8, siehe dort (Duplikat, kein eigener Fix noetig).
 
 ### F12 — NOT-NULL-Verletzung bei `learning_rule_proposals.proposed_value` durch F5, stiller Datenverlust
 - **Schweregrad:** mittel
