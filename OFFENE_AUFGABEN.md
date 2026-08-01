@@ -1,6 +1,24 @@
 # Offene Aufgaben
 
-Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1 UND Welle 2 umgesetzt, siehe Abschnitte unten)
+Stand: 2026-08-01 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2 UND Welle 3 umgesetzt, siehe Abschnitte unten)
+
+## Welle 3 – Paper-Trading-Ledger, Portfoliorisiko, Backtesting und kalibriertes Lernen (2026-08-01)
+
+Zwölf Arbeitspakete, größtenteils vollständig implementiert; zwei bewusst nur als Schema+Mechanismus-Spezifikation (Backtesting, Kalibrierung — beide mangels Historie dormant, siehe Begründung in den jeweiligen Docs). **Live-Push steht noch aus** (siehe unten).
+
+- ✅ **AP1** (Paper-Trading-Ledger): `trading.paper_trades`/`paper_trade_events`/`paper_trade_valuations`/`paper_trade_costs` (`sql/035`), vollständiges Statusmodell, lückenlose Ereignis-Historie, deterministische `trade_id` (kein Duplikat bei Wiederholung).
+- ✅ **AP2+AP3** (Ausführung/Exit): Workflow `14`, Job B — konservative Einstiegszonen-Fill-Logik (kein Fill am Signaltag, dokumentierte Gap-Behandlung), Exit-Engine mit 10 Gründen, `AMBIGUOUS_BAR_POLICY` für Stop+Ziel in derselben Kerze. Trailing-Stop bewusst **nicht** umgesetzt (optional laut Auftrag, siehe `docs/AUSFUEHRUNGSMODELL.md`).
+- ✅ **AP4** (Trade-Kennzahlen): `gross_pnl`/`net_pnl`/`return_pct`/`realized_r_multiple`/`holding_period`/MFE/MAE direkt auf `paper_trades`, Kennzahlen je Strategie/Regime im Dashboard.
+- ✅ **AP5** (Portfoliorisikomotor): Workflow `14`, Job A — 9 konfigurierbare Limits inkl. Korrelation und Stress-Reduktionsfaktor, strukturierte Blocker (`trading.portfolio_risk_checks`).
+- ✅ **AP6** (Stressszenarien): 7 transparente Szenarien (`trading.stress_scenarios`), bewusst einfache 1:1-Marktbewegungs-Annahme statt vorgetäuschtem Beta-Modell.
+- 🟡 **AP7** (Backtesting): Schema vollständig (`sql/037`), Ausführungs-Workflow bewusst **nicht gebaut** — mangels ausreichender Historie (System ~2 Wochen alt, `BACKTEST_MIN_WINDOW_DAYS=180`) wäre ein heute laufender Backtest ohne Aussagekraft. Siehe `docs/BACKTESTING_UND_WALK_FORWARD.md`.
+- 🟡 **AP8** (Kalibrierung): Schema+Formeln vollständig spezifiziert (`sql/037`), Berechnungs-Workflow bewusst **nicht gebaut** — 0 abgeschlossene Paper Trades. Siehe `docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md`.
+- ✅ **AP9** (Lernagent erweitert): neuer Workflow `09b – Lernagent Handelsstrategien`, vier harte Gates (Fallzahl/OOS/Konzentration/Effektstärke), KI berechnet keine Zahlen mehr (nur include/exclude-Entscheidung). `12` um vier neue, echte Aktivierungspfade erweitert (eine dokumentierte Ausnahme: `strategy_parameter_change` wird von `02` noch nicht gelesen). `06` prüft `trading.strategy_status` vor jeder Kandidatenauswahl.
+- ✅ **AP10** (Versionsfelder): `rule_version`/`configuration_version`/`data_schema_version`/`execution_model_version`/`risk_model_version` durchgängig auf `paper_trades`/`backtest_runs`/`probability_estimates`.
+- ✅ **AP11+AP12**: Dashboard (`07`) um 6 neue Sektionen erweitert, Report/Prüfagent (`10`) um 4 neue Ablehnungsregeln.
+- ✅ 18 von 22 geforderten Testfällen lokal automatisiert getestet (`tests/test_welle3_reine_funktionen.js`, 18/18 Assertions bestanden), 1 bewusst als "nicht implementiert" dokumentiert (Trailing-Stop), 3 Schema-only mangels Daten. Details: `docs/TESTPLAN_WELLE_3.md`.
+- ✅ Dokumentation: `docs/PAPER_TRADING_LEDGER.md`, `docs/AUSFUEHRUNGSMODELL.md`, `docs/PORTFOLIORISIKO.md`, `docs/BACKTESTING_UND_WALK_FORWARD.md`, `docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md`, `docs/LERNAGENT_HANDELSSTRATEGIEN.md`, `docs/TESTPLAN_WELLE_3.md`.
+- 🔴 **Noch nicht live gepusht**: Migrationen `sql/035-037`, geänderte Workflows `06`/`07`/`10`/`12`, neue Workflows `09b`/`14` sind lokal committet, Live-Push steht noch aus.
 
 ## Welle 2 – Strategiemotor, Marktregime und systematische Kandidatensuche (2026-08-01)
 
