@@ -275,13 +275,13 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `beschreibung: ''` unbedingt gesetzt, obwohl der Vorfilter-Node den RSS-Kurztext bereits sauber extrahiert.
 - **Auswirkung:** Die KI bewertet jede News ausschließlich anhand der (oft mehrdeutigen) Überschrift.
 - **Korrektur:** `beschreibung: j.beschreibung` — abhängig von D5 (Persistierung).
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (beschreibung kommt jetzt aus der DB statt hartcodiert '', mit Fallback fuer Altzeilen vor D5). Lokal verifiziert.
 
 ### D4 — `type` wird konstant auf `stock_news` gesetzt
 - **Schweregrad:** hoch
 - **Datei/Node:** `03`, Node „Baue Batch-Payload" (gleicher Node wie D3)
 - **Auswirkung:** Markt-/Kandidaten-News erhalten systematisch die falsche Bewertungsanweisung, da der System-Prompt je nach `type` unterschiedlich instruiert.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (type kommt jetzt aus der DB statt konstant 'stock_news'). Lokal verifiziert.
 
 ### D5 — Persistierung verwirft Beschreibung/Typ/Vorfiltergrund/Ticker vollständig
 - **Schweregrad:** kritisch
@@ -289,7 +289,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** INSERT-Spaltenliste beschränkt sich auf `news_key, title, url, source, published_at, status` — `description`/`type`/`match_reason`/`ticker` (Migration `sql/009` legt die Spalten bereits an) werden nicht geschrieben.
 - **Auswirkung:** Ein Artikel mit zwei Ticker-Treffern erzeugt zwei Items mit identischem `news_key` — das zweite INSERT läuft wegen `ON CONFLICT DO NOTHING` leer, der zweite Tickerbezug ist unwiederbringlich verloren, bevor die KI beteiligt ist. Ursache für D3/D4.
 - **Korrektur:** `description`/`preclassified_type`/`match_reason`/`preclassified_tickers` in INSERT-Spaltenliste aufnehmen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-01 (description/preclassified_type/match_reason/preclassified_tickers in INSERT-Spaltenliste aufgenommen - Spalten existierten bereits seit sql/009, waren aber nie befuellt; zusaetzlich ON CONFLICT DO UPDATE statt DO NOTHING, das preclassified_tickers bei mehreren Tickertreffern derselben News dedupliziert zusammenfuehrt statt den zweiten Tickerbezug zu verwerfen. 'DB: Faellige News laden' liest die neuen Spalten mit passenden Aliasen zurueck. Lokal SQL-Generierung verifiziert (korrektes Escaping bei Apostroph im Text).
 
 ### D6 — KI-Score/Konfidenz werden in `03` nie gespeichert
 - **Schweregrad:** hoch
