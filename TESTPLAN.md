@@ -71,6 +71,13 @@ Stand: 2026-08-01. Alle Tests wurden lokal gegen den tatsächlichen Node-Code au
 | NEWS-12 | D11-Fix (lokal) | Lückenlose Kurs-/Benchmarkreihe (30 Tage) | Identisches Ergebnis zur alten, indexbasierten Fassung (Regressionstest) | Bestätigt: `abnormal_return_d5` identisch in alter und neuer Fassung | bestanden |
 | NEWS-13 | D11-Fix (lokal), direkter Alt-/Neu-Vergleich | Aktie hat eine fehlende Zeile vor D+5, Benchmark lückenlos | Alte Fassung berechnet `benchmark_return_d5` gegen den falschen Kalendertag (0.0125), neue Fassung korrekt (0.015) | Bestätigt: reproduziert den Fund eins zu eins | bestanden |
 | NEWS-14 | D11-Fix (lokal) | Benchmark hat an genau dem D+3-Datum der Aktie keine Zeile | `benchmark_return_d3`/`abnormal_return_d3` = `NULL` statt falscher Nachbartag-Zuordnung | Bestätigt | bestanden |
+| NEWS-15 | D9-Fix (lokal) | Zwei Tracking-URL-Varianten desselben Artikels (`?utm_source=...` vs. `?fbclid=...`, mit/ohne Trailing-Slash) | Identischer `news_key` | Bestätigt | bestanden |
+| NEWS-16 | D9-Fix (lokal) | Zwei inhaltlich unterschiedliche URLs | Unterschiedlicher `news_key` (keine Über-Kanonisierung) | Bestätigt | bestanden |
+| NEWS-17 | D9-Fix (lokal) | Gleicher Titel+Beschreibung vs. unterschiedlicher Inhalt | `content_hash` identisch bzw. unterschiedlich, deterministisch | Bestätigt | bestanden |
+| NEWS-18 | D9-Fix (lokal) | Content-Hash-Duplikat trotz zweier verschiedener (kanonisierter) URLs | Wird als Duplikat erkannt und verworfen | Bestätigt | bestanden |
+| NEWS-19 | D9-Fix (lokal) | Jaccard-Titel-Ähnlichkeit ohne exakten Key-/Hash-Match (Regressionstest) | Weiterhin als Duplikat erkannt | Bestätigt | bestanden |
+| NEWS-20 | D9-Fix (lokal) | Zwei Items im selben Lauf mit identischem `content_hash` | Nur das erste kommt durch | Bestätigt | bestanden |
+| NEWS-21 | D9-Fix (lokal) | Generierte INSERT-SQL für eine neue News | Enthält `content_hash`-Spalte und -Wert | Bestätigt | bestanden |
 
 ## Lernagenten
 
