@@ -561,7 +561,8 @@
           "name": "Postgres account"
         }
       },
-      "id": "n-00000003-0000-4000-8000-0000000000"
+      "id": "n-00000003-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -731,7 +732,8 @@
         -2048,
         400
       ],
-      "id": "n-00000007-0000-4000-8000-0000000000"
+      "id": "n-00000007-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -742,7 +744,8 @@
         -1900,
         500
       ],
-      "id": "n-00000008-0000-4000-8000-0000000000"
+      "id": "n-00000008-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -828,7 +831,8 @@
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -897,7 +901,8 @@
       "position": [
         -1300,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -908,7 +913,8 @@
       "position": [
         -1100,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -932,7 +938,8 @@
       "position": [
         -900,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1018,7 +1025,8 @@
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1041,7 +1049,8 @@
       },
       "executeOnce": true,
       "onError": "continueRegularOutput",
-      "id": "n-welle1-ap5-veto10-000000000001"
+      "id": "n-welle1-ap5-veto10-000000000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1077,7 +1086,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle1-ap5-vetolog-write-0000001"
+      "id": "n-welle1-ap5-vetolog-write-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1132,7 +1142,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbstrategiesignalela-0001"
+      "id": "n-welle2-06-dbstrategiesignalela-0001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1154,7 +1165,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbmarktregimeladenem-0001"
+      "id": "n-welle2-06-dbmarktregimeladenem-0001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1176,7 +1188,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbregimematrixladene-0001"
+      "id": "n-welle2-06-dbregimematrixladene-0001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1198,7 +1211,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbfundamentalhistori-0001"
+      "id": "n-welle2-06-dbfundamentalhistori-0001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1220,7 +1234,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbtickerregionladene-0001"
+      "id": "n-welle2-06-dbtickerregionladene-0001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1256,7 +1271,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-06-ne-write-0000000001"
+      "id": "n-welle2-06-ne-write-0000000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1311,7 +1327,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-06-status-0000001"
+      "id": "n-welle3-06-status-0000001",
+      "alwaysOutputData": true
     }
   ],
   "pinData": {},

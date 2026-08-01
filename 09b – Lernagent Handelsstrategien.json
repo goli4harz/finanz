@@ -52,7 +52,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-003"
+      "id": "n-welle3-09b-003",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -74,7 +75,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-004"
+      "id": "n-welle3-09b-004",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -96,7 +98,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-005"
+      "id": "n-welle3-09b-005",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -118,7 +121,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-006"
+      "id": "n-welle3-09b-006",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -246,7 +250,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-013"
+      "id": "n-welle3-09b-013",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -281,7 +286,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-09b-015"
+      "id": "n-welle3-09b-015",
+      "alwaysOutputData": true
     },
     {
       "parameters": {

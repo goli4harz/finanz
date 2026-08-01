@@ -716,7 +716,8 @@
           "name": "Postgres account"
         }
       },
-      "id": "n-00000005-0000-4000-8000-0000000000"
+      "id": "n-00000005-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -738,7 +739,8 @@
           "name": "Postgres account"
         }
       },
-      "id": "n-00000006-0000-4000-8000-0000000000"
+      "id": "n-00000006-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -760,7 +762,8 @@
           "name": "Postgres account"
         }
       },
-      "id": "n-00000007-0000-4000-8000-0000000000"
+      "id": "n-00000007-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -782,7 +785,8 @@
           "name": "Postgres account"
         }
       },
-      "id": "n-00000008-0000-4000-8000-0000000000"
+      "id": "n-00000008-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -793,7 +797,8 @@
         -2800,
         -80
       ],
-      "id": "n-00000009-0000-4000-8000-0000000000"
+      "id": "n-00000009-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -804,7 +809,8 @@
         -2600,
         80
       ],
-      "id": "n-00000010-0000-4000-8000-0000000000"
+      "id": "n-00000010-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -815,7 +821,8 @@
         -2400,
         240
       ],
-      "id": "n-00000011-0000-4000-8000-0000000000"
+      "id": "n-00000011-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -826,7 +833,8 @@
         -2200,
         400
       ],
-      "id": "n-00000012-0000-4000-8000-0000000000"
+      "id": "n-00000012-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -837,7 +845,8 @@
         -2000,
         560
       ],
-      "id": "n-00000013-0000-4000-8000-0000000000"
+      "id": "n-00000013-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -848,7 +857,8 @@
         -1800,
         720
       ],
-      "id": "n-00000014-0000-4000-8000-0000000000"
+      "id": "n-00000014-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -872,11 +882,12 @@
         -1700,
         880
       ],
-      "id": "n-00000016-0000-4000-8000-0000000000"
+      "id": "n-00000016-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\n\nfunction buildTrend(rows, keyField) {\n  const byKey = {};\n  for (const r of rows) {\n    const k = String(r[keyField] || '').trim();\n    if (!k) continue;\n    if (!byKey[k]) byKey[k] = [];\n    byKey[k].push(r);\n  }\n  for (const k of Object.keys(byKey)) byKey[k].sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));\n  return byKey;\n}\n\n// Paket 9: Mehrtages-Trend aus Paket 8s Historie-Tabellen (letzte 5 Handelstage,\n// gruppiert je Ticker/Symbol statt aller Rohzeilen, um den Prompt-Umfang klein zu halten).\nconst trendHistorie = {\n  fundamentaldaten: buildTrend(safeAll('DB: Trend-Fundamentaldaten laden'), 'ticker'),\n  marktumfeld: buildTrend(safeAll('DB: Trend-Marktumfeld laden'), 'symbol'),\n  technische_signale: buildTrend(safeAll('DB: Trend-Signale laden'), 'ticker')\n};\n\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n// Welle 1, AP5+AP4: harte Vetos heute + Boersensitzungsstatus, fuer Report-\n// und Pruef-Agent-Prompt (siehe unten).\nconst vetosHeute = safeAll('DB: Vetos heute (Report)').map(v => {\n  let blockers = [];\n  try { blockers = typeof v.blockers_json === 'string' ? JSON.parse(v.blockers_json) : (v.blockers_json || []); } catch (e) {}\n  return { ticker: v.ticker, action: v.action, codes: blockers.map(b => b.code), blockers };\n});\nconst sitzungsstatusListe = safeAll('DB: Sitzungsstatus (Report)');\nconst strategieSignaleHeute = safeAll('DB: Strategiesignale heute (Report)');\nconst marktregimeHeute = safeAll('DB: Marktregime (Report)');\nconst scanKandidatenLetzterLauf = safeAll('DB: Scan-Kandidaten letzter Lauf (Report)');\nconst strategieauswertungPaper = safeAll('DB: Strategieauswertung (Report)');\nconst paperTradesZusammenfassung = safeAll('DB: Paper-Trades-Zusammenfassung (Report)')[0] || {};\nconst sitzungenUnvollstaendig = sitzungsstatusListe.filter(s => s.session_status === 'open_intraday' || s.session_status === 'stale');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose,\n  trend_historie: trendHistorie,\n  // Welle 1, AP5+AP4\n  harte_vetos_heute: vetosHeute,\n  sitzungsstatus: sitzungsstatusListe,\n  sitzungen_unvollstaendig: sitzungenUnvollstaendig.map(s => s.ticker),\n  // Welle 2, AP2+AP3+AP6\n  strategiesignale_heute: strategieSignaleHeute,\n  marktregime_heute: marktregimeHeute,\n  scan_kandidaten_letzter_lauf: scanKandidatenLetzterLauf,\n  scan_kandidaten_regime_blockiert: strategieSignaleHeute.filter(s => Number(s.regime_fit) !== null && Number(s.regime_fit) < 0.2).map(s => s.ticker),\n  // Welle 3, AP1-AP9\n  strategieauswertung_paper_trades: strategieauswertungPaper,\n  paper_trades_zusammenfassung: paperTradesZusammenfassung,\n  strategien_zu_kleine_fallzahl: strategieauswertungPaper.filter(s => Number(s.n) > 0 && Number(s.n) < 30).map(s => s.strategy)\n} }];\n"
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  // alwaysOutputData auf den Quell-Nodes verhindert, dass eine 0-Zeilen-Abfrage die\n  // Merge-Kette abbricht - erzeugt dabei aber ein leeres Platzhalter-Item, das hier\n  // herausgefiltert wird.\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json).filter(j => j && Object.keys(j).length > 0) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\n\nfunction buildTrend(rows, keyField) {\n  const byKey = {};\n  for (const r of rows) {\n    const k = String(r[keyField] || '').trim();\n    if (!k) continue;\n    if (!byKey[k]) byKey[k] = [];\n    byKey[k].push(r);\n  }\n  for (const k of Object.keys(byKey)) byKey[k].sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));\n  return byKey;\n}\n\n// Paket 9: Mehrtages-Trend aus Paket 8s Historie-Tabellen (letzte 5 Handelstage,\n// gruppiert je Ticker/Symbol statt aller Rohzeilen, um den Prompt-Umfang klein zu halten).\nconst trendHistorie = {\n  fundamentaldaten: buildTrend(safeAll('DB: Trend-Fundamentaldaten laden'), 'ticker'),\n  marktumfeld: buildTrend(safeAll('DB: Trend-Marktumfeld laden'), 'symbol'),\n  technische_signale: buildTrend(safeAll('DB: Trend-Signale laden'), 'ticker')\n};\n\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n// Welle 1, AP5+AP4: harte Vetos heute + Boersensitzungsstatus, fuer Report-\n// und Pruef-Agent-Prompt (siehe unten).\nconst vetosHeute = safeAll('DB: Vetos heute (Report)').map(v => {\n  let blockers = [];\n  try { blockers = typeof v.blockers_json === 'string' ? JSON.parse(v.blockers_json) : (v.blockers_json || []); } catch (e) {}\n  return { ticker: v.ticker, action: v.action, codes: blockers.map(b => b.code), blockers };\n});\nconst sitzungsstatusListe = safeAll('DB: Sitzungsstatus (Report)');\nconst strategieSignaleHeute = safeAll('DB: Strategiesignale heute (Report)');\nconst marktregimeHeute = safeAll('DB: Marktregime (Report)');\nconst scanKandidatenLetzterLauf = safeAll('DB: Scan-Kandidaten letzter Lauf (Report)');\nconst strategieauswertungPaper = safeAll('DB: Strategieauswertung (Report)');\nconst paperTradesZusammenfassung = safeAll('DB: Paper-Trades-Zusammenfassung (Report)')[0] || {};\nconst sitzungenUnvollstaendig = sitzungsstatusListe.filter(s => s.session_status === 'open_intraday' || s.session_status === 'stale');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose,\n  trend_historie: trendHistorie,\n  // Welle 1, AP5+AP4\n  harte_vetos_heute: vetosHeute,\n  sitzungsstatus: sitzungsstatusListe,\n  sitzungen_unvollstaendig: sitzungenUnvollstaendig.map(s => s.ticker),\n  // Welle 2, AP2+AP3+AP6\n  strategiesignale_heute: strategieSignaleHeute,\n  marktregime_heute: marktregimeHeute,\n  scan_kandidaten_letzter_lauf: scanKandidatenLetzterLauf,\n  scan_kandidaten_regime_blockiert: strategieSignaleHeute.filter(s => Number(s.regime_fit) !== null && Number(s.regime_fit) < 0.2).map(s => s.ticker),\n  // Welle 3, AP1-AP9\n  strategieauswertung_paper_trades: strategieauswertungPaper,\n  paper_trades_zusammenfassung: paperTradesZusammenfassung,\n  strategien_zu_kleine_fallzahl: strategieauswertungPaper.filter(s => Number(s.n) > 0 && Number(s.n) < 30).map(s => s.strategy)\n} }];\n"
       },
       "name": "Reportdaten aufbereiten",
       "type": "n8n-nodes-base.code",
@@ -1055,7 +1066,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-00000025-0000-4000-8000-0000000000"
+      "id": "n-00000025-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1091,7 +1103,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-00000027-0000-4000-8000-0000000000"
+      "id": "n-00000027-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1125,7 +1138,8 @@
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1146,7 +1160,8 @@
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1167,7 +1182,8 @@
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      }
+      },
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -1178,7 +1194,8 @@
       "position": [
         -2400,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -1189,7 +1206,8 @@
       "position": [
         -2200,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {},
@@ -1200,7 +1218,8 @@
       "position": [
         -2000,
         700
-      ]
+      ],
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1222,7 +1241,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle1-10-vetos-000000000001"
+      "id": "n-welle1-10-vetos-000000000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1244,7 +1264,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle1-10-session-00000000001"
+      "id": "n-welle1-10-session-00000000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1259,7 +1280,8 @@
         3776,
         500
       ],
-      "id": "n-welle1-10-merge11-0000001"
+      "id": "n-welle1-10-merge11-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1274,7 +1296,8 @@
         3952,
         500
       ],
-      "id": "n-welle1-10-merge12-0000001"
+      "id": "n-welle1-10-merge12-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1296,7 +1319,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-10-strat-0000001"
+      "id": "n-welle2-10-strat-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1318,7 +1342,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-10-regime-0000001"
+      "id": "n-welle2-10-regime-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1340,7 +1365,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle2-10-scan-0000001"
+      "id": "n-welle2-10-scan-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1355,7 +1381,8 @@
         4304,
         700
       ],
-      "id": "n-welle2-10-merge13-000001"
+      "id": "n-welle2-10-merge13-000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1370,7 +1397,8 @@
         4480,
         700
       ],
-      "id": "n-welle2-10-merge14-000001"
+      "id": "n-welle2-10-merge14-000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1385,7 +1413,8 @@
         4656,
         700
       ],
-      "id": "n-welle2-10-merge15-000001"
+      "id": "n-welle2-10-merge15-000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1407,7 +1436,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-10-a-0000001"
+      "id": "n-welle3-10-a-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1429,7 +1459,8 @@
         }
       },
       "onError": "continueRegularOutput",
-      "id": "n-welle3-10-b-0000001"
+      "id": "n-welle3-10-b-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1444,7 +1475,8 @@
         5008,
         700
       ],
-      "id": "n-welle3-10-m16-0000001"
+      "id": "n-welle3-10-m16-0000001",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
@@ -1459,7 +1491,8 @@
         5184,
         700
       ],
-      "id": "n-welle3-10-m17-0000001"
+      "id": "n-welle3-10-m17-0000001",
+      "alwaysOutputData": true
     }
   ],
   "pinData": {},
