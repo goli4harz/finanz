@@ -1151,11 +1151,6 @@
       "main": [
         [
           {
-            "node": "Markt-Watchlist laden",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "DB: Markt-/Makro-News heute laden",
             "type": "main",
             "index": 0
@@ -1177,11 +1172,6 @@
     "Execute Workflow Trigger": {
       "main": [
         [
-          {
-            "node": "Markt-Watchlist laden",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "DB: Markt-/Makro-News heute laden",
             "type": "main",
@@ -1330,6 +1320,17 @@
         [
           {
             "node": "Marktregime: schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Markt-/Makro-News heute laden": {
+      "main": [
+        [
+          {
+            "node": "Markt-Watchlist laden",
             "type": "main",
             "index": 0
           }

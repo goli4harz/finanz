@@ -120,7 +120,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "id": "dd000000-0000-4000-8000-0000010002",
       "name": "Marktumfeld: Ergebnis entduplizieren",
@@ -242,7 +242,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "id": "dd000000-0000-4000-8000-0000020002",
       "name": "Technische Signale: Ergebnis entduplizieren",
@@ -506,7 +506,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "id": "dd000000-0000-4000-8000-0000030002",
       "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
@@ -597,7 +597,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "id": "dd000000-0000-4000-8000-0000040002",
       "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
@@ -782,7 +782,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "id": "dd000000-0000-4000-8000-0000050002",
       "name": "Versand: Ergebnis entduplizieren",
@@ -1099,7 +1099,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "name": "Markt-Screener (13): Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
@@ -1251,7 +1251,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
       "name": "Portfolio-Risiko und Paper-Trading (14): Ergebnis entduplizieren",
       "type": "n8n-nodes-base.code",
