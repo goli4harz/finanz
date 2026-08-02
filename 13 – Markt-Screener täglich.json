@@ -36,7 +36,8 @@
         -2400,
         240
       ],
-      "id": "n-welle2-13-002"
+      "id": "n-welle2-13-002",
+      "disabled": true
     },
     {
       "parameters": {
@@ -388,7 +389,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'{}'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Zaehlt aus den bereits berechneten Scan-Kandidaten (nicht erneut aus der DB\n// gelesen - Konsistenz mit dem, was tatsaechlich geschrieben wurde).\nconst alle = $('Stufe A+B: Scan berechnen').all().map(i => i.json);\nconst universe = $('DB: Universum laden').all().map(i => i.json);\nconst run_id = alle.length > 0 ? alle[0].run_id : ('scan-' + new Date().toISOString().slice(0, 10) + '-' + Date.now());\nconst business_date = alle.length > 0 ? alle[0].business_date : new Date().toISOString().slice(0, 10);\nconst stageASurvivors = alle.filter(r => r.stage === 'A' && r.included).length;\nconst stageBAnalyzed = alle.filter(r => r.stage === 'B' && r.included).length;\nconst CFG = {};\nfor (const r of $('DB: Scanner-Konfiguration laden').all().map(i => i.json)) CFG[r.config_key] = Number(r.value_numeric);\n\nconst sql = `INSERT INTO trading.scan_runs\n  (run_id, business_date, finished_at, universe_size, stage_a_survivors, stage_b_analyzed, config_snapshot_json, status)\n  VALUES (${pgStr(run_id)}, ${pgStr(business_date)}, now(), ${pgNum(universe.length)}, ${pgNum(stageASurvivors)}, ${pgNum(stageBAnalyzed)}, ${pgJsonb(CFG)}, 'success')\n  ON CONFLICT (run_id) DO UPDATE SET\n    finished_at = EXCLUDED.finished_at, universe_size = EXCLUDED.universe_size,\n    stage_a_survivors = EXCLUDED.stage_a_survivors, stage_b_analyzed = EXCLUDED.stage_b_analyzed,\n    config_snapshot_json = EXCLUDED.config_snapshot_json, status = EXCLUDED.status;`;\nreturn { json: { run_id, business_date, universeSize: universe.length, stageASurvivors, stageBAnalyzed, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'{}'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Zaehlt aus den bereits berechneten Scan-Kandidaten (nicht erneut aus der DB\n// gelesen - Konsistenz mit dem, was tatsaechlich geschrieben wurde).\nconst alle = $('Stufe A+B: Scan berechnen').all().map(i => i.json);\nconst universe = $('DB: Universum laden').all().map(i => i.json);\nconst run_id = alle.length > 0 ? alle[0].run_id : ('scan-' + new Date().toISOString().slice(0, 10) + '-' + Date.now());\nconst business_date = alle.length > 0 ? alle[0].business_date : new Date().toISOString().slice(0, 10);\nconst stageASurvivors = alle.filter(r => r.stage === 'A' && r.included).length;\nconst stageBAnalyzed = alle.filter(r => r.stage === 'B' && r.included).length;\nconst CFG = {};\nfor (const r of $('DB: Scanner-Konfiguration laden').all().map(i => i.json)) CFG[r.config_key] = Number(r.value_numeric);\n\n// FIX (Haertung Welle 1-3, Phase 14): Status jetzt real aus dem Schreibergebnis von\n// \"Scan-Kandidaten: schreiben\" abgeleitet statt hart 'success' - ein DB-Fehler dort (durch\n// onError:continueRegularOutput nicht absturzfaehig, aber bisher stillschweigend als Erfolg\n// protokolliert) wird jetzt sichtbar.\nconst kandidatenSchreibErgebnis = $('Scan-Kandidaten: schreiben').all();\nconst schreibFehler = kandidatenSchreibErgebnis.filter(i => i.json && i.json.error);\nconst runStatus = schreibFehler.length > 0 ? 'failed' : 'success';\nconst runErrors = schreibFehler.map(i => String((i.json.error && (i.json.error.message || i.json.error)) || ''));\n\nconst sql = `INSERT INTO trading.scan_runs\n  (run_id, business_date, finished_at, universe_size, stage_a_survivors, stage_b_analyzed, config_snapshot_json, status)\n  VALUES (${pgStr(run_id)}, ${pgStr(business_date)}, now(), ${pgNum(universe.length)}, ${pgNum(stageASurvivors)}, ${pgNum(stageBAnalyzed)}, ${pgJsonb(CFG)}, ${pgStr(runStatus)})\n  ON CONFLICT (run_id) DO UPDATE SET\n    finished_at = EXCLUDED.finished_at, universe_size = EXCLUDED.universe_size,\n    stage_a_survivors = EXCLUDED.stage_a_survivors, stage_b_analyzed = EXCLUDED.stage_b_analyzed,\n    config_snapshot_json = EXCLUDED.config_snapshot_json, status = EXCLUDED.status;`;\nreturn { json: { run_id, business_date, universeSize: universe.length, stageASurvivors, stageBAnalyzed, sql, status: runStatus, errors: runErrors } };\n"
       },
       "name": "Scan-Run: SQL bauen",
       "type": "n8n-nodes-base.code",
@@ -525,6 +526,30 @@
         700
       ],
       "id": "n-13-p2-wrap-8"
+    },
+    {
+      "parameters": {},
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2400,
+        80
+      ],
+      "id": "n-p14-13-exectrigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Haertung Welle 1-3, Phase 14: einheitliches Envelope fuer den Orchestrator (00),\n// analog zu 06/10/05. 13 hat nur einen Verarbeitungsschritt (kein Job A/B/C wie 14) -\n// \"failed\" wenn der Kandidaten-Schreibvorgang fehlschlug, sonst \"success\".\nconst r = $('Scan-Run: SQL bauen').item.json;\nconst status = r.status || 'success';\nconst errors = (r.errors || []).map(e => ({ node: 'Scan-Kandidaten: schreiben', message: e }));\nreturn [{ json: {\n  status,\n  processed: r.universeSize || 0,\n  successful: status === 'success' ? (r.universeSize || 0) : 0,\n  failed: status === 'failed' ? 1 : 0,\n  warnings: [],\n  errors,\n  run_id: r.run_id,\n  business_date: r.business_date,\n  stage_a_survivors: r.stageASurvivors,\n  stage_b_analyzed: r.stageBAnalyzed\n} }];"
+      },
+      "name": "Endergebnis fuer Aufrufer aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        400
+      ],
+      "id": "n-p14-13-envelope"
     }
   ],
   "connections": {
@@ -913,6 +938,63 @@
             "node": "Merge Vorbereitung 7",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Scanner-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Universum laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Technische Signale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: News heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan-Run: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Endergebnis fuer Aufrufer aufbereiten",
+            "type": "main",
+            "index": 0
           }
         ]
       ]

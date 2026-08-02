@@ -36,7 +36,8 @@
         -3000,
         240
       ],
-      "id": "n-welle3-14-002"
+      "id": "n-welle3-14-002",
+      "disabled": true
     },
     {
       "parameters": {
@@ -873,6 +874,30 @@
         180
       ],
       "id": "n-14-p2-c-wrap-2"
+    },
+    {
+      "parameters": {},
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3000,
+        80
+      ],
+      "id": "n-p14-14-exectrigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "function summarizeJob(dispatcherName, execName) {\n  let dispatched = [];\n  let executed = [];\n  try { dispatched = $(dispatcherName).all().map(i => i.json); } catch (e) {}\n  try { executed = $(execName).all(); } catch (e) {}\n  const real = dispatched.filter(d => d.sql && d.sql.trim() !== 'SELECT 1;');\n  const errors = executed.filter(i => i.json && i.json.error).map(i => String((i.json.error && (i.json.error.message || i.json.error)) || ''));\n  return { attempted: dispatched.length, processed: real.length, dryRunSkipped: dispatched.length - real.length, failed: errors.length, errors };\n}\n\nconst jobA = summarizeJob('SQL bauen (Dispatcher A)', 'SQL ausfuehren (A)');\nconst jobB = summarizeJob('SQL bauen (Dispatcher B)', 'SQL ausfuehren (B)');\nconst jobC = summarizeJob('SQL bauen (Dispatcher C)', 'SQL ausfuehren (C)');\n\nconst processed = jobA.processed + jobB.processed + jobC.processed;\nconst failed = jobA.failed + jobB.failed + jobC.failed;\nconst attempted = jobA.attempted + jobB.attempted + jobC.attempted;\nconst successful = attempted - failed;\n\nlet status;\nif (attempted === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nconst errors = [\n  ...jobA.errors.map(m => ({ node: 'SQL ausfuehren (A)', message: m })),\n  ...jobB.errors.map(m => ({ node: 'SQL ausfuehren (B)', message: m })),\n  ...jobC.errors.map(m => ({ node: 'SQL ausfuehren (C)', message: m }))\n];\n\nlet runId = null;\ntry {\n  const jobCItems = $('Job C: Stressszenarien berechnen').all().map(i => i.json);\n  runId = (jobCItems.find(i => i.run_id) || {}).run_id || null;\n} catch (e) {}\n\nreturn [{ json: {\n  status,\n  processed: attempted,\n  successful,\n  failed,\n  warnings: [],\n  errors,\n  run_id: runId,\n  job_a: jobA,\n  job_b: jobB,\n  job_c: jobC\n} }];"
+      },
+      "name": "Endergebnis fuer Aufrufer aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        100
+      ],
+      "id": "n-p14-14-envelope"
     }
   ],
   "connections": {
@@ -1501,6 +1526,63 @@
             "node": "Merge C 1",
             "type": "main",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige neue Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Portfolio)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Korrelation)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategie-Status laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ticker-Region-Waehrung laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL ausfuehren (C)": {
+      "main": [
+        [
+          {
+            "node": "Endergebnis fuer Aufrufer aufbereiten",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
