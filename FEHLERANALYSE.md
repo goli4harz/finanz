@@ -435,7 +435,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `10 – Report- und Prüfagent.json`, Node „DB: Strategieauswertung (Report)"
 - **Ursache:** `win_rate_pct`/`profit_factor`/`expectancy_r` laufen über alle `closed`-Trades, `ambiguous_pct` ist nur zusätzliche Info-Kennzahl.
 - **Korrektur:** Zusätzliche Kennzahlen mit `WHERE ambiguous_execution=FALSE` parallel ausweisen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. "DB: Strategieauswertung (Report)" um `expectancy_r_unambiguous`/`win_rate_pct_unambiguous`/`profit_factor_unambiguous`/`n_unambiguous` (alle mit `ambiguous_execution=FALSE`) erweitert, additiv neben den bestehenden Gesamt-Kennzahlen. `ambiguous_execution` ist `NOT NULL DEFAULT FALSE` (sql/035), kein NULL-Sonderfall noetig. Kein Code-Fix in "Reportdaten aufbereiten" noetig - das Ergebnis-Array wird dort bereits unveraendert durchgereicht (`strategieauswertung_paper_trades: strategieauswertungPaper`), die neuen Felder erscheinen also automatisch im Report-Payload und im Kontext, den der Pruef-Agent sieht (Regel 10 seines Prompts prueft bereits `ambiguous_pct`). Paren-Balance + Query-Struktur lokal verifiziert.
 
 ### E12 — Keine DB-Transaktion für Paper-Trade-Schreibvorgänge, keine Constraints gegen Teilfehler
 - **Schweregrad:** kritisch

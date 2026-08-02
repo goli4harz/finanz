@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-01T00:52:38.767Z",
+  "updatedAt": "2026-08-02T07:07:23.764Z",
   "createdAt": "2026-07-19T13:02:26.677Z",
   "id": "BFlxfLyarzR2xbBT",
   "name": "10 – Report- und Prüfagent",
@@ -818,7 +818,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT strategy, count(*) FILTER (WHERE status = 'closed') AS n, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor, round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct FROM trading.paper_trades GROUP BY strategy;",
+        "query": "SELECT strategy, count(*) FILTER (WHERE status = 'closed') AS n, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor, round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE)::numeric, 3) AS expectancy_r_unambiguous, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE), 0), 1) AS win_rate_pct_unambiguous, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl < 0)), 0), 3) AS profit_factor_unambiguous, count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE) AS n_unambiguous FROM trading.paper_trades GROUP BY strategy;",
         "options": {}
       },
       "name": "DB: Strategieauswertung (Report)",
@@ -1505,9 +1505,9 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "95b65252-8411-42f4-ac16-acfe6f86dcc1",
-  "activeVersionId": "95b65252-8411-42f4-ac16-acfe6f86dcc1",
-  "versionCounter": 133,
+  "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
+  "activeVersionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
+  "versionCounter": 139,
   "triggerCount": 0,
   "shared": [
     {
@@ -1530,9 +1530,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-01T00:52:38.772Z",
-    "createdAt": "2026-08-01T00:52:38.772Z",
-    "versionId": "95b65252-8411-42f4-ac16-acfe6f86dcc1",
+    "updatedAt": "2026-08-02T07:07:23.791Z",
+    "createdAt": "2026-08-02T07:07:23.791Z",
+    "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
     "workflowId": "BFlxfLyarzR2xbBT",
     "nodes": [
       {
@@ -2093,7 +2093,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
+          "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
           "options": {}
         },
         "id": "cb0285e6-d74a-4f64-a526-a5581b439d8a",
@@ -2346,7 +2346,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "SELECT strategy, count(*) FILTER (WHERE status = 'closed') AS n, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor, round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct FROM trading.paper_trades GROUP BY strategy;",
+          "query": "SELECT strategy, count(*) FILTER (WHERE status = 'closed') AS n, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor, round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE)::numeric, 3) AS expectancy_r_unambiguous, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE), 0), 1) AS win_rate_pct_unambiguous, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl < 0)), 0), 3) AS profit_factor_unambiguous, count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE) AS n_unambiguous FROM trading.paper_trades GROUP BY strategy;",
           "options": {}
         },
         "name": "DB: Strategieauswertung (Report)",
@@ -3032,18 +3032,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-01T00:52:38.980Z",
-        "id": 2123,
+        "createdAt": "2026-08-02T07:07:24.991Z",
+        "id": 2257,
         "workflowId": "BFlxfLyarzR2xbBT",
-        "versionId": "95b65252-8411-42f4-ac16-acfe6f86dcc1",
+        "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-01T00:52:39.066Z",
-        "id": 2124,
+        "createdAt": "2026-08-02T07:07:25.068Z",
+        "id": 2258,
         "workflowId": "BFlxfLyarzR2xbBT",
-        "versionId": "95b65252-8411-42f4-ac16-acfe6f86dcc1",
+        "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }
