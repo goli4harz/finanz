@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT 'pipeline_config.MAX_AMBIGUOUS_PCT_FOR_PROPOSAL' AS obj, EXISTS(SELECT 1 FROM trading.pipeline_config WHERE config_key='MAX_AMBIGUOUS_PCT_FOR_PROPOSAL') AS vorhanden\nUNION ALL SELECT 'ux_paper_trade_events_trade_type_date', EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='trading' AND indexname='ux_paper_trade_events_trade_type_date')\nUNION ALL SELECT 'ux_portfolio_risk_checks_run_ticker', EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='trading' AND indexname='ux_portfolio_risk_checks_run_ticker')\nUNION ALL SELECT 'ux_stress_scenarios_run_scenario', EXISTS(SELECT 1 FROM pg_indexes WHERE schemaname='trading' AND indexname='ux_stress_scenarios_run_scenario')\nUNION ALL SELECT 'paper_trade_events.business_date', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='trading' AND table_name='paper_trade_events' AND column_name='business_date');\n",
+        "query": "SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='trading' AND table_name='paper_trades' AND column_name='pre_data_error_status') AS vorhanden;",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",

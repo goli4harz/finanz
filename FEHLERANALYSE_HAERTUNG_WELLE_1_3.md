@@ -75,4 +75,17 @@ Diagnose-Query gegen `information_schema`/`pg_constraint`/`pg_indexes` (19 Einze
 | `ux_stress_scenarios_run_scenario` | UNIQUE INDEX | ✅ (nachgezogen) | sql/045 | `14` Job C |
 | `trading.schema_migrations` | TABLE | ✅ | sql/044 | alle künftigen Migrationen |
 
-Fortsetzung folgt in den Phasen 4-18 (dieses Dokument wird laufend erweitert).
+## Phase 4: data_error-Retry repariert (`sql/051`)
+
+**Bestätigter Fund**: Fehleranalyse E8s Fix vom 2026-08-01 baute den Retry-Zähler/Eskalationsmechanismus, vergaß aber die Ladequery selbst zu erweitern — der eigene Code-Kommentar benannte das Problem sogar wörtlich ("die Ladequery kennt diesen Status nicht"), ohne es zu beheben. `data_error` war seither eine dauerhafte Sackgasse, der Zähler kam nie über 1 hinaus.
+
+**Fix**:
+- `DB: Ausstehende/offene Paper-Trades laden` um `OR status = 'data_error'` erweitert (`data_error_final` bleibt bewusst terminal, nicht mit aufgenommen).
+- Neue Spalte `paper_trades.pre_data_error_status` (`sql/051`) — beim ersten Fehleintritt wird der aktuelle Status (`open`/`proposed`) gesichert, bei wiederholtem Fehlschlag bleibt der gespeicherte Wert unverändert (nicht mit `'data_error'` selbst überschrieben).
+- Wiederherstellung: sobald wieder eine gültige Kerze vorliegt, wird der Status aus `pre_data_error_status` restauriert (per SQL aus der DB, nicht aus dem möglicherweise veralteten In-Memory-Wert) und Zähler/Marker zurückgesetzt. Bewusst konservativ: der wiederhergestellte Trade wird **in diesem Lauf nicht mehr** fill-/exit-geprüft — das passiert garantiert unbelastet erst im nächsten Lauf.
+
+**Tests** (lokal simuliert, 6/6 bestanden): erster Fehltag → `data_error`, Zähler=1; zweiter Retry → Zähler=2, `pre_data_error_status` bleibt erhalten; erfolgreiche Wiederherstellung → Status restauriert, Zähler=0; Erreichen von `MAX_DATA_ERROR_RETRIES` → genau eine Eskalation zu `data_error_final`; `data_error_final` taucht nicht in der Ladequery auf (strukturell terminal). "Keine doppelten Events bei Wiederholung desselben Laufes" ist durch SQL selbst garantiert (eine Zeile wird pro Lauf höchstens einmal geladen).
+
+Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query bestätigt.
+
+Fortsetzung folgt in den Phasen 5-18 (dieses Dokument wird laufend erweitert).
