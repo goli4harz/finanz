@@ -114,4 +114,16 @@ Der bestehende partielle Unique-Index (`ux_recommendations_one_open_per_ticker`,
 
 Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query bestätigt (4/4 neue Spalten vorhanden).
 
-Fortsetzung folgt in den Phasen 8-18 (dieses Dokument wird laufend erweitert).
+## Phase 8: Markt-Screener fachlich korrigiert (`sql/054`)
+
+**8.1 (bestätigt)**: "DB: Universum laden" war wörtlich identisch mit der Watchlist-Query (`stock_instruments WHERE aktiv=TRUE`). Neue unabhängige Flags `watchlist_active`/`scanner_active` (aus `aktiv` befüllt, verhaltensneutral) — Scanner-Universum bleibt bewusst == Watchlist, jetzt aber strukturell/dokumentiert statt zufällig gekoppelt.
+
+**8.2 (bestätigt, kritisch)**: `relativeStrength()` berechnete ausschließlich eine Absolutrendite — exakt das im Auftrag verbotene Muster. Umbenannt zu `absoluteReturn()`, echte `relativeStrengthVsIndex()` ergänzt (`Aktienrendite − Referenzindexrendite`, via `stock_instruments.benchmark_symbol`). Referenzindex-Kursdaten (`^GDAXI`/`^GSPC`/`^IXIC`/`^MDAXI`/`^STOXX50E`) waren bereits in `stock_price_history` vorhanden (von `02b` mitgeladen) — keine neue Datenquelle nötig. `sector_relative_strength` bewusst `not_available` (kein Sektor-Index verfügbar). 3 lokale Tests bestanden, darunter exakt Testfall D5 aus dem Auftrag ("negative relative Stärke trotz positiver Absolutrendite").
+
+**8.3**: `scan_candidates.analysis_status='pending'` strukturell ergänzt. Der eigentliche Tiefenanalyse-Workflow bewusst **nicht** gebaut — eigenständiges Projekt in der Größenordnung eines Teils von `02`/`06`, nicht sinnvoll als Unterpunkt dieser Sitzung.
+
+**8.4**: zeitliche Reihenfolge — Cross-Referenz zu Phase 14 (Orchestrator-Einreihung).
+
+Live gepusht (`13`, inaktiv), Migration ausgeführt und per Diagnose-Query bestätigt (3/3 Prüfungen ok). `docs/MARKTSCANNER.md` aktualisiert.
+
+Fortsetzung folgt in den Phasen 9-18 (dieses Dokument wird laufend erweitert).

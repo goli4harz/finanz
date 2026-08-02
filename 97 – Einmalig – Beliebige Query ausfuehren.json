@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT column_name FROM information_schema.columns WHERE table_schema='trading' AND table_name='recommendations' AND column_name IN ('portfolio_check_id','portfolio_checked_at','portfolio_blocked_reason','portfolio_check_attempts') ORDER BY 1;",
+        "query": "SELECT 'stock_instruments.scanner_active' AS obj, EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='trading' AND table_name='stock_instruments' AND column_name='scanner_active') AS ok UNION ALL SELECT 'scan_candidates.analysis_status', EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='trading' AND table_name='scan_candidates' AND column_name='analysis_status') UNION ALL SELECT 'scanner_active_count_matches_watchlist', (SELECT count(*) FILTER (WHERE scanner_active) = count(*) FILTER (WHERE watchlist_active) FROM trading.stock_instruments);",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
