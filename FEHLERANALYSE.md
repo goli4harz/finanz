@@ -467,7 +467,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 ### F3 — Mindestfallzahl in `09` hartkodiert statt aus `pipeline_config`
 - **Schweregrad:** niedrig
 - **Datei/Node:** `09`, Node „Mindestfallzahlen klassifizieren"
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. Neue additive Konfiguration `LEARNING_MIN_NEWS_SAMPLE_SIZE` (sql/046, Default 30 - identisch zum bisherigen Wert, verhaltensneutral), analog zu `LEARNING_MIN_TRADE_SAMPLE_SIZE` in `09b`. Neuer Node "DB: Lern-Konfiguration laden" seriell zwischen Trigger und "SQL: Gesamtkennzahlen" eingefuegt (kein neuer Merge-Punkt noetig). Die 10er-Ausblendungsgrenze und die 100er-"hoch"-Grenze bleiben bewusst feste Strukturkonstanten - F3 verlangt nur die eigentliche Mindestfallzahl konfigurierbar, keine Neugestaltung der 3-Stufen-Skala. `proposal_eligible`s eigene, separate `>= 30`-Schwelle (Kandidaten-Vorauswahl fuer die KI) bewusst nicht angefasst, da F3 sich nur auf die Konfidenz-Einordnung bezieht.
 
 ### F4 — OOS-Gate in `09b` ist global, nicht strategie-/versionsgebunden
 - **Schweregrad:** kritisch

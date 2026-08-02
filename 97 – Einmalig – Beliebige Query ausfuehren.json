@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:31:47.571Z",
+  "updatedAt": "2026-08-02T07:36:38.954Z",
   "createdAt": "2026-07-19T13:27:11.388Z",
   "id": "NInmI0f9TfdndwI1",
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- ============================================================================\n-- 045 (Fehleranalyse B9, niedrig-mittel, Haertungsauftrag 2026-08-02):\n-- deterministische run_id + UNIQUE-Constraints gegen Duplikate bei\n-- wiederholten Laeufen von Workflow 14\n-- ============================================================================\n-- B9: run_id in 14 war bisher 'p14-'+heute+'-'+Date.now() (Job A) bzw.\n-- 'stress-'+heute+'-'+Date.now() (Job C) - jeder Lauf, auch am selben Tag,\n-- bekam eine andere run_id, ein wiederholter Lauf konnte also nie als\n-- Duplikat erkannt werden. Job B hatte gar keinen run_id-Begriff.\n-- portfolio_risk_checks/stress_scenarios/paper_trade_events hatten dazu\n-- passend auch keine UNIQUE-Constraints. Diese Migration ist rein additiv\n-- (Spalte + Constraint), die Code-Seite (deterministische run_id, ON\n-- CONFLICT DO NOTHING) ist Teil desselben Commits in Workflow 14.\n\n-- paper_trade_events: neue business_date-Spalte (deterministisch statt der\n-- bisherigen event_time DEFAULT now()) als Grundlage fuer den Dedup-Schluessel.\nALTER TABLE trading.paper_trade_events\n  ADD COLUMN IF NOT EXISTS business_date DATE;\n\n-- Backfill bestehender Zeilen aus event_time (best-effort - fuer die\n-- historischen Zeilen ist das identisch zum tatsaechlichen Handelstag, da\n-- 14 bisher nur einmal taeglich lief).\nUPDATE trading.paper_trade_events\nSET business_date = event_time::date\nWHERE business_date IS NULL;\n\n-- Harte DB-Garantie: pro Trade+Ereignistyp+Tag hoechstens eine Zeile. Faellt\n-- CREATE UNIQUE INDEX auf einen bereits vorhandenen Duplikat-Konflikt, macht\n-- das den Konflikt sichtbar statt ihn zu verschleiern (gleiches Prinzip wie\n-- sql/039s ux_paper_trade_costs_trade_costtype).\nCREATE UNIQUE INDEX IF NOT EXISTS ux_paper_trade_events_trade_type_date\n  ON trading.paper_trade_events (trade_id, event_type, business_date);\n\nCOMMENT ON COLUMN trading.paper_trade_events.business_date IS\n  'Handelstag des Ereignisses (deterministisch, nicht aus event_time abgeleitet) - Grundlage fuer die Dedup-Garantie gegen wiederholte Laeufe (Fehleranalyse B9).';\n\n-- portfolio_risk_checks: mit deterministischer run_id ('p14a-'+business_date)\n-- ist ein Wiederholungslauf am selben Tag erkennbar.\nCREATE UNIQUE INDEX IF NOT EXISTS ux_portfolio_risk_checks_run_ticker\n  ON trading.portfolio_risk_checks (run_id, ticker);\n\n-- stress_scenarios: gleiches Prinzip mit 'stress-'+business_date.\nCREATE UNIQUE INDEX IF NOT EXISTS ux_stress_scenarios_run_scenario\n  ON trading.stress_scenarios (run_id, scenario_name);\n",
+        "query": "-- ============================================================================\n-- 046 (Fehleranalyse F3, niedrig, Haertungsauftrag 2026-08-02): Mindestfallzahl\n-- fuer 09 (Lernagent Newswirkung) aus pipeline_config statt hartkodiert\n-- ============================================================================\n-- 09b hat bereits LEARNING_MIN_TRADE_SAMPLE_SIZE (sql/037) fuer den\n-- gleichwertigen Zweck beim Handelslernagenten - 09 (der aeltere News-\n-- Lernagent) hatte die analoge Schwelle (30, niedrig/mittel-Grenze in\n-- confidenceLevel()) weiterhin hartkodiert. Default identisch zum bisherigen\n-- Wert, verhaltensneutral bis zur ersten Aenderung.\n\nINSERT INTO trading.pipeline_config (config_key, value_numeric, description)\nVALUES\n  ('LEARNING_MIN_NEWS_SAMPLE_SIZE', 30, 'Mindest-Fallzahl (Dimension x Wert x Horizont-Kombinationen) fuer eine \"mittel\" statt \"niedrig\" belastbare Einordnung im News-Lernagenten (09). Analog zu LEARNING_MIN_TRADE_SAMPLE_SIZE fuer 09b (Fehleranalyse F3).')\nON CONFLICT (config_key) DO NOTHING;\n",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -59,9 +59,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "3597c56f-8c94-4423-a937-4c9dde47bb4a",
+  "versionId": "75b739b8-fbf1-4409-95ea-823b911b7249",
   "activeVersionId": null,
-  "versionCounter": 124,
+  "versionCounter": 125,
   "triggerCount": 0,
   "shared": [
     {

@@ -1,233 +1,11 @@
 {
-  "active": true,
-  "connections": {
-    "Trigger: Lernagent (Samstag 08:00)": {
-      "main": [
-        [
-          {
-            "node": "SQL: Gesamtkennzahlen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Gesamtkennzahlen": {
-      "main": [
-        [
-          {
-            "node": "SQL: Je Newskategorie",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "SQL: Je Quelle",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "SQL: Je Ticker",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "SQL: Je Konfidenz-Bucket",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Aktive Gewichte laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Newskategorie": {
-      "main": [
-        [
-          {
-            "node": "Merge 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Quelle": {
-      "main": [
-        [
-          {
-            "node": "Merge 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge 1": {
-      "main": [
-        [
-          {
-            "node": "Merge 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Ticker": {
-      "main": [
-        [
-          {
-            "node": "Merge 2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge 2": {
-      "main": [
-        [
-          {
-            "node": "Merge 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Konfidenz-Bucket": {
-      "main": [
-        [
-          {
-            "node": "Merge 3",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge 3": {
-      "main": [
-        [
-          {
-            "node": "Mindestfallzahlen klassifizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mindestfallzahlen klassifizieren": {
-      "main": [
-        [
-          {
-            "node": "Baue Lernagent-Prompt",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Lernagent-Prompt": {
-      "main": [
-        [
-          {
-            "node": "KI: Lernbericht interpretieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "KI: Lernbericht interpretieren": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege gegen Fallzahlen validieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege gegen Fallzahlen validieren": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege auffaechern",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Agentenlauf protokollieren (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlag speichern (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege auffaechern": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Agentenlauf protokollieren (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "Lernbericht aufbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lernbericht aufbereiten": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Lernbericht senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "updatedAt": "2026-08-02T07:36:38.240Z",
+  "createdAt": "2026-07-19T13:02:26.521Z",
   "id": "LjZHC5g7thqcCElo",
-  "meta": null,
   "name": "09 – Lernagent Newswirkung",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -394,7 +172,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Mindestfallzahlen-Einordnung exakt wie im Auftrag, rein deterministisch --\n// die KI bekommt diese Einordnung als FESTE Vorgabe, sie darf sie nicht\n// selbst neu bewerten oder aendern.\n// Seit Prioritaet 9: jede Zeile ist bereits eine (Dimension x Wert x Horizont)-\n// Kombination (z.B. \"source=Reuters bei D+1\") -- die Mindestfallzahl gilt\n// PRO Kombination, nicht mehr nur pro Einzeldimension.\nfunction confidenceLevel(n) {\n  if (n < 10) return null; // keine belastbare Aussage -> wird komplett ausgeblendet\n  if (n < 30) return 'niedrig';   // Hinweis mit geringer Datenbasis\n  if (n < 100) return 'mittel';   // vorsichtiger Verbesserungsvorschlag\n  return 'hoch';                  // staerker belastbare Kalibrierung\n}\n\nconst dims = $input.all().map(i => i.json).filter(r => r.dimension);\nconst findings = [];\nfor (const d of dims) {\n  const level = confidenceLevel(Number(d.sample_size));\n  if (level === null) continue;\n  findings.push({\n    dimension: d.dimension,\n    value: d.value,\n    horizon: d.horizon,\n    sample_size: Number(d.sample_size),\n    direction_accuracy: d.direction_accuracy === null ? null : Number(d.direction_accuracy),\n    weighted_direction_accuracy: d.weighted_direction_accuracy === null ? null : Number(d.weighted_direction_accuracy),\n    avg_abnormal_return: d.avg_abnormal_return === null ? null : Number(d.avg_abnormal_return),\n    median_abnormal_return: d.median_abnormal_return === null ? null : Number(d.median_abnormal_return),\n    confounded_pct: d.confounded_pct === null ? null : Number(d.confounded_pct),\n    avg_confidence: d.avg_confidence === null ? null : Number(d.avg_confidence),\n    confidence_level: level,\n    // Nur Findings mit sample_size>=30 UND deutlich unterdurchschnittlicher\n    // (<50%) oder ueberdurchschnittlicher (>=80%) GEWICHTETER Trefferquote\n    // sind Kandidaten fuer einen Verbesserungsvorschlag -- deterministische\n    // Vorauswahl, die KI bekommt nur diese Teilmenge ueberhaupt vorgelegt.\n    proposal_eligible: Number(d.sample_size) >= 30 && d.weighted_direction_accuracy !== null && (Number(d.weighted_direction_accuracy) < 50 || Number(d.weighted_direction_accuracy) >= 80)\n  });\n}\n\nconst overall = $('SQL: Gesamtkennzahlen').first().json;\n\nreturn [{ json: {\n  analysis_from: new Date(Date.now() - 90 * 86400000).toISOString().substring(0,10),\n  analysis_to: new Date().toISOString().substring(0,10),\n  total_events: Number(overall.total_events) || 0,\n  clean_events: Number(overall.clean_events) || 0,\n  confounded_events: Number(overall.confounded_events) || 0,\n  overall_direction_accuracy: overall.overall_direction_accuracy === null ? null : Number(overall.overall_direction_accuracy),\n  weighting_formula: 'high=1.0, medium=0.7, limited=0.4, confounded=0.25 (nach baseline_quality bzw. confounded-Flag je Einzelfall)',\n  findings\n} }];\n"
+        "jsCode": "// Mindestfallzahlen-Einordnung exakt wie im Auftrag, rein deterministisch --\n// die KI bekommt diese Einordnung als FESTE Vorgabe, sie darf sie nicht\n// selbst neu bewerten oder aendern.\n// Seit Prioritaet 9: jede Zeile ist bereits eine (Dimension x Wert x Horizont)-\n// Kombination (z.B. \"source=Reuters bei D+1\") -- die Mindestfallzahl gilt\n// PRO Kombination, nicht mehr nur pro Einzeldimension.\n// FIX 2026-08-02 (Fehleranalyse F3): Mindestfallzahl (bisher hartkodiert 30) jetzt aus\n// pipeline_config (sql/046), analog zu 09b (LEARNING_MIN_TRADE_SAMPLE_SIZE). 10 (komplett\n// ausgeblendet) und 100 (hoch) bleiben feste Strukturgrenzen - F3 verlangt nur die\n// eigentliche Mindestfallzahl konfigurierbar, keine Neugestaltung der 3-Stufen-Skala.\nconst _cfgRows = $('DB: Lern-Konfiguration laden').all();\nconst MIN_SAMPLE = (_cfgRows.length > 0 && _cfgRows[0].json && !isNaN(Number(_cfgRows[0].json.value_numeric))) ? Number(_cfgRows[0].json.value_numeric) : 30;\nfunction confidenceLevel(n) {\n  if (n < 10) return null; // keine belastbare Aussage -> wird komplett ausgeblendet\n  if (n < MIN_SAMPLE) return 'niedrig';   // Hinweis mit geringer Datenbasis\n  if (n < 100) return 'mittel';   // vorsichtiger Verbesserungsvorschlag\n  return 'hoch';                  // staerker belastbare Kalibrierung\n}\n\nconst dims = $input.all().map(i => i.json).filter(r => r.dimension);\nconst findings = [];\nfor (const d of dims) {\n  const level = confidenceLevel(Number(d.sample_size));\n  if (level === null) continue;\n  findings.push({\n    dimension: d.dimension,\n    value: d.value,\n    horizon: d.horizon,\n    sample_size: Number(d.sample_size),\n    direction_accuracy: d.direction_accuracy === null ? null : Number(d.direction_accuracy),\n    weighted_direction_accuracy: d.weighted_direction_accuracy === null ? null : Number(d.weighted_direction_accuracy),\n    avg_abnormal_return: d.avg_abnormal_return === null ? null : Number(d.avg_abnormal_return),\n    median_abnormal_return: d.median_abnormal_return === null ? null : Number(d.median_abnormal_return),\n    confounded_pct: d.confounded_pct === null ? null : Number(d.confounded_pct),\n    avg_confidence: d.avg_confidence === null ? null : Number(d.avg_confidence),\n    confidence_level: level,\n    // Nur Findings mit sample_size>=30 UND deutlich unterdurchschnittlicher\n    // (<50%) oder ueberdurchschnittlicher (>=80%) GEWICHTETER Trefferquote\n    // sind Kandidaten fuer einen Verbesserungsvorschlag -- deterministische\n    // Vorauswahl, die KI bekommt nur diese Teilmenge ueberhaupt vorgelegt.\n    proposal_eligible: Number(d.sample_size) >= 30 && d.weighted_direction_accuracy !== null && (Number(d.weighted_direction_accuracy) < 50 || Number(d.weighted_direction_accuracy) >= 80)\n  });\n}\n\nconst overall = $('SQL: Gesamtkennzahlen').first().json;\n\nreturn [{ json: {\n  analysis_from: new Date(Date.now() - 90 * 86400000).toISOString().substring(0,10),\n  analysis_to: new Date().toISOString().substring(0,10),\n  total_events: Number(overall.total_events) || 0,\n  clean_events: Number(overall.clean_events) || 0,\n  confounded_events: Number(overall.confounded_events) || 0,\n  overall_direction_accuracy: overall.overall_direction_accuracy === null ? null : Number(overall.overall_direction_accuracy),\n  weighting_formula: 'high=1.0, medium=0.7, limited=0.4, confounded=0.25 (nach baseline_quality bzw. confounded-Flag je Einzelfall)',\n  findings\n} }];\n"
       },
       "name": "Mindestfallzahlen klassifizieren",
       "type": "n8n-nodes-base.code",
@@ -630,13 +408,987 @@
         }
       },
       "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT config_key, value_numeric FROM trading.pipeline_config WHERE config_key = 'LEARNING_MIN_NEWS_SAMPLE_SIZE';",
+        "options": {}
+      },
+      "name": "DB: Lern-Konfiguration laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2624,
+        -360
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-09-f3-cfgload"
     }
   ],
-  "pinData": null,
+  "connections": {
+    "Trigger: Lernagent (Samstag 08:00)": {
+      "main": [
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Gesamtkennzahlen": {
+      "main": [
+        [
+          {
+            "node": "SQL: Je Newskategorie",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SQL: Je Quelle",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SQL: Je Ticker",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "SQL: Je Konfidenz-Bucket",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Aktive Gewichte laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Newskategorie": {
+      "main": [
+        [
+          {
+            "node": "Merge 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Quelle": {
+      "main": [
+        [
+          {
+            "node": "Merge 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 1": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Ticker": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 2": {
+      "main": [
+        [
+          {
+            "node": "Merge 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Konfidenz-Bucket": {
+      "main": [
+        [
+          {
+            "node": "Merge 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge 3": {
+      "main": [
+        [
+          {
+            "node": "Mindestfallzahlen klassifizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mindestfallzahlen klassifizieren": {
+      "main": [
+        [
+          {
+            "node": "Baue Lernagent-Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Lernagent-Prompt": {
+      "main": [
+        [
+          {
+            "node": "KI: Lernbericht interpretieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI: Lernbericht interpretieren": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege gegen Fallzahlen validieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege gegen Fallzahlen validieren": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege auffaechern",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Agentenlauf protokollieren (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlag speichern (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege auffaechern": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Agentenlauf protokollieren (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Lernbericht aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lernbericht aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Lernbericht senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Lern-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "SQL: Gesamtkennzahlen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
+  "staticData": {
+    "node:Trigger: Lernagent (Samstag 08:00)": {
+      "recurrenceRules": []
+    }
+  },
+  "meta": null,
+  "pinData": null,
+  "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+  "activeVersionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+  "versionCounter": 102,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-07-19T13:02:26.521Z",
+      "createdAt": "2026-07-19T13:02:26.521Z",
+      "role": "workflow:owner",
+      "workflowId": "LjZHC5g7thqcCElo",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
   "tags": [],
-  "versionId": "00b7af68-a280-48d3-9dd5-b6e46ec6584a"
+  "activeVersion": {
+    "updatedAt": "2026-08-02T07:36:38.246Z",
+    "createdAt": "2026-08-02T07:36:38.246Z",
+    "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+    "workflowId": "LjZHC5g7thqcCElo",
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 0 8 * * 6"
+              }
+            ]
+          }
+        },
+        "name": "Trigger: Lernagent (Samstag 08:00)",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.1,
+        "position": [
+          -2600,
+          0
+        ],
+        "id": "n-00000001-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT\n  count(*) FILTER (WHERE status IN ('completed','confounded')) AS total_events,\n  count(*) FILTER (WHERE status = 'completed' AND confounded = FALSE) AS clean_events,\n  count(*) FILTER (WHERE confounded = TRUE) AS confounded_events,\n  round(100.0 * count(*) FILTER (WHERE status = 'completed' AND confounded = FALSE AND direction_correct = TRUE)\n    / NULLIF(count(*) FILTER (WHERE status = 'completed' AND confounded = FALSE AND direction_correct IS NOT NULL), 0), 1) AS overall_direction_accuracy\nFROM trading.news_impact_tracking\nWHERE created_at >= now() - interval '90 days';",
+          "options": {}
+        },
+        "name": "SQL: Gesamtkennzahlen",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2400,
+          -240
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-00000002-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT 'news_category' AS dimension, news_category AS value, 'D+1' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d1 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND news_category IS NOT NULL\n) t\nGROUP BY news_category\nUNION ALL\nSELECT 'news_category' AS dimension, news_category AS value, 'D+3' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d3 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND news_category IS NOT NULL\n) t\nGROUP BY news_category\nUNION ALL\nSELECT 'news_category' AS dimension, news_category AS value, 'D+5' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d5 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND news_category IS NOT NULL\n) t\nGROUP BY news_category\nUNION ALL\nSELECT 'news_category' AS dimension, news_category AS value, 'D+10' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d10 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND news_category IS NOT NULL\n) t\nGROUP BY news_category\nUNION ALL\nSELECT 'news_category' AS dimension, news_category AS value, 'D+20' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d20 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND news_category IS NOT NULL\n) t\nGROUP BY news_category\nORDER BY dimension, value, horizon;",
+          "options": {}
+        },
+        "name": "SQL: Je Newskategorie",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2400,
+          -80
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-00000003-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT 'source' AS dimension, source AS value, 'D+1' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d1 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND source IS NOT NULL\n) t\nGROUP BY source\nUNION ALL\nSELECT 'source' AS dimension, source AS value, 'D+3' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d3 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND source IS NOT NULL\n) t\nGROUP BY source\nUNION ALL\nSELECT 'source' AS dimension, source AS value, 'D+5' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d5 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND source IS NOT NULL\n) t\nGROUP BY source\nUNION ALL\nSELECT 'source' AS dimension, source AS value, 'D+10' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d10 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND source IS NOT NULL\n) t\nGROUP BY source\nUNION ALL\nSELECT 'source' AS dimension, source AS value, 'D+20' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d20 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND source IS NOT NULL\n) t\nGROUP BY source\nORDER BY dimension, value, horizon;",
+          "options": {}
+        },
+        "name": "SQL: Je Quelle",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2400,
+          80
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-00000004-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT 'ticker' AS dimension, ticker AS value, 'D+1' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d1 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND ticker IS NOT NULL\n) t\nGROUP BY ticker\nUNION ALL\nSELECT 'ticker' AS dimension, ticker AS value, 'D+3' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d3 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND ticker IS NOT NULL\n) t\nGROUP BY ticker\nUNION ALL\nSELECT 'ticker' AS dimension, ticker AS value, 'D+5' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d5 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND ticker IS NOT NULL\n) t\nGROUP BY ticker\nUNION ALL\nSELECT 'ticker' AS dimension, ticker AS value, 'D+10' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d10 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND ticker IS NOT NULL\n) t\nGROUP BY ticker\nUNION ALL\nSELECT 'ticker' AS dimension, ticker AS value, 'D+20' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d20 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND ticker IS NOT NULL\n) t\nGROUP BY ticker\nORDER BY dimension, value, horizon;",
+          "options": {}
+        },
+        "name": "SQL: Je Ticker",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2400,
+          240
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-00000005-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT 'konfidenz_bucket' AS dimension, (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END) AS value, 'D+1' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d1 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d1) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d1 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d1 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND prediction_confidence IS NOT NULL\n) t\nGROUP BY (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END)\nUNION ALL\nSELECT 'konfidenz_bucket' AS dimension, (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END) AS value, 'D+3' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d3 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d3) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d3 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d3 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND prediction_confidence IS NOT NULL\n) t\nGROUP BY (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END)\nUNION ALL\nSELECT 'konfidenz_bucket' AS dimension, (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END) AS value, 'D+5' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d5 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d5) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d5 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d5 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND prediction_confidence IS NOT NULL\n) t\nGROUP BY (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END)\nUNION ALL\nSELECT 'konfidenz_bucket' AS dimension, (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END) AS value, 'D+10' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d10 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d10) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d10 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d10 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND prediction_confidence IS NOT NULL\n) t\nGROUP BY (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END)\nUNION ALL\nSELECT 'konfidenz_bucket' AS dimension, (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END) AS value, 'D+20' AS horizon,\n  count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 = TRUE AND confounded = FALSE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = FALSE), 0), 1) AS direction_accuracy,\n  round(100.0 * sum(case_weight) FILTER (WHERE direction_correct_d20 = TRUE) / NULLIF(sum(case_weight) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS weighted_direction_accuracy,\n  round(avg(abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS avg_abnormal_return,\n  round(percentile_cont(0.5) WITHIN GROUP (ORDER BY abnormal_return_d20) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 3) AS median_abnormal_return,\n  round(100.0 * count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL AND confounded = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct_d20 IS NOT NULL), 0), 1) AS confounded_pct,\n  round(avg(prediction_confidence) FILTER (WHERE direction_correct_d20 IS NOT NULL)::numeric, 1) AS avg_confidence\nFROM (\n  SELECT nit.*, CASE WHEN nit.confounded THEN w.confounded_case WHEN nit.baseline_quality = 'high' THEN w.baseline_quality_high WHEN nit.baseline_quality = 'medium' THEN w.baseline_quality_medium WHEN nit.baseline_quality = 'limited' THEN w.baseline_quality_limited ELSE 0.5 END AS case_weight\n  FROM trading.news_impact_tracking nit\n  CROSS JOIN (SELECT COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_high'), 1.0) AS baseline_quality_high, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_medium'), 0.7) AS baseline_quality_medium, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'baseline_quality_limited'), 0.4) AS baseline_quality_limited, COALESCE(MAX(weight_value) FILTER (WHERE weight_key = 'confounded_case'), 0.25) AS confounded_case FROM trading.scoring_weights WHERE active = TRUE) w\n  WHERE nit.created_at >= now() - interval '90 days' AND status != 'failed' AND prediction_confidence IS NOT NULL\n) t\nGROUP BY (CASE WHEN prediction_confidence >= 70 THEN 'hoch (>=70)' ELSE 'niedrig (<70)' END)\nORDER BY dimension, value, horizon;",
+          "options": {}
+        },
+        "name": "SQL: Je Konfidenz-Bucket",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2400,
+          400
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-00000006-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {},
+        "name": "Merge 1",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          -2200,
+          0
+        ],
+        "id": "n-00000007-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {},
+        "name": "Merge 2",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          -2000,
+          100
+        ],
+        "id": "n-00000008-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {},
+        "name": "Merge 3",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          -1800,
+          200
+        ],
+        "id": "n-00000009-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Mindestfallzahlen-Einordnung exakt wie im Auftrag, rein deterministisch --\n// die KI bekommt diese Einordnung als FESTE Vorgabe, sie darf sie nicht\n// selbst neu bewerten oder aendern.\n// Seit Prioritaet 9: jede Zeile ist bereits eine (Dimension x Wert x Horizont)-\n// Kombination (z.B. \"source=Reuters bei D+1\") -- die Mindestfallzahl gilt\n// PRO Kombination, nicht mehr nur pro Einzeldimension.\n// FIX 2026-08-02 (Fehleranalyse F3): Mindestfallzahl (bisher hartkodiert 30) jetzt aus\n// pipeline_config (sql/046), analog zu 09b (LEARNING_MIN_TRADE_SAMPLE_SIZE). 10 (komplett\n// ausgeblendet) und 100 (hoch) bleiben feste Strukturgrenzen - F3 verlangt nur die\n// eigentliche Mindestfallzahl konfigurierbar, keine Neugestaltung der 3-Stufen-Skala.\nconst _cfgRows = $('DB: Lern-Konfiguration laden').all();\nconst MIN_SAMPLE = (_cfgRows.length > 0 && _cfgRows[0].json && !isNaN(Number(_cfgRows[0].json.value_numeric))) ? Number(_cfgRows[0].json.value_numeric) : 30;\nfunction confidenceLevel(n) {\n  if (n < 10) return null; // keine belastbare Aussage -> wird komplett ausgeblendet\n  if (n < MIN_SAMPLE) return 'niedrig';   // Hinweis mit geringer Datenbasis\n  if (n < 100) return 'mittel';   // vorsichtiger Verbesserungsvorschlag\n  return 'hoch';                  // staerker belastbare Kalibrierung\n}\n\nconst dims = $input.all().map(i => i.json).filter(r => r.dimension);\nconst findings = [];\nfor (const d of dims) {\n  const level = confidenceLevel(Number(d.sample_size));\n  if (level === null) continue;\n  findings.push({\n    dimension: d.dimension,\n    value: d.value,\n    horizon: d.horizon,\n    sample_size: Number(d.sample_size),\n    direction_accuracy: d.direction_accuracy === null ? null : Number(d.direction_accuracy),\n    weighted_direction_accuracy: d.weighted_direction_accuracy === null ? null : Number(d.weighted_direction_accuracy),\n    avg_abnormal_return: d.avg_abnormal_return === null ? null : Number(d.avg_abnormal_return),\n    median_abnormal_return: d.median_abnormal_return === null ? null : Number(d.median_abnormal_return),\n    confounded_pct: d.confounded_pct === null ? null : Number(d.confounded_pct),\n    avg_confidence: d.avg_confidence === null ? null : Number(d.avg_confidence),\n    confidence_level: level,\n    // Nur Findings mit sample_size>=30 UND deutlich unterdurchschnittlicher\n    // (<50%) oder ueberdurchschnittlicher (>=80%) GEWICHTETER Trefferquote\n    // sind Kandidaten fuer einen Verbesserungsvorschlag -- deterministische\n    // Vorauswahl, die KI bekommt nur diese Teilmenge ueberhaupt vorgelegt.\n    proposal_eligible: Number(d.sample_size) >= 30 && d.weighted_direction_accuracy !== null && (Number(d.weighted_direction_accuracy) < 50 || Number(d.weighted_direction_accuracy) >= 80)\n  });\n}\n\nconst overall = $('SQL: Gesamtkennzahlen').first().json;\n\nreturn [{ json: {\n  analysis_from: new Date(Date.now() - 90 * 86400000).toISOString().substring(0,10),\n  analysis_to: new Date().toISOString().substring(0,10),\n  total_events: Number(overall.total_events) || 0,\n  clean_events: Number(overall.clean_events) || 0,\n  confounded_events: Number(overall.confounded_events) || 0,\n  overall_direction_accuracy: overall.overall_direction_accuracy === null ? null : Number(overall.overall_direction_accuracy),\n  weighting_formula: 'high=1.0, medium=0.7, limited=0.4, confounded=0.25 (nach baseline_quality bzw. confounded-Flag je Einzelfall)',\n  findings\n} }];\n"
+        },
+        "name": "Mindestfallzahlen klassifizieren",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1600,
+          200
+        ],
+        "id": "n-00000010-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "jsCode": "const d = $json;\n// FIX 2026-08-01 (Fehleranalyse F1, kritisch): \"current_value ist immer 1.0\" war eine\n// hartcodierte Behauptung im Prompt, unabhaengig vom tatsaechlich aktiven Gewicht in\n// trading.scoring_weights. Lag ein Gewicht bereits bei z.B. 0.6, suggerierte der Prompt der\n// KI \"current_value=1.0\" - ein KI-Vorschlag \"0.8\" sah nach einer Absenkung aus, war real eine\n// Anhebung um +33%. Jetzt echte aktive Werte je (dimension:value:horizon)-Schluessel geladen\n// und JEDEM Finding als current_value mitgegeben, bevor die KI ueberhaupt beteiligt ist.\nconst weightRows = $('DB: Aktive Gewichte laden').all().map(i => i.json);\nconst weightByKey = {};\nfor (const w of weightRows) weightByKey[w.weight_key] = Number(w.weight_value);\nfunction currentValueFor(f) {\n  const key = [f.dimension, f.value, f.horizon].filter(Boolean).join(':');\n  return weightByKey.hasOwnProperty(key) ? weightByKey[key] : 1.0;\n}\nd.findings = d.findings.map(f => ({ ...f, current_value: currentValueFor(f) }));\n\nconst eligible = d.findings.filter(f => f.proposal_eligible);\nconst all = d.findings;\n\nconst systemPrompt = `Du bist ein vorsichtiger, ruecksichtsvoller Lernagent fuer ein automatisiertes Aktien-Beobachtungssystem.\nDu bekommst BEREITS FERTIG BERECHNETE Statistiken (Fallzahlen, Trefferquoten je Dimension UND Zeithorizont) -- du darfst\ndiese Zahlen NICHT veraendern oder neu berechnen, nur interpretieren und in Worte fassen.\n\nJedes Finding ist eine Kombination aus Dimension (news_category/source/ticker/konfidenz_bucket), Wert UND Zeithorizont\n(D+1/D+3/D+5/D+10/D+20) -- z.B. \"source=Reuters bei D+1\". Die Faelle sind bereits gewichtet nach Datenqualitaet\n(${d.weighting_formula}) -- 'weighted_direction_accuracy' ist die massgebliche Kennzahl, 'direction_accuracy' die\nungewichtete Vergleichszahl.\n\nRegeln:\n- Du erstellst AUSSCHLIESSLICH Vorschlaege (status wird spaeter separat auf 'proposed' gesetzt), niemals Aktivierungen.\n- Ein proposal darf sich NUR auf ein Finding aus der Liste 'proposal_candidates' stuetzen (sample_size bereits >=30 geprueft).\n- Jeder proposal MUSS \"dimension\" exakt aus dem Finding uebernehmen (news_category, source, ticker oder konfidenz_bucket),\n  \"target\" exakt aus dessen \"value\" UND \"time_horizon\" exakt aus dessen \"horizon\" -- dimension+target+time_horizon\n  zusammen muessen eindeutig ein Finding aus 'proposal_candidates' identifizieren. Erfinde niemals eine dimension oder\n  einen horizon, der im Finding nicht so steht.\n- current_value steht bereits in jedem Finding (Feld \"current_value\", echter aktiver Wert aus trading.scoring_weights bzw. 1.0 falls noch nie gesetzt) - uebernimm ihn EXAKT aus dem jeweiligen Finding in deinen proposal, erfinde oder berechne ihn NIEMALS neu.\n- proposed_value soll die Richtung der beobachteten Abweichung widerspiegeln (z.B. Gewicht senken bei <50% gewichteter\n  Trefferquote, Gewicht anheben bei >=80%), aber moderat bleiben (Aenderungen typischerweise 0.1-0.3, nie mehr als 0.5).\n- reason muss die tatsaechliche Fallzahl, den Zeithorizont und die gewichtete Trefferquote nennen.\n- Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"findings\": [ { \"dimension\": \"\", \"value\": \"\", \"horizon\": \"\", \"sample_size\": 0, \"weighted_direction_accuracy\": 0, \"observation\": \"\", \"confidence_level\": \"\" } ],\n  \"proposals\": [ { \"proposal_type\": \"weight_adjustment\", \"dimension\": \"\", \"target\": \"\", \"time_horizon\": \"\", \"current_value\": 1.0, \"proposed_value\": 0.8, \"sample_size\": 0, \"reason\": \"\", \"requires_approval\": true } ]\n}`;\n\nconst userPrompt = `Zeitraum: ${d.analysis_from} bis ${d.analysis_to}\nGesamt-Ereignisse: ${d.total_events} (sauber: ${d.clean_events}, konfundiert: ${d.confounded_events})\nGesamt-Richtungsgenauigkeit (ungewichtet, alle Horizonte zusammen): ${d.overall_direction_accuracy}%\nGewichtungsformel: ${d.weighting_formula}\n\nALLE FINDINGS (bereits nach Mindestfallzahl je Kombination gefiltert, sample_size>=10):\n${JSON.stringify(all, null, 2)}\n\nVORSCHLAGS-KANDIDATEN (sample_size>=30 UND auffaellige GEWICHTETE Trefferquote <50% oder >=80%):\n${JSON.stringify(eligible, null, 2)}\n\nFormuliere zu JEDEM Finding aus ALLEN FINDINGS eine kurze Beobachtung (observation), unter Nennung des Zeithorizonts.\nErstelle NUR fuer die VORSCHLAGS-KANDIDATEN ggf. einen proposal (kann auch 0 proposals sein, wenn keiner gerechtfertigt ist).`;\n\nreturn { json: { ...d, systemPrompt, userPrompt } };\n"
+        },
+        "name": "Baue Lernagent-Prompt",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1400,
+          200
+        ],
+        "id": "n-00000011-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "modelId": {
+            "__rl": true,
+            "value": "gpt-5.4-mini",
+            "mode": "list",
+            "cachedResultName": "GPT-5.4-MINI"
+          },
+          "responses": {
+            "values": [
+              {
+                "role": "system",
+                "content": "={{ $json.systemPrompt }}"
+              },
+              {
+                "content": "={{ $json.userPrompt }}"
+              }
+            ]
+          },
+          "builtInTools": {},
+          "options": {
+            "maxTokens": 3000
+          }
+        },
+        "name": "KI: Lernbericht interpretieren",
+        "type": "@n8n/n8n-nodes-langchain.openAi",
+        "typeVersion": 2.3,
+        "position": [
+          -1200,
+          200
+        ],
+        "retryOnFail": true,
+        "waitBetweenTries": 5000,
+        "credentials": {
+          "openAiApi": {
+            "id": "RiT1gwJpQWzSo6NO",
+            "name": "OpenAI account"
+          }
+        },
+        "id": "n-00000012-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "jsCode": "function getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  return JSON.stringify(resp || '');\n}\nfunction parseObj(text) {\n  let t = String(text || '').trim().replace(/^```json\\s*/i,'').replace(/^```\\s*/i,'').replace(/```\\s*$/i,'').trim();\n  try { const p = JSON.parse(t); return (p && typeof p === 'object') ? p : null; } catch(e) {}\n  const s = t.indexOf('{'); const e = t.lastIndexOf('}');\n  if (s >= 0 && e > s) { try { return JSON.parse(t.substring(s, e+1)); } catch(err) {} }\n  return null;\n}\n\nconst base = $('Baue Lernagent-Prompt').all()[0].json;\nconst parsed = parseObj(getAiText($json)) || { findings: [], proposals: [] };\n\n// Sicherheitsnetz: jeder Vorschlag wird GEGEN die deterministisch berechneten\n// proposal_eligible-Findings validiert -- ein Vorschlag, der auf keinen\n// bekannten (dimension+value+horizon)-Kandidaten mit ausreichender Fallzahl\n// passt, wird verworfen, egal was die KI behauptet. Seit Prioritaet 9 ist\n// der Match-Key 3-teilig (dimension|value|horizon) statt 2-teilig, damit z.B.\n// derselbe Ticker bei D+1 und D+20 nicht verwechselt wird.\nconst eligibleMap = new Map(\n  base.findings.filter(f => f.proposal_eligible).map(f => [f.dimension + '|' + f.value + '|' + f.horizon, f])\n);\n\nconst safeProposals = [];\nfor (const p of (Array.isArray(parsed.proposals) ? parsed.proposals : [])) {\n  const key = String(p.dimension) + '|' + String(p.target) + '|' + String(p.time_horizon);\n  const match = eligibleMap.get(key);\n  if (!match) continue; // kein belastbarer Kandidat -> Vorschlag verworfen\n\n  // FIX 2026-08-01 (Fehleranalyse F1/F2, kritisch): current_value kommt jetzt ausschliesslich\n  // aus dem deterministisch geladenen Finding (match.current_value, siehe \"Baue Lernagent-\n  // Prompt\"), nie aus der von der KI zurueckgegebenen p.current_value - die KI darf diesen\n  // Wert nur wiedergeben, nicht bestimmen. proposed_value wird zusaetzlich gegen einen festen\n  // Wertebereich und eine maximale Schrittweite geprueft (Prompt nennt \"typischerweise 0.1-0.3,\n  // nie mehr als 0.5\" - das war bisher reiner Text ohne Code-Durchsetzung).\n  const realCurrentValue = typeof match.current_value === 'number' ? match.current_value : 1.0;\n  const proposedValueNum = Number(p.proposed_value);\n  const MAX_STEP = 0.5;\n  const MIN_WEIGHT = 0.1;\n  const MAX_WEIGHT = 3.0;\n  if (!Number.isFinite(proposedValueNum)) continue; // kein gueltiger Zahlenwert -> verwerfen\n  if (proposedValueNum < MIN_WEIGHT || proposedValueNum > MAX_WEIGHT) continue; // ausserhalb des zulaessigen Bereichs\n  if (Math.abs(proposedValueNum - realCurrentValue) > MAX_STEP) continue; // Schrittweite ueberschritten\n\n  safeProposals.push({\n    proposal_type: p.proposal_type || 'weight_adjustment',\n    target_type: match.dimension,\n    target: String(p.target),\n    time_horizon: match.horizon,\n    current_value: realCurrentValue,\n    proposed_value: proposedValueNum,\n    sample_size: match.sample_size,\n    metric_name: 'weighted_direction_accuracy',\n    metric_value: match.weighted_direction_accuracy,\n    reason: p.reason || '',\n    confidence_level: match.confidence_level,\n    evidence: {\n      direction_accuracy: match.direction_accuracy,\n      weighted_direction_accuracy: match.weighted_direction_accuracy,\n      avg_abnormal_return: match.avg_abnormal_return,\n      median_abnormal_return: match.median_abnormal_return,\n      confounded_pct: match.confounded_pct,\n      avg_confidence: match.avg_confidence,\n      weighting_formula: base.weighting_formula\n    }\n  });\n}\n\nreturn [{ json: {\n  ...base,\n  findings_final: Array.isArray(parsed.findings) ? parsed.findings : [],\n  proposals_final: safeProposals\n} }];\n"
+        },
+        "name": "Vorschlaege gegen Fallzahlen validieren",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1000,
+          200
+        ],
+        "id": "n-00000013-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "jsCode": "return ($json.proposals_final || []).map(p => ({ json: p }));"
+        },
+        "name": "Vorschlaege auffaechern",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -800,
+          100
+        ],
+        "id": "n-00000014-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\\\"/g,'\\\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, time_horizon, status, metadata_json)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          ${pgStr(j.time_horizon)}, 'proposed', ${pgJson(j.evidence || {})});`;\nreturn { json: { ...j, sql } };\n"
+        },
+        "name": "Vorschlag speichern (SQL bauen)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -600,
+          100
+        ],
+        "id": "n-00000015-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.sql }}",
+          "options": {}
+        },
+        "name": "Vorschlag speichern (ausfuehren)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -424,
+          100
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "id": "n-00000016-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, started_at, finished_at)\n  VALUES (${pgStr('lernagent-' + getBusinessDate())}, 'lernagent-newswirkung', 'lernen',\n          'gpt-5.4-mini', 'lernagent-v1', ${pgStr(j.analysis_from + '..' + j.analysis_to)},\n          ${pgStr((j.proposals_final || []).length + ' Vorschlaege')}, 'success', now(), now());`;\nreturn { json: { ...j, sql } };\n"
+        },
+        "name": "Agentenlauf protokollieren (SQL bauen)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -800,
+          300
+        ],
+        "id": "n-00000017-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.sql }}",
+          "options": {}
+        },
+        "name": "Agentenlauf protokollieren (ausfuehren)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -624,
+          300
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "id": "n-00000018-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "jsCode": "const j = $('Agentenlauf protokollieren (SQL bauen)').item.json;\nconst lines = [\n  '📊 Lernagent Newswirkung – Zeitraum ' + j.analysis_from + ' bis ' + j.analysis_to,\n  '',\n  'Ereignisse gesamt: ' + j.total_events + ' (sauber: ' + j.clean_events + ', konfundiert: ' + j.confounded_events + ')',\n  'Gesamt-Richtungsgenauigkeit (ungewichtet, alle Horizonte): ' + (j.overall_direction_accuracy ?? 'n/a') + '%',\n  'Gewichtung je Fall: ' + (j.weighting_formula || 'high=1.0, medium=0.7, limited=0.4, confounded=0.25'),\n  '',\n  'Vorschlaege diese Woche: ' + (j.proposals_final || []).length\n];\nfor (const p of (j.proposals_final || [])) {\n  lines.push('  - [' + p.proposal_type + '] ' + p.target + ' bei ' + p.time_horizon + ': ' + p.current_value + ' -> ' + p.proposed_value + ' (n=' + p.sample_size + ', gewichtete Trefferquote ' + (p.metric_value ?? 'n/a') + '%) ' + p.reason);\n}\nif ((j.proposals_final || []).length === 0) lines.push('  (keine belastbaren Vorschlaege diese Woche)');\n\nreturn { json: { ...j, report_text: lines.join('\\n') } };\n"
+        },
+        "name": "Lernbericht aufbereiten",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -600,
+          300
+        ],
+        "id": "n-00000019-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'lernbericht_' + $json.analysis_to }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "rawContentType": "application/json",
+          "body": "={{ JSON.stringify({ msgtype: 'm.text', body: $json.report_text }) }}",
+          "options": {
+            "timeout": 30000
+          }
+        },
+        "name": "Matrix: Lernbericht senden",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -400,
+          300
+        ],
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "od1pN1F5wy2irSDs",
+            "name": "Header Auth account"
+          }
+        },
+        "id": "n-00000020-0000-4000-8000-0000000000"
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT weight_key, weight_value FROM trading.scoring_weights WHERE active = TRUE;",
+          "options": {}
+        },
+        "id": "n-f1f2-weights-0000-4000-8000-000000000001",
+        "name": "DB: Aktive Gewichte laden",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -1750,
+          380
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT config_key, value_numeric FROM trading.pipeline_config WHERE config_key = 'LEARNING_MIN_NEWS_SAMPLE_SIZE';",
+          "options": {}
+        },
+        "name": "DB: Lern-Konfiguration laden",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -2624,
+          -360
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-09-f3-cfgload"
+      }
+    ],
+    "connections": {
+      "Trigger: Lernagent (Samstag 08:00)": {
+        "main": [
+          [
+            {
+              "node": "DB: Lern-Konfiguration laden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SQL: Gesamtkennzahlen": {
+        "main": [
+          [
+            {
+              "node": "SQL: Je Newskategorie",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "SQL: Je Quelle",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "SQL: Je Ticker",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "SQL: Je Konfidenz-Bucket",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "DB: Aktive Gewichte laden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SQL: Je Newskategorie": {
+        "main": [
+          [
+            {
+              "node": "Merge 1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SQL: Je Quelle": {
+        "main": [
+          [
+            {
+              "node": "Merge 1",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge 1": {
+        "main": [
+          [
+            {
+              "node": "Merge 2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SQL: Je Ticker": {
+        "main": [
+          [
+            {
+              "node": "Merge 2",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge 2": {
+        "main": [
+          [
+            {
+              "node": "Merge 3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "SQL: Je Konfidenz-Bucket": {
+        "main": [
+          [
+            {
+              "node": "Merge 3",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge 3": {
+        "main": [
+          [
+            {
+              "node": "Mindestfallzahlen klassifizieren",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Mindestfallzahlen klassifizieren": {
+        "main": [
+          [
+            {
+              "node": "Baue Lernagent-Prompt",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Baue Lernagent-Prompt": {
+        "main": [
+          [
+            {
+              "node": "KI: Lernbericht interpretieren",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "KI: Lernbericht interpretieren": {
+        "main": [
+          [
+            {
+              "node": "Vorschlaege gegen Fallzahlen validieren",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vorschlaege gegen Fallzahlen validieren": {
+        "main": [
+          [
+            {
+              "node": "Vorschlaege auffaechern",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Agentenlauf protokollieren (SQL bauen)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vorschlag speichern (SQL bauen)": {
+        "main": [
+          [
+            {
+              "node": "Vorschlag speichern (ausfuehren)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Vorschlaege auffaechern": {
+        "main": [
+          [
+            {
+              "node": "Vorschlag speichern (SQL bauen)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agentenlauf protokollieren (SQL bauen)": {
+        "main": [
+          [
+            {
+              "node": "Agentenlauf protokollieren (ausfuehren)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agentenlauf protokollieren (ausfuehren)": {
+        "main": [
+          [
+            {
+              "node": "Lernbericht aufbereiten",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Lernbericht aufbereiten": {
+        "main": [
+          [
+            {
+              "node": "Matrix: Lernbericht senden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DB: Lern-Konfiguration laden": {
+        "main": [
+          [
+            {
+              "node": "SQL: Gesamtkennzahlen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Oliver Lietz",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-02T07:36:38.461Z",
+        "id": 2265,
+        "workflowId": "LjZHC5g7thqcCElo",
+        "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+        "event": "deactivated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      },
+      {
+        "createdAt": "2026-08-02T07:36:38.541Z",
+        "id": 2266,
+        "workflowId": "LjZHC5g7thqcCElo",
+        "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+        "event": "activated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    ]
+  }
 }
