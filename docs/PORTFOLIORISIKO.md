@@ -50,3 +50,10 @@ Wurde bisher pauschal auf **alle** offenen Positionen angewendet statt nur auf d
 
 - ✅ Umgesetzt: alle 9 ursprünglichen Limits + Region-/Währungslimits, Blocker-Schema, 7 Stressszenarien (Sektor-Szenario jetzt sektorspezifisch).
 - 🔴 Nicht live getestet (0 offene Positionen zum Zeitpunkt der Migration).
+
+## Update Härtung Welle 1-3 (2026-08-02)
+
+- **Statuszwischenschritt `portfolio_pending`** (Phase 6+7, `sql/053`): `06` schreibt neue Empfehlungen nicht mehr direkt als `offen`, sondern als `portfolio_pending` — `14`s Job A löst diesen Zwischenzustand nach der Portfolioprüfung zu `offen` (genehmigt) oder `portfolio_blocked` (abgelehnt) auf, inklusive Blocker-Begründung und Risikowerten vorher/nachher direkt auf `trading.recommendations` (`portfolio_check_id`, `portfolio_blocked_reason`, `portfolio_risk_before/after`). Vorher blieb eine abgelehnte Empfehlung dauerhaft als `status='offen'` sichtbar, obwohl der zugehörige `paper_trades`-Eintrag bereits `status='blocked'` war — dieser Widerspruch ist behoben. Dead-Letter-Eskalation zu `portfolio_check_failed` nach `MAX_PORTFOLIO_CHECK_ATTEMPTS` (Default 5).
+- **Rückstandsverarbeitung** (Phase 7): `14`s Ladequery ist jetzt rein statusbasiert (`WHERE status = 'portfolio_pending'`, kein Datumsfilter mehr) — eine durch einen unterbrochenen Lauf verspätete Empfehlung geht nicht mehr verloren, sondern wird beim nächsten Lauf unabhängig vom ursprünglichen Anlagedatum verarbeitet.
+- **`data_error`-Retry-Wiederherstellung** (Phase 4, `sql/051`): Job B erkennt einen Datenfehlertag jetzt korrekt, merkt sich den Ausgangsstatus (`pre_data_error_status`) und stellt ihn nach Wiederherstellung gültiger Kursdaten wieder her — bewusst konservativ ohne Fill-/Exit-Prüfung im selben Lauf.
+- **Bewusst zurückgehalten**: `06`s Code-Fix für `portfolio_pending` liegt fertig im Repo, ist aber noch nicht live gepusht — siehe `OFFENE_AUFGABEN.md` und `AKTIVIERUNGSPLAN_PAPER_TRADING.md` für die kontrollierte Aktivierungsreihenfolge (Phase 18).

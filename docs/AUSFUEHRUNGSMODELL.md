@@ -46,3 +46,7 @@ Der Auftrag nennt `financing_cost` explizit als zu berechnende Kennzahl. Formel 
 - ✅ Umgesetzt: Entry-/Stop-/Target-Modell, Ambiguous-Bar-Policy, Kostenmodell inkl. `financing_cost`-Formel, Gap-Behandlung.
 - 🔴 Nicht live getestet (siehe `docs/TESTPLAN_WELLE_3.md`) — nur als lokale Unit-Tests der Kernlogik verifiziert.
 - 🔴 Bewusst nicht umgesetzt: ein echtes Intraday-Ausführungsmodell (keine Datenquelle mit Minutenauflösung vorhanden).
+
+## Update Härtung Welle 1-3 (2026-08-02): Gap-through-Stop (Phase 5, `sql/052`)
+
+Bisher galt beim Stop-Exit immer exakt der Stop-Preis (`exitPrice = stop`), unabhängig davon, ob die Tageskerze durch den Stop **gap-te** — unrealistisch günstig und systematisch überzeichnend für `net_pnl`/`realized_r_multiple` bei jedem echten Gap-Exit. Neue Funktion `stopRawExitPrice()`: Long `Open < Stop ? Open : Stop`, Short `Open > Stop ? Open : Stop` (exakt die Auftragsformel). Bleibt weiterhin bewusst **immer** exakt der Zielkurs bei einem Gap über das Ziel hinaus (kein rückwirkend optimaler Kurs). Neue additive Audit-Felder: `raw_exit_price`, `effective_exit_price` (Slippage/Gebühren-bereinigt, rein informativ), `gap_through_stop`, `gap_amount`, `execution_quality` (`exact_stop`/`gap_through_stop`/`exact_target`/`close_fallback`). `net_pnl` selbst bleibt unverändert über die bereits getestete Formel aus Welle-3-Abgleich E6/E7 berechnet, um dort keine Regression zu riskieren. 6/6 lokale Testfälle bestanden (siehe `TESTPLAN_HAERTUNG_WELLE_1_3.md`, Suite B).

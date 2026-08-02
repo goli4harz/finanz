@@ -22,9 +22,9 @@ Stand: 2026-08-01. Neuer Workflow `13 – Markt-Screener täglich`.
 
 `scan_candidates.analysis_status='pending'` (statt nur `included=true`) macht den Übergabezustand jetzt explizit abfragbar — aber **kein Workflow verarbeitet ihn aktuell**. Ein echter Tiefenanalyse-Workflow (Kursvalidierung, Strategiesignale, News, Fundamentaltrend, Regime, Opportunity/Risk/Evidence für Ticker außerhalb der täglichen `02`-Pipeline) wäre ein eigenständiges, größeres Projekt in der Größenordnung eines Teils von `02`/`06` — bewusst nicht als Unterpunkt dieser bereits sehr umfangreichen Härtungssitzung hineingepresst, um keine unvollständige/ungetestete Version zu bauen (gleiches Prinzip wie der zurückgestellte Trailing-Stop aus Welle 3). Eigenständiges Vorhaben für eine künftige Sitzung, sobald das Universum tatsächlich über die Watchlist hinaus erweitert wird.
 
-## Zeitliche Reihenfolge (Phase 8.4) — siehe Phase 14
+## Zeitliche Reihenfolge (Phase 8.4) — behoben in Phase 14
 
-`13`s eigener Schedule-Trigger (18:20 Werktage) feuert bereits HEUTE nach `06`s tatsächlicher Ausführung (`06` läuft über `00` um 17:50, nicht über seinen eigenen — deaktivierten — 18:10-Trigger). Da `13` nicht in `00`s Orchestrator-Kette eingebunden ist, hat der Scanner faktisch schon jetzt einen T+1-Charakter innerhalb desselben Kalendertages: seine Ergebnisse fließen nie in denselben `06`-Lauf ein. Die eigentliche Korrektur (Scanner vor `06` in `00`s Kette einreihen) ist Teil von Phase 14.
+`13`s eigener Schedule-Trigger (18:20 Werktage) feuerte bisher nach `06`s tatsächlicher Ausführung (`06` läuft über `00` um 17:50, nicht über seinen eigenen — deaktivierten — 18:10-Trigger). Da `13` nicht in `00`s Orchestrator-Kette eingebunden war, hatte der Scanner faktisch einen T+1-Charakter innerhalb desselben Kalendertages: seine Ergebnisse flossen nie in denselben `06`-Lauf ein. **Behoben in Phase 14**: `13` bekam einen `Execute Workflow Trigger` und ist jetzt als eigene, per `ENABLE_MARKET_SCANNER`-Flag gesteuerte Stufe zwischen der Datenqualitätsprüfung und `06` in `00`s Kette eingereiht (`02b→02→Datenqualität→13→06→14→10→05`) — der eigene Schedule-Trigger wurde deaktiviert (`disabled:true`), um einen künftigen Doppel-Lauf zu vermeiden. Das Flag steht aktuell auf `FALSE` (siehe `AKTIVIERUNGSPLAN_PAPER_TRADING.md`).
 
 ## Bekannte, bewusste Vereinfachung: keine neuen FastAPI-Aufrufe
 
@@ -42,10 +42,10 @@ Der Scanner **schreibt nicht** in `trading.recommendations`, **aktiviert oder l�
 
 ## Trigger
 
-`Manueller Start` (Test) + `Trigger: Scanner (18:20 Werktage)` — nach `02`/`02b` (18:00/17:55) und `06` (18:10), damit alle Datenquellen für den Lauftag bereits vollständig sind.
+`Manueller Start` (Test, weiterhin aktiv) + `Execute Workflow Trigger` (Phase 14, für den Aufruf durch `00`). Der frühere eigenständige `Trigger: Scanner (18:20 Werktage)` ist seit Phase 14 `disabled:true` — die Ausführung soll ausschließlich über den Orchestrator laufen, sobald `ENABLE_MARKET_SCANNER=TRUE` gesetzt wird.
 
 ## Status
 
-- ✅ Umgesetzt: beide Stufen, Konfiguration, Persistenz, Ausschlussgründe, echte Universums-Trennung (Phase 8.1), echte relative Stärke (Phase 8.2), Stage-B-Analysestatus (Phase 8.3, strukturell).
-- 🔴 Nicht live getestet (siehe `docs/TESTPLAN_WELLE_2.md`).
-- 🔴 Bewusst offen: der eigentliche Tiefenanalyse-Workflow für Stufe B (Phase 8.3) und die Orchestrator-Einreihung vor `06` (Phase 8.4/14).
+- ✅ Umgesetzt: beide Stufen, Konfiguration, Persistenz, Ausschlussgründe, echte Universums-Trennung (Phase 8.1), echte relative Stärke (Phase 8.2), Stage-B-Analysestatus (Phase 8.3, strukturell), Orchestrator-Einreihung inkl. konsolidiertem Endergebnis-Envelope und korrigierter Status-Ableitung in `Scan-Run: SQL bauen` (Phase 14).
+- 🔴 Nicht live getestet (siehe `docs/TESTPLAN_WELLE_2.md` und `TESTPLAN_HAERTUNG_WELLE_1_3.md`, "Bekannte Grenzen").
+- 🔴 Bewusst offen: der eigentliche Tiefenanalyse-Workflow für Stufe B (Phase 8.3). Aktivierung (`ENABLE_MARKET_SCANNER=TRUE`) ist Teil von `AKTIVIERUNGSPLAN_PAPER_TRADING.md`.

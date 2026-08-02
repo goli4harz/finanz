@@ -260,4 +260,15 @@ Neue Datei `tests/welle_1_3_testsuite.js` (Node, keine externen Abhängigkeiten,
 
 Alle 35 Tests bestanden, 0 fehlgeschlagen. Ergänzt (nicht ersetzt) die bereits in den Phasen 4/5/8/9/10 protokollierten inline-lokalen Tests.
 
-Fortsetzung folgt in Phase 18 (dieses Dokument wird laufend erweitert).
+## Phase 18: Aktivierungsplan, Dokumentation und Abschlussbericht
+
+Alle im Auftrag verlangten Abschlussdokumente erstellt:
+
+- `AENDERUNGSPROTOKOLL_HAERTUNG_WELLE_1_3.md` — kompakte Übersicht aller geänderten Workflows/Migrationen/Dokumente.
+- `TESTPLAN_HAERTUNG_WELLE_1_3.md` / `TESTERGEBNISSE_HAERTUNG_WELLE_1_3.md` — bereits in Phase 17 erstellt.
+- `AKTIVIERUNGSPLAN_PAPER_TRADING.md` — 6 Stufen (0-5), von "aktueller Zustand" bis "Lernagent nach echtem OOS-Verfahren", mit Beobachtungsfristen, Abbruchkriterien und Rollback-Mechanismus (Feature-Flags, kein Codeeingriff nötig).
+- `PRODUKTIONSFREIGABE_PAPER_TRADING.md` — Ampel-Bewertung je Komponente; keine kritischen/hohen 🔴-Befunde bei tatsächlich umgesetzten Komponenten, verbleibende 🟡 sind Beobachtungslücken (fehlende reale Betriebsdaten) oder bewusst zurückgehaltene Live-Pushes, kein 🔴 außer den bewusst nicht vorhandenen Komponenten (OOS-Verfahren, reale Orderanbindung).
+- `ABSCHLUSSBERICHT_HAERTUNG_WELLE_1_3.md` — 15 Abschnitte, Gesamtempfehlung: Scanner (`13`) für Aktivierungsstufe 1 freigeben, Paper-Trading (`14`) gestuft freigeben beginnend mit erzwungenem DRY_RUN, Lernagent (`09b`) weiterhin nicht freigeben.
+- `docs/PORTFOLIORISIKO.md`, `docs/AUSFUEHRUNGSMODELL.md`, `docs/PAPER_TRADING_LEDGER.md`, `docs/MARKTSCANNER.md` — je um einen "Update Härtung Welle 1-3"-Abschnitt ergänzt (nicht umgeschrieben), damit Doku und Code auf demselben Stand sind (Sicherheitsregel).
+
+**Damit sind alle 18 Phasen des Härtungsauftrags abgeschlossen.** Zusammenfassung siehe `ABSCHLUSSBERICHT_HAERTUNG_WELLE_1_3.md`.

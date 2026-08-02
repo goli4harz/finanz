@@ -26,3 +26,9 @@ Jede Statusänderung erzeugt zusätzlich eine Zeile in `paper_trade_events` (`ev
 
 - ✅ Umgesetzt: vollständiges Schema, Statusmodell, Ereignis-Historie, Wiederholungssicherheit.
 - 🔴 Nicht live getestet (0 Trades zum Zeitpunkt dieser Migration — das Ledger ist fabrikneu, siehe `docs/TESTPLAN_WELLE_3.md`).
+
+## Update Härtung Welle 1-3 (2026-08-02)
+
+- **`data_error`-Wiederherstellung** (Phase 4, `sql/051`): neue Spalte `pre_data_error_status` sichert den Status vor Eintritt eines Datenfehlers; nach Wiederherstellung gültiger Kursdaten wird daraus restauriert statt eines festen Rückfallwerts. Eskalation zu `data_error_final` nach `MAX_DATA_ERROR_RETRIES` (strukturell terminal, taucht nicht mehr in der Ladequery auf).
+- **Phase 16 (Idempotenz-Audit)**: die hier bereits dokumentierte `trade_id`+`ON CONFLICT DO NOTHING`-Wiederholungssicherheit wurde im Rahmen des großen Härtungsauftrags erneut unabhängig bestätigt (siehe `FEHLERANALYSE_HAERTUNG_WELLE_1_3.md`, Phase 16, sowie `tests/welle_1_3_testsuite.js`, Suite B/E) — kein neuer Fund, weiterhin korrekt.
+- **Gap-through-Stop-Audit-Felder** (Phase 5): `raw_exit_price`, `effective_exit_price`, `gap_through_stop`, `gap_amount`, `execution_quality` ergänzt — siehe `docs/AUSFUEHRUNGSMODELL.md` für Details.
