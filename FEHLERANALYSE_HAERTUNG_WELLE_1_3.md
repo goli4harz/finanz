@@ -43,4 +43,36 @@ Stand: 2026-08-02. Auftrag "Vollständige Härtung und betriebsfähige Integrati
 
 **Nebenfund beim Push von `07`**: `PUT` schlug zunächst mit `HTTP 400 "settings must NOT have additional properties"` fehl — `settings.binaryMode` wird von n8ns Public-API-Schreibvalidierung nicht akzeptiert (bekanntes Muster, bereits aus dem ALLRIS-Projekt dokumentiert). Fix: `binaryMode` nur aus dem PUT-Payload entfernt (nicht aus der lokalen Datei), n8n behält den Wert serverseitig unverändert bei (per anschließendem GET bestätigt).
 
-Fortsetzung folgt in den Phasen 3-18 (dieses Dokument wird laufend erweitert).
+## Phase 3: Live-Schema-Verifikation (kritischer Fund)
+
+Diagnose-Query gegen `information_schema`/`pg_constraint`/`pg_indexes` (19 Einzelprüfungen) über Workflow `97`, Ergebnis per `GET /executions/:id?includeData=true` gelesen statt Nutzer-Abtippen.
+
+**Kritischer Fund**: 4 von 19 Prüfungen fielen negativ aus — allen voran **`sql/045` (Fehleranalyse B9) war nie tatsächlich ausgeführt worden**, obwohl der zugehörige Code in Workflow `14` bereits live gepusht war und auf die fehlende `paper_trade_events.business_date`-Spalte sowie drei fehlende UNIQUE-Indizes (`ux_paper_trade_events_trade_type_date`, `ux_portfolio_risk_checks_run_ticker`, `ux_stress_scenarios_run_scenario`) verwies. **Hätte `14` in diesem Zustand aktiviert oder manuell ausgeführt werden, wäre jeder einzelne Schreibvorgang in Job A, B und C mit einem SQL-Fehler abgestürzt** (referenzierte Spalte/Constraint existiert nicht) — exakt das Szenario, vor dem Phase 3 des Auftrags warnt ("Kein Workflow darf aktiv bleiben, wenn er in Spalten schreibt, die im Live-Schema fehlen").
+
+**Root Cause**: `sql/045` wurde im Verlauf der vorherigen Sitzung in Workflow `97`s Query-Node geladen, aber bevor der Nutzer es ausführen konnte, mit `sql/046`s Inhalt überschrieben (derselbe Node kann nur eine Query gleichzeitig halten) — die Ausführungsbestätigung des Nutzers galt de facto nur noch `sql/046`. Ebenso betroffen: `sql/043` (`MAX_AMBIGUOUS_PCT_FOR_PROPOSAL`-Seed für Fehleranalyse F7) — dort aber folgenlos, da der Code bereits einen sicheren Fallback-Default (20.0) hatte.
+
+**Behoben**: `sql/043`+`sql/045` erneut geladen und vom Nutzer ausgeführt, per zweiter Diagnose-Query bestätigt (alle 5 betroffenen Punkte jetzt `true`).
+
+**Lehre für künftige Sitzungen**: wenn mehrere Migrationen nacheinander in denselben Einmalig-Query-Node geladen werden, muss die Ausführung JEDER einzelnen explizit bestätigt werden, bevor die nächste geladen wird — ein "ist ausgeführt" nach dem Laden von Migration N+1 ist kein Nachweis, dass auch Migration N lief. `trading.schema_migrations` (Fehleranalyse G1) mindert dieses Risiko für künftige Migrationen, wurde hier aber selbst noch nicht als Verifikationsquelle genutzt (nur `information_schema` direkt).
+
+### Vollständige Diagnosetabelle (finaler Stand, alle ✅)
+
+| Objekt | erwartet | vorhanden | Migration | verwendet durch |
+|---|---|---|---|---|
+| `strategy_signals.configuration_version`/`data_schema_version` | TEXT | ✅ | sql/050 | `02`, `06` |
+| `paper_trades.financing_cost` | NUMERIC | ✅ | sql/048 | `14` Job B |
+| `paper_trades.data_error_count/_first_at/_last_at` | diverse | ✅ | sql/039 | `14` Job B |
+| `paper_trades_status_check` (inkl. `data_error_final`) | CHECK | ✅ | sql/039 | `14` Job B |
+| `portfolio_risk_checks.sequence_index`/`state_snapshot` | diverse | ✅ | sql/039 | `14` Job A |
+| `learning_rule_proposals.rule_version`/`learning_model_version` | TEXT | ✅ | sql/050 | `09`, `09b` |
+| `pipeline_config.MAX_REGION_EXPOSURE_PCT`/`MAX_NON_EUR_EXPOSURE_PCT` | Zeile | ✅ | sql/049 | `14` Job A |
+| `pipeline_config.MAX_AMBIGUOUS_PCT_FOR_PROPOSAL` | Zeile | ✅ (nachgezogen) | sql/043 | `09b` |
+| `pipeline_config.AMBIGUOUS_BAR_POLICY_CODE` | Zeile | ✅ | sql/042 | `14` Job B |
+| `pipeline_config.LEARNING_MIN_NEWS_SAMPLE_SIZE` | Zeile | ✅ | sql/046 | `09` |
+| `paper_trade_events.business_date` | DATE | ✅ (nachgezogen) | sql/045 | `14` Job B |
+| `ux_paper_trade_events_trade_type_date` | UNIQUE INDEX | ✅ (nachgezogen) | sql/045 | `14` Job B |
+| `ux_portfolio_risk_checks_run_ticker` | UNIQUE INDEX | ✅ (nachgezogen) | sql/045 | `14` Job A |
+| `ux_stress_scenarios_run_scenario` | UNIQUE INDEX | ✅ (nachgezogen) | sql/045 | `14` Job C |
+| `trading.schema_migrations` | TABLE | ✅ | sql/044 | alle künftigen Migrationen |
+
+Fortsetzung folgt in den Phasen 4-18 (dieses Dokument wird laufend erweitert).
