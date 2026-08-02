@@ -83,6 +83,16 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   Umfang. Noch nicht aufgeraeumt/committet - eigenstaendiger Punkt fuer eine kuenftige
   Sitzung (pruefen ob alle noch relevant sind, dann committen oder bewusst geordnet
   loeschen).
+
+## Welle-3-Abgleich gegen vollstaendigen Original-Auftragstext (2026-08-02)
+
+Nutzer fuegte den vollstaendigen Welle-3-Auftragstext ein (vorher nur Paraphrase). Live-Audit
+ergab 5 echte Luecken, alle noch selbe Sitzung behoben - Details `docs/WELLE_3_ABGLEICH_2026-08-02.md`:
+`financing_cost` ergaenzt (`sql/048`), Region-/Waehrungs-Expositionslimits (`sql/049`),
+Sektor-Stressszenario jetzt sektorspezifisch, AP10-Versionierungsfelder auf `strategy_signals`/
+`learning_rule_proposals` (`sql/050`), 3 neue Pruefagent-Ablehnungsregeln in `10`.
+- 🟡 **`sql/048`+`sql/049`+`sql/050`** stehen noch zur manuellen Ausfuehrung in Workflow `97`
+  bereit.
 - **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** Von allen Funden aus
   `FEHLERANALYSE.md` (21 kritisch, 19 hoch, 22 mittel, 7 niedrig/niedrig-mittel) sind nur
   noch **A2** und **F9** offen - beide bewusst zurueckgestellt, siehe oben. Alle uebrigen
