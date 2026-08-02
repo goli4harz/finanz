@@ -553,7 +553,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei:** `04 – Cleanup News-Tabellen.json`, `06 – Empfehlungswatchlist.json`, `07 – Status-Uebersicht.json`
 - **Befund:** `active`-Feld korrekt (Altversionen live deaktiviert) — kein funktionaler Fehler, reines Aufräumrisiko.
 - **Korrektur:** Nach `n8n_live_backup/` oder `archiv/` verschieben.
-- **Status:** offen
+- **Status:** behoben, 2026-08-02. Klargestellt: betrifft ausschließlich lokale Repo-Dateien, nicht den Live-Stand (live existieren diese Alt-Duplikate laut `GET /workflows` gar nicht mehr, nur die "– Agent V1"-Versionen). Die drei Dateien hatten jeweils eine andere `id` als ihr "– Agent V1"-Pendant (z. B. `06 – Empfehlungswatchlist.json` -> `zmedV73DsUArNquX` vs. das live aktuelle `06 – Empfehlungswatchlist – Agent V1` -> `aguWZUolRizBnsj4`) und `active:false` - eindeutig alte, separate Workflow-Exporte. Per `git mv` nach `n8n_live_backup/*_ALT_OHNE_AGENT_V1_SUFFIX_20260802.json` verschoben.
 
 ### G6 — Redaktionsfehler in `OFFENE_AUFGABEN.md` (Zeile 7 vs. 21)
 - **Schweregrad:** niedrig
