@@ -397,7 +397,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** mittel
 - **Datei/Node:** `14`, Code „Job A"
 - **Korrektur:** Formel wörtlich auf `(peak_t-equity_t)/peak_t*100` umstellen oder Abweichung dokumentieren.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. Nenner in beiden Stellen (laufender `maxDrawdownPct` in der Schleife + `aktuellerDrawdownPct`) von der Konstante `MODEL_PORTFOLIO_VALUE` auf das laufende Hoch `peak` umgestellt, exakt die Auftragsformel. **Echter Verhaltensunterschied, nicht nur kosmetisch**: da `peak` nie unter das Startkapital faellt, hat die alte Formel den Drawdown nach jeder Gewinnphase systematisch ueberzeichnet und den `DRAWDOWN_LIMIT`-Veto zu frueh ausgeloest - lokal verifiziert (Profit-dann-Verlust: alt 30% vs. neu 25% bei identischen Trades; reine Verlustserie ohne vorherigen Gewinn: beide Formeln liefern identisch 10%, da `peak == MODEL_PORTFOLIO_VALUE` bleibt).
 
 ### E7 — Einstiegskosten werden nie von `net_pnl` abgezogen
 - **Schweregrad:** kritisch
