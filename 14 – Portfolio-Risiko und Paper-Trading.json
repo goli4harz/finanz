@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:31:46.504Z",
+  "updatedAt": "2026-08-02T09:37:51.048Z",
   "createdAt": "2026-08-01T00:36:15.735Z",
   "id": "H0iZrWQy1HQi6iro",
   "name": "14 – Portfolio-Risiko und Paper-Trading",
@@ -691,6 +691,188 @@
         300
       ],
       "id": "n-14-welle3abgleich-mergea7"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Portfolio-Konfiguration laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Portfolio-Konfiguration laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        100
+      ],
+      "id": "n-14-p2-a-wrap-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Heutige neue Empfehlungen laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Heutige neue Empfehlungen laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        180
+      ],
+      "id": "n-14-p2-a-wrap-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Offene Paper-Trades laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Offene Paper-Trades laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        260
+      ],
+      "id": "n-14-p2-a-wrap-3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Geschlossene Paper-Trades laden (Drawdown)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        340
+      ],
+      "id": "n-14-p2-a-wrap-4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Marktregime laden (Portfolio)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Marktregime laden (Portfolio)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        420
+      ],
+      "id": "n-14-p2-a-wrap-5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Kursverlauf laden (Korrelation)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Kursverlauf laden (Korrelation)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        500
+      ],
+      "id": "n-14-p2-a-wrap-6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Strategie-Status laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategie-Status laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        580
+      ],
+      "id": "n-14-p2-a-wrap-7"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Ticker-Region-Waehrung laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Ticker-Region-Waehrung laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2680,
+        740
+      ],
+      "id": "n-14-p2-a-wrap-8"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Portfolio-Konfiguration laden (Exec)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Portfolio-Konfiguration laden (Exec)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1320,
+        100
+      ],
+      "id": "n-14-p2-b-wrap-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Ausstehende/offene Paper-Trades laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Ausstehende/offene Paper-Trades laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1320,
+        180
+      ],
+      "id": "n-14-p2-b-wrap-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Heutige Kerzen laden (Exec)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Heutige Kerzen laden (Exec)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1320,
+        260
+      ],
+      "id": "n-14-p2-b-wrap-3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Strategiesignale heute laden (Exec)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategiesignale heute laden (Exec)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1320,
+        340
+      ],
+      "id": "n-14-p2-b-wrap-4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Portfolio-Konfiguration laden (Stress)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Portfolio-Konfiguration laden (Stress)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        100
+      ],
+      "id": "n-14-p2-c-wrap-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Offene Paper-Trades laden (Stress)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Offene Paper-Trades laden (Stress)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        180
+      ],
+      "id": "n-14-p2-c-wrap-2"
     }
   ],
   "connections": {
@@ -790,7 +972,7 @@
       "main": [
         [
           {
-            "node": "Merge A 1",
+            "node": "Wrap: DB: Portfolio-Konfiguration laden",
             "type": "main",
             "index": 0
           }
@@ -801,9 +983,9 @@
       "main": [
         [
           {
-            "node": "Merge A 1",
+            "node": "Wrap: DB: Heutige neue Empfehlungen laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -823,9 +1005,9 @@
       "main": [
         [
           {
-            "node": "Merge A 2",
+            "node": "Wrap: DB: Offene Paper-Trades laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -845,9 +1027,9 @@
       "main": [
         [
           {
-            "node": "Merge A 3",
+            "node": "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -867,9 +1049,9 @@
       "main": [
         [
           {
-            "node": "Merge A 4",
+            "node": "Wrap: DB: Marktregime laden (Portfolio)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -889,9 +1071,9 @@
       "main": [
         [
           {
-            "node": "Merge A 5",
+            "node": "Wrap: DB: Kursverlauf laden (Korrelation)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -911,9 +1093,9 @@
       "main": [
         [
           {
-            "node": "Merge A 6",
+            "node": "Wrap: DB: Strategie-Status laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -981,7 +1163,7 @@
       "main": [
         [
           {
-            "node": "Merge B 1",
+            "node": "Wrap: DB: Portfolio-Konfiguration laden (Exec)",
             "type": "main",
             "index": 0
           }
@@ -992,9 +1174,9 @@
       "main": [
         [
           {
-            "node": "Merge B 1",
+            "node": "Wrap: DB: Ausstehende/offene Paper-Trades laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1014,9 +1196,9 @@
       "main": [
         [
           {
-            "node": "Merge B 2",
+            "node": "Wrap: DB: Heutige Kerzen laden (Exec)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1036,9 +1218,9 @@
       "main": [
         [
           {
-            "node": "Merge B 3",
+            "node": "Wrap: DB: Strategiesignale heute laden (Exec)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1096,7 +1278,7 @@
       "main": [
         [
           {
-            "node": "Merge C 1",
+            "node": "Wrap: DB: Portfolio-Konfiguration laden (Stress)",
             "type": "main",
             "index": 0
           }
@@ -1107,9 +1289,9 @@
       "main": [
         [
           {
-            "node": "Merge C 1",
+            "node": "Wrap: DB: Offene Paper-Trades laden (Stress)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1151,9 +1333,9 @@
       "main": [
         [
           {
-            "node": "Merge A 7",
+            "node": "Wrap: DB: Ticker-Region-Waehrung laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1168,6 +1350,160 @@
           }
         ]
       ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Heutige neue Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Portfolio)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Kursverlauf laden (Korrelation)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategie-Status laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ticker-Region-Waehrung laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ausstehende/offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Merge B 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Heutige Kerzen laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale heute laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Merge C 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Offene Paper-Trades laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Merge C 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -1176,9 +1512,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "3efa6b8e-07f3-460a-a5af-60350587c58c",
+  "versionId": "0bc7068f-8320-4c35-bccb-ff429a5257eb",
   "activeVersionId": null,
-  "versionCounter": 7,
+  "versionCounter": 9,
   "triggerCount": 0,
   "shared": [
     {

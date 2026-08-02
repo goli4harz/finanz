@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:07:23.764Z",
+  "updatedAt": "2026-08-02T09:43:46.771Z",
   "createdAt": "2026-07-19T13:02:26.677Z",
   "id": "BFlxfLyarzR2xbBT",
   "name": "10 – Report- und Prüfagent",
@@ -928,6 +928,123 @@
         1020
       ],
       "id": "n-10-welle3abgleich-merge18"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"Merge Grunddaten 10\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: Merge Grunddaten 10",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1920,
+        740
+      ],
+      "id": "n-10-p2-wrap-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Vetos heute (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Vetos heute (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        540
+      ],
+      "id": "n-10-p2-wrap-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Sitzungsstatus (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Sitzungsstatus (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        620
+      ],
+      "id": "n-10-p2-wrap-3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Strategiesignale heute (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategiesignale heute (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        640
+      ],
+      "id": "n-10-p2-wrap-4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Marktregime (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Marktregime (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        720
+      ],
+      "id": "n-10-p2-wrap-5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Scan-Kandidaten letzter Lauf (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4208,
+        800
+      ],
+      "id": "n-10-p2-wrap-6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Strategieauswertung (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategieauswertung (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        740
+      ],
+      "id": "n-10-p2-wrap-7"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Paper-Trades-Zusammenfassung (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Paper-Trades-Zusammenfassung (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        820
+      ],
+      "id": "n-10-p2-wrap-8"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Portfolio-Drawdown (Report)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Portfolio-Drawdown (Report)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4912,
+        900
+      ],
+      "id": "n-10-p2-wrap-9"
     }
   ],
   "connections": {
@@ -1377,7 +1494,7 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 11",
+            "node": "Wrap: Merge Grunddaten 10",
             "type": "main",
             "index": 0
           }
@@ -1388,9 +1505,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 11",
+            "node": "Wrap: DB: Vetos heute (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1410,9 +1527,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 12",
+            "node": "Wrap: DB: Sitzungsstatus (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1432,9 +1549,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 13",
+            "node": "Wrap: DB: Strategiesignale heute (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1454,9 +1571,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 14",
+            "node": "Wrap: DB: Marktregime (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1476,9 +1593,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 15",
+            "node": "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1498,9 +1615,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 16",
+            "node": "Wrap: DB: Strategieauswertung (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1520,9 +1637,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 17",
+            "node": "Wrap: DB: Paper-Trades-Zusammenfassung (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1542,9 +1659,9 @@
       "main": [
         [
           {
-            "node": "Merge Grunddaten 18",
+            "node": "Wrap: DB: Portfolio-Drawdown (Report)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -1559,6 +1676,105 @@
           }
         ]
       ]
+    },
+    "Wrap: Merge Grunddaten 10": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Vetos heute (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 11",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Sitzungsstatus (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 12",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale heute (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 13",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 14",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 15",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategieauswertung (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 16",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Paper-Trades-Zusammenfassung (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 17",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Drawdown (Report)": {
+      "main": [
+        [
+          {
+            "node": "Merge Grunddaten 18",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -1568,9 +1784,9 @@
   "staticData": null,
   "meta": null,
   "pinData": {},
-  "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
-  "activeVersionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
-  "versionCounter": 139,
+  "versionId": "4e89a32b-2a29-4c07-91a5-816ac3d0fa4d",
+  "activeVersionId": "4e89a32b-2a29-4c07-91a5-816ac3d0fa4d",
+  "versionCounter": 145,
   "triggerCount": 0,
   "shared": [
     {
@@ -1593,9 +1809,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-02T07:07:23.791Z",
-    "createdAt": "2026-08-02T07:07:23.791Z",
-    "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
+    "updatedAt": "2026-08-02T09:43:46.778Z",
+    "createdAt": "2026-08-02T09:43:46.778Z",
+    "versionId": "4e89a32b-2a29-4c07-91a5-816ac3d0fa4d",
     "workflowId": "BFlxfLyarzR2xbBT",
     "nodes": [
       {
@@ -1877,7 +2093,7 @@
       },
       {
         "parameters": {
-          "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  // alwaysOutputData auf den Quell-Nodes verhindert, dass eine 0-Zeilen-Abfrage die\n  // Merge-Kette abbricht - erzeugt dabei aber ein leeres Platzhalter-Item, das hier\n  // herausgefiltert wird.\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json).filter(j => j && Object.keys(j).length > 0) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\n\nfunction buildTrend(rows, keyField) {\n  const byKey = {};\n  for (const r of rows) {\n    const k = String(r[keyField] || '').trim();\n    if (!k) continue;\n    if (!byKey[k]) byKey[k] = [];\n    byKey[k].push(r);\n  }\n  for (const k of Object.keys(byKey)) byKey[k].sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));\n  return byKey;\n}\n\n// Paket 9: Mehrtages-Trend aus Paket 8s Historie-Tabellen (letzte 5 Handelstage,\n// gruppiert je Ticker/Symbol statt aller Rohzeilen, um den Prompt-Umfang klein zu halten).\nconst trendHistorie = {\n  fundamentaldaten: buildTrend(safeAll('DB: Trend-Fundamentaldaten laden'), 'ticker'),\n  marktumfeld: buildTrend(safeAll('DB: Trend-Marktumfeld laden'), 'symbol'),\n  technische_signale: buildTrend(safeAll('DB: Trend-Signale laden'), 'ticker')\n};\n\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n// Welle 1, AP5+AP4: harte Vetos heute + Boersensitzungsstatus, fuer Report-\n// und Pruef-Agent-Prompt (siehe unten).\nconst vetosHeute = safeAll('DB: Vetos heute (Report)').map(v => {\n  let blockers = [];\n  try { blockers = typeof v.blockers_json === 'string' ? JSON.parse(v.blockers_json) : (v.blockers_json || []); } catch (e) {}\n  return { ticker: v.ticker, action: v.action, codes: blockers.map(b => b.code), blockers };\n});\nconst sitzungsstatusListe = safeAll('DB: Sitzungsstatus (Report)');\nconst strategieSignaleHeute = safeAll('DB: Strategiesignale heute (Report)');\nconst marktregimeHeute = safeAll('DB: Marktregime (Report)');\nconst scanKandidatenLetzterLauf = safeAll('DB: Scan-Kandidaten letzter Lauf (Report)');\nconst strategieauswertungPaper = safeAll('DB: Strategieauswertung (Report)');\nconst paperTradesZusammenfassung = safeAll('DB: Paper-Trades-Zusammenfassung (Report)')[0] || {};\nconst sitzungenUnvollstaendig = sitzungsstatusListe.filter(s => s.session_status === 'open_intraday' || s.session_status === 'stale');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose,\n  trend_historie: trendHistorie,\n  // Welle 1, AP5+AP4\n  harte_vetos_heute: vetosHeute,\n  sitzungsstatus: sitzungsstatusListe,\n  sitzungen_unvollstaendig: sitzungenUnvollstaendig.map(s => s.ticker),\n  // Welle 2, AP2+AP3+AP6\n  strategiesignale_heute: strategieSignaleHeute,\n  marktregime_heute: marktregimeHeute,\n  scan_kandidaten_letzter_lauf: scanKandidatenLetzterLauf,\n  scan_kandidaten_regime_blockiert: strategieSignaleHeute.filter(s => Number(s.regime_fit) !== null && Number(s.regime_fit) < 0.2).map(s => s.ticker),\n  // Welle 3, AP1-AP9\n  strategieauswertung_paper_trades: strategieauswertungPaper,\n  paper_trades_zusammenfassung: paperTradesZusammenfassung,\n  strategien_zu_kleine_fallzahl: strategieauswertungPaper.filter(s => Number(s.n) > 0 && Number(s.n) < 30).map(s => s.strategy)\n} }];\n"
+          "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction safeAll(nodeName) {\n  // alwaysOutputData auf den Quell-Nodes verhindert, dass eine 0-Zeilen-Abfrage die\n  // Merge-Kette abbricht - erzeugt dabei aber ein leeres Platzhalter-Item, das hier\n  // herausgefiltert wird.\n  try { const items = $(nodeName).all(); return items ? items.map(i => i.json).filter(j => j && Object.keys(j).length > 0) : []; }\n  catch (e) { return []; }\n}\n\nconst heute = getBusinessDate();\n\nfunction buildTrend(rows, keyField) {\n  const byKey = {};\n  for (const r of rows) {\n    const k = String(r[keyField] || '').trim();\n    if (!k) continue;\n    if (!byKey[k]) byKey[k] = [];\n    byKey[k].push(r);\n  }\n  for (const k of Object.keys(byKey)) byKey[k].sort((a, b) => String(a.snapshot_date).localeCompare(String(b.snapshot_date)));\n  return byKey;\n}\n\n// Paket 9: Mehrtages-Trend aus Paket 8s Historie-Tabellen (letzte 5 Handelstage,\n// gruppiert je Ticker/Symbol statt aller Rohzeilen, um den Prompt-Umfang klein zu halten).\nconst trendHistorie = {\n  fundamentaldaten: buildTrend(safeAll('DB: Trend-Fundamentaldaten laden'), 'ticker'),\n  marktumfeld: buildTrend(safeAll('DB: Trend-Marktumfeld laden'), 'symbol'),\n  technische_signale: buildTrend(safeAll('DB: Trend-Signale laden'), 'ticker')\n};\n\nconst fundamentaldaten = safeAll('DB: Fundamentaldaten laden');\nconst techAusDB = safeAll('DB: Technische Signale laden');\nconst marktKontext = safeAll('DB: Marktumfeld laden');\nconst empfehlungenRows = safeAll('DB: Empfehlungen laden');\nconst alleNews = safeAll('DB: Relevante News laden (trading.*)');\nconst lernhinweise = safeAll('DB: Aktuelle Lernhinweise laden');\nconst orchestratorStages = safeAll('DB: Orchestrator-Lauf laden');\n// Welle 1, AP5+AP4: harte Vetos heute + Boersensitzungsstatus, fuer Report-\n// und Pruef-Agent-Prompt (siehe unten).\nconst vetosHeute = safeAll('DB: Vetos heute (Report)').map(v => {\n  let blockers = [];\n  try { blockers = typeof v.blockers_json === 'string' ? JSON.parse(v.blockers_json) : (v.blockers_json || []); } catch (e) {}\n  return { ticker: v.ticker, action: v.action, codes: blockers.map(b => b.code), blockers };\n});\nconst sitzungsstatusListe = safeAll('DB: Sitzungsstatus (Report)');\nconst strategieSignaleHeute = safeAll('DB: Strategiesignale heute (Report)');\nconst marktregimeHeute = safeAll('DB: Marktregime (Report)');\nconst scanKandidatenLetzterLauf = safeAll('DB: Scan-Kandidaten letzter Lauf (Report)');\nconst strategieauswertungPaper = safeAll('DB: Strategieauswertung (Report)');\nconst paperTradesZusammenfassung = safeAll('DB: Paper-Trades-Zusammenfassung (Report)')[0] || {};\n// FIX 2026-08-02 (Welle-3-Abgleich, Fund 5/5): Portfolio-Drawdown war bisher gar nicht\n// verfuegbar - Grundlage fuer die neue Pruef-Agent-Regel 'Drawdown unverhaeltnismaessig hoch'.\nconst portfolioDrawdown = safeAll('DB: Portfolio-Drawdown (Report)')[0] || { max_drawdown_pct: 0, aktueller_drawdown_pct: 0 };\nconst sitzungenUnvollstaendig = sitzungsstatusListe.filter(s => s.session_status === 'open_intraday' || s.session_status === 'stale');\n\nconst diagnose = {\n  fundamental_count: fundamentaldaten.length,\n  tech_signale_count: techAusDB.length,\n  markt_kontext_count: marktKontext.length,\n  news_total: alleNews.length,\n  quellen_leer: []\n};\nif (fundamentaldaten.length === 0) diagnose.quellen_leer.push('stock_fundamentals');\nif (techAusDB.length === 0) diagnose.quellen_leer.push('stock_technical_signals');\nif (marktKontext.length === 0) diagnose.quellen_leer.push('stock_market_context');\nif (alleNews.length === 0) diagnose.quellen_leer.push('trading.news_assessments');\nconst orchestratorWarnungen = orchestratorStages.filter(s => s.status === 'failed' || s.status === 'warning').map(s => s.stage_name + ': ' + s.status + (s.error_message ? ' (' + s.error_message + ')' : ''));\ndiagnose.warnungen = [...diagnose.quellen_leer.map(q => 'Datenquelle leer: ' + q), ...orchestratorWarnungen];\n\nconst tickerSektorMap = {};\nfor (const s of techAusDB) if (s.ticker && s.sektor) tickerSektorMap[String(s.ticker).trim()] = String(s.sektor).trim();\n\nconst SEKTOR_KEYWORDS = {\n  'Auto': ['auto','automobil','fahrzeug','e-auto','elektroauto','zulieferer','pkw'],\n  'Energie': ['energie','strom','gas','öl','ölpreis','kraftwerk','erneuerbare'],\n  'Chemie': ['chemie','chemiekonzern','chemieindustrie'],\n  'Banken': ['bank','banken','zins','zinsen','ezb','kredit','finanzsektor'],\n  'Pharma': ['pharma','medikament','arznei','biotech','arzneimittel'],\n  'Telekom': ['telekom','mobilfunk','5g','netzausbau','glasfaser'],\n  'Versicherung': ['versicherung','versicherer'],\n  'Technologie': ['software','chip','halbleiter',' ki ','cloud','tech-branche'],\n  'Industrie': ['industrie','maschinenbau','anlagenbau','industriekonzern'],\n  'Sport': ['sportartikel','sportbekleidung'],\n  'Konsumgüter': ['konsumgüter','konsumgüterkonzern'],\n  'Gesundheit': ['gesundheitswesen','klinik','medizintechnik']\n};\nfunction ermittleSektorenAusText(text) {\n  const t = String(text || '').toLowerCase();\n  return Object.entries(SEKTOR_KEYWORDS).filter(([,kw]) => kw.some(k => t.includes(k))).map(([s]) => s);\n}\nfunction erweitereTickerFuerSektorNews(n) {\n  const bereits = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n  if (n.wirkungsebene !== 'sektor') return { ...n, betroffene_ticker_erweitert: bereits, sektor_treffer: [] };\n  const matchText = [n.titel, n.wirkungs_begruendung, n.ticker_begruendung].filter(Boolean).join(' ');\n  const sektorTreffer = ermittleSektorenAusText(matchText);\n  const zusaetzliche = Object.entries(tickerSektorMap).filter(([,sek]) => sektorTreffer.includes(sek)).map(([t]) => t);\n  return { ...n, betroffene_ticker_erweitert: Array.from(new Set([...bereits, ...zusaetzliche])), sektor_treffer: sektorTreffer };\n}\n\nconst heutigeNews = alleNews.map(erweitereTickerFuerSektorNews);\ndiagnose.news_heute_relevant = heutigeNews.length;\n\nlet techSignale = techAusDB.filter(s => String(s.datum || '').startsWith(heute));\nif (techSignale.length === 0) techSignale = techAusDB;\nconst statusPrio = { handelskandidat: 1, beobachten: 2, nur_info: 3, ignorieren: 4 };\ntechSignale.sort((a, b) => (statusPrio[a.handels_status] || 9) - (statusPrio[b.handels_status] || 9));\n\nconst HAUPT_SYMBOLE = ['^GDAXI','^STOXX50E','^GSPC','^IXIC'];\nconst KONTEXT_SYMBOLE = ['EURUSD=X','CL=F','GC=F'];\nconst hauptmaerkte = marktKontext.filter(m => HAUPT_SYMBOLE.includes(m.symbol));\nconst kontextmaerkte = marktKontext.filter(m => KONTEXT_SYMBOLE.includes(m.symbol));\nconst risk_off = hauptmaerkte.filter(m => m.markt_status === 'risk_off').length;\nconst risk_on = hauptmaerkte.filter(m => m.markt_status === 'risk_on').length;\nconst gesamtMarktLage = marktKontext.length === 0 ? 'unbekannt' : risk_off > risk_on ? 'risk_off' : risk_on > risk_off ? 'risk_on' : 'neutral';\n\nconst dax = marktKontext.find(m => m.symbol === '^GDAXI') || null;\nconst nasdaq = marktKontext.find(m => m.symbol === '^IXIC') || null;\nconst sp500 = marktKontext.find(m => m.symbol === '^GSPC') || null;\nconst eurusd = marktKontext.find(m => m.symbol === 'EURUSD=X') || null;\nconst oel = marktKontext.find(m => m.symbol === 'CL=F') || null;\n\nconst handelskandidaten = techSignale.filter(s => s.handels_status === 'handelskandidat');\nconst beobachtenListe = techSignale.filter(s => s.handels_status === 'beobachten');\nconst marktBestaetigt = techSignale.filter(s => s.markt_bestaetigt_signal === 'true' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\nconst marktGegenSignal = techSignale.filter(s => s.markt_bestaetigt_signal === 'false' && (s.handels_status === 'handelskandidat' || s.handels_status === 'beobachten'));\n\nconst aktuellerKursByTicker = {};\nfor (const s of techAusDB) if (s.ticker) aktuellerKursByTicker[String(s.ticker).trim()] = s.aktueller_kurs;\nfunction berechneLivePerformance(row) {\n  const entry = Number(row.entry_kurs);\n  const aktuell = Number(aktuellerKursByTicker[String(row.ticker || '').trim()]);\n  if (isNaN(entry) || isNaN(aktuell) || entry <= 0) return null;\n  const pct = row.richtung === 'kauf' ? ((aktuell - entry) / entry) * 100 : ((entry - aktuell) / entry) * 100;\n  return parseFloat(pct.toFixed(2));\n}\nconst offenePositionen = empfehlungenRows.filter(r => r.status === 'offen').map(r => ({ ...r, live_performance_pct: berechneLivePerformance(r) }));\nconst geschlossenePositionen = empfehlungenRows.filter(r => r.status === 'geschlossen');\nconst geschlossenPerformances = geschlossenePositionen.map(r => Number(r.performance_pct)).filter(v => !isNaN(v));\n\nconst empfehlungswatchlist = {\n  offen: offenePositionen, geschlossen: geschlossenePositionen,\n  anzahl_offen: offenePositionen.length, anzahl_geschlossen: geschlossenePositionen.length,\n  durchschnitt_performance_geschlossen: geschlossenPerformances.length > 0 ? parseFloat((geschlossenPerformances.reduce((a,b)=>a+b,0)/geschlossenPerformances.length).toFixed(2)) : null,\n  trefferquote_geschlossen: geschlossenPerformances.length > 0 ? parseFloat(((geschlossenPerformances.filter(v=>v>0).length/geschlossenPerformances.length)*100).toFixed(1)) : null\n};\n\n// .all()[0] statt .first()/.item verwendet: nach 6 Merge-Nodes ist die\n// pairedItem-Abstammung zum Trigger nicht mehr zuverlaessig, wodurch\n// .item/.first() im Sub-Workflow-Aufruf (anders als im manuellen Test aus\n// der UI) auf einen leeren/falschen Wert aufgeloest hat -- run_id kam als\n// NULL in den DB-Writes an. .all()[0] liest den rohen Node-Output direkt,\n// unabhaengig von der pairedItem-Kette.\n// Nach zwei fehlgeschlagenen Versuchen, run_id vom Execute Workflow Trigger\n// zu lesen (weder .item/.first() noch .all()[0] noch ein expliziter 7.\n// Merge-Zweig lieferten beim Sub-Workflow-Aufruf einen Wert -- der\n// zugrunde liegende workflowInputs-Uebergabemechanismus zwischen Execute\n// Workflow (00) und Execute Workflow Trigger (10) ist offenbar nicht so\n// verlaesslich wie angenommen, unbestaetigt mangels lokalem Beispiel in\n// den 8 Original-Workflows): 10 erzeugt seine eigene run_id jetzt\n// vollstaendig lokal, unabhaengig vom Aufrufer. Korrelation zum\n// Orchestrator-Lauf bleibt ueber die Zeitstempel in trading.agent_runs\n// moeglich, ist aber kein exakter run_id-Abgleich mehr.\nconst _triggerRunId = (() => {\n  try {\n    const t = $('Execute Workflow Trigger').all()[0];\n    return t && t.json && t.json.context && t.json.context.run_id ? String(t.json.context.run_id) : null;\n  } catch (e) { return null; }\n})();\n// Test 2026-07-20 abends: .all()[0] wurde von einer frueheren Session bereits\n// versucht und als nicht funktionierend dokumentiert -- mit Fallback erneut\n// probiert, da .all()[0] seither mehrfach im selben Sub-Workflow-Aufruf-Kontext\n// (00/06/08) nachweislich funktioniert hat. Faellt bei Fehlschlag weiterhin\n// sicher auf die lokale Generierung zurueck, kein Risiko einer Regression\n// zum alten NULL-run_id-Bug.\nreturn [{ json: {\n  run_id: _triggerRunId || ('report-' + heute + '-' + Date.now()),\n  _run_started_at: new Date().toISOString(),\n  business_date: heute,\n  datum: new Date().toLocaleDateString('de-DE'),\n  uhrzeit: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' }).format(new Date()),\n  technische_signale: techSignale, handelskandidaten, beobachten_liste: beobachtenListe,\n  markt_bestaetigt: marktBestaetigt, markt_gegen_signal: marktGegenSignal,\n  fundamentaldaten, nachrichten: heutigeNews, empfehlungswatchlist,\n  lernhinweise,\n  marktumfeld: {\n    kontext: marktKontext, gesamt_lage: gesamtMarktLage, risk_on_count: risk_on, risk_off_count: risk_off,\n    haupt_maerkte_count: hauptmaerkte.length,\n    kontext_maerkte: kontextmaerkte.map(m => ({ symbol: m.symbol, name: m.name, status: m.markt_status, veraenderung_pct: m.veraenderung_pct })),\n    dax: dax ? { status: dax.markt_status, trend: dax.trend, veraenderung_pct: dax.veraenderung_pct, risk_level: dax.risk_level, hinweis: dax.markt_hinweis } : null,\n    nasdaq: nasdaq ? { status: nasdaq.markt_status, trend: nasdaq.trend, veraenderung_pct: nasdaq.veraenderung_pct } : null,\n    sp500: sp500 ? { status: sp500.markt_status, trend: sp500.trend, veraenderung_pct: sp500.veraenderung_pct } : null,\n    eurusd: eurusd ? { kurs: eurusd.aktueller_kurs, veraenderung_pct: eurusd.veraenderung_pct } : null,\n    oel: oel ? { kurs: oel.aktueller_kurs, veraenderung_pct: oel.veraenderung_pct } : null\n  },\n  datenqualitaet: diagnose,\n  trend_historie: trendHistorie,\n  // Welle 1, AP5+AP4\n  harte_vetos_heute: vetosHeute,\n  sitzungsstatus: sitzungsstatusListe,\n  sitzungen_unvollstaendig: sitzungenUnvollstaendig.map(s => s.ticker),\n  // Welle 2, AP2+AP3+AP6\n  strategiesignale_heute: strategieSignaleHeute,\n  marktregime_heute: marktregimeHeute,\n  scan_kandidaten_letzter_lauf: scanKandidatenLetzterLauf,\n  scan_kandidaten_regime_blockiert: strategieSignaleHeute.filter(s => Number(s.regime_fit) !== null && Number(s.regime_fit) < 0.2).map(s => s.ticker),\n  // Welle 3, AP1-AP9\n  strategieauswertung_paper_trades: strategieauswertungPaper,\n  paper_trades_zusammenfassung: paperTradesZusammenfassung,\n  strategien_zu_kleine_fallzahl: strategieauswertungPaper.filter(s => Number(s.n) > 0 && Number(s.n) < 30).map(s => s.strategy),\n  portfolio_drawdown: portfolioDrawdown,\n  strategien_ticker_dominiert: strategieauswertungPaper.filter(s => Number(s.max_ticker_share_pct) > 50).map(s => s.strategy)\n} }];\n"
         },
         "name": "Reportdaten aufbereiten",
         "type": "n8n-nodes-base.code",
@@ -1957,7 +2173,7 @@
       },
       {
         "parameters": {
-          "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nWelle 1 (fachliche Ueberarbeitung, 2026-07-31) - zusaetzlich approved=false, wenn EINE der folgenden vier\nBedingungen zutrifft (jede einzelne ist ein Ablehnungsgrund, unabhaengig vom quality_score):\n1. Der Bericht stellt eine Position aus \"Empfehlungswatchlist\" als handelbar/aussichtsreich dar, obwohl diese\n   Position in \"harte Vetos heute\" (unten) mit einem harten Blocker fuer denselben Ticker auftaucht.\n2. Eine offene Position in \"Empfehlungswatchlist\" hat fehlende Risikofelder (stop_price, target_price,\n   reward_risk_ratio oder max_planned_loss ist null/leer), wird im Bericht aber ohne diesen Hinweis erwaehnt.\n3. Der Bericht stellt Kursdaten eines Tickers als abgeschlossenen Schlusskurs/Tageswert dar, obwohl dieser\n   Ticker in \"sitzungen_unvollstaendig\" (unten) auftaucht (Sitzung laeuft noch oder Daten sind veraltet).\n4. Der Bericht behauptet ein 52-Wochen-Hoch/-Tief oder einen Breakout fuer einen Ticker, dessen technisches\n   Signal (in \"technische Signale\") \"breakout_history_ausreichend\":false zeigt, ohne diese Einschraenkung zu\n   nennen.\n5. Der Bericht bezeichnet opportunity_score, decision_score oder einen aehnlichen Wert als \"Erfolgswahrscheinlichkeit\",\n   \"Gewinnchance in Prozent\" oder aehnlich - diese Werte sind Attraktivitaets-/Risiko-Masse, KEINE Wahrscheinlichkeiten.\n6. Der Bericht stellt eine Strategie fuer einen Ticker als aussichtsreich dar, obwohl dieser Ticker in\n   \"scan_kandidaten_regime_blockiert\" (unten) auftaucht (regime_fit < 0.2 - im aktuellen Marktregime praktisch\n   blockiert).\n7. Der Bericht bezeichnet eine Strategie aus \"strategieauswertung_paper_trades\" als erfolgreich/bewaehrt, obwohl\n   deren Fallzahl (n) unter 30 liegt (siehe \"strategien_zu_kleine_fallzahl\") - eine kleine Fallzahl darf nie als\n   Erfolgsnachweis dargestellt werden.\n8. Der Bericht nennt ein Bruttoergebnis (vor Gebuehren/Slippage) als Erfolg, ohne das Nettoergebnis\n   (net_pnl/realized_r_multiple aus paper_trades) zu nennen, falls dieses negativ oder deutlich niedriger ist.\n9. Der Bericht bezeichnet eine Strategie als bestaetigt erfolgreich, ohne zu erwaehnen, dass noch kein\n   Out-of-Sample-Backtest vorliegt (aktuell IMMER der Fall - das Backtesting-Modul ist mangels Historie dormant).\n10. Der Bericht ignoriert einen hohen Anteil mehrdeutiger Ausfuehrungen (ambiguous_pct) bei der Einschaetzung\n    einer Strategie.\nTrage jeden erkannten Fall zusaetzlich in required_corrections ein, mit dem betroffenen Ticker im Klartext.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}\n\nROHDATEN (Mehrtages-Trend, 5 Handelstage):\n${JSON.stringify(d.trend_historie || {})}\n\nROHDATEN (harte Vetos heute, Welle 1 AP5):\n${JSON.stringify(d.harte_vetos_heute || [])}\n\nROHDATEN (Boersensitzungsstatus, Welle 1 AP4):\n${JSON.stringify(d.sitzungsstatus || [])}\n\nROHDATEN (Ticker mit unvollstaendiger/veralteter Sitzung heute):\n${JSON.stringify(d.sitzungen_unvollstaendig || [])}\n\nROHDATEN (Strategiesignale heute, Welle 2 AP2):\n${JSON.stringify(d.strategiesignale_heute || [])}\n\nROHDATEN (Marktregime je Region, Welle 2 AP3):\n${JSON.stringify(d.marktregime_heute || [])}\n\nROHDATEN (Ticker mit regime-blockierten Strategien, Welle 2 AP3):\n${JSON.stringify(d.scan_kandidaten_regime_blockiert || [])}\n\nROHDATEN (Strategieauswertung Paper Trades, Welle 3 AP4):\n${JSON.stringify(d.strategieauswertung_paper_trades || [])}\n\nROHDATEN (Paper-Trades-Zusammenfassung):\n${JSON.stringify(d.paper_trades_zusammenfassung || {})}\n\nROHDATEN (Strategien mit zu kleiner Fallzahl fuer eine Erfolgsaussage):\n${JSON.stringify(d.strategien_zu_kleine_fallzahl || [])}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
+          "jsCode": "const d = $json;\n\nconst systemPrompt = `Du bist ein kritischer, unabhaengiger Pruefer fuer automatisiert erstellte Aktien-Tagesreports.\nDu bekommst den fertigen Berichtstext UND dieselben Rohdaten, aus denen er entstanden sein soll.\nDeine Aufgabe: pruefe den Bericht kritisch, nicht wohlwollend.\n\nPruefe insbesondere:\n- unsupported_claims: Behauptungen im Bericht, die sich NICHT aus den Rohdaten ableiten lassen.\n- contradictions: Widersprueche innerhalb des Berichts oder zu den Rohdaten.\n- stale_data: Datenpunkte, die veraltet wirken oder aus der Datenqualitaet-Warnliste haetten erwaehnt werden muessen, es aber nicht wurden.\n- missing_warnings: bekannte Datenqualitaets- oder Orchestrator-Warnungen aus den Rohdaten, die im Bericht fehlen.\n- required_corrections: konkrete, umsetzbare Korrekturvorschlaege.\n\napproved=false, wenn unsupported_claims oder contradictions nicht leer sind, ODER missing_warnings kritische\nLuecken zeigt, ODER quality_score < 60.\n\nWelle 1 (fachliche Ueberarbeitung, 2026-07-31) - zusaetzlich approved=false, wenn EINE der folgenden vier\nBedingungen zutrifft (jede einzelne ist ein Ablehnungsgrund, unabhaengig vom quality_score):\n1. Der Bericht stellt eine Position aus \"Empfehlungswatchlist\" als handelbar/aussichtsreich dar, obwohl diese\n   Position in \"harte Vetos heute\" (unten) mit einem harten Blocker fuer denselben Ticker auftaucht.\n2. Eine offene Position in \"Empfehlungswatchlist\" hat fehlende Risikofelder (stop_price, target_price,\n   reward_risk_ratio oder max_planned_loss ist null/leer), wird im Bericht aber ohne diesen Hinweis erwaehnt.\n3. Der Bericht stellt Kursdaten eines Tickers als abgeschlossenen Schlusskurs/Tageswert dar, obwohl dieser\n   Ticker in \"sitzungen_unvollstaendig\" (unten) auftaucht (Sitzung laeuft noch oder Daten sind veraltet).\n4. Der Bericht behauptet ein 52-Wochen-Hoch/-Tief oder einen Breakout fuer einen Ticker, dessen technisches\n   Signal (in \"technische Signale\") \"breakout_history_ausreichend\":false zeigt, ohne diese Einschraenkung zu\n   nennen.\n5. Der Bericht bezeichnet opportunity_score, decision_score oder einen aehnlichen Wert als \"Erfolgswahrscheinlichkeit\",\n   \"Gewinnchance in Prozent\" oder aehnlich - diese Werte sind Attraktivitaets-/Risiko-Masse, KEINE Wahrscheinlichkeiten.\n6. Der Bericht stellt eine Strategie fuer einen Ticker als aussichtsreich dar, obwohl dieser Ticker in\n   \"scan_kandidaten_regime_blockiert\" (unten) auftaucht (regime_fit < 0.2 - im aktuellen Marktregime praktisch\n   blockiert).\n7. Der Bericht bezeichnet eine Strategie aus \"strategieauswertung_paper_trades\" als erfolgreich/bewaehrt, obwohl\n   deren Fallzahl (n) unter 30 liegt (siehe \"strategien_zu_kleine_fallzahl\") - eine kleine Fallzahl darf nie als\n   Erfolgsnachweis dargestellt werden.\n8. Der Bericht nennt ein Bruttoergebnis (vor Gebuehren/Slippage) als Erfolg, ohne das Nettoergebnis\n   (net_pnl/realized_r_multiple aus paper_trades) zu nennen, falls dieses negativ oder deutlich niedriger ist.\n9. Der Bericht bezeichnet eine Strategie als bestaetigt erfolgreich, ohne zu erwaehnen, dass noch kein\n   Out-of-Sample-Backtest vorliegt (aktuell IMMER der Fall - das Backtesting-Modul ist mangels Historie dormant).\n10. Der Bericht ignoriert einen hohen Anteil mehrdeutiger Ausfuehrungen (ambiguous_pct) bei der Einschaetzung\n    einer Strategie.\n11. Der Bericht bezeichnet eine Strategie oder das Portfolio als risikoarm/stabil, obwohl\n    \"portfolio_drawdown\" (unten) einen aktuellen oder maximalen Drawdown von ueber 15% zeigt,\n    ohne diesen zu erwaehnen.\n12. Der Bericht nennt eine Erfolgswahrscheinlichkeit, einen kalibrierten Prozentwert oder\n    eine ähnliche statistische Aussage, obwohl das Kalibrierungsmodul mangels Daten dormant\n    ist (aktuell IMMER der Fall, siehe docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md) - es gibt\n    keine kalibrierten Wahrscheinlichkeiten, jede Prozentangabe waere erfunden.\n13. Der Bericht bezeichnet eine Strategie aus \"strategieauswertung_paper_trades\" als\n    erfolgreich/bewaehrt, obwohl sie in \"strategien_ticker_dominiert\" (unten) auftaucht (ein\n    einzelner Ticker stellt ueber 50% der Trades) - der Effekt koennte nur diesem einen Titel\n    zuzuschreiben sein, nicht der Strategie.\nTrage jeden erkannten Fall zusaetzlich in required_corrections ein, mit dem betroffenen Ticker im Klartext.\n\nAntworte AUSSCHLIESSLICH mit einem validen JSON-Objekt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"approved\": true,\n  \"quality_score\": 92,\n  \"unsupported_claims\": [],\n  \"contradictions\": [],\n  \"stale_data\": [],\n  \"missing_warnings\": [],\n  \"required_corrections\": []\n}`;\n\n// WICHTIG: der Pruef-Agent kann Behauptungen im Bericht nur gegen Daten\n// pruefen, die er tatsaechlich sieht -- ein frueherer Versuch gab ihm nur\n// die ANZAHL der Datensaetze mit statt der Werte selbst, wodurch er JEDE\n// Detailaussage als \"nicht verifizierbar\" ablehnte (technisch korrekt,\n// aber am eigentlichen Zweck vorbei). Jetzt die vollstaendigen Arrays.\nconst userPrompt = `BERICHTSTEXT:\n${d.report_markdown}\n\nROHDATEN (Datenqualitaet-Diagnose):\n${JSON.stringify(d.datenqualitaet)}\n\nROHDATEN (Marktumfeld):\n${JSON.stringify(d.marktumfeld)}\n\nROHDATEN (technische Signale, vollstaendig):\n${JSON.stringify(d.technische_signale || [])}\n\nROHDATEN (Fundamentaldaten, vollstaendig):\n${JSON.stringify(d.fundamentaldaten || [])}\n\nROHDATEN (relevante News, vollstaendig):\n${JSON.stringify(d.nachrichten || [])}\n\nROHDATEN (Empfehlungswatchlist):\n${JSON.stringify(d.empfehlungswatchlist || {})}\n\nROHDATEN (Mehrtages-Trend, 5 Handelstage):\n${JSON.stringify(d.trend_historie || {})}\n\nROHDATEN (harte Vetos heute, Welle 1 AP5):\n${JSON.stringify(d.harte_vetos_heute || [])}\n\nROHDATEN (Boersensitzungsstatus, Welle 1 AP4):\n${JSON.stringify(d.sitzungsstatus || [])}\n\nROHDATEN (Ticker mit unvollstaendiger/veralteter Sitzung heute):\n${JSON.stringify(d.sitzungen_unvollstaendig || [])}\n\nROHDATEN (Strategiesignale heute, Welle 2 AP2):\n${JSON.stringify(d.strategiesignale_heute || [])}\n\nROHDATEN (Marktregime je Region, Welle 2 AP3):\n${JSON.stringify(d.marktregime_heute || [])}\n\nROHDATEN (Ticker mit regime-blockierten Strategien, Welle 2 AP3):\n${JSON.stringify(d.scan_kandidaten_regime_blockiert || [])}\n\nROHDATEN (Strategieauswertung Paper Trades, Welle 3 AP4):\n${JSON.stringify(d.strategieauswertung_paper_trades || [])}\n\nROHDATEN (Paper-Trades-Zusammenfassung):\n${JSON.stringify(d.paper_trades_zusammenfassung || {})}\n\nROHDATEN (Strategien mit zu kleiner Fallzahl fuer eine Erfolgsaussage):\n${JSON.stringify(d.strategien_zu_kleine_fallzahl || [])}`;\n\nreturn [{ json: { ...d, checkSystemPrompt: systemPrompt, checkUserPrompt: userPrompt } }];\n"
         },
         "name": "Pruef-Prompt aufbauen",
         "type": "n8n-nodes-base.code",
@@ -2409,7 +2625,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "SELECT strategy, count(*) FILTER (WHERE status = 'closed') AS n, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor, round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct, round(avg(realized_r_multiple) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE)::numeric, 3) AS expectancy_r_unambiguous, round(100.0 * count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE), 0), 1) AS win_rate_pct_unambiguous, round(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl < 0)), 0), 3) AS profit_factor_unambiguous, count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE) AS n_unambiguous FROM trading.paper_trades GROUP BY strategy;",
+          "query": "WITH je_ticker AS (\n  SELECT strategy, ticker, count(*) FILTER (WHERE status = 'closed') AS ticker_n\n  FROM trading.paper_trades GROUP BY strategy, ticker\n),\nmax_ticker_je_strategie AS (\n  SELECT strategy, max(ticker_n) AS max_ticker_n\n  FROM je_ticker GROUP BY strategy\n),\nbasis AS (\n  SELECT strategy,\n    count(*) FILTER (WHERE status = 'closed') AS n,\n    round(avg(realized_r_multiple) FILTER (WHERE status = 'closed')::numeric, 3) AS expectancy_r,\n    round(100.0 * count(*) FILTER (WHERE status = 'closed' AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS win_rate_pct,\n    round(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND net_pnl < 0)), 0), 3) AS profit_factor,\n    round(100.0 * count(*) FILTER (WHERE ambiguous_execution = TRUE AND status = 'closed') / NULLIF(count(*) FILTER (WHERE status = 'closed'), 0), 1) AS ambiguous_pct,\n    round(avg(realized_r_multiple) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE)::numeric, 3) AS expectancy_r_unambiguous,\n    round(100.0 * count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0) / NULLIF(count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE), 0), 1) AS win_rate_pct_unambiguous,\n    round(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl > 0)::numeric / NULLIF(ABS(sum(net_pnl) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE AND net_pnl < 0)), 0), 3) AS profit_factor_unambiguous,\n    count(*) FILTER (WHERE status = 'closed' AND ambiguous_execution = FALSE) AS n_unambiguous\n  FROM trading.paper_trades GROUP BY strategy\n)\n-- FIX 2026-08-02 (Welle-3-Abgleich, Fund 5/5, Teil 'Einzelfall-Dominanz'): max_ticker_share_pct\n-- neu ergaenzt - gleiche Konzentrationslogik wie 09bs dominiertVonEinemTicker, hier fuer den\n-- Report/Pruefagent nutzbar gemacht (vorher nirgendwo in 10 verfuegbar).\nSELECT b.strategy, b.n, b.expectancy_r, b.win_rate_pct, b.profit_factor, b.ambiguous_pct,\n  b.expectancy_r_unambiguous, b.win_rate_pct_unambiguous, b.profit_factor_unambiguous, b.n_unambiguous,\n  round(100.0 * mt.max_ticker_n / NULLIF(b.n, 0), 1) AS max_ticker_share_pct\nFROM basis b\nLEFT JOIN max_ticker_je_strategie mt ON mt.strategy = b.strategy;",
           "options": {}
         },
         "name": "DB: Strategieauswertung (Report)",
@@ -2483,6 +2699,159 @@
         ],
         "id": "n-welle3-10-m17-0000001",
         "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "-- FIX 2026-08-02 (Welle-3-Abgleich, Fund 5/5, Teil 'Drawdown'): bisher hatte 10 gar\n-- keine Drawdown-Kennzahl verfuegbar - die Pruef-Agent-Regel \"Drawdown unverhaeltnismaessig\n-- hoch\" hatte also keine Datengrundlage. Gleiche peak_t-Formel wie 14s Job A (Fehleranalyse\n-- E6, 2026-08-02: Nenner ist das laufende Hoch, nicht die Konstante).\nWITH geschlossen AS (\n  SELECT exit_time, net_pnl FROM trading.paper_trades WHERE status = 'closed' AND exit_time IS NOT NULL ORDER BY exit_time\n),\nstart_kapital AS (\n  SELECT COALESCE((SELECT value_numeric FROM trading.pipeline_config WHERE config_key = 'MODEL_PORTFOLIO_VALUE'), 100000) AS wert\n),\nequity_kurve AS (\n  SELECT g.exit_time, sk.wert + SUM(g.net_pnl) OVER (ORDER BY g.exit_time) AS equity\n  FROM geschlossen g, start_kapital sk\n),\nmit_peak AS (\n  SELECT exit_time, equity, GREATEST(equity, MAX(equity) OVER (ORDER BY exit_time)) AS peak\n  FROM equity_kurve\n)\nSELECT\n  COALESCE((SELECT MAX(CASE WHEN peak > 0 THEN (peak - equity) / peak * 100 ELSE 0 END) FROM mit_peak), 0) AS max_drawdown_pct,\n  COALESCE((SELECT CASE WHEN peak > 0 THEN (peak - equity) / peak * 100 ELSE 0 END FROM mit_peak ORDER BY exit_time DESC LIMIT 1), 0) AS aktueller_drawdown_pct;",
+          "options": {}
+        },
+        "name": "DB: Portfolio-Drawdown (Report)",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          4832,
+          860
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "id": "n-10-welle3abgleich-drawdown"
+      },
+      {
+        "parameters": {
+          "mode": "combine",
+          "combineBy": "combineAll",
+          "options": {}
+        },
+        "name": "Merge Grunddaten 18",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 3,
+        "position": [
+          5056,
+          1020
+        ],
+        "id": "n-10-welle3abgleich-merge18"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"Merge Grunddaten 10\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: Merge Grunddaten 10",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1920,
+          740
+        ],
+        "id": "n-10-p2-wrap-1"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Vetos heute (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Vetos heute (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3680,
+          540
+        ],
+        "id": "n-10-p2-wrap-2"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Sitzungsstatus (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Sitzungsstatus (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3680,
+          620
+        ],
+        "id": "n-10-p2-wrap-3"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Strategiesignale heute (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Strategiesignale heute (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4208,
+          640
+        ],
+        "id": "n-10-p2-wrap-4"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Marktregime (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Marktregime (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4208,
+          720
+        ],
+        "id": "n-10-p2-wrap-5"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Scan-Kandidaten letzter Lauf (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4208,
+          800
+        ],
+        "id": "n-10-p2-wrap-6"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Strategieauswertung (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Strategieauswertung (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4912,
+          740
+        ],
+        "id": "n-10-p2-wrap-7"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Paper-Trades-Zusammenfassung (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Paper-Trades-Zusammenfassung (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4912,
+          820
+        ],
+        "id": "n-10-p2-wrap-8"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [{ json: { dataset: \"DB: Portfolio-Drawdown (Report)\", rows: $input.all().map(i => i.json) } }];"
+        },
+        "name": "Wrap: DB: Portfolio-Drawdown (Report)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          4912,
+          900
+        ],
+        "id": "n-10-p2-wrap-9"
       }
     ],
     "connections": {
@@ -2576,6 +2945,11 @@
             },
             {
               "node": "DB: Paper-Trades-Zusammenfassung (Report)",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "DB: Portfolio-Drawdown (Report)",
               "type": "main",
               "index": 0
             }
@@ -2927,7 +3301,7 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 11",
+              "node": "Wrap: Merge Grunddaten 10",
               "type": "main",
               "index": 0
             }
@@ -2938,9 +3312,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 11",
+              "node": "Wrap: DB: Vetos heute (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -2960,9 +3334,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 12",
+              "node": "Wrap: DB: Sitzungsstatus (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -2982,9 +3356,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 13",
+              "node": "Wrap: DB: Strategiesignale heute (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -3004,9 +3378,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 14",
+              "node": "Wrap: DB: Marktregime (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -3026,9 +3400,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 15",
+              "node": "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -3048,9 +3422,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 16",
+              "node": "Wrap: DB: Strategieauswertung (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -3070,9 +3444,9 @@
         "main": [
           [
             {
-              "node": "Merge Grunddaten 17",
+              "node": "Wrap: DB: Paper-Trades-Zusammenfassung (Report)",
               "type": "main",
-              "index": 1
+              "index": 0
             }
           ]
         ]
@@ -3081,9 +3455,130 @@
         "main": [
           [
             {
+              "node": "Merge Grunddaten 18",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DB: Portfolio-Drawdown (Report)": {
+        "main": [
+          [
+            {
+              "node": "Wrap: DB: Portfolio-Drawdown (Report)",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Merge Grunddaten 18": {
+        "main": [
+          [
+            {
               "node": "Reportdaten aufbereiten",
               "type": "main",
               "index": 0
+            }
+          ]
+        ]
+      },
+      "Wrap: Merge Grunddaten 10": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 11",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Vetos heute (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 11",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Sitzungsstatus (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 12",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Strategiesignale heute (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 13",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Marktregime (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 14",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Scan-Kandidaten letzter Lauf (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 15",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Strategieauswertung (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 16",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Paper-Trades-Zusammenfassung (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 17",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Wrap: DB: Portfolio-Drawdown (Report)": {
+        "main": [
+          [
+            {
+              "node": "Merge Grunddaten 18",
+              "type": "main",
+              "index": 1
             }
           ]
         ]
@@ -3095,18 +3590,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-02T07:07:24.991Z",
-        "id": 2257,
+        "createdAt": "2026-08-02T09:43:47.059Z",
+        "id": 2277,
         "workflowId": "BFlxfLyarzR2xbBT",
-        "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
+        "versionId": "4e89a32b-2a29-4c07-91a5-816ac3d0fa4d",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-02T07:07:25.068Z",
-        "id": 2258,
+        "createdAt": "2026-08-02T09:43:47.146Z",
+        "id": 2278,
         "workflowId": "BFlxfLyarzR2xbBT",
-        "versionId": "b2d8284a-5f8a-4d41-b3ae-b5e21441e8ce",
+        "versionId": "4e89a32b-2a29-4c07-91a5-816ac3d0fa4d",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }

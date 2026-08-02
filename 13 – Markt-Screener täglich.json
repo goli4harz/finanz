@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-01T00:52:40.199Z",
+  "updatedAt": "2026-08-02T09:38:53.458Z",
   "createdAt": "2026-07-31T23:33:51.642Z",
   "id": "43lG9aZVHwzIp0jq",
   "name": "13 – Markt-Screener täglich",
@@ -421,6 +421,110 @@
       "onError": "continueRegularOutput",
       "id": "n-welle2-13-022",
       "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Scanner-Konfiguration laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Scanner-Konfiguration laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        140
+      ],
+      "id": "n-13-p2-wrap-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Universum laden\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Universum laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        220
+      ],
+      "id": "n-13-p2-wrap-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Technische Signale heute laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Technische Signale heute laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        300
+      ],
+      "id": "n-13-p2-wrap-3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Strategiesignale heute laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategiesignale heute laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        380
+      ],
+      "id": "n-13-p2-wrap-4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Marktregime laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Marktregime laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        460
+      ],
+      "id": "n-13-p2-wrap-5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Kursverlauf laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Kursverlauf laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        540
+      ],
+      "id": "n-13-p2-wrap-6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: News heute laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: News heute laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        620
+      ],
+      "id": "n-13-p2-wrap-7"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: \"DB: Fundamentaltrend-Basis laden (Scanner)\", rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2080,
+        700
+      ],
+      "id": "n-13-p2-wrap-8"
     }
   ],
   "connections": {
@@ -520,7 +624,7 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 1",
+            "node": "Wrap: DB: Scanner-Konfiguration laden",
             "type": "main",
             "index": 0
           }
@@ -531,9 +635,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 1",
+            "node": "Wrap: DB: Universum laden",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -553,9 +657,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 2",
+            "node": "Wrap: DB: Technische Signale heute laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -575,9 +679,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 3",
+            "node": "Wrap: DB: Strategiesignale heute laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -597,9 +701,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 4",
+            "node": "Wrap: DB: Marktregime laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -619,9 +723,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 5",
+            "node": "Wrap: DB: Kursverlauf laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -641,9 +745,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 6",
+            "node": "Wrap: DB: News heute laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -663,9 +767,9 @@
       "main": [
         [
           {
-            "node": "Merge Vorbereitung 7",
+            "node": "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -724,6 +828,94 @@
           }
         ]
       ]
+    },
+    "Wrap: DB: Scanner-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Universum laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Technische Signale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Kursverlauf laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: News heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -732,9 +924,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "09e5e0f4-fabf-4170-be98-eacf119e0013",
+  "versionId": "1e376ac2-b923-426d-be7e-5d41c73f8b72",
   "activeVersionId": null,
-  "versionCounter": 2,
+  "versionCounter": 4,
   "triggerCount": 0,
   "shared": [
     {

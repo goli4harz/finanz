@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-01T00:52:37.439Z",
+  "updatedAt": "2026-08-02T09:41:18.382Z",
   "createdAt": "2026-07-19T13:02:26.199Z",
   "id": "7hQ3t6KrSo9uDNML",
   "name": "07 – Status-Uebersicht – Agent V1",
@@ -1843,9 +1843,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "0f65a46d-45f4-4866-bac2-abadae6e1c82",
-  "activeVersionId": "0f65a46d-45f4-4866-bac2-abadae6e1c82",
-  "versionCounter": 208,
+  "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
+  "activeVersionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
+  "versionCounter": 214,
   "triggerCount": 1,
   "shared": [
     {
@@ -1868,9 +1868,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-01T00:52:37.445Z",
-    "createdAt": "2026-08-01T00:52:37.445Z",
-    "versionId": "0f65a46d-45f4-4866-bac2-abadae6e1c82",
+    "updatedAt": "2026-08-01T22:45:27.808Z",
+    "createdAt": "2026-08-01T22:45:27.808Z",
+    "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
     "workflowId": "7hQ3t6KrSo9uDNML",
     "nodes": [
       {
@@ -2445,7 +2445,7 @@
       {
         "parameters": {
           "operation": "executeQuery",
-          "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY ticker, snapshot_date;",
+          "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
           "options": {}
         },
         "id": "f1c6baa4-8e8b-4f2e-b559-7f6ae61a0332",
@@ -3700,18 +3700,34 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-01T00:52:37.831Z",
-        "id": 2121,
+        "createdAt": "2026-08-01T22:45:28.010Z",
+        "id": 2247,
         "workflowId": "7hQ3t6KrSo9uDNML",
-        "versionId": "0f65a46d-45f4-4866-bac2-abadae6e1c82",
+        "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-01T00:52:37.948Z",
-        "id": 2122,
+        "createdAt": "2026-08-01T22:45:28.087Z",
+        "id": 2248,
         "workflowId": "7hQ3t6KrSo9uDNML",
-        "versionId": "0f65a46d-45f4-4866-bac2-abadae6e1c82",
+        "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
+        "event": "activated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      },
+      {
+        "createdAt": "2026-08-02T09:41:18.669Z",
+        "id": 2275,
+        "workflowId": "7hQ3t6KrSo9uDNML",
+        "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
+        "event": "deactivated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      },
+      {
+        "createdAt": "2026-08-02T09:41:18.784Z",
+        "id": 2276,
+        "workflowId": "7hQ3t6KrSo9uDNML",
+        "versionId": "594aeff5-bbc0-484a-b22e-8a12a964c196",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }
