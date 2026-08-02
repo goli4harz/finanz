@@ -490,7 +490,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Prioritaet 6: einheitliches Envelope. Genau EIN Zweig liefert pro Lauf\n// tatsaechlich Items (DRY_RUN vs. echter Schreibpfad schliessen sich vor\n// diesem Merge gegenseitig aus, siehe IF: DRY_RUN aktiv?), daher reicht eine\n// Formerkennung am Item-Inhalt statt an der Merge-Eingangsseite.\n// Der echte Pfad enthaelt zusaetzlich die Matrix-Sende-Antwort (kein\n// _aktion-Feld, sonst haette die urspruengliche Matrix-Nachricht keinen\n// Rueckgabewert und der Execute-Workflow-Aufruf aus 00 laeuft ins Leere,\n// live beobachtet: 06 lieferte {} statt Envelope zurueck) -- die wird vor\n// der Zaehlung explizit herausgefiltert, analog zum ticker!==undefined-\n// Filter in 02s Abschluss-Ergebnis bauen. Das Guard-Trigger-Item (kein\n// _aktion, kein dry_run) wird ebenso herausgefiltert -- es dient nur dazu,\n// den vorgelagerten Merge an Tagen ganz ohne Kandidaten ueberhaupt zum\n// Feuern zu bringen (siehe Envelope: Guard-Trigger).\nconst rawItems = $input.all().map(i => i.json);\nconst items = rawItems.filter(i => i._guard !== true);\n\nlet runId = null, startedAt = null;\ntry {\n  const t = $('Trigger-Eingabe normalisieren').all()[0].json;\n  runId = t.run_id;\n  startedAt = t._run_started_at || null;\n} catch (e) {}\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN-Quelle aus \"Kontext ergaenzen\" ins Envelope\n// aufnehmen, damit 00s Log-Node sie mitprotokollieren kann.\nlet dryRunSource = null;\ntry { dryRunSource = $('Kontext ergaenzen').item.json.DRY_RUN_SOURCE || null; } catch (e) {}\n\nconst isDryRun = items.length > 0 && items.every(i => i.dry_run === true);\n\nlet processed, successful, failed, warnings, errors, status;\n\nif (isDryRun) {\n  const planned = (items[0] && items[0].planned_actions) || [];\n  processed = planned.length;\n  successful = 0;\n  failed = 0;\n  warnings = [];\n  errors = [];\n  status = 'skipped';\n} else {\n  const relevant = items.filter(i => i._aktion !== undefined);\n  processed = relevant.length;\n  const failedItems = relevant.filter(i => i._write_failed === true);\n  const proposalItems = relevant.filter(i => i._aktion === 'vorschlag_ungespeichert');\n  failed = failedItems.length;\n  successful = processed - failed - proposalItems.length;\n  warnings = proposalItems.map(i => ({ ticker: i.ticker || null, message: 'Vorschlag ohne Schreibvorgang (' + (i._confirmation_reason || 'REQUIRE_CONFIRMATION aktiv') + ')' }));\n  errors = failedItems.map(i => ({\n    ticker: i.ticker || i._existing_id || null,\n    node: i._aktion === 'oeffnen' ? 'DB: Empfehlung \\u00f6ffnen' : 'DB: Empfehlung schlie\\u00dfen',\n    message: i._write_error || 'Unbekannter Fehler'\n  }));\n  if (processed === 0) status = 'skipped';\n  else if (failed === 0) status = 'success';\n  else if (successful === 0 && proposalItems.length === 0) status = 'failed';\n  else status = 'partial_failure';\n}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '06 \\u2013 Empfehlungswatchlist',\n  run_id: runId,\n  processed,\n  successful,\n  failed,\n  warnings,\n  errors,\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status,\n  dry_run_source: dryRunSource\n} }];"
+        "jsCode": "// Prioritaet 6: einheitliches Envelope. Genau EIN Zweig liefert pro Lauf\n// tatsaechlich Items (DRY_RUN vs. echter Schreibpfad schliessen sich vor\n// diesem Merge gegenseitig aus, siehe IF: DRY_RUN aktiv?), daher reicht eine\n// Formerkennung am Item-Inhalt statt an der Merge-Eingangsseite.\n// Der echte Pfad enthaelt zusaetzlich die Matrix-Sende-Antwort (kein\n// _aktion-Feld, sonst haette die urspruengliche Matrix-Nachricht keinen\n// Rueckgabewert und der Execute-Workflow-Aufruf aus 00 laeuft ins Leere,\n// live beobachtet: 06 lieferte {} statt Envelope zurueck) -- die wird vor\n// der Zaehlung explizit herausgefiltert, analog zum ticker!==undefined-\n// Filter in 02s Abschluss-Ergebnis bauen. Das Guard-Trigger-Item (kein\n// _aktion, kein dry_run) wird ebenso herausgefiltert -- es dient nur dazu,\n// den vorgelagerten Merge an Tagen ganz ohne Kandidaten ueberhaupt zum\n// Feuern zu bringen (siehe Envelope: Guard-Trigger).\nconst rawItems = $input.all().map(i => i.json);\nconst items = rawItems.filter(i => i._guard !== true && i._audit_writeback !== true);\n\nlet runId = null, startedAt = null;\ntry {\n  const t = $('Trigger-Eingabe normalisieren').all()[0].json;\n  runId = t.run_id;\n  startedAt = t._run_started_at || null;\n} catch (e) {}\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN-Quelle aus \"Kontext ergaenzen\" ins Envelope\n// aufnehmen, damit 00s Log-Node sie mitprotokollieren kann.\nlet dryRunSource = null;\ntry { dryRunSource = $('Kontext ergaenzen').item.json.DRY_RUN_SOURCE || null; } catch (e) {}\n\nconst isDryRun = items.length > 0 && items.every(i => i.dry_run === true);\n\nlet processed, successful, failed, warnings, errors, status;\n\nif (isDryRun) {\n  const planned = (items[0] && items[0].planned_actions) || [];\n  processed = planned.length;\n  successful = 0;\n  failed = 0;\n  warnings = [];\n  errors = [];\n  status = 'skipped';\n} else {\n  const relevant = items.filter(i => i._aktion !== undefined);\n  processed = relevant.length;\n  const failedItems = relevant.filter(i => i._write_failed === true);\n  const proposalItems = relevant.filter(i => i._aktion === 'vorschlag_ungespeichert');\n  failed = failedItems.length;\n  successful = processed - failed - proposalItems.length;\n  warnings = proposalItems.map(i => ({ ticker: i.ticker || null, message: 'Vorschlag ohne Schreibvorgang (' + (i._confirmation_reason || 'REQUIRE_CONFIRMATION aktiv') + ')' }));\n  errors = failedItems.map(i => ({\n    ticker: i.ticker || i._existing_id || null,\n    node: i._aktion === 'oeffnen' ? 'DB: Empfehlung \\u00f6ffnen' : 'DB: Empfehlung schlie\\u00dfen',\n    message: i._write_error || 'Unbekannter Fehler'\n  }));\n  if (processed === 0) status = 'skipped';\n  else if (failed === 0) status = 'success';\n  else if (successful === 0 && proposalItems.length === 0) status = 'failed';\n  else status = 'partial_failure';\n}\n\n// REPARATUR P0.4: einheitliches workflow_result-Schema additiv ergaenzt.\nconst finishedAtIso = new Date().toISOString();\nconst durationMs = startedAt ? (new Date(finishedAtIso).getTime() - new Date(startedAt).getTime()) : null;\nfunction getBusinessDate(d = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);\n}\n\nreturn [{ json: {\n  type: 'workflow_result',\n  workflow_code: '06',\n  workflow_name: 'Empfehlungswatchlist',\n  ok: failed === 0,\n  workflow: '06 \\u2013 Empfehlungswatchlist',\n  run_id: runId,\n  business_date: getBusinessDate(),\n  processed,\n  successful,\n  failed,\n  records_read: processed,\n  records_written: successful,\n  warning_count: warnings.length,\n  error_count: errors.length,\n  warnings,\n  errors,\n  started_at: startedAt,\n  finished_at: finishedAtIso,\n  duration_ms: durationMs,\n  status,\n  dry_run_source: dryRunSource,\n  payload: {}\n} }];"
       },
       "id": "b7c4d2e8-5f9a-4d1b-8e7c-2f6a9b0c1d3e",
       "name": "Abschluss-Ergebnis bauen",
@@ -1057,6 +1057,54 @@
         976
       ],
       "id": "n-repair-p02-collapse-06"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _audit_writeback: true } }));"
+      },
+      "name": "Tag: Veto-Log Audit-Writeback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1656,
+        640
+      ],
+      "id": "n-repair-p04-tag-vetolog"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, _audit_writeback: true } }));"
+      },
+      "name": "Tag: Strategiesignal News-Event Audit-Writeback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2520,
+        460
+      ],
+      "id": "n-repair-p04-tag-newsevent"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Audit-Writeback 1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1400,
+        900
+      ],
+      "id": "n-repair-p04-merge-audit-1"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Audit-Writeback 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1100,
+        900
+      ],
+      "id": "n-repair-p04-merge-audit-2"
     }
   ],
   "connections": {
@@ -1308,9 +1356,9 @@
       "main": [
         [
           {
-            "node": "Abschluss-Ergebnis bauen",
+            "node": "Merge Audit-Writeback 2",
             "type": "main",
-            "index": 0
+            "index": 1
           }
         ]
       ]
@@ -1750,6 +1798,72 @@
         [
           {
             "node": "DB: Trend-Signale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veto-Log: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Tag: Veto-Log Audit-Writeback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategiesignal News-Event: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Tag: Strategiesignal News-Event Audit-Writeback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag: Veto-Log Audit-Writeback": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag: Strategiesignal News-Event Audit-Writeback": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Audit-Writeback 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Audit-Writeback 2": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }

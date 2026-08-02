@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT config_key, value_bool, version FROM trading.pipeline_config pc LEFT JOIN trading.schema_migrations sm ON sm.version='056' WHERE pc.config_key IN ('ENABLE_MARKET_SCANNER','ENABLE_PAPER_TRADING','ENABLE_TRADE_LEARNING') ORDER BY pc.config_key;",
+        "query": "SELECT config_key, value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_PAPER_TRADING';",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
