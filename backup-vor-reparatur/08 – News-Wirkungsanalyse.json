@@ -311,19 +311,6 @@
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { _sync: 'instrumente_benchmark_geladen', count: $input.all().length } }];"
-      },
-      "name": "Sync: Instrumente (Benchmark) geladen (1 Item)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2200,
-        -320
-      ],
-      "id": "n-repair-p02-wrap-08"
     }
   ],
   "connections": {
@@ -341,6 +328,11 @@
     "DB: Weitere News je Ticker laden": {
       "main": [
         [
+          {
+            "node": "DB: Neue News-Ticker-Paare laden",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "DB: Offene Tracking-Zeilen laden",
             "type": "main",
@@ -424,7 +416,7 @@
       "main": [
         [
           {
-            "node": "Sync: Instrumente (Benchmark) geladen (1 Item)",
+            "node": "Distinkte Benchmark-Symbole extrahieren",
             "type": "main",
             "index": 0
           }
@@ -513,17 +505,6 @@
         [
           {
             "node": "Tracking-Zeile upserten (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sync: Instrumente (Benchmark) geladen (1 Item)": {
-      "main": [
-        [
-          {
-            "node": "DB: Neue News-Ticker-Paare laden",
             "type": "main",
             "index": 0
           }

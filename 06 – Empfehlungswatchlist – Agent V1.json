@@ -876,6 +876,187 @@
       "onError": "continueRegularOutput",
       "id": "n-welle3-06-status-0000001",
       "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Strategiesignale laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategiesignale laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3960,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-0"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Marktregime laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Marktregime laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3800,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Regime-Matrix laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Regime-Matrix laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3640,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Fundamental-Historie laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Fundamental-Historie laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3480,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-3"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Ticker-Region laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Ticker-Region laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3320,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-4"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Marktkontext heute (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Marktkontext heute (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3160,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-5"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { dataset: 'DB: Strategie-Status laden (Empf.)', rows: $input.all().map(i => i.json) } }];"
+      },
+      "name": "Wrap: DB: Strategie-Status laden (Empf.)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3000,
+        816
+      ],
+      "id": "n-repair-p02-wrap-06-6"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3960,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-0"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3800,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-1"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3640,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-2"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3480,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-3"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-5",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3320,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-4"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-6",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3160,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-5"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Sync 06-7",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -3000,
+        976
+      ],
+      "id": "n-repair-p02-merge-06-6"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _sync: 'empfehlungen_kontext_vollstaendig', count: $input.all().length } }];"
+      },
+      "name": "Sync: Empfehlungen-Kontext vollstaendig (1 Item)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2840,
+        976
+      ],
+      "id": "n-repair-p02-collapse-06"
     }
   ],
   "connections": {
@@ -943,7 +1124,7 @@
       "main": [
         [
           {
-            "node": "DB: Trend-Signale laden (Empf.)",
+            "node": "Merge Sync 06-1",
             "type": "main",
             "index": 0
           }
@@ -1327,6 +1508,248 @@
         [
           {
             "node": "IF: Aktion = veto_log?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategiesignale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategiesignale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktregime laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktregime laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Regime-Matrix laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Regime-Matrix laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamental-Historie laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Fundamental-Historie laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ticker-Region laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Ticker-Region laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktkontext heute (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktkontext heute (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategie-Status laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategie-Status laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-1": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-2": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Regime-Matrix laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-3": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Fundamental-Historie laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-4": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ticker-Region laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-5": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktkontext heute (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-6": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategie-Status laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-7": {
+      "main": [
+        [
+          {
+            "node": "Sync: Empfehlungen-Kontext vollstaendig (1 Item)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync: Empfehlungen-Kontext vollstaendig (1 Item)": {
+      "main": [
+        [
+          {
+            "node": "DB: Trend-Signale laden (Empf.)",
             "type": "main",
             "index": 0
           }

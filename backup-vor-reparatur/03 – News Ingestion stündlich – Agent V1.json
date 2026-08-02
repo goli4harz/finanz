@@ -728,19 +728,6 @@
         -2408,
         1706
       ]
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { _sync: 'watchlist_fuer_ki_prompt_geladen', count: $input.all().length } }];"
-      },
-      "name": "Sync: Watchlist fuer KI-Prompt geladen (1 Item)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4808,
-        2420
-      ],
-      "id": "n-repair-p02-sync-watchlist-ki"
     }
   ],
   "connections": {
@@ -914,6 +901,11 @@
     "Einmal-Trigger (Faellige laden)": {
       "main": [
         [
+          {
+            "node": "DB: Faellige News laden",
+            "type": "main",
+            "index": 0
+          },
           {
             "node": "DB: Watchlist fuer KI-Prompt laden",
             "type": "main",
@@ -1105,28 +1097,6 @@
         [
           {
             "node": "last_seen_at pruefen (sonst werfen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Watchlist fuer KI-Prompt laden": {
-      "main": [
-        [
-          {
-            "node": "Sync: Watchlist fuer KI-Prompt geladen (1 Item)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sync: Watchlist fuer KI-Prompt geladen (1 Item)": {
-      "main": [
-        [
-          {
-            "node": "DB: Faellige News laden",
             "type": "main",
             "index": 0
           }

@@ -1795,19 +1795,6 @@
       },
       "onError": "continueRegularOutput",
       "id": "n-welle2-ap1-strat-write-0000001"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { _sync: 'sitzungsstatus_geladen', count: $input.all().length } }];"
-      },
-      "name": "Sync: Sitzungsstatus geladen (1 Item)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1336,
-        832
-      ],
-      "id": "n-repair-p02-sync-sitzungsstatus"
     }
   ],
   "connections": {
@@ -1848,7 +1835,7 @@
       "main": [
         [
           {
-            "node": "DB: Sitzungsstatus laden",
+            "node": "Watchlist laden (Kurse)",
             "type": "main",
             "index": 0
           },
@@ -2011,7 +1998,7 @@
       "main": [
         [
           {
-            "node": "DB: Sitzungsstatus laden",
+            "node": "Watchlist laden (Kurse)",
             "type": "main",
             "index": 0
           }
@@ -2127,28 +2114,6 @@
         [
           {
             "node": "Strategiesignale: schreiben",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Sitzungsstatus laden": {
-      "main": [
-        [
-          {
-            "node": "Sync: Sitzungsstatus geladen (1 Item)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sync: Sitzungsstatus geladen (1 Item)": {
-      "main": [
-        [
-          {
-            "node": "Watchlist laden (Kurse)",
             "type": "main",
             "index": 0
           }

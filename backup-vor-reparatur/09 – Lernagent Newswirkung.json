@@ -429,30 +429,6 @@
         }
       },
       "id": "n-09-f3-cfgload"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { dataset: 'DB: Aktive Gewichte laden', rows: $input.all().map(i => i.json) } }];"
-      },
-      "name": "Wrap: DB: Aktive Gewichte laden",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1550,
-        380
-      ],
-      "id": "n-repair-p02-wrap-09"
-    },
-    {
-      "parameters": {},
-      "name": "Merge 4",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1350,
-        380
-      ],
-      "id": "n-repair-p02-merge4-09"
     }
   ],
   "connections": {
@@ -568,7 +544,7 @@
       "main": [
         [
           {
-            "node": "Merge 4",
+            "node": "Mindestfallzahlen klassifizieren",
             "type": "main",
             "index": 0
           }
@@ -684,39 +660,6 @@
         [
           {
             "node": "SQL: Gesamtkennzahlen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Aktive Gewichte laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Aktive Gewichte laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Aktive Gewichte laden": {
-      "main": [
-        [
-          {
-            "node": "Merge 4",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge 4": {
-      "main": [
-        [
-          {
-            "node": "Mindestfallzahlen klassifizieren",
             "type": "main",
             "index": 0
           }
