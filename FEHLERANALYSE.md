@@ -132,7 +132,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** `"id": "PLACEHOLDER_POSTGRES_CRED"` im Export.
 - **Auswirkung:** Falls das der Live-Stand ist, schlägt DB-Logging von Node-Abstürzen fehl (Matrix-Alert-Zweig läuft vermutlich trotzdem).
 - **Korrektur:** Live-Credential-Zuweisung in n8n verifizieren.
-- **Status:** offen (Live-Check nötig)
+- **Status:** behoben, 2026-08-02. Live-Check per `GET /workflows/VTBfUuzQfMZNGYDM`: das echte Credential (`NWckNyl8ZfwVVJCd`, "Postgres account" - dasselbe wie ueberall sonst im Projekt) ist korrekt zugewiesen, war live nie ein Problem. Der Platzhalter existierte nur noch im Repo-Export (Datei hatte seit der urspruenglichen Anlage nie ein Metadaten-Resync erhalten, `updatedAt` fehlte komplett). Root-JSON jetzt vollstaendig mit Live-Stand synchronisiert (einzige inhaltliche Differenz war exakt dieses eine Credential-Feld, alle anderen 3 Nodes + Connections bereits identisch).
 
 ### B4 — Unsicherer DRY_RUN-Fallback auf `false`
 - **Schweregrad:** kritisch
