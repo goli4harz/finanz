@@ -88,4 +88,14 @@ Diagnose-Query gegen `information_schema`/`pg_constraint`/`pg_indexes` (19 Einze
 
 Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query bestätigt.
 
-Fortsetzung folgt in den Phasen 5-18 (dieses Dokument wird laufend erweitert).
+## Phase 5: Gap-through-Stop konservativ simuliert (`sql/052`)
+
+**Fund**: Stop-Exits wurden bisher immer exakt zum Stop-Preis simuliert (`exitPrice = stop`), unabhängig davon, ob die Tageskerze durch den Stop gap-te — unrealistisch günstig, überzeichnete `net_pnl`/`realized_r_multiple` systematisch bei jedem echten Gap-Exit.
+
+**Fix**: `stopRawExitPrice()` gap-bewusst (Long: `Open < Stop ? Open : Stop`, Short: `Open > Stop ? Open : Stop`, exakt die Auftragsformel). Ziel bleibt bewusst **immer** exakt der Zielkurs — kein rückwirkend optimaler Gap-Kurs, auch bei einem sehr günstigen Gap über das Ziel hinaus. Neue additive Felder (`sql/052`): `raw_exit_price`, `effective_exit_price` (reines Audit-Feld, Slippage/Gebühren je Aktie in ungünstiger Richtung — `net_pnl` selbst bleibt über die bereits getestete wertbasierte Formel aus Fehleranalyse E6/E7 berechnet, um dort keine Regression zu riskieren), `gap_through_stop`, `gap_amount`, `execution_quality` (`exact_stop`/`gap_through_stop`/`exact_target`/`close_fallback`). `execution_model_version`/`ambiguous_execution` existierten bereits.
+
+**Tests** (lokal simuliert): Long normaler Stop, Long Gap unter Stop, Short normaler Stop, Short Gap über Stop, Gap über Ziel (bleibt exakt Zielkurs), Stop+Ziel in derselben Kerze (conservative_stop_first) — alle 6 bestanden (ein erster Testlauf hatte fehlerhafte Testdaten für Fall 3, korrigiert, Logik war von Anfang an richtig). Fehlende Open-Angabe/Datenanomalie: bereits durch den bestehenden `data_error`-Guard vor dieser Logik abgefangen (siehe Phase 4). Gebühren-macht-Gewinn-negativ: unverändert über die bereits getestete E7-Formel abgedeckt.
+
+Live gepusht (`14`, inaktiv), Migration ausgeführt und per Diagnose-Query bestätigt (5/5 neue Spalten vorhanden).
+
+Fortsetzung folgt in den Phasen 6-18 (dieses Dokument wird laufend erweitert).
