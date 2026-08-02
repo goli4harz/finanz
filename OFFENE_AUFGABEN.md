@@ -41,11 +41,26 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   Postgres-Nodes auf `n8n`s native Query-Parameter statt `executeQuery`+String-Interpolation
   umstellen, vollstaendiger Retest aller 3 Workflows inkl. der Live-Webhook-Tests aus
   `TESTPLAN.md` (SEC-1 bis SEC-16).
-- 🟡 **`sql/040` (reine `COMMENT ON COLUMN`-Korrektur, keine Schema-Aenderung) steht noch zur
-  manuellen Ausfuehrung in Workflow `97 – Einmalig – Beliebige Query ausfuehren` bereit** -
-  war zwischenzeitlich fuer eine Diagnose-Query (C8) zweckentfremdet, jetzt wiederhergestellt.
-- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** die 21 "mittel" und 6
-  "niedrig" eingestuften Funde aus `FEHLERANALYSE.md`. Danach: automatisierte
+- ✅ **`sql/040`+`sql/041` (COMMENT-Korrektur C6 + Point-in-Time-Umstellung B8) sind live
+  ausgefuehrt** (bestaetigt 2026-08-02, Nutzer-Retry zeigte "already exists" auf den
+  Constraint-Schritt).
+- ✅ **6 weitere "mittel"-Funde behoben (2026-08-01/02):** A10 (Optimistic Locking, `12`),
+  B8 (Point-in-Time `technical_signals_history`, `sql/041`), C2, D7, D8, D10 - siehe
+  `FEHLERANALYSE.md` je Fund. Dazu **G4** (Live-IDs/Backup-Nachweis fuer `09b`/`12`/`13`/`14`
+  verifiziert+nachgezogen, 2026-08-02) und **E10** (`AMBIGUOUS_BAR_POLICY` war seit 08-01
+  im Code auf `pipeline_config` umgestellt, aber der Key fehlte in Query+Seed - beim
+  G4-Abgleich gefunden, live nachgezogen, `sql/042` bereitgestellt).
+- 🟡 **`sql/042`** (E10, `AMBIGUOUS_BAR_POLICY_CODE`-Seed) **steht noch zur manuellen
+  Ausfuehrung in Workflow `97` bereit.**
+- 🟡 **~80 unversionierte `n8n_live_backup/*.json`-Dateien (2026-07-21 bis 2026-07-27)**
+  im Arbeitsverzeichnis entdeckt (2026-08-02, im Zuge von G4) - lokal vorhanden, nie
+  committet. Gleiche Nachweisdisziplin-Luecke wie G4, nur historisch und groesser im
+  Umfang. Noch nicht aufgeraeumt/committet - eigenstaendiger Punkt fuer eine kuenftige
+  Sitzung (pruefen ob alle noch relevant sind, dann committen oder bewusst geordnet
+  loeschen).
+- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** 10 der urspruenglich 21
+  "mittel"-Funde (B3, B6, E6, E11, F6, F7, F9, F12, G1, G7 - Details je Fund in
+  `FEHLERANALYSE.md`) sowie alle 6 "niedrig" eingestuften Funde. Danach: automatisierte
   Pruefabfragen/Tests fuer die verbleibenden Bereiche, `PRODUKTIONSFREIGABE.md` mit dem neuen
   Stand neu bewerten.
 

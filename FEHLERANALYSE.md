@@ -428,7 +428,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** mittel
 - **Datei/Node:** `14`, Code „Job B"
 - **Korrektur:** Als `pipeline_config`-Eintrag führen, falls die Doku-Behauptung „konfigurierbar" stimmen soll.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. Der Code-Teil war bereits seit Commit `0aaf567` (2026-08-01) da (`CFG.AMBIGUOUS_BAR_POLICY_CODE === 2 ? ... : ...`), aber unvollständig: weder selektierte „DB: Portfolio-Konfiguration laden (Exec)" den Key noch existierte er in `trading.pipeline_config` — `CFG.AMBIGUOUS_BAR_POLICY_CODE` war also immer `undefined`, die Policy blieb faktisch weiterhin hartkodiert auf `conservative_stop_first`. Gefunden beim G4-Abgleich (Scratch-Datei-Vergleich zeigte den Diff gegen den echten Live-Code). Fix: Query um `AMBIGUOUS_BAR_POLICY_CODE` erweitert (live gepusht), neue additive Migration `sql/042` seedet den Key mit Default `1` (= unverändertes Verhalten). **Migration `sql/042` steht noch zur manuellen Ausführung in Workflow `97` aus.**
 
 ### E11 — Mehrdeutige Trades werden in Kennzahlen mit eindeutigen vermischt
 - **Schweregrad:** mittel
@@ -546,7 +546,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `09b`, `12`, `13`, `14` — kein `active`/`id`-Feld im Export, keine passenden `n8n_live_backup/`-Dateien vom 2026-08-01
 - **Auswirkung:** Die in `OFFENE_AUFGABEN.md` genannten IDs und „bewusst inaktiv"-Aussagen sind aus dem Repo-Inhalt nicht nachprüfbar — Bruch der bisher eingehaltenen Nachweisdisziplin (GET-Backup vor jedem Push).
 - **Korrektur:** `GET /workflows` ausführen, Ist-Stand nach `n8n_live_backup/` sichern, Root-JSON mit Live-Stand resynchronisieren.
-- **Status:** offen
+- **Status:** behoben, 2026-08-02. Live per `GET /workflows` + `GET /workflows/:id` für alle 4 verifiziert: IDs stimmen mit `OFFENE_AUFGABEN.md` überein (`12`=`Ymto9WVvowvaLvrW` aktiv, `09b`=`N91C38VeoNXUBWmB`/`13`=`43lG9aZVHwzIp0jq`/`14`=`H0iZrWQy1HQi6iro` bewusst inaktiv). Nodes/Connections aller 4 sind Byte-identisch zum Repo-Stand (keine funktionale Drift) — die Lücke war rein die fehlenden Metadaten (`id`/`active`/`versionId`/...) im Root-JSON von `09b` und `14`, jetzt nachgezogen. Live-Snapshots als `*_G4_VERIFY_20260802.json` in `n8n_live_backup/` gesichert. **Dabei entdeckt, separat zu behandeln:** ca. 80 ältere `n8n_live_backup/*.json`-Dateien (2026-07-21 bis 2026-07-27) liegen seit Monaten unversioniert im Arbeitsverzeichnis — lokal vorhanden, aber nie committet. Gleiche Nachweisdisziplin-Lücke, nur historisch und deutlich größer im Umfang; noch nicht aufgeräumt, siehe `OFFENE_AUFGABEN.md`.
 
 ### G5 — Alt-Duplikate ohne „Agent V1"-Suffix
 - **Schweregrad:** niedrig

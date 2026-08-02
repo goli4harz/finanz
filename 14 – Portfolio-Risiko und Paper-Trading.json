@@ -1,5 +1,11 @@
 {
+  "updatedAt": "2026-08-02T06:54:28.163Z",
+  "createdAt": "2026-08-01T00:36:15.735Z",
+  "id": "H0iZrWQy1HQi6iro",
   "name": "14 – Portfolio-Risiko und Paper-Trading",
+  "description": null,
+  "active": false,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {},
@@ -345,7 +351,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT config_key, value_numeric FROM trading.pipeline_config WHERE config_key IN ('DEFAULT_FEES_BPS','DEFAULT_SLIPPAGE_BPS');",
+        "query": "SELECT config_key, value_numeric FROM trading.pipeline_config WHERE config_key IN ('DEFAULT_FEES_BPS','DEFAULT_SLIPPAGE_BPS','AMBIGUOUS_BAR_POLICY_CODE');",
         "options": {}
       },
       "name": "DB: Portfolio-Konfiguration laden (Exec)",
@@ -1098,5 +1104,33 @@
   },
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "fa59c63f-dc3b-41ae-9b0b-672cd26569d6",
+  "activeVersionId": null,
+  "versionCounter": 4,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-08-01T00:36:15.735Z",
+      "createdAt": "2026-08-01T00:36:15.735Z",
+      "role": "workflow:owner",
+      "workflowId": "H0iZrWQy1HQi6iro",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
 }
