@@ -126,4 +126,15 @@ Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query best�
 
 Live gepusht (`13`, inaktiv), Migration ausgeführt und per Diagnose-Query bestätigt (3/3 Prüfungen ok). `docs/MARKTSCANNER.md` aktualisiert.
 
-Fortsetzung folgt in den Phasen 9-18 (dieses Dokument wird laufend erweitert).
+## Phase 9: Strategieregeln gehärtet
+
+Live-Code-Check aller 4 Strategien gegen die Auftrags-Mindestanforderungen:
+
+- **Mean Reversion (bestätigt, kritisch)**: `if (rsiVal < 35 || kursBeiUnten) mrDirection = 'long'` — ein moderates RSI (z. B. 34) **allein** setzte bereits eine Richtung, exakt das im Auftrag verbotene Muster ("Ein Einstieg darf nicht allein auf einem moderat niedrigen oder hohen RSI beruhen"). Fix: echtes UND aus RSI-Überdehnung (strengere Tier-Schwelle `<32`/`>68`) UND Preisüberdehnung (Bollinger-Berührung oder EMA20-Abstand `>1%`).
+- **Breakout (bestätigt, kritisch)**: `if (distZuHoch < 0.02) boDirection = 'long'` — reine Nähe zum 52-Wochen-Hoch (auch von unten, kein tatsächlicher Ausbruch) setzte die Richtung **ohne jede Volumenbestätigung**. Fix: echter Ausbruch (`aktuellerKurs >= hoch52wRaw`, nicht nur "nahe dran") UND Volumenbestätigung (`volumenErhoeht || volumenOk`) als Pflichtbedingung.
+- **Trend Following**: bereits korrekt — `if (macdValRaw > macdSignalValRaw && trendAufwaerts)` ist eine echte UND-Bedingung (Momentum UND Trendlage), kein Fund.
+- **News/Event** (in `06`): bereits korrekt — Nachrichtenfilter ist hart auf den heutigen Kalendertag begrenzt (`(ni.published_at AT TIME ZONE 'Europe/Berlin')::date = heute`), Richtung erfordert Übereinstimmung mit dem technischen Signal (sonst kein Signal), widersprüchliche gleichtägige starke News blockt bereits (Welle 1), fester plausibler Zeithorizont (2 Tage). Kein Fund.
+
+6/6 lokale Tests bestanden (3 Mean-Reversion-Fälle, 3 Breakout-Fälle). Live gepusht (`02`, aktiv — reine Verschärfung, kein strukturbrechendes Risiko wie bei Phase 6, daher ohne Zurückhaltung gepusht).
+
+Fortsetzung folgt in den Phasen 10-18 (dieses Dokument wird laufend erweitert).
