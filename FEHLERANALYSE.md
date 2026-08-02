@@ -205,7 +205,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** niedrig
 - **Datei/Node:** `02`, Node „Technische Analyse (RSI/MACD/BB)"
 - **Korrektur:** `vols` aus `gueltigeKerzen` ableiten statt eigenem Filter.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. `vols` leitet sich jetzt aus `gueltigeKerzen.map(k => k.volume)` ab (gleiche Quelle wie `closes`/`highs`/`lows`) statt aus einem unabhaengig gefilterten `rawVolume`. Verhindert, dass Volumen aus einer verworfenen (ungueltigen) Kerze in `avgVol` einfliesst oder `lastVol` dem falschen Tag zugeordnet wird, falls die zuletzt gemeldete Kerze ungueltig war. Keine Index-Kopplung mit `closes` vorhanden (`vols` wird nur fuer `avgVol`/`lastVol` per Reduce/letztem Element genutzt), daher risikolos filterbar.
 
 ### C4 — `02b` baut Kerzen nicht timestamp-indiziert, keine Zeilenvalidierung
 - **Schweregrad:** kritisch
