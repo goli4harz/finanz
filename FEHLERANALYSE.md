@@ -488,12 +488,12 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 ### F6 — Regime-Konzentration wird nicht geprüft (nur Ticker-Konzentration)
 - **Schweregrad:** mittel
 - **Datei/Node:** `09b`
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. "Mindestfallzahlen klassifizieren (Trades)" bekommt eine zweite Konzentrationspruefung analog zur bestehenden Ticker-Pruefung: dominiert ein einzelnes Marktregime (`strategy_regime`-Dimension, bereits vorhanden) mehr als 50% der Trades einer Strategie, wird kein Lernvorschlag erzeugt (`dominiertVonEinemRegime` zusaetzlich zu `dominiertVonEinemTicker` in `eligible`).
 
 ### F7 — `ambiguous_pct` (E9/E10-Fälle) ist nur informativ, kein Gate in `09b`
 - **Schweregrad:** mittel
 - **Datei/Node:** `09b`
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. Neue additive Konfiguration `MAX_AMBIGUOUS_PCT_FOR_PROPOSAL` (sql/043, Default 20%) - `eligible` blockt jetzt Segmente, deren Anteil mehrdeutiger Ausfuehrungen die Schwelle ueberschreitet. `NULL` (keine geschlossenen Trades in diesem Segment ueberhaupt) blockt bewusst NICHT, nur ein tatsaechlich hoher Anteil. Lokal 5 Faelle verifiziert (Normalfall, Regime-dominiert, hoher ambiguous_pct, NULL-Fall, exakt an der Schwelle).
 
 ### F8 — Effektstärke-Gate basiert auf `net_pnl` ohne Einstiegskosten
 - **Schweregrad:** hoch (Folgefehler von E7)
@@ -504,7 +504,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 ### F9 — Stabilität über Zeit, Drawdown, Anteil blockierter Signale nicht geprüft
 - **Schweregrad:** mittel
 - **Datei/Node:** `09b`
-- **Status:** offen
+- **Status:** zurueckgestellt 2026-08-02. Anders als F6/F7 (ein zusaetzlicher Schwellenwert auf bereits vorhandenen Daten) braucht F9 echte neue Aggregationslogik: "Stabilitaet ueber Zeit" verlangt eine Zeitraum-Teilung (z.B. erste/zweite Haelfte des Analysezeitraums getrennt auswerten) mit eigener SQL-Struktur, "Anteil blockierter Signale" braucht eine Verknuepfung zwischen `recommendations`-Vetos (aus `06`) und den Lernagent-Segmenten, die aktuell nicht existiert. Drawdown je Strategie liesse sich mit dem gleichen `peak_t`-Muster wie E6 bauen, aber nur sinnvoll gemeinsam mit den anderen beiden Teilen bewertet. Eigenstaendiges Vorhaben fuer eine kuenftige Sitzung: SQL-Struktur fuer Zeitraum-Teilung entwerfen, Blocker-Herkunft aus `recommendation_veto_log`/`portfolio_risk_checks` (Welle 1 AP5, Fehleranalyse-Abschnitt E) mit Lernagent-Segmenten verknuepfen, dann als drittes Gate neben F6/F7 in "Mindestfallzahlen klassifizieren (Trades)" ergaenzen. Siehe auch F12 fuer den verwandten, noch unklaren `threshold_adjustment`-Formelbedarf.
 
 ### F10 — `pipeline_config.value_numeric` kann durch `12` auf NULL gesetzt werden
 - **Schweregrad:** kritisch (identisch mit A9, hier aus Lernagenten-Perspektive bestätigt)
@@ -519,7 +519,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `09b`, Node „Vorschlag speichern (SQL bauen, Trades)"
 - **Ursache:** F5 erzeugt `proposed_value:null` für `TEXT NOT NULL`-Spalte, INSERT schlägt fehl, `onError:"continueRegularOutput"` lässt den Workflow ohne sichtbaren Hinweis weiterlaufen.
 - **Korrektur:** F5 beheben; zusätzlich Fehlerpfad der Postgres-Node in den Lernbericht aufnehmen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. **F5s Fix deckte nur den `regime_restriction`-Fall ab - beim genaueren Hinsehen setzten `strategy_deactivation` UND `threshold_adjustment` denselben `proposed_value:null` und haetten am selben NOT-NULL-Constraint scheitern koennen, unveraendert seit der urspruenglichen Anlage.** `strategy_deactivation` bekommt jetzt den deterministischen Gegenwert `'inaktiv'` (zu `current_value:'aktiv'`). `threshold_adjustment` hat dagegen keine deterministische Formel fuer den Zielwert ("moderat erhoehen" ist keine berechenbare Zahl, Grundregel 9 verbietet der KI das Erfinden) - bewusst deaktiviert (`candidateProposal=null`) statt einen Wert zu erfinden; siehe F9 fuer die Einordnung, ob/wie dieser Vorschlagstyp kuenftig eine echte Formel bekommt. Zweiter Teil (Fehlerpfad sichtbar machen): neuer, rein additiver Code-Node "Fehlerpruefung (Vorschlag speichern, Trades)" direkt hinter dem bisher toten Ende des Insert-Zweigs, loggt einen etwaigen `error` per `console.warn` - keine Aenderung an bestehenden Verbindungen, da dieser Ast vorher bereits keinen Folge-Node hatte. Volle Matrix-Sichtbarkeit (Fehler im Lernbericht selbst) wurde bewusst NICHT umgesetzt, da der Insert-Zweig parallel zum Report-Zweig laeuft (kein gemeinsamer Merge-Punkt) und ein Zusammenfuehren das gleiche Routing-Graph-Risiko wie bei `06`s Vetos (Paket 15) bedeutet haette - mit der Root-Cause-Behebung oben ist der eigentliche Ausloeser fuer diesen Fehlerfall jetzt ohnehin beseitigt.
 
 ---
 
