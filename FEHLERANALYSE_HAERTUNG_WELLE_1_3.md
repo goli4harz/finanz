@@ -215,4 +215,16 @@ Keine Code-Änderung in dieser Phase nötig — reine Bestätigungsprüfung, kei
 
 `sql/056` (additiv, idempotent): Feature-Flags `ENABLE_MARKET_SCANNER`, `ENABLE_PAPER_TRADING`, `ENABLE_TRADE_LEARNING`, alle mit Default `FALSE` seed-inserted. Live ausgeführt und per Diagnose-Query bestätigt (3/3 Flags vorhanden, `value_bool=false`).
 
-Fortsetzung folgt in den Phasen 15-18 (dieses Dokument wird laufend erweitert).
+## Phase 15: `09b` (Lernagent Handelsstrategien) abgesichert — bleibt inaktiv
+
+Reine Bestätigungsprüfung, kein neuer Fund erwartet und keiner gefunden.
+
+**Aktivierungsstatus**: `active: false` bestätigt (API-Abfrage), unverändert seit den vorherigen Sitzungen. Kein `executeWorkflowTrigger` vorhanden (nicht in `00` eingebunden, auch nicht vorgesehen — Feature-Flag `ENABLE_TRADE_LEARNING` existiert bereits als reserviertes Flag aus Phase 14, wird aber aktuell von keinem Workflow gelesen). Einziger Schedule-Trigger (`Samstag 08:30`) und `Manueller Start` unverändert — kein Grund, hier wie bei `13`/`14` etwas zu deaktivieren, da `09b` ohnehin nirgends referenziert wird.
+
+**Cross-Referenz gegen `FEHLERANALYSE.md` (vorherige Härtungssitzung, 2026-08-01/02)**: F6 (Regime-Konzentrationsprüfung), F7 (`MAX_AMBIGUOUS_PCT_FOR_PROPOSAL`-Gate), F8 (Effektstärke-Gate, automatisch über E7 mitbehoben) und F12 (NOT-NULL-Fix `proposed_value` bei `strategy_deactivation`/`threshold_adjustment`) sind alle als "behoben, live gepusht" protokolliert — `09b` ist aktuell live in diesem gehärteten Zustand. F9 (Stabilität über Zeit/Drawdown/Anteil blockierter Signale) ist explizit als eigenständiges, zurückgestelltes Vorhaben für eine künftige Sitzung dokumentiert (nicht Teil dieses Auftrags, kein neuer Fund hier).
+
+**Prüfung auf Seiteneffekte durch die Härtung Welle 1-3 (neu in dieser Phase)**: `09b`s Queries lesen ausschließlich `trading.paper_trades` (Filter `status IN ('closed','blocked')`) und `trading.backtest_runs` — **keine** Berührung mit `trading.recommendations`, dessen Statusmodell in Phase 6+7 erweitert wurde (`portfolio_pending`/`portfolio_blocked`); kein Konflikt möglich. Phase 5s neue Audit-Felder (`raw_exit_price`, `effective_exit_price`, `gap_through_stop`, `gap_amount`, `execution_quality`) werden von `09b` nicht gelesen; die von `09b` tatsächlich verwendeten Kennzahlen (`net_pnl`, `realized_r_multiple`) blieben in Phase 5 bewusst unverändert (nur die zusätzlichen Audit-Felder sind neu, die Berechnungsformel selbst nicht) — keine Regression.
+
+Keine Code-Änderung in dieser Phase — reine Bestätigung, kein Push.
+
+Fortsetzung folgt in den Phasen 16-18 (dieses Dokument wird laufend erweitert).
