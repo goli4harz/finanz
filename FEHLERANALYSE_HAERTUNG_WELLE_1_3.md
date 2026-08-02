@@ -147,4 +147,17 @@ Live-Code-Check aller 4 Strategien gegen die Auftrags-Mindestanforderungen:
 
 Migration live ausgeführt und bestätigt. **`06`s Code-Fix bleibt wie bei Phase 6 lokal/committet, aber nicht live gepusht** — Teil derselben, in Phase 14 zu planenden Aktivierungsreihenfolge.
 
-Fortsetzung folgt in den Phasen 11-18 (dieses Dokument wird laufend erweitert).
+## Phase 11: Hebelprodukt-/Onvista-Logik entfernt
+
+**Bestätigter Fund, tiefer als der Auftragstext selbst vermuten ließ**: die Hebelprodukt-Logik war nicht auf `05`s Reporttext beschränkt, sondern reichte bis in `06`s Kernschreibpfad — `hebelHinweis()` erzeugte echte Onvista-Knock-Out-Links und Mini-Future-Berechnungen (Typ, Hebel 3-4x, Basispreis-Richtwerte für 15 fest hinterlegte Ticker), die **direkt in `trading.recommendations`** geschrieben wurden (`hebelprodukt_typ`, `hebel_spanne`, `basispreis_hebel_3/4`, `onvista_link`, `hebelprodukt_hinweis`) — trotz eines Code-Kommentars, der behauptete, dies sei "NICHT mehr Teil der allgemeinen Entscheidungslogik".
+
+**Vollständige Suche über alle Workflows** (Auftrags-Suchbegriffe: Hebel, Hebelprodukt, Mini-Future, Knock-out, Turbo, Onvista, Long/Short filtern) fand 3 echte Erzeugungsstellen:
+1. `06`, `hebelHinweis()` — vollständig neutralisiert (liefert nur noch leere/`null`-Werte, Funktionssignatur unverändert für minimalen Eingriff).
+2. `06`, "Matrix: Zusammenfassung bauen" — `${o.hebelprodukt_hinweis}` aus der Matrix-Nachricht bei Neueröffnungen entfernt.
+3. `05`, "Report aufbereiten" — die Zeile `Hebelprodukt-Suche (Hebel 3-4, Long/Short filtern): ${onvista_link}` vollständig entfernt (enthielt wortwörtlich "Long filtern"/"Short filtern" aus der Auftrags-Suchliste).
+
+Restliche Treffer (Spaltennamen `hebelprodukt_typ` etc. im SQL-Builder von `06`, ein eigener Erklärkommentar zum Finanzierungskosten-Disclaimer in `14`) sind unschädlich — Spalten bleiben im Schema (**keine Löschung historischer Daten**, Sicherheitsregel), werden aber ab sofort nur noch mit leeren Werten befüllt.
+
+Live gepusht (`05`, aktiv — reine Textentfernung, kein strukturelles Risiko). `06`s Fix bleibt wie bei den Phasen 6/10 lokal/committet, nicht live gepusht (Teil der Phase-14-Aktivierungsreihenfolge).
+
+Fortsetzung folgt in den Phasen 12-18 (dieses Dokument wird laufend erweitert).
