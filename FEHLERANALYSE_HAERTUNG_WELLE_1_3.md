@@ -137,4 +137,14 @@ Live-Code-Check aller 4 Strategien gegen die Auftrags-Mindestanforderungen:
 
 6/6 lokale Tests bestanden (3 Mean-Reversion-Fälle, 3 Breakout-Fälle). Live gepusht (`02`, aktiv — reine Verschärfung, kein strukturbrechendes Risiko wie bei Phase 6, daher ohne Zurückhaltung gepusht).
 
-Fortsetzung folgt in den Phasen 10-18 (dieses Dokument wird laufend erweitert).
+## Phase 10: Positionsgrößen-Wertlimit tatsächlich durchgesetzt (`sql/055`)
+
+**Bestätigter Fund (kritisch)**: `computeRisk()` in `06` berechnete `theoretical_quantity` ausschließlich aus dem Risikolimit (`riskAmount / unitRisk`). `MAX_POSITION_VALUE_PCT` floss nur in das rein informative `position_value_pct` ein, wurde aber **nie** als tatsächliche Obergrenze auf die Stückzahl angewendet — ein reiner Hinweis statt eines echten Limits, exakt der im Auftrag benannte Fund.
+
+**Fix**: `quantityByValue = floor(MODEL_PORTFOLIO_VALUE * MAX_POSITION_VALUE_PCT / 100 / entry)` ergänzt, `theoreticalQuantity = min(quantityByRisk, quantityByValue)` (exakte Auftragsformel). Neue Felder: `quantity_by_risk`, `quantity_by_value`, `position_size_limiting_factor` (`risk`/`value`), `risk_amount_before_limit`. **Wichtige Konsequenz**: `risk_amount` selbst ist jetzt der tatsächlich realisierte Betrag nach Begrenzung (nicht mehr der unbegrenzte theoretische Wert) — das ist der Wert, den `14`s Portfoliorisiko-Summierung und `realized_r_multiple` in Job B ohnehin schon verwenden; der ursprüngliche unbegrenzte Wert bleibt separat als Audit-Feld erhalten. Neuer Veto `QUANTITY_ZERO`: "Bei Stückzahl null darf keine Position geöffnet werden" (Auftragsvorgabe wörtlich) — durch das neue Wertlimit erstmals überhaupt möglich (ein sehr teurer Titel, bei dem schon 1 Stück das Limit überschreitet).
+
+3/3 lokale Tests bestanden (Risiko bindet im Normalfall, Wertlimit bindet bei teurem Titel, Stückzahl 0 bei extrem teurem Titel).
+
+Migration live ausgeführt und bestätigt. **`06`s Code-Fix bleibt wie bei Phase 6 lokal/committet, aber nicht live gepusht** — Teil derselben, in Phase 14 zu planenden Aktivierungsreihenfolge.
+
+Fortsetzung folgt in den Phasen 11-18 (dieses Dokument wird laufend erweitert).
