@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-01T22:26:21.301Z",
+  "updatedAt": "2026-08-02T07:19:50.660Z",
   "createdAt": "2026-07-19T13:27:11.388Z",
   "id": "NInmI0f9TfdndwI1",
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- ============================================================================\n-- 043 (Fehleranalyse F7, mittel, Haertungsauftrag 2026-08-02): Schwellenwert\n-- fuer das neue ambiguous_pct-Gate in 09b (Lernagent Handelsstrategien)\n-- ============================================================================\n-- F7: ambiguous_pct (Anteil mehrdeutiger Ausfuehrungen, E9/E10-Faelle) war\n-- bisher nur informativ im Lernbericht sichtbar, floss aber nie in\n-- \"eligible\" (die Gate-Pruefung, ob ein Lernvorschlag ueberhaupt entstehen\n-- darf) ein. Additiv, konservativer Default (20% - deutlich ueber dem\n-- Normalfall, blockiert nur wirklich auffaellige Segmente).\n\nINSERT INTO trading.pipeline_config (config_key, value_numeric, description)\nVALUES\n  ('MAX_AMBIGUOUS_PCT_FOR_PROPOSAL', 20.0, 'Obergrenze fuer den Anteil mehrdeutiger Ausfuehrungen (ambiguous_execution, E9/E10-Faelle) je Segment, oberhalb derer 09b keinen Lernvorschlag erzeugt - die Datengrundlage gilt dann als zu unsicher (Fehleranalyse F7).')\nON CONFLICT (config_key) DO NOTHING;\n",
+        "query": "-- ============================================================================\n-- 044 (Fehleranalyse G1, mittel, Haertungsauftrag 2026-08-02): Migrations-\n-- protokoll-Tabelle\n-- ============================================================================\n-- Bisher einziger Nachweis ueber bereits gelaufene Migrationen war Prosa in\n-- OFFENE_AUFGABEN.md/FEHLERANALYSE.md - keine maschinenlesbare, aus der DB\n-- selbst pruefbare Quelle. Migrationen laufen in diesem Projekt durchgehend\n-- per Copy&Paste in Workflow 97 (Einmalig - Beliebige Query ausfuehren) und\n-- manuellem Klick durch den Nutzer - Workflow 99 (Einmalig - SQL-Migration\n-- ausfuehren) ist ein Relikt aus der allerersten Migration (001) und wurde\n-- seit Migration 002 nicht mehr verwendet, deshalb hier NICHT erweitert.\n--\n-- WICHTIG - Grenzen dieser Loesung: eine ECHTE automatische Doppellauf-Sperre\n-- (die einen erneuten Lauf verweigert) wuerde eigene Tooling-Infrastruktur\n-- brauchen (ein Skript, das sql/*.sql der Reihe nach einliest, gegen diese\n-- Tabelle prueft und nur fehlende Dateien ausfuehrt) - das ist mit dem\n-- aktuellen \"SQL einfuegen, Node ausfuehren\"-Modell von Workflow 97 nicht\n-- gegeben. Diese Migration legt nur die Tabelle an; ob eine echte\n-- Sperr-Automatisierung gebaut werden soll, ist eine eigene, groessere\n-- Entscheidung (siehe FEHLERANALYSE.md G1).\n--\n-- Konvention ab jetzt: jede kuenftige sql/0XX_*.sql-Datei endet mit einer\n-- eigenen INSERT-Anweisung in diese Tabelle (Beispiel unten). Migrationen\n-- 001-043 werden NICHT rueckwirkend eingetragen - die exakten Ausfuehrungs-\n-- zeitpunkte sind nicht zuverlaessig rekonstruierbar (mehrere liefen nicht in\n-- einer einzelnen Sitzung, teils mit manuellen Zwischenschritten).\n\nCREATE TABLE IF NOT EXISTS trading.schema_migrations (\n    version     TEXT PRIMARY KEY,\n    applied_at  TIMESTAMPTZ NOT NULL DEFAULT now(),\n    checksum    TEXT,\n    description TEXT\n);\n\nCOMMENT ON TABLE trading.schema_migrations IS\n    'Protokoll bereits ausgefuehrter sql/*.sql-Migrationen (Fehleranalyse G1). Rueckwirkend nur ab 044 gepflegt, 001-043 nicht rekonstruiert. Jede kuenftige Migration traegt sich am Ende selbst ein.';\n\nINSERT INTO trading.schema_migrations (version, description)\nVALUES ('044', 'Migrationsprotokoll-Tabelle selbst (Fehleranalyse G1)')\nON CONFLICT (version) DO NOTHING;\n",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -59,9 +59,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "0de30637-4ec2-42ea-916c-bf5e89a93251",
+  "versionId": "6ed74f85-4f03-48df-bed1-92c723fc5e5c",
   "activeVersionId": null,
-  "versionCounter": 119,
+  "versionCounter": 123,
   "triggerCount": 0,
   "shared": [
     {

@@ -530,7 +530,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Datei/Node:** `99 – Einmalig – SQL-Migration ausfuehren.json`
 - **Ursache:** Kein `schema_migrations`-artiges Tracking. Einziger Nachweis über bereits gelaufene Migrationen ist Prosa in `OFFENE_AUFGABEN.md`.
 - **Korrektur:** `trading.schema_migrations(version, applied_at, checksum)` ergänzen, `99` um Prüf-/Protokoll-Node erweitern.
-- **Status:** offen
+- **Status:** teilweise behoben, live gepusht 2026-08-02 (sql/044). Tabelle `trading.schema_migrations` angelegt, traegt sich als erste Zeile selbst ein. **Bewusst NICHT `99` erweitert** - beim Nachsehen stellte sich heraus, dass Workflow `99` seit Migration 002 nicht mehr benutzt wird (haelt noch immer nur die 001-Query fest) und Workflow `97` seit Monaten das tatsaechlich verwendete Werkzeug fuer jede Migration ist (038-044 alle darueber gelaufen) - `99` zu erweitern haette an der falschen, toten Stelle gewirkt. **Keine echte automatische Doppellauf-Sperre**: das haette eigene Tooling-Infrastruktur gebraucht (ein Skript, das `sql/*.sql` gegen die Tabelle prueft), was mit dem aktuellen "SQL einfuegen, Node ausfuehren"-Modell von `97` nicht gegeben ist - nur die Tabelle + die Konvention, dass kuenftige Migrationen sich selbst eintragen. Migrationen 001-043 bewusst nicht rueckwirkend eingetragen (Ausfuehrungszeitpunkte nicht zuverlaessig rekonstruierbar). Ob eine echte Sperr-Automatisierung gebaut werden soll, ist eine eigene, groessere Entscheidung fuer eine kuenftige Sitzung.
 
 ### G2 — Transaktionsverhalten pro Migration nicht explizit
 - **Schweregrad:** niedrig
@@ -564,7 +564,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 ### G7 — `09b`s OOS-Gate hängt von nie gebautem Backtesting-Workflow ab (nicht in Doku als Abhängigkeit sichtbar)
 - **Schweregrad:** mittel
 - **Befund:** `trading.backtest_runs` wird von keinem Workflow beschrieben (Backtesting bewusst nicht gebaut) — `09b`s OOS-Gate liest daraus, ist also strukturell dauerhaft "kein Ergebnis", bis Welle 3 AP7 nachgezogen wird. Verstärkt die Dringlichkeit von F4 (muss vor erstem echten Backtest behoben sein).
-- **Status:** offen (Dokumentationslücke, kein Code-Fehler)
+- **Status:** Fehlalarm, geprueft 2026-08-02. `docs/LERNAGENT_HANDELSSTRATEGIEN.md` (Zeile 10) beschreibt diese Abhaengigkeit bereits explizit ("Da das Backtesting-Modul ... aktuell dormant ist, ist diese Tabelle IMMER leer"), `docs/BACKTESTING_UND_WALK_FORWARD.md` (Zeile 20) verweist umgekehrt zurueck. Beide Docs verlinken sich bereits gegenseitig - die Abhaengigkeit war zum Zeitpunkt des Audits schon dokumentiert, kein Fix noetig.
 
 ---
 

@@ -50,17 +50,30 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   verifiziert+nachgezogen, 2026-08-02) und **E10** (`AMBIGUOUS_BAR_POLICY` war seit 08-01
   im Code auf `pipeline_config` umgestellt, aber der Key fehlte in Query+Seed - beim
   G4-Abgleich gefunden, live nachgezogen, `sql/042` bereitgestellt).
-- 🟡 **`sql/042`** (E10, `AMBIGUOUS_BAR_POLICY_CODE`-Seed) **steht noch zur manuellen
-  Ausfuehrung in Workflow `97` bereit.**
+- ✅ **`sql/042`** (E10, `AMBIGUOUS_BAR_POLICY_CODE`-Seed) **ausgefuehrt, bestaetigt 2026-08-02.**
+- ✅ **9 weitere "mittel"-Funde behoben (2026-08-02):** B3 (Repo-Credential-Platzhalter war
+  nur ein Repo/Live-Sync-Fehlalarm, echtes Credential live immer korrekt), B6 (eigene
+  DRY_RUN-Pruefung in `14` als Verteidigung in der Tiefe), E6 (Drawdown-Nenner `peak_t`
+  statt Konstante), E11 (separate Kennzahlen fuer eindeutige/mehrdeutige Trades in `10`),
+  F6 (Regime-Konzentrationspruefung in `09b`), F7 (`ambiguous_pct`-Gate, `sql/043`), F12
+  (restliche `proposed_value:null`-Faelle aus F5 nachgezogen), G1 (`trading.schema_migrations`-
+  Tabelle, `sql/044`, `99` bewusst nicht erweitert - seit Migration 002 nicht mehr benutzt),
+  G7 (Fehlalarm, Abhaengigkeit war in `docs/LERNAGENT_HANDELSSTRATEGIEN.md`/
+  `docs/BACKTESTING_UND_WALK_FORWARD.md` bereits gegenseitig dokumentiert). Details je Fund
+  in `FEHLERANALYSE.md`.
+- 🟡 **`sql/043`+`sql/044`** stehen noch zur manuellen Ausfuehrung in Workflow `97` bereit.
+- 🟡 **F9** (Stabilitaet ueber Zeit/Drawdown je Strategie/Anteil blockierter Signale)
+  bewusst zurueckgestellt 2026-08-02 - braucht neue Aggregationslogik (Zeitraum-Teilung,
+  Verknuepfung mit `recommendation_veto_log`) statt eines einfachen Schwellenwerts wie
+  F6/F7. Eigenstaendiges Vorhaben fuer eine kuenftige Sitzung, siehe `FEHLERANALYSE.md`.
 - 🟡 **~80 unversionierte `n8n_live_backup/*.json`-Dateien (2026-07-21 bis 2026-07-27)**
   im Arbeitsverzeichnis entdeckt (2026-08-02, im Zuge von G4) - lokal vorhanden, nie
   committet. Gleiche Nachweisdisziplin-Luecke wie G4, nur historisch und groesser im
   Umfang. Noch nicht aufgeraeumt/committet - eigenstaendiger Punkt fuer eine kuenftige
   Sitzung (pruefen ob alle noch relevant sind, dann committen oder bewusst geordnet
   loeschen).
-- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** 10 der urspruenglich 21
-  "mittel"-Funde (B3, B6, E6, E11, F6, F7, F9, F12, G1, G7 - Details je Fund in
-  `FEHLERANALYSE.md`) sowie alle 6 "niedrig" eingestuften Funde. Danach: automatisierte
+- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** F9 (siehe oben) sowie alle
+  6 "niedrig" eingestuften Funde (B7, B9, C3, F3, G2, G5, G6). Danach: automatisierte
   Pruefabfragen/Tests fuer die verbleibenden Bereiche, `PRODUKTIONSFREIGABE.md` mit dem neuen
   Stand neu bewerten.
 
