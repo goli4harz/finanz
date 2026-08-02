@@ -176,4 +176,26 @@ Live gepusht (`05`, aktiv — reine Textentfernung, kein strukturelles Risiko). 
 
 Live gepusht (`07`, aktiv), Backup `n8n_live_backup/07 – Status-Uebersicht – Agent V1_POST_PHASE12_20260802.json` gesichert.
 
-Fortsetzung folgt in den Phasen 13-18 (dieses Dokument wird laufend erweitert).
+## Phase 13: Workflow 05 (Tagesreport) — Zweigzusammenführung geprüft
+
+Vollständige Graph- und Code-Analyse aller Verzweigungen und der 3 nachgelagerten Merge-Nodes.
+
+**Zweigstruktur** (verifiziert per Verbindungsexport, nicht nur Sichtprüfung): `Eingabe normalisieren` → `IF: Freigegeben?` — bei `false` direkt zu `Ablehnungs-Warnung bauen` → `Matrix: Fehler-Alert` → Tag → `Merge Versand 3` (Eingang 2); bei `true` zu `Report aufbereiten` → `IF: DRY_RUN? (Versand)` — bei DRY_RUN zu `DRY_RUN: Versand uebersprungen` → `Merge Versand 2` (Eingang 2), sonst parallel zu `Matrix: Tagesreport senden` UND `E-Mail Report senden` → je ein Tag-Node → `Merge Versand 1` (beide Eingänge) → `Merge Versand 2` (Eingang 1) → `Merge Versand 3` (Eingang 1) → `Abschluss-Ergebnis bauen`.
+
+**Befund zu allen 5 Auftragsprüfpunkten — keine Fehler gefunden, Architektur bereits korrekt gebaut:**
+
+1. **Genau eine Abschluss-Hülle pro Lauf**: `Merge Versand 1/2/3` verwenden alle drei den **Default-Modus** (`parameters: {}`, kein `combine`/`combineAll`) — exakt das in Phase 2 etablierte sichere Verhalten. Da die beiden Eingänge von `Merge Versand 2` und `Merge Versand 3` jeweils strukturell wechselseitig ausschließend sind (pro Lauf feuert nur einer der beiden IF-Zweige), wartet keiner der Merges auf einen nie feuernden Zweig — Prüfpunkt 5 damit gleich mit bestätigt. `Abschluss-Ergebnis bauen` erkennt den tatsächlich gefeuerten Zweig explizit über ein `_zweig`-Feld (`dry_run`/`abgelehnt`/`versand`) und hat sogar einen expliziten `else`-Fallback für den (eigentlich unerreichbaren) Fall eines unbekannten Zweigs, der ebenfalls eine valide Hülle (`status: 'failed'`) statt eines Absturzes liefert.
+2. **DRY_RUN sendet weder Matrix noch E-Mail**: strukturell unmöglich anders — der DRY_RUN-Zweig ist im Graph vollständig von `Matrix: Tagesreport senden`/`E-Mail Report senden` getrennt.
+3. **Abgelehnter Bericht wird nicht versendet**: strukturell unmöglich anders — der `Freigegeben=false`-Zweig erreicht `Report aufbereiten` und die Versand-Nodes gar nicht.
+4. **Partielle Fehlschläge korrekt gemeldet**: beide Versand-Nodes und `Matrix: Fehler-Alert` sind auf `onError: continueRegularOutput` gesetzt (ein HTTP-Fehler bricht den Lauf nicht ab, sondern liefert ein Item mit `$json.error`); die Tag-Nodes werten `$json.error` explizit aus (`_send_failed`, `_send_error`); `Abschluss-Ergebnis bauen` berechnet daraus korrekt `status: 'success' | 'partial_failure' | 'failed'` (z. B. Matrix erfolgreich + E-Mail fehlgeschlagen → `partial_failure`, `failed=1`, `successful=1`).
+5. Siehe Punkt 1.
+
+**Bewusst dokumentierte Entscheidung (kein Fund, keine Änderung)**: `Matrix: Fehler-Alert` (Ablehnungs-Zweig) wird **unabhängig von `DRY_RUN`** ausgelöst — ein während eines DRY_RUN-Laufs abgelehnter Bericht sendet also trotzdem einen echten Matrix-Alert. Das ist konsistent mit dem projektweiten Muster (z. B. Claim-Error-Watchdogs, Blockade-Alerts), wonach **operative Fehler-/Zustandsalarme** bewusst nicht durch `DRY_RUN` unterdrückt werden — nur der eigentliche fachliche Versand (der simulierte Tagesreport selbst) ist DRY_RUN-gated, nicht die Beobachtbarkeit des Systemzustands. Da hierzu keine Datenlöschung, keine fehlende Zugangsdaten, keine reale Orderanbindung und keine echte Zielkonflikt-Blockade vorliegt, wurde dies als konservative, dokumentierte Entscheidung im Sinne des Auftrags getroffen (keine Rückfrage nötig) statt das Verhalten stillschweigend zu ändern.
+
+**`REQUIRE_CONFIRMATION`**: kein Vorkommen in `05` (Grep über alle Node-Parameter, 0 Treffer) — das ist kein Fund, da dieser Mechanismus laut Sicherheitsregel für reale Order-/Trade-Aktionen gilt (Kontext `14`), nicht für einen reinen Report-Versand; `05` besitzt keinen Order-/Trade-Pfad, für den eine zusätzliche Bestätigungsschranke fachlich sinnvoll wäre.
+
+**Kein Live-Test durchgeführt (bewusst)**: `05` hat keinen Webhook-Trigger (nur `scheduleTrigger` + `executeWorkflowTrigger`), ein Testlauf würde ohne weitere Vorkehrung reale Matrix-/E-Mail-Sends auslösen (abhängig vom aktuellen `DRY_RUN`-Konfigurationsstand, den zu verifizieren hier nicht sicher ohne Seiteneffekt möglich war) — analog zu `10` in Phase 12 daher rein statische Code-/Graph-Prüfung, Live-Verifikation ist Teil von Testsuite F (Phase 17).
+
+Keine Code-Änderung in dieser Phase nötig — reine Bestätigungsprüfung, kein Push.
+
+Fortsetzung folgt in den Phasen 14-18 (dieses Dokument wird laufend erweitert).
