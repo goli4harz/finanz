@@ -2,6 +2,8 @@
 
 Stand: 2026-08-02 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1+2-Fixes umgesetzt, siehe Abschnitte unten)
 
+**⚠️ Wichtiger Sonderfall (Härtung Welle 1-3, Phase 6, 2026-08-02): `06 – Empfehlungswatchlist – Agent V1.json` weicht bewusst von Live ab.** Der Repo-Stand enthält den Phase-6-Fix (`status='portfolio_pending'` statt `'offen'`), ist aber **absichtlich nicht live gepusht** — `14` ist noch inaktiv/nicht in den Orchestrator eingebunden, ein Live-Push von `06` allein würde jede künftige Empfehlung dauerhaft in `portfolio_pending` hängen lassen. Vor jedem GET-Resync von `06` das PRE_PHASE6-Backup bzw. `FEHLERANALYSE_HAERTUNG_WELLE_1_3.md` (Phase 6) lesen, bevor der Live-Stand blind übernommen wird. Live-Push von `06` ist Teil der in Phase 14 zu planenden Aktivierungsreihenfolge.
+
 ## Härtungsauftrag "Vollständige Fehlerbereinigung" - Priorität 1 (kritisch), 2026-08-01
 
 Vollständiges Audit (7 parallele Code-Reviews) gegen SQL-Sicherheit, Orchestrator, Kursdaten/

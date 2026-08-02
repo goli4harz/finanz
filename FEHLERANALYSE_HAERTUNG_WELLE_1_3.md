@@ -98,4 +98,20 @@ Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query best�
 
 Live gepusht (`14`, inaktiv), Migration ausgeführt und per Diagnose-Query bestätigt (5/5 neue Spalten vorhanden).
 
-Fortsetzung folgt in den Phasen 6-18 (dieses Dokument wird laufend erweitert).
+## Phase 6+7: Empfehlung/Portfolioveto-Statusmodell + Rückstandsverarbeitung (`sql/053`)
+
+Beide Phasen hängen an derselben Stelle (`14`s Ladequery für neue Empfehlungen) und wurden zusammen behoben.
+
+**Bestätigter Fund (Phase 6)**: `06`s "Oeffnen: SQL bauen" schrieb `status='offen'` fest in die INSERT-VALUES-Klausel — **unbedingt, ohne jede Portfoliorisiko-Prüfung**. `14` (Job A/Dispatcher A) schrieb **zu keinem Zeitpunkt** auf `trading.recommendations` zurück (nur auf `paper_trades`) — bestätigt per Code-Grep (`jobA.parameters.jsCode.includes('recommendations')` → `false`). Eine von `14` blockierte Position ließ die zugehörige Empfehlung dauerhaft als `status='offen'` stehen, während `paper_trades.status='blocked'` — exakt der im Auftrag beschriebene Widerspruch, kein hypothetisches Szenario.
+
+**Bestätigter Fund (Phase 7)**: `14`s "DB: Heutige neue Empfehlungen laden" filterte zusätzlich auf `entry_datum = CURRENT_DATE` — ein verspäteter/unterbrochener Lauf hätte eine Empfehlung dauerhaft verloren.
+
+**Fix**: neuer Zwischenzustand `portfolio_pending` (06 schreibt diesen statt `offen`), `14` löst ihn nach der Portfolioprüfung auf zu `offen` (genehmigt) oder `portfolio_blocked` (abgelehnt) — inklusive Blocker-Begründung, Risikowerten vorher/nachher und Verweis auf die zugehörige `portfolio_risk_checks`-Zeile (`portfolio_check_id`, per Subquery über `(run_id, ticker)` aufgelöst, dank der `UNIQUE(run_id,ticker)`-Garantie aus Fehleranalyse B9). `14`s Ladequery wurde rein statusbasiert (`WHERE status = 'portfolio_pending'`, kein Datumsfilter mehr) — löst Phase 7 automatisch mit, da dieselbe Query betroffen ist: jede noch unaufgelöste Zeile wird beim nächsten Lauf verarbeitet, unabhängig vom Anlagedatum. Dead-Letter-Eskalation nach `MAX_PORTFOLIO_CHECK_ATTEMPTS` (Default 5, config-getrieben) mit `workflow_errors`-Eintrag, gleiches Muster wie Fehleranalyse E8/Phase 4.
+
+Der bestehende partielle Unique-Index (`ux_recommendations_one_open_per_ticker`, nur `status='offen'`) wurde ersetzt durch `ux_recommendations_one_active_per_ticker` (`status IN ('offen','portfolio_pending')`) — sonst könnte `06` denselben Ticker zweimal vorschlagen, während der erste Kandidat noch auf `14` wartet. `06`s eigene `offenByTicker`-Prüfung wurde entsprechend erweitert.
+
+**Bewusste Zurückstellung des Live-Pushes für `06`**: der Code-Fix in `06` ist fertig, syntaxgeprüft und im Repo committet — aber **noch nicht live gepusht**, da `14` aktuell inaktiv und noch nicht in den Orchestrator (`00`) eingebunden ist (das ist erst Phase 14). Würde `06`s Änderung jetzt live gehen, bliebe **jede künftige Empfehlung dauerhaft in `portfolio_pending` stecken**, da nichts sie auflösen würde — das hätte den laufenden Produktivbetrieb stiller beschädigt, als der ursprüngliche Fund es tat. `sql/053` (rein additiv: neue Spalten + erweiterter Unique-Index) wurde dagegen bereits live ausgeführt — unschädlich, solange `06` weiterhin nur `'offen'` schreibt. **`06`s Live-Push ist Teil der in Phase 14 zu planenden, kontrollierten Aktivierungsreihenfolge.**
+
+Live gepusht (`14`, inaktiv) und Migration ausgeführt, per Diagnose-Query bestätigt (4/4 neue Spalten vorhanden).
+
+Fortsetzung folgt in den Phasen 8-18 (dieses Dokument wird laufend erweitert).
