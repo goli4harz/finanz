@@ -15,12 +15,11 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   `AENDERUNGSPROTOKOLL.md`, Testfälle: `TESTPLAN.md`, Ampel-Bewertung: `PRODUKTIONSFREIGABE.md`.
 - Als Nebeneffekt weitere ~9 hoch/mittel eingestufte Funde direkt mitbehoben (A3/A4/A7-teilw./
   B5/C5/D4/F5), da im selben Node/derselben Datei ohnehin bearbeitet.
-- 🟡 **Zwei neue Migrationen (`sql/038`, `sql/039`) sind additiv vorbereitet und im Workflow
-  `97 – Einmalig – Beliebige Query ausfuehren` kombiniert eingetragen, aber noch nicht
-  manuell ausgefuehrt.** Workflow `14` (Portfolio-Risiko/Paper-Trading) referenziert bereits
-  Spalten aus `sql/039` und darf vor der Migration nicht getestet werden. `12`
-  (Lernvorschlag-Freigabe) funktioniert bereits ohne die Migration, nutzt den neuen Status
-  `activation_failed` (sql/038) aber erst danach.
+- ✅ **`sql/038`+`sql/039` sind live ausgefuehrt**, per Diagnose-Query 2026-08-02 bestaetigt
+  (`chk_learning_rule_proposals_status` enthaelt `activation_failed`, `paper_trades.sektor`,
+  `portfolio_risk_checks.sequence_index` und `ux_paper_trade_costs_trade_costtype` existieren
+  alle live) - Ausfuehrungszeitpunkt selbst nicht mehr rekonstruierbar, aber der Ist-Zustand
+  ist zweifelsfrei geklaert.
 - ✅ **14 von 15 eindeutigen "hoch"-Funden behoben** (2026-08-01/02): C1 (period=3mo→1y in
   `02`), C6 (Datenqualitaetsstatus-Kollaps in `02`, macht C9 in `14` scharf), C7/C8
   (vollstaendige Sitzungsstatus-Erkennung in `02b`, beeinflusst jetzt `combined_regime`),
@@ -61,7 +60,19 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   G7 (Fehlalarm, Abhaengigkeit war in `docs/LERNAGENT_HANDELSSTRATEGIEN.md`/
   `docs/BACKTESTING_UND_WALK_FORWARD.md` bereits gegenseitig dokumentiert). Details je Fund
   in `FEHLERANALYSE.md`.
-- 🟡 **`sql/043`+`sql/044`** stehen noch zur manuellen Ausfuehrung in Workflow `97` bereit.
+- ✅ **`sql/043`+`sql/044`** ausgefuehrt, bestaetigt 2026-08-02.
+- ✅ **Alle 7 "niedrig"-Funde behoben (2026-08-02):** B7 (DRY_RUN-Quelle war seit B4 nur
+  berechnet, nie tatsaechlich protokolliert - jetzt in `pipeline_runs.metadata_json` fuer
+  `00`+`06`), B9 (deterministische `run_id` + drei neue UNIQUE-Indizes gegen Wiederholungs-
+  laeufe in `14`, `sql/045`), C3 (Volumen-Kennzahlen aus `gueltigeKerzen` statt eigenem
+  Filter in `02`), F3 (`LEARNING_MIN_NEWS_SAMPLE_SIZE` aus `pipeline_config`, `sql/046`,
+  analog zu `09b`), G2 (`sql/045`+`046` explizit in `BEGIN`/`COMMIT` gefasst, Konvention
+  fuer kuenftige Migrationen - `001`-`044` bewusst nicht rueckwirkend geaendert), G5
+  (drei alte Repo-Dateien ohne "Agent V1"-Suffix nach `n8n_live_backup/` verschoben - reine
+  lokale Altlast, live existierten sie laengst nicht mehr), G6 (Widerspruechliche
+  Zusammenfassungszeile in diesem Dokument korrigiert). Details je Fund in `FEHLERANALYSE.md`.
+- ✅ **`sql/045`+`sql/046`** ausgefuehrt, bestaetigt 2026-08-02 (Diagnose-Query gegen
+  `activation_failed`-Constraint/Spalten/Index live verifiziert - siehe oben).
 - 🟡 **F9** (Stabilitaet ueber Zeit/Drawdown je Strategie/Anteil blockierter Signale)
   bewusst zurueckgestellt 2026-08-02 - braucht neue Aggregationslogik (Zeitraum-Teilung,
   Verknuepfung mit `recommendation_veto_log`) statt eines einfachen Schwellenwerts wie
@@ -72,8 +83,10 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   Umfang. Noch nicht aufgeraeumt/committet - eigenstaendiger Punkt fuer eine kuenftige
   Sitzung (pruefen ob alle noch relevant sind, dann committen oder bewusst geordnet
   loeschen).
-- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** F9 (siehe oben) sowie alle
-  6 "niedrig" eingestuften Funde (B7, B9, C3, F3, G2, G5, G6). Danach: automatisierte
+- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** Von allen Funden aus
+  `FEHLERANALYSE.md` (21 kritisch, 19 hoch, 22 mittel, 7 niedrig/niedrig-mittel) sind nur
+  noch **A2** und **F9** offen - beide bewusst zurueckgestellt, siehe oben. Alle uebrigen
+  sind behoben. Danach: automatisierte
   Pruefabfragen/Tests fuer die verbleibenden Bereiche, `PRODUKTIONSFREIGABE.md` mit dem neuen
   Stand neu bewerten.
 
