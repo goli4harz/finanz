@@ -178,7 +178,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Kein UNIQUE-Constraint, `run_id` in `14` nicht deterministisch pro Tag (`Date.now()`).
 - **Auswirkung:** Wiederholter Lauf von `14` Job A am selben Tag dupliziert Event-/Check-Zeilen (widerspricht „lückenlose Ereignis-Historie").
 - **Korrektur:** Deterministischen Schlüssel + UNIQUE-Constraint ergänzen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. `run_id` in Job A (`'p14a-'+heute`) und Job C (`'stress-'+getBusinessDate()`) von `Date.now()` auf rein tagesbasiert umgestellt; Job B hatte bisher gar kein Datumskonzept, bekam `heute`/`getBusinessDate()` neu (analog zu Job A). Neue Spalte `paper_trade_events.business_date` (`sql/045`, deterministisch statt aus `event_time` abgeleitet) an allen 4 Event-Erzeugungsstellen in Job B gesetzt (data_error_flagged/escalated, expired_unfilled, fill_cluster, close_cluster). Drei neue UNIQUE-Indizes: `ux_portfolio_risk_checks_run_ticker`, `ux_stress_scenarios_run_scenario`, `ux_paper_trade_events_trade_type_date` - alle drei Dispatcher-Insert-Stellen bekamen passend `ON CONFLICT ... DO NOTHING`. `CREATE UNIQUE INDEX` (statt `ADD CONSTRAINT`) macht einen etwaigen bereits vorhandenen Duplikat-Konflikt beim Anlegen sichtbar statt ihn zu verschlucken, gleiches Prinzip wie bei `sql/039`s Kosten-Constraint.
 
 ---
 
