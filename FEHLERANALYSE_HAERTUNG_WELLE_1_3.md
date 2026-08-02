@@ -245,4 +245,19 @@ Systematischer Scan aller `INSERT INTO trading.*`-Statements über alle 20 Workf
 
 **Ergebnis**: keine kritischen oder hohen Idempotenz-/Transaktionslücken bei tatsächlich handelsrelevanten Schreibvorgängen (`paper_trades`, `portfolio_risk_checks`, `recommendations`, `scoring_weights`) gefunden — alle bereits durch deterministische Schlüssel+`ON CONFLICT`, das etablierte Revisionierungsmuster mit impliziter Postgres-Transaktion, oder vorgelagerte Anwendungslogik+Constraint-Backstop abgesichert. Keine Code-Änderung in dieser Phase nötig.
 
-Fortsetzung folgt in den Phasen 17-18 (dieses Dokument wird laufend erweitert).
+## Phase 17: Testsuiten A-F erstellt und ausgeführt
+
+Neue Datei `tests/welle_1_3_testsuite.js` (Node, keine externen Abhängigkeiten, `node tests/welle_1_3_testsuite.js`), 6 Suiten mit 35 Einzeltests, alle bestanden. Vollständiger Umfang je Suite in `TESTPLAN_HAERTUNG_WELLE_1_3.md`, Rohergebnis in `TESTERGEBNISSE_HAERTUNG_WELLE_1_3.md`.
+
+**Methodische Einordnung (wichtig, siehe auch dortige "Bekannte Grenzen")**: alle Suiten sind Node-Nachbildungen der produktiven Kernfunktionen, zeilenweise gegen den tatsächlichen Code der jeweiligen `.json`-Datei abgeglichen — **keine** echten n8n-End-to-End-Ausführungen. Das ist keine Verlegenheitslösung, sondern dieselbe Einschränkung, die in Phase 12 bereits explizit auftrat: ein echter Testlauf von `10`/`05`/`13`(als Sub-Workflow)/`14` würde reale OpenAI-Kosten und/oder reale Matrix-/E-Mail-Sends auslösen und wurde vom Auto-Mode-Klassifikator zu Recht blockiert. Die 35 Tests sind damit eine notwendige, aber keine hinreichende Bedingung für eine Freigabe.
+
+- **Suite A** (4/4): Wrap-Node-Merge-Sicherheit (Phase 2) und Feature-Flag-Bypass (Phase 14) — kein Kreuzprodukt, kein Warten auf einen nie feuernden Zweig.
+- **Suite B** (8/8): `stopRawExitPrice()` Gap-Fälle (Phase 5), `data_error`-Retry-Eskalation (Phase 4), `trade_id`-Determinismus (Grundlage für Phase 16s `ON CONFLICT`-Befund).
+- **Suite C** (5/5): Portfolioveto-Statusübergänge und Dead-Letter-Eskalation (Phase 6+7), inkl. des Rückstandsverarbeitungs-Falls (veraltete `portfolio_pending`-Zeile wird trotzdem geladen).
+- **Suite D** (5/5): echte relative Stärke vs. Absolutrendite (Phase 8, exakt Auftrags-Testfall D5) plus Positionsgrößen-Wertlimit (Phase 10).
+- **Suite E** (4/4): Idempotenz-Simulationen für `ON CONFLICT DO NOTHING` und das Revisionierungsmuster (Phase 16).
+- **Suite F** (9/9): `05`s Zweigzusammenführung (Phase 13, alle 5 Fälle inkl. `partial_failure` und defensivem Fallback) und die neuen `13`/`14`-Envelopes (Phase 14).
+
+Alle 35 Tests bestanden, 0 fehlgeschlagen. Ergänzt (nicht ersetzt) die bereits in den Phasen 4/5/8/9/10 protokollierten inline-lokalen Tests.
+
+Fortsetzung folgt in Phase 18 (dieses Dokument wird laufend erweitert).
