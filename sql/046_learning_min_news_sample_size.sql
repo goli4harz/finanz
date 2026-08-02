@@ -7,8 +7,16 @@
 -- Lernagent) hatte die analoge Schwelle (30, niedrig/mittel-Grenze in
 -- confidenceLevel()) weiterhin hartkodiert. Default identisch zum bisherigen
 -- Wert, verhaltensneutral bis zur ersten Aenderung.
+--
+-- FIX 2026-08-02 (Fehleranalyse G2): explizit in BEGIN/COMMIT gefasst statt
+-- implizites Postgres-Node-Verhalten anzunehmen (Konvention ab jetzt fuer
+-- alle sql/0XX-Dateien, siehe sql/045).
+
+BEGIN;
 
 INSERT INTO trading.pipeline_config (config_key, value_numeric, description)
 VALUES
   ('LEARNING_MIN_NEWS_SAMPLE_SIZE', 30, 'Mindest-Fallzahl (Dimension x Wert x Horizont-Kombinationen) fuer eine "mittel" statt "niedrig" belastbare Einordnung im News-Lernagenten (09). Analog zu LEARNING_MIN_TRADE_SAMPLE_SIZE fuer 09b (Fehleranalyse F3).')
 ON CONFLICT (config_key) DO NOTHING;
+
+COMMIT;

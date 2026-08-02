@@ -536,7 +536,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** niedrig
 - **Datei/Node:** alle `sql/*.sql`
 - **Korrektur:** Jede Migrationsdatei explizit mit `BEGIN;`/`COMMIT;` umschließen (unabhängig vom impliziten Postgres-Node-Verhalten).
-- **Status:** offen
+- **Status:** teilweise behoben, 2026-08-02. `sql/045`+`sql/046` (die beiden zum Zeitpunkt dieses Fixes einzigen noch nicht ausgefuehrten Migrationen) explizit in `BEGIN;`/`COMMIT;` gefasst, `97` mit der gewickelten `046`-Version neu gepusht. **Bewusst NICHT rueckwirkend auf `001`-`044` angewendet** - diese sind bereits live ausgefuehrt; nachtraegliches Editieren bereits angewendeter Migrationsdateien widerspraeche der Grundidee eines unveraenderlichen Migrationsprotokolls (siehe `sql/044`/G1) und haette ohnehin keinen operativen Effekt, da sie nicht erneut laufen. Konvention ab sofort: jede neue `sql/0XX_*.sql`-Datei wird von Anfang an mit `BEGIN;`/`COMMIT;` geschrieben (dokumentiert im Kommentar von `sql/045`).
 
 ### G3 — (Positiv-Befund, kein Fehler) Vollständiger Objektabgleich: 0 von 35 referenzierten DB-Objekten fehlen
 - **Status:** verifiziert, kein Fund

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:36:38.954Z",
+  "updatedAt": "2026-08-02T07:39:12.195Z",
   "createdAt": "2026-07-19T13:27:11.388Z",
   "id": "NInmI0f9TfdndwI1",
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- ============================================================================\n-- 046 (Fehleranalyse F3, niedrig, Haertungsauftrag 2026-08-02): Mindestfallzahl\n-- fuer 09 (Lernagent Newswirkung) aus pipeline_config statt hartkodiert\n-- ============================================================================\n-- 09b hat bereits LEARNING_MIN_TRADE_SAMPLE_SIZE (sql/037) fuer den\n-- gleichwertigen Zweck beim Handelslernagenten - 09 (der aeltere News-\n-- Lernagent) hatte die analoge Schwelle (30, niedrig/mittel-Grenze in\n-- confidenceLevel()) weiterhin hartkodiert. Default identisch zum bisherigen\n-- Wert, verhaltensneutral bis zur ersten Aenderung.\n\nINSERT INTO trading.pipeline_config (config_key, value_numeric, description)\nVALUES\n  ('LEARNING_MIN_NEWS_SAMPLE_SIZE', 30, 'Mindest-Fallzahl (Dimension x Wert x Horizont-Kombinationen) fuer eine \"mittel\" statt \"niedrig\" belastbare Einordnung im News-Lernagenten (09). Analog zu LEARNING_MIN_TRADE_SAMPLE_SIZE fuer 09b (Fehleranalyse F3).')\nON CONFLICT (config_key) DO NOTHING;\n",
+        "query": "-- ============================================================================\n-- 046 (Fehleranalyse F3, niedrig, Haertungsauftrag 2026-08-02): Mindestfallzahl\n-- fuer 09 (Lernagent Newswirkung) aus pipeline_config statt hartkodiert\n-- ============================================================================\n-- 09b hat bereits LEARNING_MIN_TRADE_SAMPLE_SIZE (sql/037) fuer den\n-- gleichwertigen Zweck beim Handelslernagenten - 09 (der aeltere News-\n-- Lernagent) hatte die analoge Schwelle (30, niedrig/mittel-Grenze in\n-- confidenceLevel()) weiterhin hartkodiert. Default identisch zum bisherigen\n-- Wert, verhaltensneutral bis zur ersten Aenderung.\n--\n-- FIX 2026-08-02 (Fehleranalyse G2): explizit in BEGIN/COMMIT gefasst statt\n-- implizites Postgres-Node-Verhalten anzunehmen (Konvention ab jetzt fuer\n-- alle sql/0XX-Dateien, siehe sql/045).\n\nBEGIN;\n\nINSERT INTO trading.pipeline_config (config_key, value_numeric, description)\nVALUES\n  ('LEARNING_MIN_NEWS_SAMPLE_SIZE', 30, 'Mindest-Fallzahl (Dimension x Wert x Horizont-Kombinationen) fuer eine \"mittel\" statt \"niedrig\" belastbare Einordnung im News-Lernagenten (09). Analog zu LEARNING_MIN_TRADE_SAMPLE_SIZE fuer 09b (Fehleranalyse F3).')\nON CONFLICT (config_key) DO NOTHING;\n\nCOMMIT;\n",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -59,9 +59,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "75b739b8-fbf1-4409-95ea-823b911b7249",
+  "versionId": "9a6629d0-e0bb-41ee-95c5-4163c6670896",
   "activeVersionId": null,
-  "versionCounter": 125,
+  "versionCounter": 126,
   "triggerCount": 0,
   "shared": [
     {

@@ -11,6 +11,14 @@
 -- passend auch keine UNIQUE-Constraints. Diese Migration ist rein additiv
 -- (Spalte + Constraint), die Code-Seite (deterministische run_id, ON
 -- CONFLICT DO NOTHING) ist Teil desselben Commits in Workflow 14.
+--
+-- FIX 2026-08-02 (Fehleranalyse G2): explizit in BEGIN/COMMIT gefasst, statt
+-- sich auf implizites Postgres-Node-Verhalten zu verlassen - bei einem
+-- Fehler mitten in der Sequenz (z.B. CREATE UNIQUE INDEX faellt auf einen
+-- Bestandsduplikat) werden so alle vorherigen Schritte dieser Migration
+-- ebenfalls zurueckgerollt statt teilweise angewendet zu bleiben.
+
+BEGIN;
 
 -- paper_trade_events: neue business_date-Spalte (deterministisch statt der
 -- bisherigen event_time DEFAULT now()) als Grundlage fuer den Dedup-Schluessel.
@@ -42,3 +50,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_portfolio_risk_checks_run_ticker
 -- stress_scenarios: gleiches Prinzip mit 'stress-'+business_date.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_stress_scenarios_run_scenario
   ON trading.stress_scenarios (run_id, scenario_name);
+
+COMMIT;
