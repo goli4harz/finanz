@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-01T20:46:05.321Z",
+  "updatedAt": "2026-08-02T07:26:46.853Z",
   "createdAt": "2026-07-19T13:09:43.709Z",
   "id": "ncMZzkqDHpSiDGPm",
   "name": "00 – Tagesabschluss-Orchestrator",
@@ -460,7 +460,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\n// FIX 2026-08-02 (Fehleranalyse B7): dry_run_source aus 06s Envelope mitprotokollieren.\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || [],\n  dry_run_source: envelope.dry_run_source || null\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "00000010-0000-4000-8000-000000000a",
       "name": "Log Empfehlungswatchlist (SQL bauen)",
@@ -887,7 +887,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\nconst metadata = (Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0)\n  ? { partial_failure_details: $json.partial_failure_details }\n  : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN und dessen Quelle (echter DB-Wert vs. sicherer\n// Fallback bei fehlender/ungueltiger Config, siehe B4) wurden bisher nur berechnet\n// (Kontext zusammenfuehren) und weitergereicht, aber nie irgendwo tatsaechlich protokolliert -\n// aus keinem Log war im Nachhinein erkennbar, ob ein Lauf im Fallback-Modus lief. Landet jetzt\n// in derselben metadata_json wie die bereits bestehenden partial_failure_details.\nconst kontext = $('Kontext zusammenfuehren').item.json;\nconst metadata = {\n  ...((Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0) ? { partial_failure_details: $json.partial_failure_details } : {}),\n  dry_run: kontext.DRY_RUN,\n  dry_run_source: kontext.DRY_RUN_SOURCE\n};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
       "id": "0000001a-0000-4000-8000-00000000a",
       "name": "Log Gesamtlauf abgeschlossen (SQL bauen)",
@@ -1688,9 +1688,9 @@
   },
   "meta": null,
   "pinData": null,
-  "versionId": "f55e8136-9641-41f8-9c8b-2630a9f884dc",
-  "activeVersionId": "f55e8136-9641-41f8-9c8b-2630a9f884dc",
-  "versionCounter": 100,
+  "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
+  "activeVersionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
+  "versionCounter": 106,
   "triggerCount": 1,
   "shared": [
     {
@@ -1713,9 +1713,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-01T20:46:05.327Z",
-    "createdAt": "2026-08-01T20:46:05.327Z",
-    "versionId": "f55e8136-9641-41f8-9c8b-2630a9f884dc",
+    "updatedAt": "2026-08-02T07:26:46.858Z",
+    "createdAt": "2026-08-02T07:26:46.858Z",
+    "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
     "workflowId": "ncMZzkqDHpSiDGPm",
     "nodes": [
       {
@@ -2171,7 +2171,7 @@
       },
       {
         "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\n// FIX 2026-08-02 (Fehleranalyse B7): dry_run_source aus 06s Envelope mitprotokollieren.\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || [],\n  dry_run_source: envelope.dry_run_source || null\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
         },
         "id": "00000010-0000-4000-8000-000000000a",
         "name": "Log Empfehlungswatchlist (SQL bauen)",
@@ -2585,7 +2585,7 @@
       },
       {
         "parameters": {
-          "jsCode": "return { json: { ...$json, final_status: $json.final_status || 'warning' } };"
+          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2): dieser Node wird sowohl vom\n// urspruenglichen Fehler-/Abbruchpfad (\"Baue technische Warnung\") als auch\n// vom neuen Teilausfall-Pfad (\"Baue Teilausfall-Warnung\") ueber denselben\n// Matrix-HTTP-Node erreicht. Der HTTP-Request-Node ersetzt $json durch die\n// rohe Matrix-Antwort - die vorher gesetzten Felder gehen dabei verloren und\n// muessen hier ueber den jeweiligen Quell-Node zurueckgeholt werden.\nlet partial_failure_details = [];\ntry {\n  partial_failure_details = $('Baue Teilausfall-Warnung').item.json.partial_failure_details || [];\n} catch (e) {\n  // Kein Teilausfall-Pfad gelaufen (regulaerer Abbruch/Fehler) - unveraendertes bisheriges Verhalten.\n}\n\nreturn { json: { ...$json, final_status: $json.final_status || 'warning', partial_failure_details } };\n"
         },
         "id": "00000019-0000-4000-8000-000000000019",
         "name": "Lauf abschliessen (Warnung/Fehler)",
@@ -2598,7 +2598,7 @@
       },
       {
         "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN und dessen Quelle (echter DB-Wert vs. sicherer\n// Fallback bei fehlender/ungueltiger Config, siehe B4) wurden bisher nur berechnet\n// (Kontext zusammenfuehren) und weitergereicht, aber nie irgendwo tatsaechlich protokolliert -\n// aus keinem Log war im Nachhinein erkennbar, ob ein Lauf im Fallback-Modus lief. Landet jetzt\n// in derselben metadata_json wie die bereits bestehenden partial_failure_details.\nconst kontext = $('Kontext zusammenfuehren').item.json;\nconst metadata = {\n  ...((Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0) ? { partial_failure_details: $json.partial_failure_details } : {}),\n  dry_run: kontext.DRY_RUN,\n  dry_run_source: kontext.DRY_RUN_SOURCE\n};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
         },
         "id": "0000001a-0000-4000-8000-00000000a",
         "name": "Log Gesamtlauf abgeschlossen (SQL bauen)",
@@ -2679,6 +2679,60 @@
         "position": [
           -1776,
           0
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): die vier Gates (IF: ... ok?) lassen\n// bereits seit B1 success/partial_failure/skipped gleichermassen durch - das\n// ist fuer den Lauf-Fortschritt richtig, verschluckt aber, DASS eine Stufe\n// nur einen Teilerfolg hatte. \"Lauf abschliessen (Erfolg)\" hat das bisher\n// nirgends festgehalten. Sammelt hier einmalig alle vier Stufenstatus und\n// stellt fest, ob mindestens eine Stufe nicht 'success' war.\nconst stufen = [\n  { label: 'Marktumfeld (02b)', node: 'Ausfuehren: Marktumfeld (02b)' },\n  { label: 'Technische Signale (02)', node: 'Ausfuehren: Technische Signale (02)' },\n  { label: 'Empfehlungswatchlist (06)', node: 'Ausfuehren: Empfehlungswatchlist (06)' },\n  { label: 'Tagesreport-Versand (05)', node: 'Ausfuehren: Tagesreport-Versand (05)' }\n];\n\nconst partial_failure_details = [];\nfor (const s of stufen) {\n  let status = null;\n  try { status = $(s.node).all()[0]?.json?.status ?? null; } catch (e) {}\n  if (status === 'partial_failure' || status === 'skipped') {\n    partial_failure_details.push({ stufe: s.label, status });\n  }\n}\n\nreturn { json: { ...$json, partial_failure_details, hat_teilausfall: partial_failure_details.length > 0 } };\n"
+        },
+        "id": "b2fix-sammle-teilstatus-0001",
+        "name": "Sammle Teilstatus (Erfolg)",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2300,
+          -120
+        ]
+      },
+      {
+        "parameters": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hat_teilausfall }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "id": "b2fix-if-teilausfall-0002",
+        "name": "IF: Teilausfall trotz Erfolg?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          2540,
+          -120
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): macht einen Teilausfall trotz\n// insgesamt erfolgreichem Lauf sichtbar (Matrix-Hinweis + final_status in\n// trading.pipeline_runs), statt ihn stillschweigend wie einen vollen Erfolg\n// zu behandeln. Nutzt bewusst denselben Matrix-Versandpfad wie \"Baue\n// technische Warnung\" (Node \"Matrix: Technische Warnung senden\" danach) -\n// kein zweiter Matrix-Kanal noetig.\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst details = $json.partial_failure_details || [];\nconst liste = details.map(d => d.stufe + ': ' + d.status).join('\\n- ');\n\nconst text = 'ℹ️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde versendet, aber mit Teilausfall in ' + details.length + ' Stufe(n):\\n\\n- ' + liste + '\\n\\nDetails: trading.pipeline_runs (run_id ' + runId + ').';\n\n// trading.pipeline_runs.status hat eine CHECK-Constraint auf einen festen\n// Wertebereich (sql/001: pending/running/success/warning/failed/skipped/\n// retrying) - kein neuer Statuswert, sondern das bereits vorhandene 'warning'\n// (passend: \"Aufmerksamkeit noetig, aber kein Abbruch\"). Die eigentliche\n// Nuance (versendet trotz Teilausfall, nicht blockiert) steht in\n// partial_failure_details/metadata_json, nicht im Statuswert selbst.\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning', partial_failure_details: details } };\n"
+        },
+        "id": "b2fix-baue-teilausfall-0003",
+        "name": "Baue Teilausfall-Warnung",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2780,
+          40
         ]
       }
     ],
@@ -3180,7 +3234,7 @@
         "main": [
           [
             {
-              "node": "Lauf abschliessen (Erfolg)",
+              "node": "Sammle Teilstatus (Erfolg)",
               "type": "main",
               "index": 0
             }
@@ -3292,6 +3346,46 @@
             }
           ]
         ]
+      },
+      "Sammle Teilstatus (Erfolg)": {
+        "main": [
+          [
+            {
+              "node": "IF: Teilausfall trotz Erfolg?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF: Teilausfall trotz Erfolg?": {
+        "main": [
+          [
+            {
+              "node": "Lauf abschliessen (Erfolg)",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Baue Teilausfall-Warnung",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Baue Teilausfall-Warnung": {
+        "main": [
+          [
+            {
+              "node": "Matrix: Technische Warnung senden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Oliver Lietz",
@@ -3300,18 +3394,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-01T20:46:05.566Z",
-        "id": 2215,
+        "createdAt": "2026-08-02T07:26:47.182Z",
+        "id": 2259,
         "workflowId": "ncMZzkqDHpSiDGPm",
-        "versionId": "f55e8136-9641-41f8-9c8b-2630a9f884dc",
+        "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-01T20:46:05.657Z",
-        "id": 2216,
+        "createdAt": "2026-08-02T07:26:47.275Z",
+        "id": 2260,
         "workflowId": "ncMZzkqDHpSiDGPm",
-        "versionId": "f55e8136-9641-41f8-9c8b-2630a9f884dc",
+        "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }

@@ -79,7 +79,7 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
 
 ## Welle 3 – Paper-Trading-Ledger, Portfoliorisiko, Backtesting und kalibriertes Lernen (2026-08-01)
 
-Zwölf Arbeitspakete, größtenteils vollständig implementiert; zwei bewusst nur als Schema+Mechanismus-Spezifikation (Backtesting, Kalibrierung — beide mangels Historie dormant, siehe Begründung in den jeweiligen Docs). **Live-Push steht noch aus** (siehe unten).
+Zwölf Arbeitspakete, größtenteils vollständig implementiert; zwei bewusst nur als Schema+Mechanismus-Spezifikation (Backtesting, Kalibrierung — beide mangels Historie dormant, siehe Begründung in den jeweiligen Docs). Live gepusht und verifiziert, siehe unten (Korrektur 2026-08-02, Fehleranalyse G6: diese Zusammenfassungszeile war nach dem eigentlichen Live-Push nicht mehr nachgezogen worden).
 
 - ✅ **AP1** (Paper-Trading-Ledger): `trading.paper_trades`/`paper_trade_events`/`paper_trade_valuations`/`paper_trade_costs` (`sql/035`), vollständiges Statusmodell, lückenlose Ereignis-Historie, deterministische `trade_id` (kein Duplikat bei Wiederholung).
 - ✅ **AP2+AP3** (Ausführung/Exit): Workflow `14`, Job B — konservative Einstiegszonen-Fill-Logik (kein Fill am Signaltag, dokumentierte Gap-Behandlung), Exit-Engine mit 10 Gründen, `AMBIGUOUS_BAR_POLICY` für Stop+Ziel in derselben Kerze. Trailing-Stop bewusst **nicht** umgesetzt (optional laut Auftrag, siehe `docs/AUSFUEHRUNGSMODELL.md`).

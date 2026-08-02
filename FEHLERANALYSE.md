@@ -162,7 +162,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 ### B7 — Keine Protokollierung der DRY_RUN-Konfigurationsquelle
 - **Schweregrad:** niedrig
 - **Datei/Node:** `00`, `06`
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. War trotz des B4-Fix-Kommentars ("Quelle protokolliert") tatsaechlich noch offen - `00` berechnete `DRY_RUN_SOURCE` zwar, aber kein einziger nachgelagerter Node las oder speicherte es je. Jetzt in beiden Workflows in `metadata_json` von `trading.pipeline_runs` geschrieben: `00` direkt (`Log Gesamtlauf abgeschlossen`), `06` berechnet die Quelle jetzt ebenfalls (`Kontext ergaenzen`), reicht sie durchs Envelope (`Abschluss-Ergebnis bauen`) an `00`s `Log Empfehlungswatchlist (SQL bauen)` weiter - kein neuer Node/keine neue Verbindung noetig, nutzt die bereits bestehende Envelope-Ruecklaufleitung aus Prioritaet 6.
 
 ### B8 — `technical_signals_history` überschreibt still statt zu revisionieren
 - **Schweregrad:** mittel
@@ -559,7 +559,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Schweregrad:** niedrig
 - **Befund:** „Live-Push steht noch aus" (Zeile 7) vs. „Live gepusht und verifiziert" (Zeile 21) — kein Sachwiderspruch, nur nicht nachgezogene Zusammenfassungszeile.
 - **Korrektur:** Zeile 7 aktualisieren/streichen.
-- **Status:** offen
+- **Status:** behoben, 2026-08-02. Zusammenfassungszeile in `OFFENE_AUFGABEN.md` (Welle 3) aktualisiert.
 
 ### G7 — `09b`s OOS-Gate hängt von nie gebautem Backtesting-Workflow ab (nicht in Doku als Abhängigkeit sichtbar)
 - **Schweregrad:** mittel
