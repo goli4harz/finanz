@@ -157,7 +157,7 @@ Diese Analyse entstand aus sieben parallelen, rein lesenden Code-Audits (nicht n
 - **Ursache:** Verlässt sich vollständig darauf, dass `06` im DRY_RUN-Fall nichts schreibt — kein zweiter unabhängiger Schutz.
 - **Auswirkung:** B4-Fehler kaskadiert bis in echte Paper-Trade-Anlage und Portfoliorisiko-Checks.
 - **Korrektur:** Nach Fix von B4 optional eigene DRY_RUN-Prüfung als Verteidigung in der Tiefe ergänzen.
-- **Status:** offen
+- **Status:** behoben, live gepusht 2026-08-02. "DB: Portfolio-Konfiguration laden" um `value_bool`-Spalte + `DRY_RUN`-Key erweitert. "Job A: Portfoliopruefung + Trade-Anlage" liest DRY_RUN jetzt unabhaengig von 06 (gleicher sicherer Fallback wie B4: fehlend/NULL -> true), taggt beide erzeugten Item-Typen (`portfolio_check`, `paper_trade_create`) mit `_dry_run`. "SQL bauen (Dispatcher A)" blockt Items mit `_dry_run:true` zusaetzlich vor jedem Schreib-Statement (`SELECT 1;` + `console.warn`), unabhaengig davon ob 06 korrekt gegated hat. Bewusst nur Job A betroffen - Job B (Ausfuehrung/Exit bestehender Trades) und Job C (Stressszenarien) werden nicht gegatet (gleiches Prinzip wie bei 06s eigenen Vetos: Positions-Schliessungen laufen immer durch). Lokal verifiziert: DRY_RUN-Fallback-Logik fuer alle 4 Konfigurationszustaende (vorhanden/true, vorhanden/false, fehlende Zeile, NULL-Wert) + Syntax-Check beider Code-Nodes vor dem Push.
 
 ### B7 — Keine Protokollierung der DRY_RUN-Konfigurationsquelle
 - **Schweregrad:** niedrig
