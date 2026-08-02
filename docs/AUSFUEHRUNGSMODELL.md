@@ -37,8 +37,12 @@ Wiederverwendet Welle 1s `DEFAULT_SLIPPAGE_BPS`/`DEFAULT_FEES_BPS` (`trading.pip
 - Kein Fill am Signaltag, selbst wenn die Zone rein rechnerisch am selben Tag noch erreichbar gewesen wäre.
 - `data_error`-Trades werden **nicht** automatisch geschlossen, sondern bleiben markiert bis ein manueller/nachfolgender Lauf wieder gültige Daten hat.
 
+## Finanzierungskosten (`financing_cost`, Welle-3-Abgleich Fund 1/5)
+
+Der Auftrag nennt `financing_cost` explizit als zu berechnende Kennzahl. Formel ist vollständig implementiert (bereits von `net_pnl` subtrahiert), der Wert ist aber **konstant 0** — kein konkretes Produkt/Broker mit definiertem Finanzierungssatz wird simuliert, konsistent mit dem bereits bestehenden Hebelprodukt-Disclaimer (Phase 9: „kein konkretes Produkt – Emittent/Spread/Finanzierungskosten selbst prüfen"). Eine erfundene Zahl (z. B. ein pauschaler Basispunktsatz ohne reale Grundlage) wäre eine Scheingenauigkeit gewesen, die Grundregel 9 widerspricht.
+
 ## Status
 
-- ✅ Umgesetzt: Entry-/Stop-/Target-Modell, Ambiguous-Bar-Policy, Kostenmodell, Gap-Behandlung.
+- ✅ Umgesetzt: Entry-/Stop-/Target-Modell, Ambiguous-Bar-Policy, Kostenmodell inkl. `financing_cost`-Formel, Gap-Behandlung.
 - 🔴 Nicht live getestet (siehe `docs/TESTPLAN_WELLE_3.md`) — nur als lokale Unit-Tests der Kernlogik verifiziert.
 - 🔴 Bewusst nicht umgesetzt: ein echtes Intraday-Ausführungsmodell (keine Datenquelle mit Minutenauflösung vorhanden).

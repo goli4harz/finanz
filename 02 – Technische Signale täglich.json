@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:33:47.341Z",
+  "updatedAt": "2026-08-02T08:33:25.230Z",
   "createdAt": "2026-07-19T13:06:15.525Z",
   "id": "vgT6IrPp3ATaJg8s",
   "name": "02 – Technische Signale täglich",
@@ -1763,7 +1763,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1: normalisierte, historisierte Strategiesignale in\n// trading.strategy_signals (sql/031). $json ist hier der Rueckgabewert von\n// \"DB: Signal aktualisieren\"/\"neu anlegen\" (Data-Table-Node, nur eigene\n// Spalten) - die vollstaendigen Signal-Objekte (inkl. der in Welle 2 neu\n// ergaenzten stop/target/entry_zone/time_stop_at-Felder) muessen aus\n// \"Signal: flach aufbereiten\" nachgeladen werden (.all()+Ticker-Matching,\n// gleiches Muster wie ATR/Datenqualitaet in Welle 1).\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst businessDate = j.datum;\n\nfunction parseSignal(fieldName) {\n  try { return j[fieldName] ? JSON.parse(j[fieldName]) : null; } catch (e) { return null; }\n}\nconst signals = [\n  parseSignal('mean_reversion_signal_json'),\n  parseSignal('trend_following_signal_json'),\n  parseSignal('breakout_signal_json')\n].filter(s => s !== null);\n\nif (signals.length === 0 || !j.ticker || !businessDate) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst statements = [];\nfor (const s of signals) {\n  statements.push(`UPDATE trading.strategy_signals\n    SET valid_to = now()\n    WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)} AND valid_to IS NULL;`);\n  statements.push(`INSERT INTO trading.strategy_signals\n    (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score,\n     entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days,\n     time_stop_at, evidence_json, blockers_json, rule_version, revision_number)\n    SELECT ${pgStr(j.ticker)}, ${pgStr(businessDate)}, ${pgStr(s.strategy)}, ${pgStr(s.direction)},\n      ${pgNum(s.raw_score)}, ${pgNum(s.regime_fit)}, ${pgNum(s.data_quality)},\n      ${pgNum(s.entry_zone_low)}, ${pgNum(s.entry_zone_high)}, ${pgNum(s.stop_price)}, ${pgNum(s.target_price)},\n      ${pgNum(s.expected_horizon_days)}, ${pgStr(s.time_stop_at)}, ${pgJsonb(s.evidence || [])}, ${pgJsonb(s.blockers || [])},\n      ${pgStr(s.rule_version || 'strategy-v1')},\n      COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)}), 0) + 1;`);\n}\n\nreturn { json: { ...outer, sql: statements.join('\\n') } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1: normalisierte, historisierte Strategiesignale in\n// trading.strategy_signals (sql/031). $json ist hier der Rueckgabewert von\n// \"DB: Signal aktualisieren\"/\"neu anlegen\" (Data-Table-Node, nur eigene\n// Spalten) - die vollstaendigen Signal-Objekte (inkl. der in Welle 2 neu\n// ergaenzten stop/target/entry_zone/time_stop_at-Felder) muessen aus\n// \"Signal: flach aufbereiten\" nachgeladen werden (.all()+Ticker-Matching,\n// gleiches Muster wie ATR/Datenqualitaet in Welle 1).\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst businessDate = j.datum;\n\nfunction parseSignal(fieldName) {\n  try { return j[fieldName] ? JSON.parse(j[fieldName]) : null; } catch (e) { return null; }\n}\nconst signals = [\n  parseSignal('mean_reversion_signal_json'),\n  parseSignal('trend_following_signal_json'),\n  parseSignal('breakout_signal_json')\n].filter(s => s !== null);\n\nif (signals.length === 0 || !j.ticker || !businessDate) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst statements = [];\nfor (const s of signals) {\n  statements.push(`UPDATE trading.strategy_signals\n    SET valid_to = now()\n    WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)} AND valid_to IS NULL;`);\n  statements.push(`INSERT INTO trading.strategy_signals\n    (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score,\n     entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days,\n     time_stop_at, evidence_json, blockers_json, rule_version, revision_number,\n     configuration_version, data_schema_version)\n    SELECT ${pgStr(j.ticker)}, ${pgStr(businessDate)}, ${pgStr(s.strategy)}, ${pgStr(s.direction)},\n      ${pgNum(s.raw_score)}, ${pgNum(s.regime_fit)}, ${pgNum(s.data_quality)},\n      ${pgNum(s.entry_zone_low)}, ${pgNum(s.entry_zone_high)}, ${pgNum(s.stop_price)}, ${pgNum(s.target_price)},\n      ${pgNum(s.expected_horizon_days)}, ${pgStr(s.time_stop_at)}, ${pgJsonb(s.evidence || [])}, ${pgJsonb(s.blockers || [])},\n      ${pgStr(s.rule_version || 'strategy-v1')},\n      COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)}), 0) + 1,\n      ${pgStr('strategy-signals-config-v1')}, ${pgStr('sql-031-v1')};`);\n}\n\nreturn { json: { ...outer, sql: statements.join('\\n') } };\n"
       },
       "name": "Strategiesignale: SQL bauen",
       "type": "n8n-nodes-base.code",
@@ -3054,9 +3054,9 @@
   },
   "meta": null,
   "pinData": null,
-  "versionId": "cc694983-819e-490d-844a-a3b0232accf9",
-  "activeVersionId": "cc694983-819e-490d-844a-a3b0232accf9",
-  "versionCounter": 164,
+  "versionId": "2cdb0e01-c882-4152-adeb-edc8e9e36809",
+  "activeVersionId": "2cdb0e01-c882-4152-adeb-edc8e9e36809",
+  "versionCounter": 167,
   "triggerCount": 0,
   "shared": [
     {
@@ -3079,9 +3079,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-02T07:33:47.349Z",
-    "createdAt": "2026-08-02T07:33:47.349Z",
-    "versionId": "cc694983-819e-490d-844a-a3b0232accf9",
+    "updatedAt": "2026-08-02T08:33:25.237Z",
+    "createdAt": "2026-08-02T08:33:25.237Z",
+    "versionId": "2cdb0e01-c882-4152-adeb-edc8e9e36809",
     "workflowId": "vgT6IrPp3ATaJg8s",
     "nodes": [
       {
@@ -4840,7 +4840,7 @@
       {
         "parameters": {
           "mode": "runOnceForEachItem",
-          "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1: normalisierte, historisierte Strategiesignale in\n// trading.strategy_signals (sql/031). $json ist hier der Rueckgabewert von\n// \"DB: Signal aktualisieren\"/\"neu anlegen\" (Data-Table-Node, nur eigene\n// Spalten) - die vollstaendigen Signal-Objekte (inkl. der in Welle 2 neu\n// ergaenzten stop/target/entry_zone/time_stop_at-Felder) muessen aus\n// \"Signal: flach aufbereiten\" nachgeladen werden (.all()+Ticker-Matching,\n// gleiches Muster wie ATR/Datenqualitaet in Welle 1).\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst businessDate = j.datum;\n\nfunction parseSignal(fieldName) {\n  try { return j[fieldName] ? JSON.parse(j[fieldName]) : null; } catch (e) { return null; }\n}\nconst signals = [\n  parseSignal('mean_reversion_signal_json'),\n  parseSignal('trend_following_signal_json'),\n  parseSignal('breakout_signal_json')\n].filter(s => s !== null);\n\nif (signals.length === 0 || !j.ticker || !businessDate) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst statements = [];\nfor (const s of signals) {\n  statements.push(`UPDATE trading.strategy_signals\n    SET valid_to = now()\n    WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)} AND valid_to IS NULL;`);\n  statements.push(`INSERT INTO trading.strategy_signals\n    (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score,\n     entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days,\n     time_stop_at, evidence_json, blockers_json, rule_version, revision_number)\n    SELECT ${pgStr(j.ticker)}, ${pgStr(businessDate)}, ${pgStr(s.strategy)}, ${pgStr(s.direction)},\n      ${pgNum(s.raw_score)}, ${pgNum(s.regime_fit)}, ${pgNum(s.data_quality)},\n      ${pgNum(s.entry_zone_low)}, ${pgNum(s.entry_zone_high)}, ${pgNum(s.stop_price)}, ${pgNum(s.target_price)},\n      ${pgNum(s.expected_horizon_days)}, ${pgStr(s.time_stop_at)}, ${pgJsonb(s.evidence || [])}, ${pgJsonb(s.blockers || [])},\n      ${pgStr(s.rule_version || 'strategy-v1')},\n      COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)}), 0) + 1;`);\n}\n\nreturn { json: { ...outer, sql: statements.join('\\n') } };\n"
+          "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1: normalisierte, historisierte Strategiesignale in\n// trading.strategy_signals (sql/031). $json ist hier der Rueckgabewert von\n// \"DB: Signal aktualisieren\"/\"neu anlegen\" (Data-Table-Node, nur eigene\n// Spalten) - die vollstaendigen Signal-Objekte (inkl. der in Welle 2 neu\n// ergaenzten stop/target/entry_zone/time_stop_at-Felder) muessen aus\n// \"Signal: flach aufbereiten\" nachgeladen werden (.all()+Ticker-Matching,\n// gleiches Muster wie ATR/Datenqualitaet in Welle 1).\nfunction sourceFor(ticker) {\n  try {\n    const all = $('Signal: flach aufbereiten').all();\n    const match = all.find(i => i.json && i.json.ticker === ticker);\n    return match ? match.json : {};\n  } catch (e) { return {}; }\n}\nconst outer = $json;\nconst j = sourceFor(outer.ticker);\nconst businessDate = j.datum;\n\nfunction parseSignal(fieldName) {\n  try { return j[fieldName] ? JSON.parse(j[fieldName]) : null; } catch (e) { return null; }\n}\nconst signals = [\n  parseSignal('mean_reversion_signal_json'),\n  parseSignal('trend_following_signal_json'),\n  parseSignal('breakout_signal_json')\n].filter(s => s !== null);\n\nif (signals.length === 0 || !j.ticker || !businessDate) {\n  return { json: { ...outer, sql: 'SELECT 1;' } };\n}\n\nconst statements = [];\nfor (const s of signals) {\n  statements.push(`UPDATE trading.strategy_signals\n    SET valid_to = now()\n    WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)} AND valid_to IS NULL;`);\n  statements.push(`INSERT INTO trading.strategy_signals\n    (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score,\n     entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days,\n     time_stop_at, evidence_json, blockers_json, rule_version, revision_number,\n     configuration_version, data_schema_version)\n    SELECT ${pgStr(j.ticker)}, ${pgStr(businessDate)}, ${pgStr(s.strategy)}, ${pgStr(s.direction)},\n      ${pgNum(s.raw_score)}, ${pgNum(s.regime_fit)}, ${pgNum(s.data_quality)},\n      ${pgNum(s.entry_zone_low)}, ${pgNum(s.entry_zone_high)}, ${pgNum(s.stop_price)}, ${pgNum(s.target_price)},\n      ${pgNum(s.expected_horizon_days)}, ${pgStr(s.time_stop_at)}, ${pgJsonb(s.evidence || [])}, ${pgJsonb(s.blockers || [])},\n      ${pgStr(s.rule_version || 'strategy-v1')},\n      COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(businessDate)} AND strategy = ${pgStr(s.strategy)}), 0) + 1,\n      ${pgStr('strategy-signals-config-v1')}, ${pgStr('sql-031-v1')};`);\n}\n\nreturn { json: { ...outer, sql: statements.join('\\n') } };\n"
         },
         "name": "Strategiesignale: SQL bauen",
         "type": "n8n-nodes-base.code",
@@ -5204,18 +5204,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-02T07:33:47.537Z",
-        "id": 2263,
+        "createdAt": "2026-08-02T08:33:25.436Z",
+        "id": 2271,
         "workflowId": "vgT6IrPp3ATaJg8s",
-        "versionId": "cc694983-819e-490d-844a-a3b0232accf9",
+        "versionId": "2cdb0e01-c882-4152-adeb-edc8e9e36809",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-02T07:33:47.609Z",
-        "id": 2264,
+        "createdAt": "2026-08-02T08:33:25.504Z",
+        "id": 2272,
         "workflowId": "vgT6IrPp3ATaJg8s",
-        "versionId": "cc694983-819e-490d-844a-a3b0232accf9",
+        "versionId": "2cdb0e01-c882-4152-adeb-edc8e9e36809",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }

@@ -36,9 +36,17 @@ Sieben transparente Szenarien (`trading.stress_scenarios`), **keine** vorgetäus
 
 - Kein echtes Beta/keine Faktor-Exposition pro Ticker — 1:1-Marktbewegung ist eine grobe, aber transparent benannte Näherung.
 - Korrelation nutzt nur Kursdaten der letzten 60 Tage (kurzes Fenster angesichts eines ~2 Wochen alten Systems — wird mit wachsender Historie aussagekräftiger).
-- Sektor-Stressszenario wird pauschal auf **alle** offenen Positionen angewendet statt nur auf den betroffenen Sektor (keine sektorspezifischen Referenzindizes im Datenuniversum).
+- "Mehrere Positionen mit gleichem Markttreiber" (Auftrags-Prüfliste) bewusst **nicht** umgesetzt — es existiert kein zuverlässiger strukturierter Bezeichner für einen gemeinsamen Markttreiber über mehrere Positionen hinweg (anders als Sektor/Region/Währung, die direkt aus `stock_instruments` ableitbar sind). Eine Heuristik hier zu erfinden hätte Grundregel 9 widersprochen.
+
+## Region- und Währungsexposition (Welle-3-Abgleich Fund 2/5)
+
+Zwei weitere, im Auftragstext genannte Prüfungen ergänzt (`sql/049`): `MAX_REGION_EXPOSURE_PCT` (Default 60%, Region aus `stock_instruments.exchange` abgeleitet — XETRA→Europa, NASDAQ/NYSE→USA, gleiches Muster wie in `06`) und `MAX_NON_EUR_EXPOSURE_PCT` (Default 30%, prüft nur Fremdwährungsanteil — ein Limit auf die Basiswährung selbst hätte bei einem aktuell 100% EUR-denominierten Datenuniversum jede zweite Position blockiert).
+
+## Sektor-Stressszenario korrigiert (Welle-3-Abgleich Fund 3/5)
+
+Wurde bisher pauschal auf **alle** offenen Positionen angewendet statt nur auf den betroffenen Sektor — funktional identisch zu einem weiteren Indexschock, ohne zusätzlichen diagnostischen Wert. Seit Fehleranalyse E4 (2026-08-01) existiert das `sektor`-Feld auf `paper_trades`; das Szenario erzeugt jetzt eine Zeile **je tatsächlich gehaltenem Sektor**, andere Sektoren bleiben je Szenario unbetroffen.
 
 ## Status
 
-- ✅ Umgesetzt: alle 9 Limits, Blocker-Schema, 7 Stressszenarien.
+- ✅ Umgesetzt: alle 9 ursprünglichen Limits + Region-/Währungslimits, Blocker-Schema, 7 Stressszenarien (Sektor-Szenario jetzt sektorspezifisch).
 - 🔴 Nicht live getestet (0 offene Positionen zum Zeitpunkt der Migration).

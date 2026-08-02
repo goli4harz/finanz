@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:26:47.776Z",
+  "updatedAt": "2026-08-02T08:33:23.764Z",
   "createdAt": "2026-07-19T13:06:16.559Z",
   "id": "aguWZUolRizBnsj4",
   "name": "06 – Empfehlungswatchlist – Agent V1",
@@ -787,7 +787,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1+AP2: news_event-Strategiesignale (in \"06\" berechnet, da dort\n// News+technische Bestaetigung gemeinsam vorliegen) werden wie die drei\n// technischen Strategien aus \"02\" normalisiert in trading.strategy_signals\n// geschrieben (Point-in-Time, gleiches Revisionsmuster).\nconst j = $json;\nconst sql = `UPDATE trading.strategy_signals\n  SET valid_to = now()\n  WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event' AND valid_to IS NULL;\n\nINSERT INTO trading.strategy_signals\n  (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, evidence_json, blockers_json, rule_version, revision_number)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(j.business_date)}, 'news_event', ${pgStr(j.direction)}, ${pgNum(j.raw_score)}, ${pgNum(j.regime_fit)}, ${pgNum(j.data_quality_score)}, ${pgJsonb(j.evidence)}, ${pgJsonb(j.blockers)}, ${pgStr(j.rule_version)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event'), 0) + 1;`;\nreturn { json: { ...j, sql } };"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1+AP2: news_event-Strategiesignale (in \"06\" berechnet, da dort\n// News+technische Bestaetigung gemeinsam vorliegen) werden wie die drei\n// technischen Strategien aus \"02\" normalisiert in trading.strategy_signals\n// geschrieben (Point-in-Time, gleiches Revisionsmuster).\nconst j = $json;\nconst sql = `UPDATE trading.strategy_signals\n  SET valid_to = now()\n  WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event' AND valid_to IS NULL;\n\nINSERT INTO trading.strategy_signals\n  (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, evidence_json, blockers_json, rule_version, revision_number, configuration_version, data_schema_version)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(j.business_date)}, 'news_event', ${pgStr(j.direction)}, ${pgNum(j.raw_score)}, ${pgNum(j.regime_fit)}, ${pgNum(j.data_quality_score)}, ${pgJsonb(j.evidence)}, ${pgJsonb(j.blockers)}, ${pgStr(j.rule_version)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event'), 0) + 1,\n    ${pgStr('strategy-signals-config-v1')}, ${pgStr('sql-031-v1')};`;\nreturn { json: { ...j, sql } };"
       },
       "name": "Strategiesignal News-Event: SQL bauen",
       "type": "n8n-nodes-base.code",
@@ -1345,9 +1345,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "8c7a0e43-1f23-4d88-a383-4d5ca3a603ad",
-  "activeVersionId": "8c7a0e43-1f23-4d88-a383-4d5ca3a603ad",
-  "versionCounter": 176,
+  "versionId": "5c075fce-6e16-442e-b89f-5c75df238db2",
+  "activeVersionId": "5c075fce-6e16-442e-b89f-5c75df238db2",
+  "versionCounter": 179,
   "triggerCount": 0,
   "shared": [
     {
@@ -1370,9 +1370,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-02T07:26:47.783Z",
-    "createdAt": "2026-08-02T07:26:47.783Z",
-    "versionId": "8c7a0e43-1f23-4d88-a383-4d5ca3a603ad",
+    "updatedAt": "2026-08-02T08:33:23.770Z",
+    "createdAt": "2026-08-02T08:33:23.770Z",
+    "versionId": "5c075fce-6e16-442e-b89f-5c75df238db2",
     "workflowId": "aguWZUolRizBnsj4",
     "nodes": [
       {
@@ -2155,7 +2155,7 @@
       {
         "parameters": {
           "mode": "runOnceForEachItem",
-          "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1+AP2: news_event-Strategiesignale (in \"06\" berechnet, da dort\n// News+technische Bestaetigung gemeinsam vorliegen) werden wie die drei\n// technischen Strategien aus \"02\" normalisiert in trading.strategy_signals\n// geschrieben (Point-in-Time, gleiches Revisionsmuster).\nconst j = $json;\nconst sql = `UPDATE trading.strategy_signals\n  SET valid_to = now()\n  WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event' AND valid_to IS NULL;\n\nINSERT INTO trading.strategy_signals\n  (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, evidence_json, blockers_json, rule_version, revision_number)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(j.business_date)}, 'news_event', ${pgStr(j.direction)}, ${pgNum(j.raw_score)}, ${pgNum(j.regime_fit)}, ${pgNum(j.data_quality_score)}, ${pgJsonb(j.evidence)}, ${pgJsonb(j.blockers)}, ${pgStr(j.rule_version)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event'), 0) + 1;`;\nreturn { json: { ...j, sql } };"
+          "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Welle 2, AP1+AP2: news_event-Strategiesignale (in \"06\" berechnet, da dort\n// News+technische Bestaetigung gemeinsam vorliegen) werden wie die drei\n// technischen Strategien aus \"02\" normalisiert in trading.strategy_signals\n// geschrieben (Point-in-Time, gleiches Revisionsmuster).\nconst j = $json;\nconst sql = `UPDATE trading.strategy_signals\n  SET valid_to = now()\n  WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event' AND valid_to IS NULL;\n\nINSERT INTO trading.strategy_signals\n  (ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, evidence_json, blockers_json, rule_version, revision_number, configuration_version, data_schema_version)\n  SELECT ${pgStr(j.ticker)}, ${pgStr(j.business_date)}, 'news_event', ${pgStr(j.direction)}, ${pgNum(j.raw_score)}, ${pgNum(j.regime_fit)}, ${pgNum(j.data_quality_score)}, ${pgJsonb(j.evidence)}, ${pgJsonb(j.blockers)}, ${pgStr(j.rule_version)},\n    COALESCE((SELECT MAX(revision_number) FROM trading.strategy_signals WHERE ticker = ${pgStr(j.ticker)} AND business_date = ${pgStr(j.business_date)} AND strategy = 'news_event'), 0) + 1,\n    ${pgStr('strategy-signals-config-v1')}, ${pgStr('sql-031-v1')};`;\nreturn { json: { ...j, sql } };"
         },
         "name": "Strategiesignal News-Event: SQL bauen",
         "type": "n8n-nodes-base.code",
@@ -2708,18 +2708,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-02T07:26:47.965Z",
-        "id": 2261,
+        "createdAt": "2026-08-02T08:33:23.978Z",
+        "id": 2269,
         "workflowId": "aguWZUolRizBnsj4",
-        "versionId": "8c7a0e43-1f23-4d88-a383-4d5ca3a603ad",
+        "versionId": "5c075fce-6e16-442e-b89f-5c75df238db2",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-02T07:26:48.033Z",
-        "id": 2262,
+        "createdAt": "2026-08-02T08:33:24.055Z",
+        "id": 2270,
         "workflowId": "aguWZUolRizBnsj4",
-        "versionId": "8c7a0e43-1f23-4d88-a383-4d5ca3a603ad",
+        "versionId": "5c075fce-6e16-442e-b89f-5c75df238db2",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }

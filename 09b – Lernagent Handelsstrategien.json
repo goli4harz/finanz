@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:16:57.446Z",
+  "updatedAt": "2026-08-02T08:33:26.561Z",
   "createdAt": "2026-08-01T00:36:15.248Z",
   "id": "N91C38VeoNXUBWmB",
   "name": "09b – Lernagent Handelsstrategien",
@@ -225,7 +225,7 @@
     },
     {
       "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, status, metadata_json)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target_value)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          'proposed', ${pgJson(j.evidence || {})});`;\nreturn { json: { ...j, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, status, metadata_json, rule_version, configuration_version, data_schema_version, learning_model_version)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target_value)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          'proposed', ${pgJson(j.evidence || {})},\n          ${pgStr('welle3-lernagent-trades-rules-v1')}, ${pgStr('welle3-lernagent-trades-config-v1')}, ${pgStr('sql-001-v1')}, ${pgStr('09b-handelsstrategien-v1')});`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Vorschlag speichern (SQL bauen, Trades)",
       "type": "n8n-nodes-base.code",
@@ -543,9 +543,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "caddd94f-65ad-4431-aabc-c34cd66bbcee",
+  "versionId": "42c884c0-fea9-4bd0-b780-04e57cfa180a",
   "activeVersionId": null,
-  "versionCounter": 4,
+  "versionCounter": 5,
   "triggerCount": 0,
   "shared": [
     {

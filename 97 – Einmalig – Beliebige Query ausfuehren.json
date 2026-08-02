@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:39:12.195Z",
+  "updatedAt": "2026-08-02T08:33:24.450Z",
   "createdAt": "2026-07-19T13:27:11.388Z",
   "id": "NInmI0f9TfdndwI1",
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "-- ============================================================================\n-- 046 (Fehleranalyse F3, niedrig, Haertungsauftrag 2026-08-02): Mindestfallzahl\n-- fuer 09 (Lernagent Newswirkung) aus pipeline_config statt hartkodiert\n-- ============================================================================\n-- 09b hat bereits LEARNING_MIN_TRADE_SAMPLE_SIZE (sql/037) fuer den\n-- gleichwertigen Zweck beim Handelslernagenten - 09 (der aeltere News-\n-- Lernagent) hatte die analoge Schwelle (30, niedrig/mittel-Grenze in\n-- confidenceLevel()) weiterhin hartkodiert. Default identisch zum bisherigen\n-- Wert, verhaltensneutral bis zur ersten Aenderung.\n--\n-- FIX 2026-08-02 (Fehleranalyse G2): explizit in BEGIN/COMMIT gefasst statt\n-- implizites Postgres-Node-Verhalten anzunehmen (Konvention ab jetzt fuer\n-- alle sql/0XX-Dateien, siehe sql/045).\n\nBEGIN;\n\nINSERT INTO trading.pipeline_config (config_key, value_numeric, description)\nVALUES\n  ('LEARNING_MIN_NEWS_SAMPLE_SIZE', 30, 'Mindest-Fallzahl (Dimension x Wert x Horizont-Kombinationen) fuer eine \"mittel\" statt \"niedrig\" belastbare Einordnung im News-Lernagenten (09). Analog zu LEARNING_MIN_TRADE_SAMPLE_SIZE fuer 09b (Fehleranalyse F3).')\nON CONFLICT (config_key) DO NOTHING;\n\nCOMMIT;\n",
+        "query": "-- ============================================================================\n-- 050 (Welle-3-Abgleich 2026-08-02, Fund 4/5): Versionierungsfelder auf\n-- strategy_signals und learning_rule_proposals\n-- ============================================================================\n-- AP10 verlangt rule_version/configuration_version/data_schema_version/\n-- execution_model_version/risk_model_version/learning_model_version \"bei\n-- jedem Trade, Signal, Backtest und Lernvorschlag\". Nur paper_trades hatte\n-- bisher alle relevanten Felder. Bewusste Einschraenkung: execution_model_\n-- version/risk_model_version werden NICHT auf strategy_signals/\n-- learning_rule_proposals ergaenzt - ein rohes Strategiesignal wird nicht\n-- ausgefuehrt und ein Lernvorschlag trifft keine Risikoentscheidung, beide\n-- Felder waeren dort inhaltsleer. Die tatsaechlich zutreffenden Felder\n-- werden ergaenzt.\n\nBEGIN;\n\nALTER TABLE trading.strategy_signals\n  ADD COLUMN IF NOT EXISTS configuration_version TEXT,\n  ADD COLUMN IF NOT EXISTS data_schema_version TEXT;\n\nCOMMENT ON COLUMN trading.strategy_signals.configuration_version IS\n  'Welle-3-Abgleich AP10: Version der Signal-Berechnungskonfiguration (aktuell ueberwiegend Code-Konstanten, kein dynamisches pipeline_config-Modell fuer Signalschwellen).';\nCOMMENT ON COLUMN trading.strategy_signals.data_schema_version IS\n  'Welle-3-Abgleich AP10: Version des strategy_signals-Tabellenschemas (sql/031 = v1).';\n\nALTER TABLE trading.learning_rule_proposals\n  ADD COLUMN IF NOT EXISTS rule_version TEXT,\n  ADD COLUMN IF NOT EXISTS configuration_version TEXT,\n  ADD COLUMN IF NOT EXISTS data_schema_version TEXT,\n  ADD COLUMN IF NOT EXISTS learning_model_version TEXT;\n\nCOMMENT ON COLUMN trading.learning_rule_proposals.learning_model_version IS\n  'Welle-3-Abgleich AP10: Version der Lernagenten-Logik, die diesen Vorschlag erzeugt hat (09 vs. 09b unterscheidbar).';\n\nINSERT INTO trading.schema_migrations (version, description)\nVALUES ('050', 'Versionierungsfelder auf strategy_signals + learning_rule_proposals (Welle-3-Abgleich Fund 4/5)')\nON CONFLICT (version) DO NOTHING;\n\nCOMMIT;\n",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -59,9 +59,9 @@
   "staticData": null,
   "meta": null,
   "pinData": null,
-  "versionId": "9a6629d0-e0bb-41ee-95c5-4163c6670896",
+  "versionId": "a997ec22-cbc5-408a-bd87-a6df27c69fab",
   "activeVersionId": null,
-  "versionCounter": 126,
+  "versionCounter": 129,
   "triggerCount": 0,
   "shared": [
     {

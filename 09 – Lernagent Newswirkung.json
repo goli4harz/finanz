@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:36:38.240Z",
+  "updatedAt": "2026-08-02T08:33:25.963Z",
   "createdAt": "2026-07-19T13:02:26.521Z",
   "id": "LjZHC5g7thqcCElo",
   "name": "09 – Lernagent Newswirkung",
@@ -266,7 +266,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\\\"/g,'\\\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, time_horizon, status, metadata_json)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          ${pgStr(j.time_horizon)}, 'proposed', ${pgJson(j.evidence || {})});`;\nreturn { json: { ...j, sql } };\n"
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\\\"/g,'\\\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, time_horizon, status, metadata_json, rule_version, configuration_version, data_schema_version, learning_model_version)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          ${pgStr(j.time_horizon)}, 'proposed', ${pgJson(j.evidence || {})},\n          ${pgStr('newswirkung-rules-v1')}, ${pgStr('newswirkung-config-v1')}, ${pgStr('sql-001-v1')}, ${pgStr('09-newswirkung-v1')});`;\nreturn { json: { ...j, sql } };\n"
       },
       "name": "Vorschlag speichern (SQL bauen)",
       "type": "n8n-nodes-base.code",
@@ -678,9 +678,9 @@
   },
   "meta": null,
   "pinData": null,
-  "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
-  "activeVersionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
-  "versionCounter": 102,
+  "versionId": "2f7f6c06-f1d6-4761-a043-812f9097a89c",
+  "activeVersionId": "2f7f6c06-f1d6-4761-a043-812f9097a89c",
+  "versionCounter": 105,
   "triggerCount": 1,
   "shared": [
     {
@@ -703,9 +703,9 @@
   ],
   "tags": [],
   "activeVersion": {
-    "updatedAt": "2026-08-02T07:36:38.246Z",
-    "createdAt": "2026-08-02T07:36:38.246Z",
-    "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+    "updatedAt": "2026-08-02T08:33:25.969Z",
+    "createdAt": "2026-08-02T08:33:25.969Z",
+    "versionId": "2f7f6c06-f1d6-4761-a043-812f9097a89c",
     "workflowId": "LjZHC5g7thqcCElo",
     "nodes": [
       {
@@ -967,7 +967,7 @@
       {
         "parameters": {
           "mode": "runOnceForEachItem",
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\\\"/g,'\\\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, time_horizon, status, metadata_json)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          ${pgStr(j.time_horizon)}, 'proposed', ${pgJson(j.evidence || {})});`;\nreturn { json: { ...j, sql } };\n"
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\\\"/g,'\\\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst sql = `INSERT INTO trading.learning_rule_proposals\n  (proposal_type, target_type, target_value, current_value, proposed_value, sample_size, metric_name, metric_value, reason, confidence_level, time_horizon, status, metadata_json, rule_version, configuration_version, data_schema_version, learning_model_version)\n  VALUES (${pgStr(j.proposal_type)}, ${pgStr(j.target_type)}, ${pgStr(j.target)}, ${pgStr(j.current_value)}, ${pgStr(j.proposed_value)},\n          ${pgNum(j.sample_size)}, ${pgStr(j.metric_name)}, ${pgNum(j.metric_value)}, ${pgStr(j.reason)}, ${pgStr(j.confidence_level)},\n          ${pgStr(j.time_horizon)}, 'proposed', ${pgJson(j.evidence || {})},\n          ${pgStr('newswirkung-rules-v1')}, ${pgStr('newswirkung-config-v1')}, ${pgStr('sql-001-v1')}, ${pgStr('09-newswirkung-v1')});`;\nreturn { json: { ...j, sql } };\n"
         },
         "name": "Vorschlag speichern (SQL bauen)",
         "type": "n8n-nodes-base.code",
@@ -1374,18 +1374,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-08-02T07:36:38.461Z",
-        "id": 2265,
+        "createdAt": "2026-08-02T08:33:26.125Z",
+        "id": 2273,
         "workflowId": "LjZHC5g7thqcCElo",
-        "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+        "versionId": "2f7f6c06-f1d6-4761-a043-812f9097a89c",
         "event": "deactivated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       },
       {
-        "createdAt": "2026-08-02T07:36:38.541Z",
-        "id": 2266,
+        "createdAt": "2026-08-02T08:33:26.194Z",
+        "id": 2274,
         "workflowId": "LjZHC5g7thqcCElo",
-        "versionId": "33a4fb1b-d4a3-49e9-ae82-c337662f5373",
+        "versionId": "2f7f6c06-f1d6-4761-a043-812f9097a89c",
         "event": "activated",
         "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
       }

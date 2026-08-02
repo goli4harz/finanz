@@ -51,3 +51,15 @@ Live-Check von `10`s "Pruef-Prompt aufbauen": vorhanden sind Fallzahl-zu-klein, 
 ## Empfehlung
 
 Die 5 Lücken sind unterschiedlich groß: (2) und (5) sind kleine, gut abgegrenzte Ergänzungen (neue Gates/Prompt-Regeln nach etabliertem Muster). (3) ist eine kleine Code-Änderung (Sektor-Filter statt Alle-Positionen). (4) ist mittelgroß (Migrationen + Code-Änderungen an 3 Tabellen/mehreren Schreibpfaden). (1) ist eine Design-Entscheidung (Feld hinzufügen + Wert bewusst auf 0/N/A dokumentieren oder eine echte Finanzierungskosten-Formel entwerfen) und sollte zuerst geklärt werden, bevor Code entsteht.
+
+## Nachtrag: alle 5 Lücken behoben, live gepusht (2026-08-02, selbe Sitzung)
+
+Nutzerentscheidung: alle 5 der Reihe nach beheben.
+
+1. **`financing_cost`** (`sql/048`): additive Spalte auf `paper_trades`, in `netPnl`-Formel (Job B) berücksichtigt, konstant 0 mit dokumentierter Begründung (kein Finanzierungsmodell, konsistent mit dem Hebelprodukt-Disclaimer). Details: `docs/AUSFUEHRUNGSMODELL.md`.
+2. **Region-/Währungsexposition** (`sql/049`): `MAX_REGION_EXPOSURE_PCT` (60%) und `MAX_NON_EUR_EXPOSURE_PCT` (30%) als neue Gates in Job A, neuer Query-Node + Merge-A-7-Erweiterung im Graphen. "Gleicher Markttreiber" bewusst nicht umgesetzt (kein zuverlässiger struktureller Bezeichner vorhanden, siehe `docs/PORTFOLIORISIKO.md`).
+3. **Sektor-Stressszenario**: erzeugt jetzt eine Zeile je tatsächlich gehaltenem Sektor statt pauschal auf alle Positionen zu wirken (nutzt das seit E4 vorhandene `sektor`-Feld).
+4. **AP10-Versionierung** (`sql/050`): `strategy_signals` um `configuration_version`/`data_schema_version` erweitert (Schreibstellen in `02` und `06`), `learning_rule_proposals` um `rule_version`/`configuration_version`/`data_schema_version`/`learning_model_version` (Schreibstellen in `09` und `09b`). `execution_model_version`/`risk_model_version` bewusst nicht ergänzt — für ein rohes Signal bzw. einen Lernvorschlag inhaltlich nicht zutreffend.
+5. **AP12-Prüfagent-Regeln**: 3 neue Regeln (Drawdown, Kalibrierung, Einzelfall-Dominanz) im Prompt von `10`. Neuer Query-Node `DB: Portfolio-Drawdown (Report)` (gleiche `peak_t`-Formel wie `14`s E6-Fix) und `max_ticker_share_pct` in der bestehenden Strategieauswertungs-Query ergänzt (Merge-Grunddaten-18-Erweiterung), da beide Datengrundlagen vorher gar nicht an `10` verfügbar waren.
+
+Alle Code-Syntax-Checks (`new Function`) und Logik-Tests (Region/Währungs-Gate-Simulation) vor dem Push durchgeführt, alle betroffenen Live-Workflows (`02`, `06`, `09`, `09b`, `10`, `14`, `97`) per GET/PUT-Backup-Disziplin gesichert.
