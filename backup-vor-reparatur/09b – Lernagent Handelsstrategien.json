@@ -36,7 +36,8 @@
         -2400,
         160
       ],
-      "id": "n-welle3-09b-002"
+      "id": "n-welle3-09b-002",
+      "disabled": true
     },
     {
       "parameters": {
@@ -352,6 +353,17 @@
         240
       ],
       "id": "n-welle3-09b-f12-errcheck"
+    },
+    {
+      "parameters": {},
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2400,
+        80
+      ],
+      "id": "n-repair-p17-09b-exectrigger"
     }
   ],
   "connections": {
@@ -530,6 +542,17 @@
         [
           {
             "node": "Fehlerpruefung (Vorschlag speichern, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
             "type": "main",
             "index": 0
           }
