@@ -1,0 +1,302 @@
+{
+  "name": "16b – Historische Nachrichten bewerten (KI)",
+  "nodes": [
+    {
+      "id": "imp16b-trigger",
+      "name": "Trigger: Bewertungs-Worker (alle 10 Min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4400,
+        2016
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "imp16b-db-unbewertete-laden",
+      "name": "DB: Unbewertete historische News laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -4208,
+        2016
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT hn.id, hn.title, hn.raw_content, hn.linked_tickers_json, hn.ambiguous_candidates_json, hn.is_general_market, hn.has_full_text FROM trading.historical_news hn LEFT JOIN trading.historical_news_assessments hna ON hna.news_id = hn.id WHERE hna.id IS NULL AND (hn.ticker_match_status IN ('matched','ambiguous') OR hn.is_general_market = TRUE) ORDER BY hn.id LIMIT 45;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16b-pruefe-paket",
+      "name": "Pruefe Paket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4016,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "// alwaysOutputData:true liefert bei 0 offenen Zeilen ein Platzhalter-Item ohne id - anhand\n// des Pflichtfelds id von einem echten Treffer unterscheiden (gleiches Prinzip wie in\n// Workflow 15/16).\nconst items = $input.all().map(i => i.json).filter(j => j && j.id !== undefined && j.id !== null);\nif (items.length === 0) {\n  return [{ json: { _placeholder: true } }];\n}\nreturn items;\n"
+      }
+    },
+    {
+      "id": "imp16b-if-paket-leer",
+      "name": "IF: Kein Paket offen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3824,
+        2016
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "paket-leer",
+              "leftValue": "={{ $json._placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16b-batch",
+      "name": "Batch: 15 News pro KI-Aufruf",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3632,
+        2016
+      ],
+      "parameters": {
+        "batchSize": 15,
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16b-baue-batch-payload",
+      "name": "Baue Batch-Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "// Baut das news_batch-Array fuer die KI. Anders als 03 wird betroffene_ticker NICHT von der\n// KI neu ermittelt (Halluzinationsrisiko), sondern die bereits deterministisch in Workflow 16\n// ermittelte Zuordnung (vorgeschlagene_ticker) wird der KI zur PRUEFUNG vorgelegt - sie\n// bestaetigt oder verwirft, erfindet aber keine neuen Ticker.\nconst items = $input.all().map(i => i.json);\nconst news_batch = items.map(j => ({\n  id: j.id,\n  titel: j.title,\n  beschreibung: j.raw_content || '',\n  vorgeschlagene_ticker: Array.isArray(j.linked_tickers_json) ? j.linked_tickers_json : (Array.isArray(j.ambiguous_candidates_json) ? j.ambiguous_candidates_json : []),\n  ist_markt_makro: j.is_general_market === true\n}));\nreturn [{ json: { news_batch, _originals: items } }];\n"
+      }
+    },
+    {
+      "id": "imp16b-ki-platzhalter",
+      "name": "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3248,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "// ==========================================================================================\n// PLATZHALTER - MUSS MANUELL ERSETZT WERDEN durch einen echten OpenAI-Node\n// (Typ n8n-nodes-langchain.openAi, wie \"KI: Nachricht bewerten\" in Workflow 03).\n// Modell z.B. gpt-5.4-mini, Credential \"OpenAI account\".\n//\n// SYSTEM-PROMPT (als \"system\"-Message):\n// -------------------------------------------------------------------------------------------\n// Du bist ein sachlicher Aktien-News-Analyst fuer die historische Simulation eines\n// automatisierten Aktien-Beobachtungssystems (KEIN Live-Betrieb - diese Nachrichten liegen\n// in der Vergangenheit und werden fuer Backtesting verwendet).\n//\n// WICHTIGE EINSCHRAENKUNG: Du erhaeltst nur Titel und (falls vorhanden) eine\n// Kurzbeschreibung, NIEMALS den vollstaendigen Artikeltext (Datenquelle: GDELT Article\n// List, liefert grundsaetzlich keinen Volltext). Beruecksichtige diese Einschraenkung\n// explizit in deiner Datenqualitaetsbewertung.\n//\n// Deine Aufgabe: Bewerte ALLE Nachrichten im uebergebenen Array. Fuer jede Nachricht wurde\n// bereits automatisch (NICHT durch dich) anhand von Firmennamen/Aliasen eine vorlaeufige\n// Ticker-Zuordnung ermittelt (Feld vorgeschlagene_ticker) oder als allgemeine\n// Markt-/Makronachricht eingestuft (ist_markt_makro=true). Diese Zuordnung kann falsch/\n// irrelevant sein (z.B. \"BMW\" als Automarke in einem Verkehrsunfall statt als Boersentitel)\n// - PRUEFE KRITISCH, ob tatsaechlich ein boersenrelevanter Bezug besteht, uebernimm die\n// Vorschlaege nicht unbesehen.\n//\n// Regeln:\n// - Keine Anlageberatung, keine Kauf-/Verkaufsempfehlungen, keine erfundenen Fakten.\n// - Antworte ausschliesslich mit einem validen JSON-Array. Kein Markdown, kein Text davor\n//   oder danach.\n//\n// Bewertungsfelder pro Nachricht:\n// - id: (gleiche id wie im Input)\n// - relevanz: \"hoch\" | \"mittel\" | \"niedrig\" | \"irrelevant\"\n// - relevanz_konfidenz: 0-100\n// - sentiment: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n// - kurswirkung: \"steigend\" | \"fallend\" | \"keine\" | \"unklar\"\n// - wahrscheinlichkeit_positiv, wahrscheinlichkeit_negativ, wahrscheinlichkeit_neutral: je\n//   0-1, muessen zusammen (fast) genau 1 ergeben\n// - bezug: kurze Erklaerung\n// - news_kategorie: genau einer von quarterly_results, profit_warning, forecast_change,\n//   merger_acquisition, regulation, management_change, legal_dispute, product_news, macro,\n//   geopolitics, analyst_rating, other\n// - begruendung: ein Satz Begruendung\n// - bestaetigte_ticker: JSON-Array, NUR aus vorgeschlagene_ticker uebernehmen, was du\n//   tatsaechlich fuer zutreffend haeltst. Leer [] wenn keiner zutrifft. Keine neuen Ticker\n//   erfinden.\n// - wirkungsebene: \"einzeltitel\" | \"sektor\" | \"markt\" | \"makro\" | \"unklar\"\n// - wirkungsrichtung: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n// - wirkung_staerke: \"hoch\" | \"mittel\" | \"niedrig\"\n// - staerke_konfidenz: 0-100\n// - datenqualitaet_score: 0-100, IMMER unter Beruecksichtigung dass kein Volltext vorliegt\n// - begruendung_tickerbezug: kurze Begruendung. Leer wenn kein Tickerbezug.\n//\n// USER-MESSAGE:\n// -------------------------------------------------------------------------------------------\n// Nachrichten:\n// ${JSON.stringify($json.news_batch)}\n//\n// Antworte NUR mit einem JSON-Array der Form:\n// [{\"id\":0,\"relevanz\":\"...\",\"relevanz_konfidenz\":80,\"sentiment\":\"...\",\"kurswirkung\":\"...\",\n//   \"wahrscheinlichkeit_positiv\":0.3,\"wahrscheinlichkeit_negativ\":0.2,\n//   \"wahrscheinlichkeit_neutral\":0.5,\"bezug\":\"...\",\"news_kategorie\":\"...\",\"begruendung\":\"...\",\n//   \"bestaetigte_ticker\":[],\"wirkungsebene\":\"...\",\"wirkungsrichtung\":\"...\",\n//   \"wirkung_staerke\":\"...\",\"staerke_konfidenz\":70,\"datenqualitaet_score\":85,\n//   \"begruendung_tickerbezug\":\"...\"},...]\n// ==========================================================================================\nthrow new Error('PLATZHALTER: Diesen Node durch einen echten OpenAI-Node ersetzen (siehe Kommentar im Code dieses Platzhalter-Nodes fuer den vollstaendigen Prompt).');\n"
+      }
+    },
+    {
+      "id": "imp16b-ki-aufbereiten",
+      "name": "KI-Bewertung aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3056,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "// Analog 03s \"KI-Bewertung aufbereiten\", angepasst: keine Watchlist-Pruefung der Ticker\n// noetig (die KI bestaetigt/verwirft nur aus der bereits deterministisch ermittelten\n// vorgeschlagene_ticker-Liste, erfindet keine neuen - siehe Prompt im Platzhalter-Node).\nfunction getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  if (resp && resp.choices && resp.choices[0] && resp.choices[0].message) return resp.choices[0].message.content || '';\n  if (resp && typeof resp.content === 'string') return resp.content;\n  return JSON.stringify(resp || '');\n}\n\nfunction parseKiArray(text) {\n  let t = String(text || '').trim();\n  t = t.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```\\s*$/i, '').trim();\n  try {\n    const p = JSON.parse(t);\n    if (Array.isArray(p)) return p;\n  } catch (e) {}\n  const start = t.indexOf('[');\n  const end = t.lastIndexOf(']');\n  if (start >= 0 && end > start) {\n    try {\n      const p = JSON.parse(t.substring(start, end + 1));\n      if (Array.isArray(p)) return p;\n    } catch (e) {}\n  }\n  return null;\n}\n\nfunction confNum(v, min, max) {\n  const n = Number(v);\n  if (!Number.isFinite(n)) return null;\n  return Math.min(max, Math.max(min, n));\n}\n\nfunction probTriple(pos, neg, neu) {\n  const p = Number(pos), n = Number(neg), z = Number(neu);\n  if (![p, n, z].every(Number.isFinite)) return { positive: null, negative: null, neutral: null };\n  const sum = p + n + z;\n  if (sum < 0.99 || sum > 1.01) return { positive: null, negative: null, neutral: null };\n  return { positive: p, negative: n, neutral: z };\n}\n\nconst originals = $('Baue Batch-Payload').item.json._originals;\nconst rawText = getAiText($json);\nconst bewertungen = parseKiArray(rawText);\n\nconst results = [];\n\nif (!bewertungen) {\n  for (const orig of originals) {\n    results.push({ json: { _action: 'retry', _error: 'KI-Antwort nicht als JSON-Array parsebar' } });\n  }\n  return results;\n}\n\nconst byId = new Map(bewertungen.filter(x => x && x.id !== undefined).map(x => [String(x.id), x]));\n\nfor (const orig of originals) {\n  const b = byId.get(String(orig.id));\n  if (!b) {\n    results.push({ json: { _action: 'retry', _error: 'Keine Bewertung fuer diese News in der KI-Antwort enthalten', news_id: orig.id } });\n    continue;\n  }\n  const relevant = b.relevanz && b.relevanz !== 'irrelevant';\n\n  const vorgeschlagen = Array.isArray(orig.linked_tickers_json) ? orig.linked_tickers_json : (Array.isArray(orig.ambiguous_candidates_json) ? orig.ambiguous_candidates_json : []);\n  const vorgeschlagenSet = new Set(vorgeschlagen.map(t => String(t).trim()));\n  const gemeldeteTicker = Array.isArray(b.bestaetigte_ticker) ? b.bestaetigte_ticker : [];\n  // Verteidigung in der Tiefe: nur Ticker uebernehmen, die tatsaechlich unter den\n  // deterministisch vorgeschlagenen waren - eine von der KI neu \"erfundene\" Zuordnung wird\n  // nicht durchgereicht (gleiches Prinzip wie 03s Watchlist-Filter, hier gegen die eigene\n  // Vorschlagsliste statt gegen die Watchlist).\n  const bestaetigteTickerGeprueft = gemeldeteTicker.filter(t => vorgeschlagenSet.has(String(t).trim()));\n\n  const wahrscheinlichkeiten = probTriple(b.wahrscheinlichkeit_positiv, b.wahrscheinlichkeit_negativ, b.wahrscheinlichkeit_neutral);\n\n  results.push({ json: {\n    _action: 'persist',\n    news_id: orig.id,\n    relevant,\n    wirkungsebene: b.wirkungsebene || 'unklar',\n    betroffene_ticker: bestaetigteTickerGeprueft,\n    wirkungsrichtung: ['positiv','negativ','neutral','unklar'].includes(b.wirkungsrichtung) ? b.wirkungsrichtung : 'unklar',\n    wirkung_staerke: ['hoch','mittel','niedrig','unklar'].includes(b.wirkung_staerke) ? b.wirkung_staerke : 'unklar',\n    sentiment: b.sentiment || 'unklar',\n    konfidenz: confNum(b.relevanz_konfidenz, 0, 100),\n    news_kategorie: ['quarterly_results','profit_warning','forecast_change','merger_acquisition','regulation','management_change','legal_dispute','product_news','macro','geopolitics','analyst_rating','other'].includes(b.news_kategorie) ? b.news_kategorie : 'other',\n    ticker_begruendung: b.begruendung_tickerbezug || '',\n    wirkungs_begruendung: b.begruendung || '',\n    based_on_full_text: orig.has_full_text === true\n  } });\n}\n\nreturn results;\n"
+      }
+    },
+    {
+      "id": "imp16b-ergebnis-sql-bauen",
+      "name": "Ergebnis persistieren (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2864,
+        2016
+      ],
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst j = $json;\nlet sql;\n\nif (j._action === 'persist') {\n  sql = `INSERT INTO trading.historical_news_assessments\n    (news_id, relevant, wirkungsebene, betroffene_ticker_json, wirkungsrichtung, wirkung_staerke,\n     sentiment, konfidenz, news_kategorie, ticker_begruendung, wirkungs_begruendung,\n     based_on_full_text, modell_version, prompt_version)\n    VALUES (${pgNum(j.news_id)}, ${pgBool(j.relevant)}, ${pgStr(j.wirkungsebene)}, ${pgJsonb(j.betroffene_ticker)},\n            ${pgStr(j.wirkungsrichtung)}, ${pgStr(j.wirkung_staerke)}, ${pgStr(j.sentiment)}, ${pgNum(j.konfidenz)},\n            ${pgStr(j.news_kategorie)}, ${pgStr(j.ticker_begruendung)}, ${pgStr(j.wirkungs_begruendung)},\n            ${pgBool(j.based_on_full_text)}, ${pgStr('gpt-5.4-mini')}, ${pgStr('historische-news-v1')});`;\n} else {\n  // Kein Retry-Zaehler auf historical_news (anders als news_items) - ein fehlgeschlagenes\n  // Item bleibt einfach ohne Bewertungszeile und wird beim naechsten Worker-Lauf automatisch\n  // erneut aufgegriffen (kein Live-Zeitdruck bei historischen Daten, im Unterschied zu 03).\n  // Ein reiner SQL-Kommentar ohne echtes Statement koennte je nach Treiberverhalten als\n  // leere/ungueltige Query abgelehnt werden - stattdessen ein echtes, harmloses No-Op.\n  sql = `SELECT 1; -- retry, kein Insert: ${String(j._error || 'unbekannter Fehler').replace(/[\\r\\n]/g, ' ')}`;\n}\n\nreturn { json: { ...j, sql } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "imp16b-ergebnis-ausfuehren",
+      "name": "Ergebnis persistieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2672,
+        2016
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Trigger: Bewertungs-Worker (alle 10 Min)": {
+      "main": [
+        [
+          {
+            "node": "DB: Unbewertete historische News laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Unbewertete historische News laden": {
+      "main": [
+        [
+          {
+            "node": "Pruefe Paket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe Paket": {
+      "main": [
+        [
+          {
+            "node": "IF: Kein Paket offen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Kein Paket offen?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Batch: 15 News pro KI-Aufruf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch: 15 News pro KI-Aufruf": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Baue Batch-Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Batch-Payload": {
+      "main": [
+        [
+          {
+            "node": "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)": {
+      "main": [
+        [
+          {
+            "node": "KI-Bewertung aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI-Bewertung aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "Ergebnis persistieren (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ergebnis persistieren (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Ergebnis persistieren (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ergebnis persistieren (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Batch: 15 News pro KI-Aufruf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
