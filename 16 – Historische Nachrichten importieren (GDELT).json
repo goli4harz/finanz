@@ -1,0 +1,1215 @@
+{
+  "name": "16 – Historische Nachrichten importieren (GDELT)",
+  "nodes": [
+    {
+      "id": "imp16-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        0
+      ],
+      "webhookId": "d16a0001-0000-4000-8000-000000000001",
+      "parameters": {
+        "path": "historische-nachrichten",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-jobs-laden",
+      "name": "DB: Jobs laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT job_id, job_type, status, provider, period_from, period_to, dry_run, progress_total, progress_completed, warning_count, error_count, last_error, heartbeat_at, created_at, started_at, finished_at FROM trading.import_jobs WHERE job_type = 'news' ORDER BY created_at DESC LIMIT 30;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-item-fortschritt",
+      "name": "DB: Job-Item-Fortschritt laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2800,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ijl.job_id, ijl.status, count(*) AS anzahl FROM trading.import_job_items ijl JOIN trading.import_jobs j ON j.job_id = ijl.job_id WHERE j.job_type = 'news' GROUP BY ijl.job_id, ijl.status;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-news-stats",
+      "name": "DB: Nachrichten-Statistik laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2600,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT import_job_id, count(*) AS anzahl, count(*) FILTER (WHERE ticker_match_status = 'matched') AS matched, count(*) FILTER (WHERE ticker_match_status = 'ambiguous') AS ambiguous, count(*) FILTER (WHERE is_general_market) AS general_market FROM trading.historical_news WHERE import_job_id IS NOT NULL GROUP BY import_job_id;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit'\n  }).format(date);\n}\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction fmtDate(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return '-';\n  return d.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\n\n// alwaysOutputData:true auf den DB-Nodes liefert bei 0 Treffern ein Platzhalter-Item (sonst\n// wuerde n8n die Folge-Nodes bei 0 Zeilen gar nicht erst ausfuehren) - anhand des jeweiligen\n// Pflichtfelds herausfiltern (gleiches Prinzip wie in Workflow 15).\nconst jobs = $('DB: Jobs laden').all().map(i => i.json).filter(j => j && j.job_id);\nconst progressRows = $('DB: Job-Item-Fortschritt laden').all().map(i => i.json).filter(j => j && j.job_id);\nconst statsRows = $input.all().map(i => i.json).filter(j => j && j.import_job_id);\n\nconst progressByJob = {};\nfor (const r of progressRows) {\n  if (!progressByJob[r.job_id]) progressByJob[r.job_id] = {};\n  progressByJob[r.job_id][r.status] = Number(r.anzahl);\n}\nconst statsByJob = {};\nfor (const r of statsRows) statsByJob[r.import_job_id] = r;\n\nconst STATUS_LABEL = {\n  draft: 'Entwurf', queued: 'wartet', running: 'laeuft', pausing: 'pausiert (wird beendet)',\n  paused: 'pausiert', completed: 'abgeschlossen', completed_with_warnings: 'abgeschlossen (mit Warnungen)',\n  failed: 'fehlgeschlagen', cancelled: 'abgebrochen'\n};\n\nconst jobsHtml = jobs.map(j => {\n  const zeitraum = (j.period_from && j.period_to) ? (esc(fmtDateOnly(j.period_from)) + ' - ' + esc(fmtDateOnly(j.period_to))) : '-';\n  const prog = progressByJob[j.job_id] || {};\n  const done = (prog.completed || 0);\n  const failed = (prog.failed || 0);\n  const skipped = (prog.skipped || 0);\n  const total = j.progress_total || 0;\n  const pct = total > 0 ? Math.round(100 * (done + failed + skipped) / total) : 0;\n  const stats = statsByJob[j.job_id] || {};\n  const statusLabel = STATUS_LABEL[j.status] || esc(j.status);\n  const canPause = ['queued', 'running'].includes(j.status);\n  const canResume = j.status === 'paused';\n  const canCancel = ['draft', 'queued', 'running', 'pausing', 'paused'].includes(j.status);\n  const canRetry = failed > 0 && ['completed_with_warnings', 'failed'].includes(j.status);\n\n  function actionForm(action, label) {\n    return '<form method=\"post\" action=\"/webhook/historische-nachrichten\" style=\"display:inline;\">' +\n      '<input type=\"hidden\" name=\"action\" value=\"' + action + '\">' +\n      '<input type=\"hidden\" name=\"job_id\" value=\"' + esc(j.job_id) + '\">' +\n      '<button type=\"submit\">' + label + '</button></form>';\n  }\n\n  return '<tr>' +\n    '<td>' + esc(j.job_id) + '</td>' +\n    '<td>' + zeitraum + '</td>' +\n    '<td><span class=\"badge\">' + statusLabel + '</span></td>' +\n    '<td>' + done + '/' + total + ' Tage (' + pct + '%)' + (failed ? ', ' + failed + ' fehlgeschlagen' : '') + '</td>' +\n    '<td>' + (stats.anzahl || 0) + ' (' + (stats.matched || 0) + ' zugeordnet, ' + (stats.ambiguous || 0) + ' mehrdeutig, ' + (stats.general_market || 0) + ' Markt/Makro)' + '</td>' +\n    '<td>' + fmtDate(j.heartbeat_at) + '</td>' +\n    '<td>' +\n      (canPause ? actionForm('pause', 'Pausieren') : '') +\n      (canResume ? actionForm('resume', 'Fortsetzen') : '') +\n      (canCancel ? actionForm('cancel', 'Abbrechen') : '') +\n      (canRetry ? actionForm('retry_failed', 'Fehlgeschlagene wiederholen') : '') +\n    '</td>' +\n  '</tr>';\n}).join('');\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Historische Nachrichten importieren (GDELT)</title>' +\n  '<style>' +\n  'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;}' +\n  'h1{color:#fff;} table{border-collapse:collapse;width:100%;margin-top:12px;}' +\n  'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:14px;}' +\n  'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}' +\n  'form.import-form{background:#232323;padding:16px;border-radius:8px;margin-bottom:24px;max-width:700px;}' +\n  'label{display:block;margin-top:10px;font-size:13px;color:#aaa;}' +\n  'input[type=date]{width:100%;padding:6px;background:#1a1a1a;color:#e0e0e0;border:1px solid #444;border-radius:4px;}' +\n  'button{margin-top:12px;padding:8px 16px;background:#2d6cdf;color:#fff;border:none;border-radius:4px;cursor:pointer;}' +\n  '.hint{font-size:12px;color:#888;margin-top:4px;}' +\n  '</style></head><body>' +\n  '<h1>Historische Nachrichten importieren (GDELT)</h1>' +\n  '<form class=\"import-form\" method=\"post\" action=\"/webhook/historische-nachrichten\">' +\n    '<input type=\"hidden\" name=\"action\" value=\"create_import\">' +\n    '<label>Startdatum</label>' +\n    '<input type=\"date\" name=\"period_from\" required min=\"2020-01-01\">' +\n    '<div class=\"hint\">GDELT Article List Historical Backfile deckt fruehestens 2020-01-01 ab.</div>' +\n    '<label>Enddatum</label>' +\n    '<input type=\"date\" name=\"period_to\" required>' +\n    '<label><input type=\"checkbox\" name=\"dry_run\" value=\"true\" style=\"width:auto;display:inline;\"> Testlauf (prueft nur Erreichbarkeit, schreibt keine Daten)</label>' +\n    '<button type=\"submit\">Import starten</button>' +\n  '</form>' +\n  '<h2>Bisherige Importe</h2>' +\n  '<table><tr><th>Job-ID</th><th>Zeitraum</th><th>Status</th><th>Fortschritt</th><th>Nachrichten</th><th>Letzter Heartbeat</th><th>Aktionen</th></tr>' +\n  jobsHtml +\n  '</table>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "imp16-respond-html",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2200,
+        0
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "imp16-webhook-post",
+      "name": "Webhook POST (Aenderung)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -3200,
+        320
+      ],
+      "webhookId": "d16a0001-0000-4000-8000-000000000002",
+      "parameters": {
+        "path": "historische-nachrichten",
+        "httpMethod": "POST",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-post-sql-bauen",
+      "name": "POST: Formular normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3000,
+        320
+      ],
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit'\n  }).format(date);\n}\n\n// Aktions-Whitelist-Pattern, identisch zu Workflow 15/\"Watchlist verwalten\". Zeitraum wird beim\n// Job-Start in einzelne Tages-Items zerlegt (ein import_job_items-Item pro Kalendertag), NICHT\n// pro 15-Minuten-Marke - siehe Konzeptdoc Abschnitt 4.2 Punkt 1 fuer die Begruendung.\n\nconst ALLOWED_ACTIONS = new Set(['create_import', 'pause', 'resume', 'cancel', 'retry_failed']);\nconst GDELT_EARLIEST = '2020-01-01';\nconst MAX_DAYS_PER_JOB = 3660; // ~10 Jahre Sicherheitsnetz gegen versehentlich riesige Jobs\n\nconst body = $input.item.json.body || $input.item.json;\nconst action = String(body.action || '').trim();\n\nif (!ALLOWED_ACTIONS.has(action)) {\n  return { json: { _error: 'Unbekannte Aktion: ' + action, sql: null } };\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nlet sql = '';\nlet responseInfo = { action };\n\nif (action === 'create_import') {\n  const periodFrom = String(body.period_from || '').trim();\n  const periodTo = String(body.period_to || '').trim();\n  const dryRun = body.dry_run === 'true' || body.dry_run === true;\n\n  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(periodFrom) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(periodTo)) {\n    return { json: { _error: 'Start-/Enddatum fehlt oder ungueltiges Format (YYYY-MM-DD).', sql: null } };\n  }\n  if (periodFrom < GDELT_EARLIEST) {\n    return { json: { _error: 'GDELT Article List Historical Backfile deckt fruehestens ' + GDELT_EARLIEST + ' ab.', sql: null } };\n  }\n  if (periodTo < periodFrom) {\n    return { json: { _error: 'Enddatum liegt vor dem Startdatum.', sql: null } };\n  }\n\n  const days = [];\n  let cursor = new Date(periodFrom + 'T00:00:00Z');\n  const end = new Date(periodTo + 'T00:00:00Z');\n  while (cursor <= end && days.length < MAX_DAYS_PER_JOB) {\n    days.push(cursor.toISOString().slice(0, 10));\n    cursor = new Date(cursor.getTime() + 24 * 3600 * 1000);\n  }\n  if (cursor <= end) {\n    return { json: { _error: 'Zeitraum zu gross (mehr als ' + MAX_DAYS_PER_JOB + ' Tage) - bitte in kleineren Abschnitten importieren.', sql: null } };\n  }\n  if (days.length === 0) {\n    return { json: { _error: 'Zeitraum ergibt keine Tage.', sql: null } };\n  }\n\n  const jobId = 'newsimp-' + getBusinessDate() + '-' + randHex(6);\n\n  const jobInsert = `INSERT INTO trading.import_jobs\n    (job_id, job_type, status, provider, period_from, period_to, dry_run, progress_total)\n    VALUES (${pgStr(jobId)}, 'news', 'queued', 'gdelt', ${pgStr(periodFrom)}, ${pgStr(periodTo)}, ${pgBool(dryRun)}, ${pgNum(days.length)});`;\n\n  const itemValues = days.map((day, idx) =>\n    `(${pgStr(jobId)}, ${pgNum(idx + 1)}, ${pgStr('GDELT-GLOBAL')}, ${pgStr(day)}, ${pgStr(day)}, 'pending', ${pgJsonb({ last_mark_index: -1, article_count: 0 })})`\n  ).join(',\\n    ');\n\n  const itemsInsert = `INSERT INTO trading.import_job_items\n    (job_id, sequence_number, instrument, period_from, period_to, status, checkpoint_json)\n    VALUES\\n    ${itemValues};`;\n\n  sql = `BEGIN;\\n${jobInsert}\\n${itemsInsert}\\nCOMMIT;`;\n  responseInfo = { action, job_id: jobId, day_count: days.length, dry_run: dryRun };\n\n} else if (action === 'pause') {\n  const jobId = String(body.job_id || '').trim();\n  if (!jobId) return { json: { _error: 'job_id fehlt.', sql: null } };\n  sql = `BEGIN;\\nUPDATE trading.import_jobs SET status = 'pausing' WHERE job_id = ${pgStr(jobId)} AND status IN ('queued','running');\\nCOMMIT;`;\n  responseInfo = { action, job_id: jobId };\n\n} else if (action === 'resume') {\n  const jobId = String(body.job_id || '').trim();\n  if (!jobId) return { json: { _error: 'job_id fehlt.', sql: null } };\n  sql = `BEGIN;\\nUPDATE trading.import_jobs SET status = 'queued' WHERE job_id = ${pgStr(jobId)} AND status = 'paused';\\nCOMMIT;`;\n  responseInfo = { action, job_id: jobId };\n\n} else if (action === 'cancel') {\n  const jobId = String(body.job_id || '').trim();\n  if (!jobId) return { json: { _error: 'job_id fehlt.', sql: null } };\n  sql = `BEGIN;\nUPDATE trading.import_jobs SET status = 'cancelled', finished_at = now() WHERE job_id = ${pgStr(jobId)} AND status IN ('draft','queued','running','pausing','paused');\nUPDATE trading.import_job_items SET status = 'skipped' WHERE job_id = ${pgStr(jobId)} AND status IN ('pending','running');\nCOMMIT;`;\n  responseInfo = { action, job_id: jobId };\n\n} else if (action === 'retry_failed') {\n  const jobId = String(body.job_id || '').trim();\n  if (!jobId) return { json: { _error: 'job_id fehlt.', sql: null } };\n  sql = `BEGIN;\nUPDATE trading.import_job_items SET status = 'pending', error = NULL WHERE job_id = ${pgStr(jobId)} AND status = 'failed';\nUPDATE trading.import_jobs SET status = 'queued' WHERE job_id = ${pgStr(jobId)} AND status IN ('completed_with_warnings','failed');\nCOMMIT;`;\n  responseInfo = { action, job_id: jobId };\n}\n\nreturn { json: { sql, ...responseInfo } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "imp16-if-post-fehler",
+      "name": "IF: Validierungsfehler?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "post-validation-error",
+              "leftValue": "={{ $json._error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-post-sql-ausfuehren",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2600,
+        400
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-baue-post-antwort",
+      "name": "Baue POST-Antwort (JSON)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        320
+      ],
+      "parameters": {
+        "jsCode": "// \"POST: SQL ausfuehren\" (Postgres ohne RETURNING) ersetzt das Item-JSON durch sein eigenes\n// Ergebnis - Antwortfelder deshalb vom SQL-Bauen-Node zurueckholen (gleiche Bugklasse wie in\n// Workflow 15, siehe dortige Kommentare).\nconst original = $('POST: Formular normalisieren + SQL bauen').item.json;\nconst current = $json;\n\nif (original._error) {\n  return { json: { ok: false, error: original._error } };\n}\nif (current.error) {\n  return { json: { ok: false, error: 'Datenbankfehler beim Ausfuehren der Aktion.', action: original.action, job_id: original.job_id } };\n}\nreturn { json: { ok: true, action: original.action, job_id: original.job_id, day_count: original.day_count, dry_run: original.dry_run } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "imp16-respond-json",
+      "name": "Antwort mit JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -2200,
+        320
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-trigger-worker",
+      "name": "Trigger: News-Worker (alle 2 Min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3200,
+        680
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "imp16-db-naechster-job",
+      "name": "DB: Naechsten aktiven Job finden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -3000,
+        680
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM trading.import_jobs WHERE job_type = 'news' AND status IN ('queued','running','pausing') ORDER BY created_at ASC LIMIT 1;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-pruefe-job-zustand",
+      "name": "Pruefe Job-Zustand",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2800,
+        680
+      ],
+      "parameters": {
+        "jsCode": "// Gleiches Muster wie Workflow 15: kein aktiver Job -> Ende. Pausierend -> auf 'paused' setzen\n// + Ende. alwaysOutputData:true liefert bei 0 aktiven Jobs ein Platzhalter-Item ohne job_id.\nconst items = $input.all().filter(i => i.json && i.json.job_id);\nif (items.length === 0) {\n  return [{ json: { _kein_job: true } }];\n}\nconst job = items[0].json;\nreturn [{ json: { ...job, _kein_job: false, _job_pausierend: job.status === 'pausing' } }];\n"
+      }
+    },
+    {
+      "id": "imp16-if-kein-job",
+      "name": "IF: Kein aktiver Job?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2600,
+        680
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "kein-job",
+              "leftValue": "={{ $json._kein_job }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-if-job-pausierend",
+      "name": "IF: Job pausierend?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2400,
+        760
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "job-pausierend",
+              "leftValue": "={{ $json._job_pausierend }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-job-pausieren",
+      "name": "DB: Job pausieren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2200,
+        840
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trading.import_jobs SET status = 'paused' WHERE job_id = '{{ $json.job_id }}' AND status = 'pausing';",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-job-auf-running",
+      "name": "DB: Job auf running setzen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2400,
+        680
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trading.import_jobs SET status = 'running', started_at = COALESCE(started_at, now()) WHERE job_id = '{{ $json.job_id }}' AND status = 'queued';",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-config-laden",
+      "name": "DB: GDELT-Konfiguration laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2400,
+        560
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT config_key, value_numeric, value_text FROM trading.pipeline_config WHERE config_key IN ('GDELT_PROBE_WINDOW_MINUTES', 'GDELT_MARKS_PER_WORKER_RUN', 'GDELT_EARLIEST_DATE', 'GDELT_REQUEST_DELAY_MS', 'IMPORT_MAX_RETRY_ATTEMPTS');",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-baue-tick-kontext",
+      "name": "Baue Tick-Kontext",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2200,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Traegt Job-Daten und Konfigurationswerte zusammen, bevor das naechste Tages-Paket geladen wird.\nconst job = $('Pruefe Job-Zustand').all()[0].json;\nconst cfgRows = $input.all().map(i => i.json);\nconst cfgByKey = {};\nfor (const r of cfgRows) cfgByKey[r.config_key] = r.value_numeric !== null && r.value_numeric !== undefined ? Number(r.value_numeric) : r.value_text;\nreturn [{ json: {\n  ...job,\n  _probe_window_min: cfgByKey.GDELT_PROBE_WINDOW_MINUTES || 5,\n  _marks_per_run: cfgByKey.GDELT_MARKS_PER_WORKER_RUN || 12,\n  _request_delay_ms: cfgByKey.GDELT_REQUEST_DELAY_MS || 1500,\n  _max_retries: cfgByKey.IMPORT_MAX_RETRY_ATTEMPTS || 3\n} }];\n"
+      }
+    },
+    {
+      "id": "imp16-db-naechstes-paket",
+      "name": "DB: Naechstes Tages-Paket laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2000,
+        560
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT * FROM trading.import_job_items WHERE job_id = '{{ $json.job_id }}' AND (status = 'pending' OR (status = 'running' AND heartbeat_at < now() - interval '15 minutes')) ORDER BY sequence_number LIMIT 1;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-baue-item-kontext",
+      "name": "Baue Tages-Item-Kontext",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1800,
+        560
+      ],
+      "parameters": {
+        "jsCode": "// Kein offenes Tages-Item mehr -> Job abschliessen. Sonst: Tages-Item zur Verarbeitung\n// weiterreichen. alwaysOutputData:true liefert bei 0 offenen Items ein Platzhalter-Item ohne id.\nconst job = $('Baue Tick-Kontext').all()[0].json;\nconst items = $input.all().map(i => i.json).filter(j => j && j.id !== undefined && j.id !== null);\nif (items.length === 0) {\n  return [{ json: { _placeholder: true, job_id: job.job_id } }];\n}\nconst it = items[0];\nreturn [{ json: { ...it, _job_id: job.job_id, _max_retries: job._max_retries, _probe_window_min: job._probe_window_min, _marks_per_run: job._marks_per_run, _request_delay_ms: job._request_delay_ms } }];\n"
+      }
+    },
+    {
+      "id": "imp16-if-paket-leer",
+      "name": "IF: Kein Tages-Paket offen (Job evtl. fertig)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "paket-leer",
+              "leftValue": "={{ $json._placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-job-abschliessen",
+      "name": "DB: Job abschliessen (falls fertig)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1400,
+        640
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trading.import_jobs SET status = CASE WHEN error_count > 0 THEN 'completed_with_warnings' ELSE 'completed' END, finished_at = now() WHERE job_id = '{{ $('Baue Tick-Kontext').all()[0].json.job_id }}' AND NOT EXISTS (SELECT 1 FROM trading.import_job_items WHERE job_id = '{{ $('Baue Tick-Kontext').all()[0].json.job_id }}' AND status IN ('pending','running')) AND status NOT IN ('completed','completed_with_warnings','cancelled');",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-item-running",
+      "name": "DB: Tages-Item auf running setzen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1400,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trading.import_job_items SET status = 'running', started_at = COALESCE(started_at, now()), attempt = attempt + 1, heartbeat_at = now() WHERE id = {{ $json.id }};",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-instrumente-laden",
+      "name": "DB: Instrumente fuer Matching laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1200,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ticker, name, aliases_json, exclude_patterns_json FROM trading.stock_instruments WHERE aktiv = TRUE;",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-baue-marken-kandidaten",
+      "name": "Baue Marken-Kandidaten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        480
+      ],
+      "parameters": {
+        "jsCode": "// Baut fuer diesen Worker-Tick die Liste der zu probierenden GDELT-Dateikandidaten.\n// Ein Tag hat 96 Viertelstunden-Marken (0..95); pro Tick werden nur _marks_per_run davon\n// abgearbeitet, ab der zuletzt vollstaendig verarbeiteten Marke (checkpoint_json.last_mark_index).\n// \"DB: Tages-Item auf running setzen\" (Postgres-UPDATE ohne RETURNING) hat das Item-JSON durch\n// sein eigenes Ergebnis ersetzt - der eigentliche Tages-Item-Kontext kommt deshalb explizit vom\n// Node VOR dem UPDATE (gleiche Bugklasse wie mehrfach in Workflow 15 dokumentiert).\nconst it = $('Baue Tages-Item-Kontext').all()[0].json;\n\nfunction parseJsonField(v, fallback) {\n  if (v === null || v === undefined) return fallback;\n  if (typeof v === 'object') return v;\n  try { return JSON.parse(v); } catch (e) { return fallback; }\n}\nconst checkpoint = parseJsonField(it.checkpoint_json, { last_mark_index: -1, article_count: 0 });\nconst lastMarkIndex = Number.isInteger(checkpoint.last_mark_index) ? checkpoint.last_mark_index : -1;\nconst marksPerRun = Number(it._marks_per_run || 12);\nconst probeWindowMin = Math.max(1, Number(it._probe_window_min || 5));\n\nconst startMark = lastMarkIndex + 1;\nconst endMark = Math.min(95, startMark + marksPerRun - 1);\n\nif (startMark > 95) {\n  // Sollte normalerweise nicht vorkommen (Item waere dann schon 'completed') - trotzdem robust\n  // behandeln statt die Kette abbrechen zu lassen: Sentinel-Item ohne echte Marke durchreichen.\n  return [{ json: { mark_index: -1, offset_min: 0, url: null, ts: null, _all_marks_done: true,\n    _day: it.period_from, _job_id: it._job_id, _item_id: it.id, _request_delay_ms: it._request_delay_ms,\n    _max_retries: it._max_retries, _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint } }];\n}\n\n// period_from kommt aus einer DATE-Spalte als voller ISO-Zeitstempel zurueck (gleiche\n// Eigenheit wie in Workflow 15 bei period_from/period_to) - auf reines Datum kuerzen.\nconst day = String(it.period_from).slice(0, 10);\nconst dayStart = new Date(day + 'T00:00:00Z');\n\nfunction fmtTs(d) {\n  const p = n => String(n).padStart(2, '0');\n  return '' + d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + '00';\n}\n\nconst out = [];\nfor (let mark = startMark; mark <= endMark; mark++) {\n  const markMinutes = mark * 15;\n  for (let offset = 1; offset <= probeWindowMin; offset++) {\n    const ts = new Date(dayStart.getTime() + (markMinutes + offset) * 60000);\n    out.push({\n      json: {\n        mark_index: mark, offset_min: offset, ts: fmtTs(ts),\n        url: 'http://data.gdeltproject.org/gdeltv3/gal/' + fmtTs(ts) + '.gal.json.gz',\n        _all_marks_done: false, _day: day, _job_id: it._job_id, _item_id: it.id,\n        _request_delay_ms: it._request_delay_ms, _max_retries: it._max_retries,\n        _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint, _end_mark_this_tick: endMark\n      }\n    });\n  }\n}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "imp16-if-alle-marken-fertig",
+      "name": "IF: Alle Marken bereits fertig?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "alle-marken-fertig",
+              "leftValue": "={{ $json._all_marks_done }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-http-gdelt-kandidat",
+      "name": "HTTP: GDELT-Kandidat abrufen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -600,
+        400
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true,
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          },
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": "={{ $json._request_delay_ms }}"
+            }
+          },
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "imp16-waehle-treffer",
+      "name": "Waehle Treffer je Marke",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        400
+      ],
+      "parameters": {
+        "jsCode": "// Fasst alle Kandidaten-Antworten dieses Ticks pro Marke zusammen und waehlt je Marke den\n// ersten Treffer (kleinster offset_min mit HTTP 200) aus - GDELT-Dateien erscheinen empirisch\n// 1-4 Minuten nach der Marke, nicht zu einem fixen Versatz (siehe Konzeptdoc Abschnitt 8.4),\n// deshalb mehrere Kandidaten pro Marke statt eines einzelnen fixen Zeitstempels.\nconst items = $input.all();\nconst byMark = new Map();\nfor (const item of items) {\n  const j = item.json;\n  const mark = j.mark_index;\n  if (!byMark.has(mark)) byMark.set(mark, []);\n  byMark.get(mark).push(item);\n}\n\nconst out = [];\nfor (const [mark, marksItems] of byMark.entries()) {\n  marksItems.sort((a, b) => a.json.offset_min - b.json.offset_min);\n  const hit = marksItems.find(it => Number(it.json.statusCode) === 200 && it.binary && it.binary.data);\n  const ctx = marksItems[0].json;\n  if (hit) {\n    out.push({ json: { mark_index: mark, _day: ctx._day, _job_id: ctx._job_id, _item_id: ctx._item_id, _has_data: true }, binary: hit.binary });\n  } else {\n    out.push({ json: { mark_index: mark, _day: ctx._day, _job_id: ctx._job_id, _item_id: ctx._item_id, _has_data: false, articles: [] } });\n  }\n}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "imp16-if-hat-datei",
+      "name": "IF: Marke hat Datei?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "hat-datei",
+              "leftValue": "={{ $json._has_data }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-decompress",
+      "name": "Entpacke GAL-Datei",
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        320
+      ],
+      "parameters": {
+        "operation": "decompress",
+        "binaryPropertyName": "data",
+        "outputFormat": "single",
+        "binaryPropertyOutput": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-parse-gal",
+      "name": "Parse GAL JSON-NL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        320
+      ],
+      "parameters": {
+        "jsCode": "// GDELT Article List: gzip-komprimierte JSON-NL-Datei (ein JSON-Objekt pro Zeile), Felder\n// date/url/domain/outletName/outletLogo/outletTwitter/title/image/desc/lang/author - kein\n// Volltext (siehe Konzeptdoc Abschnitt 8.4). Nach \"Entpacke GAL-Datei\" liegt der entpackte\n// Inhalt als Binaerdaten vor (Base64), nicht als Text - erst dekodieren, dann zeilenweise parsen.\nconst bin = $binary.data;\nconst text = Buffer.from(bin.data, 'base64').toString('utf-8');\nconst lines = text.split('\\n').map(l => l.trim()).filter(Boolean);\nconst articles = [];\nfor (const line of lines) {\n  try {\n    const rec = JSON.parse(line);\n    if (rec && rec.url && rec.title) articles.push(rec);\n  } catch (e) { /* einzelne kaputte Zeile ueberspringen, nicht die ganze Datei verwerfen */ }\n}\nreturn { json: { mark_index: $json.mark_index, _day: $json._day, _job_id: $json._job_id, _item_id: $json._item_id, _has_data: true, articles } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "imp16-baue-insert-sql",
+      "name": "Baue Insert-SQL + Ticker-Matching",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        480
+      ],
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Fasst alle Marken-Ergebnisse dieses Ticks zusammen (Treffer + Leermarken), dedupliziert\n// Artikel-URLs (auch innerhalb des Ticks selbst, nicht nur ueber UNIQUE(news_key,provider) in\n// der DB - GDELT warnt selbst vor hoher Duplikatrate), ordnet Instrumente zu und baut die\n// Insert-SQL + den Checkpoint-Fortschritt.\nconst itemCtx = $('Baue Tages-Item-Kontext').all()[0].json;\nconst instruments = $('DB: Instrumente fuer Matching laden').all().map(i => i.json).filter(j => j && j.ticker);\n\nfunction parseJsonField(v, fallback) {\n  if (v === null || v === undefined) return fallback;\n  if (typeof v === 'object') return v;\n  try { return JSON.parse(v); } catch (e) { return fallback; }\n}\n\nconst markItems = $input.all().map(i => i.json).filter(j => j && j.mark_index !== undefined && j.mark_index !== null && j.mark_index !== -1);\n\nif (markItems.length === 0) {\n  return [{ json: { sql: 'BEGIN;\\nCOMMIT;', _job_id: itemCtx._job_id, _item_id: itemCtx.id, _row_count: 0 } }];\n}\n\nconst newLastMarkIndex = Math.max(...markItems.map(m => m.mark_index));\nconst dayComplete = newLastMarkIndex >= 95;\n\nconst seenUrls = new Set();\nconst articles = [];\nfor (const m of markItems) {\n  for (const a of (m.articles || [])) {\n    if (!a.url) continue;\n    const key = String(a.url).trim().toLowerCase();\n    if (seenUrls.has(key)) continue;\n    seenUrls.add(key);\n    articles.push(a);\n  }\n}\n\n// Gleiche Vokabel-Grundlage wie 03s bestehender KI-Bewertungsprompt (\"Marktumfeld, DAX,\n// Nasdaq, EZB, Fed, Zinsen, Inflation, Oelpreis, Rohstoffe, Konjunktur, KI, Halbleiter,\n// Energie und geopolitische Risiken\") - fuer Konsistenz nicht neu erfunden.\nconst GENERAL_MARKET_TERMS = ['dax', 'nasdaq', 's&p', 'fed', 'ezb', 'ecb', 'zinsen', 'zinssenkung',\n  'zinserhoehung', 'inflation', 'rezession', 'oelpreis', 'ölpreis', 'rohstoffe', 'konjunktur',\n  'halbleiter', 'energiepreise', 'geopolitisch', 'leitzins', 'boerse', 'börse', 'aktienmarkt', 'wall street'];\n\nfunction matchInstruments(text) {\n  const lower = text.toLowerCase();\n  const matches = [];\n  for (const inst of instruments) {\n    const aliases = parseJsonField(inst.aliases_json, []);\n    const excludes = parseJsonField(inst.exclude_patterns_json, []);\n    const needles = [inst.name, ...aliases].filter(Boolean).map(s => String(s).toLowerCase());\n    const hasHit = needles.some(n => n.length >= 3 && lower.includes(n));\n    if (!hasHit) continue;\n    const isExcluded = excludes.some(p => String(p).toLowerCase().length > 0 && lower.includes(String(p).toLowerCase()));\n    if (isExcluded) continue;\n    matches.push(inst.ticker);\n  }\n  return [...new Set(matches)];\n}\n\nconst rows = [];\nfor (const a of articles) {\n  const text = (a.title || '') + ' ' + (a.desc || '');\n  const tickerMatches = matchInstruments(text);\n  let matchStatus = 'none', linkedTickers = [], ambiguous = [], isGeneralMarket = false;\n  if (tickerMatches.length === 1) {\n    matchStatus = 'matched'; linkedTickers = tickerMatches;\n  } else if (tickerMatches.length > 1) {\n    matchStatus = 'ambiguous'; ambiguous = tickerMatches;\n  } else {\n    const lower = text.toLowerCase();\n    isGeneralMarket = GENERAL_MARKET_TERMS.some(t => lower.includes(t));\n    // Weder Ticker- noch Marktbezug erkennbar -> verworfen (kein Datenbankeintrag), exakt wie\n    // in der Vorgabe verlangt.\n    if (!isGeneralMarket) continue;\n  }\n  rows.push({\n    news_key: String(a.url).trim(), title: a.title, url: a.url,\n    source: a.domain || a.outletName || null, published_at: a.date || null, language: a.lang || null,\n    raw_content: a.desc || null, linked_tickers: linkedTickers, is_general_market: isGeneralMarket,\n    ticker_match_status: matchStatus, ambiguous_candidates: ambiguous\n  });\n}\n\nlet insertSql = '';\nif (rows.length > 0) {\n  const values = rows.map(r => `(${pgStr(r.news_key)}, 'gdelt', ${pgStr(r.title)}, ${pgStr(r.url)}, ${pgStr(r.source)}, ${pgStr(r.published_at)}, ${pgStr(r.language)}, ${pgStr(r.raw_content)}, ${pgJsonb(r.linked_tickers)}, ${pgBool(r.is_general_market)}, ${pgStr(itemCtx._job_id)}, ${pgStr(r.ticker_match_status)}, ${pgJsonb(r.ambiguous_candidates)}, FALSE)`).join(',\\n    ');\n  insertSql = `INSERT INTO trading.historical_news\n    (news_key, provider, title, url, source, published_at, language, raw_content, linked_tickers_json, is_general_market, import_job_id, ticker_match_status, ambiguous_candidates_json, has_full_text)\n    VALUES\\n    ${values}\n    ON CONFLICT (news_key, provider) DO NOTHING;`;\n}\n\nconst checkpoint = { last_mark_index: newLastMarkIndex, article_count: articles.length };\nconst itemStatus = dayComplete ? 'completed' : 'running';\nconst itemUpdate = `UPDATE trading.import_job_items SET checkpoint_json = ${pgJsonb(checkpoint)}, status = ${pgStr(itemStatus)}, finished_at = ${dayComplete ? 'now()' : 'NULL'}, heartbeat_at = now() WHERE id = ${pgNum(itemCtx.id)};`;\n\nconst sql = `BEGIN;\\n${insertSql}\\n${itemUpdate}\\nCOMMIT;`;\n\nreturn [{ json: { sql, _job_id: itemCtx._job_id, _item_id: itemCtx.id, _day_complete: dayComplete, _row_count: rows.length } }];\n"
+      }
+    },
+    {
+      "id": "imp16-baue-sentinel-sql",
+      "name": "Baue Sentinel-Abschluss-SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -600,
+        560
+      ],
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Sicherheitsnetz fuer einen (im Normalbetrieb nicht erwarteten) inkonsistenten Zustand: der\n// Checkpoint sagt bereits \"alle 96 Marken fertig\", aber das Item war noch nicht 'completed' -\n// nur nachtragen, keine erneute Verarbeitung.\nconst it = $json;\nconst sql = `BEGIN;\\nUPDATE trading.import_job_items SET status = 'completed', finished_at = now(), heartbeat_at = now() WHERE id = ${pgNum(it._item_id)};\\nCOMMIT;`;\nreturn { json: { sql, _job_id: it._job_id, _item_id: it._item_id, _day_complete: true, _row_count: 0 } };\n",
+        "mode": "runOnceForEachItem"
+      }
+    },
+    {
+      "id": "imp16-db-ergebnis-speichern",
+      "name": "DB: Ergebnis speichern",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        600,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "imp16-db-job-fortschritt",
+      "name": "DB: Job-Fortschritt aktualisieren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        800,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE trading.import_jobs SET progress_completed = (SELECT count(*) FROM trading.import_job_items WHERE job_id = '{{ $('Baue Tick-Kontext').all()[0].json.job_id }}' AND status = 'completed'), error_count = (SELECT count(*) FROM trading.import_job_items WHERE job_id = '{{ $('Baue Tick-Kontext').all()[0].json.job_id }}' AND status = 'failed'), heartbeat_at = now() WHERE job_id = '{{ $('Baue Tick-Kontext').all()[0].json.job_id }}';",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Jobs laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Jobs laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Job-Item-Fortschritt laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Job-Item-Fortschritt laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Nachrichten-Statistik laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Nachrichten-Statistik laden": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Aenderung)": {
+      "main": [
+        [
+          {
+            "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Formular normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "IF: Validierungsfehler?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Validierungsfehler?": {
+      "main": [
+        [
+          {
+            "node": "Baue POST-Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue POST-Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue POST-Antwort (JSON)": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: News-Worker (alle 2 Min)": {
+      "main": [
+        [
+          {
+            "node": "DB: Naechsten aktiven Job finden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Naechsten aktiven Job finden": {
+      "main": [
+        [
+          {
+            "node": "Pruefe Job-Zustand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe Job-Zustand": {
+      "main": [
+        [
+          {
+            "node": "IF: Kein aktiver Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Kein aktiver Job?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "IF: Job pausierend?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Job pausierend?": {
+      "main": [
+        [
+          {
+            "node": "DB: Job pausieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Job auf running setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Job auf running setzen": {
+      "main": [
+        [
+          {
+            "node": "DB: GDELT-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: GDELT-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Tick-Kontext",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Tick-Kontext": {
+      "main": [
+        [
+          {
+            "node": "DB: Naechstes Tages-Paket laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Naechstes Tages-Paket laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Tages-Item-Kontext",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Tages-Item-Kontext": {
+      "main": [
+        [
+          {
+            "node": "IF: Kein Tages-Paket offen (Job evtl. fertig)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Kein Tages-Paket offen (Job evtl. fertig)?": {
+      "main": [
+        [
+          {
+            "node": "DB: Job abschliessen (falls fertig)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Tages-Item auf running setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Tages-Item auf running setzen": {
+      "main": [
+        [
+          {
+            "node": "DB: Instrumente fuer Matching laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Instrumente fuer Matching laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Marken-Kandidaten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Marken-Kandidaten": {
+      "main": [
+        [
+          {
+            "node": "IF: Alle Marken bereits fertig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Alle Marken bereits fertig?": {
+      "main": [
+        [
+          {
+            "node": "Baue Sentinel-Abschluss-SQL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP: GDELT-Kandidat abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: GDELT-Kandidat abrufen": {
+      "main": [
+        [
+          {
+            "node": "Waehle Treffer je Marke",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waehle Treffer je Marke": {
+      "main": [
+        [
+          {
+            "node": "IF: Marke hat Datei?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Marke hat Datei?": {
+      "main": [
+        [
+          {
+            "node": "Entpacke GAL-Datei",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue Insert-SQL + Ticker-Matching",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entpacke GAL-Datei": {
+      "main": [
+        [
+          {
+            "node": "Parse GAL JSON-NL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse GAL JSON-NL": {
+      "main": [
+        [
+          {
+            "node": "Baue Insert-SQL + Ticker-Matching",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Insert-SQL + Ticker-Matching": {
+      "main": [
+        [
+          {
+            "node": "DB: Ergebnis speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Sentinel-Abschluss-SQL": {
+      "main": [
+        [
+          {
+            "node": "DB: Ergebnis speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ergebnis speichern": {
+      "main": [
+        [
+          {
+            "node": "DB: Job-Fortschritt aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
