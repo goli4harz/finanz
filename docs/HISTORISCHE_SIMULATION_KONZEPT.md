@@ -340,12 +340,35 @@ Live-Tabelle.
 
 ### 8.3 Kann der bestehende FastAPI-Kursdienst mehrjährige historische Zeiträume liefern?
 
-**Nicht verifiziert.** Der Dienst liefert aktuell `period=1y` für die tägliche Pipeline. Ob er
-auch feste Start-/Enddaten oder längere Perioden (`5y`/`10y`/`max`) unterstützt, ist unbekannt
-— **muss vor der Implementierung von Workflow 15 per echtem Testaufruf geklärt werden.** Falls
-nicht: ein alternativer Datenanbieter (z. B. direkter yfinance-Aufruf mit `start`/`end`, oder
-ein anderer historischer Datendienst) muss identifiziert werden — das ist ein Scope-Punkt, den
-nur der Nutzer entscheiden kann (welcher Anbieter/API-Zugang verfügbar ist).
+**Geklärt 2026-08-03, JA — vollständig ausreichend für Workflow 15.** Live gegen
+`http://172.16.1.14:8099` getestet (nach einem parallel gefundenen und behobenen Bug, siehe
+unten): `/api/v1/history/{ticker}` liefert `period=5y`/`10y`/`max` (AAPL: 11.500 Zeilen zurück
+bis 1980-12-12, dem Börsengang) ebenso wie explizite `start`/`end`-Datumsbereiche
+(exakt gefiltert, im Test 20 Handelstage für Januar 2015). `/api/v1/history/batch` deckt
+mehrere Instrumente gleichzeitig ab (getestet: AAPL/SAP.DE/MSFT, US+DE-Börse). Dedizierte
+Corporate-Actions-Endpunkte (`/api/v1/dividends/{ticker}`, `/api/v1/splits/{ticker}`,
+`/api/v1/actions/{ticker}`) liefern ebenfalls vollständige Historie (AAPL-Dividenden bis 1987)
+mit `date`/`type`/`value`/`source`-Feldern — direkt passend für
+`trading.historical_corporate_actions`. **Workflow 15 kann also direkt gegen diesen bestehenden
+Dienst gebaut werden, kein neuer/anderer Anbieter nötig.**
+
+**Zwei echte Bugs im Dienst selbst gefunden und behoben, um dahin zu kommen** (Datei
+`app.py`, Deployment `root@n8n:/opt/trading-data-service`, systemd-Service
+`trading-data-service`) — beide waren reine Zufallsfunde beim Testen, keine
+Simulations-spezifischen Änderungen: (1) `fetch_history_df()` reichte `progress=False`/
+`threads=False` an `Ticker().history()` durch — das sind Parameter von `yf.download()` (Modul-
+Funktion), nie von `Ticker().history()` gültig; die aktuell installierte yfinance-Version
+(`PriceHistory`-Klasse) validiert Keyword-Argumente jetzt strikt und lehnte sie ab, wodurch
+JEDER `history()`/`chart`-Aufruf fehlschlug (bestätigt per `journalctl`: `PriceHistory.history()
+got an unexpected keyword argument 'progress'`) — betraf auch den von `01`/`02`/`02b` taeglich
+genutzten Legacy-Endpunkt `/chart/{ticker}`, war also ein **echtes, bereits vor dieser Sitzung
+bestehendes Live-Produktionsproblem**, nicht nur ein Hindernis fuer die Simulation. (2) Nach
+diesem Fix zweiter Fehler: `repair=True` (im Code bewusst gesetzt, Datenqualitaets-Reparatur)
+braucht intern `scipy`, das im venv fehlte (`No module named 'scipy'`) — per
+`pip install scipy` im venv nachinstalliert. Eine erste Hypothese (Yahoo-Bot-Erkennung,
+curl_cffi-Workaround) erwies sich beim Live-Log-Abgleich als falsch und wurde wieder
+zurueckgebaut, um keine unnoetige Komplexitaet/Abhaengigkeit fuer ein nicht bestehendes Problem
+einzufuehren.
 
 ### 8.4 Datenanbieter für historische Nachrichten (Workflow 16)
 
