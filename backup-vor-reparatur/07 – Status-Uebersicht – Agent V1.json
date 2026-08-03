@@ -681,11 +681,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 17",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -697,11 +693,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 18",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -782,11 +774,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 19",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -798,11 +786,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 20",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -814,11 +798,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 21",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -968,11 +948,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 22",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -984,11 +960,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 23",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -1000,11 +972,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 24",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -1016,11 +984,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 25",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -1032,11 +996,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 26",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -1048,11 +1008,7 @@
       "alwaysOutputData": true
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 27",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
@@ -1098,11 +1054,7 @@
       "id": "n-07-p12-wrap"
     },
     {
-      "parameters": {
-        "mode": "combine",
-        "combineBy": "combineAll",
-        "options": {}
-      },
+      "parameters": {},
       "name": "Merge Status 28",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,

@@ -112,7 +112,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE trading_date >= current_date - 35 AND valid_to IS NULL ORDER BY trading_date DESC, symbol;",
+        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE trading_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 35 AND valid_to IS NULL ORDER BY trading_date DESC, symbol;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden",
@@ -535,7 +535,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "f20095cf-1016-49b3-a258-6c5e6df2771d",
@@ -557,7 +557,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY symbol, snapshot_date;",
+        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 ORDER BY symbol, snapshot_date;",
         "options": {}
       },
       "id": "80d97d94-4d05-4511-b059-8377b555c021",
@@ -579,7 +579,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "f1c6baa4-8e8b-4f2e-b559-7f6ae61a0332",
@@ -637,7 +637,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, action, blockers_json, created_at FROM trading.recommendation_veto_log WHERE created_at >= CURRENT_DATE ORDER BY created_at DESC;",
+        "query": "SELECT ticker, action, blockers_json, created_at FROM trading.recommendation_veto_log WHERE (created_at AT TIME ZONE 'Europe/Berlin')::date >= (now() AT TIME ZONE 'Europe/Berlin')::date ORDER BY created_at DESC;",
         "options": {}
       },
       "name": "DB: Vetos heute (Uebersicht)",
@@ -707,7 +707,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, strategy, direction, raw_score, regime_fit FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL ORDER BY strategy, raw_score DESC;",
+        "query": "SELECT ticker, strategy, direction, raw_score, regime_fit FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL ORDER BY strategy, raw_score DESC;",
         "options": {}
       },
       "name": "DB: Strategiesignale heute (Uebersicht)",
@@ -730,7 +730,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT region, trend_regime, volatility_regime, stress_regime, combined_regime, regime_confidence, session_status FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
+        "query": "SELECT region, trend_regime, volatility_regime, stress_regime, combined_regime, regime_confidence, session_status FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktregime (Uebersicht)",

@@ -1647,7 +1647,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.ticker !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.ticker !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\n// REPARATUR P0.4 (Reparaturauftrag): einheitliches workflow_result-Schema additiv ergaenzt\n// (type/workflow_code/business_date/duration_ms/records_read/records_written/\n// warning_count/error_count/payload) - bestehende Felder (ok/workflow/processed/...)\n// unveraendert erhalten, damit 00s bisherige Konsumenten weiterhin funktionieren.\nconst finishedAtIso = new Date().toISOString();\nconst durationMs = startedAt ? (new Date(finishedAtIso).getTime() - new Date(startedAt).getTime()) : null;\nfunction getBusinessDate(d = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);\n}\nconst errorsArr = errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' }));\n\nreturn [{ json: {\n  type: 'workflow_result',\n  workflow_code: '02',\n  workflow_name: 'Technische Signale t\\u00e4glich',\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  business_date: getBusinessDate(),\n  processed: total,\n  successful,\n  failed,\n  records_read: total,\n  records_written: successful,\n  warning_count: 0,\n  error_count: errorsArr.length,\n  warnings: [],\n  errors: errorsArr,\n  started_at: startedAt,\n  finished_at: finishedAtIso,\n  duration_ms: durationMs,\n  status,\n  payload: {}\n} }];"
       },
       "id": "b7fe4dee-7c0d-4f1b-a8a6-0c670487e3e0",
       "name": "Abschluss-Ergebnis bauen",
@@ -1808,6 +1808,17 @@
         832
       ],
       "id": "n-repair-p02-sync-sitzungsstatus"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Ergebnis 5",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1230,
+        800
+      ],
+      "id": "n-repair-p04-merge5-02"
     }
   ],
   "connections": {
@@ -2115,7 +2126,7 @@
       "main": [
         [
           {
-            "node": "Abschluss-Ergebnis bauen",
+            "node": "Merge Ergebnis 5",
             "type": "main",
             "index": 0
           }
@@ -2149,6 +2160,28 @@
         [
           {
             "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategiesignale: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 5": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }

@@ -134,7 +134,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
+        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktregime laden (Portfolio)",
@@ -157,7 +157,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date, close FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= CURRENT_DATE - 70 ORDER BY symbol, trading_date;",
+        "query": "SELECT symbol, trading_date, close FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 70 ORDER BY symbol, trading_date;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden (Korrelation)",
@@ -375,7 +375,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM trading.paper_trades WHERE status = 'open' OR (status = 'proposed' AND decision_time::date < CURRENT_DATE) OR status = 'data_error';",
+        "query": "SELECT * FROM trading.paper_trades WHERE status = 'open' OR (status = 'proposed' AND decision_time::date < (now() AT TIME ZONE 'Europe/Berlin')::date) OR status = 'data_error';",
         "options": {}
       },
       "name": "DB: Ausstehende/offene Paper-Trades laden",
@@ -398,7 +398,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date, open, high, low, close, data_quality_status FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date = CURRENT_DATE;",
+        "query": "SELECT symbol, trading_date, open, high, low, close, data_quality_status FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Heutige Kerzen laden (Exec)",
@@ -421,7 +421,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, strategy, direction FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, strategy, direction FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Strategiesignale heute laden (Exec)",

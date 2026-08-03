@@ -556,7 +556,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status, atr_14_numeric, atr_stop_numeric, atr_target_numeric, data_quality_status, breakout_history_ausreichend, dominant_strategy, session_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status, atr_14_numeric, atr_stop_numeric, atr_target_numeric, data_quality_status, breakout_history_ausreichend, dominant_strategy, session_status FROM trading.technical_signals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "24c2961c-ab3b-4615-a549-428f8730cc9a",
@@ -578,7 +578,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT COUNT(*) AS anzahl FROM trading.market_context_history WHERE snapshot_date = CURRENT_DATE;",
+        "query": "SELECT COUNT(*) AS anzahl FROM trading.market_context_history WHERE snapshot_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktkontext heute (Empf.)",
@@ -672,7 +672,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days, time_stop_at, evidence_json, blockers_json, rule_version FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, business_date, strategy, direction, raw_score, regime_fit, data_quality_score, entry_zone_low, entry_zone_high, stop_price, target_price, expected_horizon_days, time_stop_at, evidence_json, blockers_json, rule_version FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Strategiesignale laden (Empf.)",
@@ -695,7 +695,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
+        "query": "SELECT * FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktregime laden (Empf.)",
@@ -741,7 +741,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, eigenkapitalrendite_numeric, gewinnmarge_numeric, verschuldungsgrad_numeric, kursziel_numeric, kgv_numeric, kbv_numeric FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, eigenkapitalrendite_numeric, gewinnmarge_numeric, verschuldungsgrad_numeric, kursziel_numeric, kgv_numeric, kbv_numeric FROM trading.fundamentals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "name": "DB: Fundamental-Historie laden (Empf.)",

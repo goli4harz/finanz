@@ -942,7 +942,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.symbol !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Markt-Watchlist laden').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02b \\u2013 Marktumfeld t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.symbol, node: 'Markt-Kursdaten abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.symbol !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Markt-Watchlist laden').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\n// REPARATUR P0.4: einheitliches workflow_result-Schema additiv ergaenzt.\nconst finishedAtIso = new Date().toISOString();\nconst durationMs = startedAt ? (new Date(finishedAtIso).getTime() - new Date(startedAt).getTime()) : null;\nfunction getBusinessDate(d = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);\n}\nconst errorsArr = errorItems.map(i => ({ ticker: i.symbol, node: 'Markt-Kursdaten abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' }));\n\nreturn [{ json: {\n  type: 'workflow_result',\n  workflow_code: '02b',\n  workflow_name: 'Marktumfeld t\\u00e4glich',\n  ok: failed === 0,\n  workflow: '02b \\u2013 Marktumfeld t\\u00e4glich',\n  run_id: runId,\n  business_date: getBusinessDate(),\n  processed: total,\n  successful,\n  failed,\n  records_read: total,\n  records_written: successful,\n  warning_count: 0,\n  error_count: errorsArr.length,\n  warnings: [],\n  errors: errorsArr,\n  started_at: startedAt,\n  finished_at: finishedAtIso,\n  duration_ms: durationMs,\n  status,\n  payload: {}\n} }];"
       },
       "id": "20ba3c3d-90c2-44e9-9613-d3b0728f4eee",
       "name": "Abschluss-Ergebnis bauen",
@@ -1082,6 +1082,17 @@
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
       "id": "n-followup-02b-macronews-000001"
+    },
+    {
+      "parameters": {},
+      "name": "Merge Ergebnis 4",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        900,
+        300
+      ],
+      "id": "n-repair-p04-merge4-02b"
     }
   ],
   "connections": {
@@ -1292,12 +1303,7 @@
       "main": [
         [
           {
-            "node": "Abschluss-Ergebnis bauen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Marktregime berechnen",
+            "node": "Merge Ergebnis 4",
             "type": "main",
             "index": 0
           }
@@ -1331,6 +1337,28 @@
         [
           {
             "node": "Markt-Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktregime: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 4": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
             "type": "main",
             "index": 0
           }

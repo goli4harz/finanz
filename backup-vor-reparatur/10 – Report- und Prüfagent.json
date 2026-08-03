@@ -521,7 +521,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, kgv, kursziel, empfehlung FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "ca673372-6e94-46e0-a1c7-6cf25478cb49",
@@ -543,7 +543,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 ORDER BY symbol, snapshot_date;",
+        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= CURRENT_DATE - 5 ORDER BY symbol, snapshot_date;",
         "options": {}
       },
       "id": "097126d1-0cb4-45cb-abf1-9bc59a0ad3f0",
@@ -565,7 +565,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date, aktueller_kurs, rsi, richtung, handels_status FROM trading.technical_signals_history WHERE snapshot_date >= CURRENT_DATE - 5 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "id": "cb0285e6-d74a-4f64-a526-a5581b439d8a",
@@ -623,7 +623,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, action, blockers_json, created_at FROM trading.recommendation_veto_log WHERE (created_at AT TIME ZONE 'Europe/Berlin')::date >= (now() AT TIME ZONE 'Europe/Berlin')::date ORDER BY created_at DESC;",
+        "query": "SELECT ticker, action, blockers_json, created_at FROM trading.recommendation_veto_log WHERE created_at >= CURRENT_DATE ORDER BY created_at DESC;",
         "options": {}
       },
       "name": "DB: Vetos heute (Report)",
@@ -701,7 +701,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, strategy, direction, raw_score, regime_fit FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL ORDER BY strategy, raw_score DESC;",
+        "query": "SELECT ticker, strategy, direction, raw_score, regime_fit FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL ORDER BY strategy, raw_score DESC;",
         "options": {}
       },
       "name": "DB: Strategiesignale heute (Report)",
@@ -724,7 +724,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT region, trend_regime, volatility_regime, stress_regime, combined_regime, regime_confidence, session_status FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
+        "query": "SELECT region, trend_regime, volatility_regime, stress_regime, combined_regime, regime_confidence, session_status FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
         "options": {}
       },
       "name": "DB: Marktregime (Report)",

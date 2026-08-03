@@ -88,7 +88,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Technische Signale heute laden (Scanner)",
@@ -111,7 +111,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, strategy, direction, raw_score FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, strategy, direction, raw_score FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Strategiesignale heute laden (Scanner)",
@@ -134,7 +134,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
+        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktregime laden (Scanner)",
@@ -157,7 +157,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date, close, volume FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= CURRENT_DATE - 70 ORDER BY symbol, trading_date;",
+        "query": "SELECT symbol, trading_date, close, volume FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 70 ORDER BY symbol, trading_date;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden (Scanner)",
@@ -203,7 +203,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date FROM trading.fundamentals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "name": "DB: Fundamentaltrend-Basis laden (Scanner)",
@@ -389,7 +389,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'{}'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Zaehlt aus den bereits berechneten Scan-Kandidaten (nicht erneut aus der DB\n// gelesen - Konsistenz mit dem, was tatsaechlich geschrieben wurde).\nconst alle = $('Stufe A+B: Scan berechnen').all().map(i => i.json);\nconst universe = $('DB: Universum laden').all().map(i => i.json);\nconst run_id = alle.length > 0 ? alle[0].run_id : ('scan-' + new Date().toISOString().slice(0, 10) + '-' + Date.now());\nconst business_date = alle.length > 0 ? alle[0].business_date : new Date().toISOString().slice(0, 10);\nconst stageASurvivors = alle.filter(r => r.stage === 'A' && r.included).length;\nconst stageBAnalyzed = alle.filter(r => r.stage === 'B' && r.included).length;\nconst CFG = {};\nfor (const r of $('DB: Scanner-Konfiguration laden').all().map(i => i.json)) CFG[r.config_key] = Number(r.value_numeric);\n\n// FIX (Haertung Welle 1-3, Phase 14): Status jetzt real aus dem Schreibergebnis von\n// \"Scan-Kandidaten: schreiben\" abgeleitet statt hart 'success' - ein DB-Fehler dort (durch\n// onError:continueRegularOutput nicht absturzfaehig, aber bisher stillschweigend als Erfolg\n// protokolliert) wird jetzt sichtbar.\nconst kandidatenSchreibErgebnis = $('Scan-Kandidaten: schreiben').all();\nconst schreibFehler = kandidatenSchreibErgebnis.filter(i => i.json && i.json.error);\nconst runStatus = schreibFehler.length > 0 ? 'failed' : 'success';\nconst runErrors = schreibFehler.map(i => String((i.json.error && (i.json.error.message || i.json.error)) || ''));\n\nconst sql = `INSERT INTO trading.scan_runs\n  (run_id, business_date, finished_at, universe_size, stage_a_survivors, stage_b_analyzed, config_snapshot_json, status)\n  VALUES (${pgStr(run_id)}, ${pgStr(business_date)}, now(), ${pgNum(universe.length)}, ${pgNum(stageASurvivors)}, ${pgNum(stageBAnalyzed)}, ${pgJsonb(CFG)}, ${pgStr(runStatus)})\n  ON CONFLICT (run_id) DO UPDATE SET\n    finished_at = EXCLUDED.finished_at, universe_size = EXCLUDED.universe_size,\n    stage_a_survivors = EXCLUDED.stage_a_survivors, stage_b_analyzed = EXCLUDED.stage_b_analyzed,\n    config_snapshot_json = EXCLUDED.config_snapshot_json, status = EXCLUDED.status;`;\nreturn { json: { run_id, business_date, universeSize: universe.length, stageASurvivors, stageBAnalyzed, sql, status: runStatus, errors: runErrors } };\n"
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'{}'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Zaehlt aus den bereits berechneten Scan-Kandidaten (nicht erneut aus der DB\n// gelesen - Konsistenz mit dem, was tatsaechlich geschrieben wurde).\nconst alle = $('Stufe A+B: Scan berechnen').all().map(i => i.json);\nconst universe = $('DB: Universum laden').all().map(i => i.json);\nconst run_id = alle.length > 0 ? alle[0].run_id : ('scan-' + getBusinessDate() + '-' + Date.now());\nconst business_date = alle.length > 0 ? alle[0].business_date : getBusinessDate();\nconst stageASurvivors = alle.filter(r => r.stage === 'A' && r.included).length;\nconst stageBAnalyzed = alle.filter(r => r.stage === 'B' && r.included).length;\nconst CFG = {};\nfor (const r of $('DB: Scanner-Konfiguration laden').all().map(i => i.json)) CFG[r.config_key] = Number(r.value_numeric);\n\n// FIX (Haertung Welle 1-3, Phase 14): Status jetzt real aus dem Schreibergebnis von\n// \"Scan-Kandidaten: schreiben\" abgeleitet statt hart 'success' - ein DB-Fehler dort (durch\n// onError:continueRegularOutput nicht absturzfaehig, aber bisher stillschweigend als Erfolg\n// protokolliert) wird jetzt sichtbar.\nconst kandidatenSchreibErgebnis = $('Scan-Kandidaten: schreiben').all();\nconst schreibFehler = kandidatenSchreibErgebnis.filter(i => i.json && i.json.error);\nconst runStatus = schreibFehler.length > 0 ? 'failed' : 'success';\nconst runErrors = schreibFehler.map(i => String((i.json.error && (i.json.error.message || i.json.error)) || ''));\n\nconst sql = `INSERT INTO trading.scan_runs\n  (run_id, business_date, finished_at, universe_size, stage_a_survivors, stage_b_analyzed, config_snapshot_json, status)\n  VALUES (${pgStr(run_id)}, ${pgStr(business_date)}, now(), ${pgNum(universe.length)}, ${pgNum(stageASurvivors)}, ${pgNum(stageBAnalyzed)}, ${pgJsonb(CFG)}, ${pgStr(runStatus)})\n  ON CONFLICT (run_id) DO UPDATE SET\n    finished_at = EXCLUDED.finished_at, universe_size = EXCLUDED.universe_size,\n    stage_a_survivors = EXCLUDED.stage_a_survivors, stage_b_analyzed = EXCLUDED.stage_b_analyzed,\n    config_snapshot_json = EXCLUDED.config_snapshot_json, status = EXCLUDED.status;`;\nreturn { json: { run_id, business_date, universeSize: universe.length, stageASurvivors, stageBAnalyzed, sql, status: runStatus, errors: runErrors } };\n"
       },
       "name": "Scan-Run: SQL bauen",
       "type": "n8n-nodes-base.code",

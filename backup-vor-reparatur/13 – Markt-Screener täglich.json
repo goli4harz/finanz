@@ -88,7 +88,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, aktueller_kurs, hoch_52w, tief_52w, data_quality_status FROM trading.technical_signals_history WHERE snapshot_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Technische Signale heute laden (Scanner)",
@@ -111,7 +111,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, strategy, direction, raw_score FROM trading.strategy_signals WHERE business_date = CURRENT_DATE AND valid_to IS NULL;",
+        "query": "SELECT ticker, strategy, direction, raw_score FROM trading.strategy_signals WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
         "options": {}
       },
       "name": "DB: Strategiesignale heute laden (Scanner)",
@@ -134,7 +134,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = CURRENT_DATE;",
+        "query": "SELECT region, combined_regime FROM trading.market_regime WHERE business_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktregime laden (Scanner)",
@@ -157,7 +157,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date, close, volume FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= CURRENT_DATE - 70 ORDER BY symbol, trading_date;",
+        "query": "SELECT symbol, trading_date, close, volume FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 70 ORDER BY symbol, trading_date;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden (Scanner)",
@@ -203,7 +203,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT ticker, snapshot_date FROM trading.fundamentals_history WHERE snapshot_date >= CURRENT_DATE - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
+        "query": "SELECT ticker, snapshot_date FROM trading.fundamentals_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 180 AND valid_to IS NULL ORDER BY ticker, snapshot_date;",
         "options": {}
       },
       "name": "DB: Fundamentaltrend-Basis laden (Scanner)",
@@ -1001,7 +1001,8 @@
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "staticData": null,
   "meta": null,
