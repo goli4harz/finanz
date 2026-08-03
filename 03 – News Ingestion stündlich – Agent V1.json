@@ -322,7 +322,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { _trigger: true } }];"
+        "jsCode": "// REPARATUR P2.11 (News-Retry unabhaengig von RSS-Ergebnis, 2026-08-03): dieser Node haengt\n// jetzt direkt am Schedule-Trigger statt an \"Einmal-Trigger (Dedup+Faellige)\" (das laeuft nur,\n// wenn nach dem RSS-Fetch mindestens 1 echtes News-Item durchkommt - n8n fuehrt einen Node bei\n// 0 Input-Items gar nicht erst aus). Die \"faellige News\"-KI-Bewertung liest ausschliesslich\n// bereits gespeicherte pending/retry-Zeilen aus trading.news_items, unabhaengig von neuen RSS-\n// Ergebnissen - bei einem vollstaendigen RSS-Ausfall (alle Quellen down) waere die Retry-\n// Bewertung sonst fuer die ganze Stunde stillschweigend komplett ausgefallen.\nreturn [{ json: { _trigger: true } }];"
       },
       "name": "Einmal-Trigger (Faellige laden)",
       "type": "n8n-nodes-base.code",
@@ -751,6 +751,11 @@
             "node": "Watchlist aus DB laden (News)",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Einmal-Trigger (Faellige laden)",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -827,11 +832,6 @@
         [
           {
             "node": "DB: Bekannte News laden (35 Tage)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Einmal-Trigger (Faellige laden)",
             "type": "main",
             "index": 0
           }
