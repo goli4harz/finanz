@@ -221,18 +221,26 @@ gesteuert vom `overwrite_mode`-Parameter. Anbieterlimits über `pipeline_config`
 
 ### 4.2 Workflow 16 — Historische Nachrichten importieren (GDELT, siehe Abschnitt 8.4)
 
-Gleiches Job-/Worker-Muster wie Workflow 15, aber pro Paket ein **15-Minuten-Zeitfenster**
-statt ein Instrument (Instrumentenzuordnung passiert erst NACH dem Download, nicht beim
+Gleiches Job-/Worker-Muster wie Workflow 15, aber pro Paket ein **Kalendertag** statt ein
+Instrument (Instrumentenzuordnung passiert erst NACH dem Download, nicht beim
 Job-Zuschnitt — GDELT liefert einen globalen Strom, keine instrumentspezifische Abfrage):
 
-1. **Zeitraumpakete**: `import_job_items.period_from`/`period_to` sind hier je ein
-   15-Minuten-Fenster (nicht ein Instrument) — bei einer mehrjährigen Historie entstehen so
-   zehn- bis hunderttausende Items; Paketgröße/Fortsetzbarkeit exakt wie Workflow 15
-   (`checkpoint_json`, `heartbeat_at`, stale-Item-Selbstheilung).
-2. **Download**: pro Fenster ein kleines Suchfenster (Minute 0–5 nach der Marke) gegen
-   `data.gdeltproject.org/gdeltv3/gal/{ts}.gal.json.gz` probieren, alle antwortenden Dateien
-   laden und entpacken (kein API-Key, kein Rate-Limit-Header bekannt — konservatives Delay
-   zwischen Anfragen wie bei jedem unauthentifizierten öffentlichen Dienst).
+1. **Zeitraumpakete**: `import_job_items.period_from`/`period_to` sind (anders als ein früherer
+   Entwurfsstand dieses Abschnitts annahm) **ein Kalendertag**, nicht ein 15-Minuten-Fenster —
+   die Spalten sind `DATE`, kein Zeitanteil, und ein Item pro 15-Minuten-Marke würde bei
+   mehrjähriger Historie zehn- bis hunderttausende Zeilen/Jahr erzeugen (unpraktikabel für
+   sowohl `import_job_items` als auch die n8n-Schleife). Ein Tag = ~96 Viertelstunden-Marken;
+   ein einzelner Worker-Tick (Schedule Trigger alle 2 Minuten, wie Workflow 15) verarbeitet davon
+   nur `GDELT_MARKS_PER_WORKER_RUN` (Default 12, `pipeline_config`) — ein ganzer Tag auf einmal
+   wäre bei 1–6 Anfragen je Marke plus `GDELT_REQUEST_DELAY_MS`-Delay zu lang für einen einzelnen
+   Tick. Fortschritt *innerhalb* eines Tages steht in `checkpoint_json` (Index der zuletzt
+   vollständig verarbeiteten Marke), nicht nur zwischen Items — sonst müsste ein Absturz mitten im
+   Tag den ganzen Tag neu laden. `heartbeat_at`/stale-Item-Selbstheilung sonst exakt wie
+   Workflow 15.
+2. **Download**: pro Viertelstunden-Marke ein kleines Suchfenster (Minute 0–5 nach der Marke)
+   gegen `data.gdeltproject.org/gdeltv3/gal/{ts}.gal.json.gz` probieren, alle antwortenden
+   Dateien laden und entpacken (kein API-Key, kein Rate-Limit-Header bekannt — konservatives
+   Delay zwischen Anfragen wie bei jedem unauthentifizierten öffentlichen Dienst).
 3. **Deduplizierung**: `UNIQUE(news_key, provider)` auf `historical_news`, `news_key` aus
    normalisierter `url` (matches GDELTs eigene Duplikat-Warnung).
 4. **Unternehmenszuordnung** (neu, nicht in Workflow 15 nötig): pro Artikel Titel+Beschreibung
