@@ -82,29 +82,49 @@ in der ursprünglichen Prüfung. **Risiko:** niedrig (rein additive Sicherheitsp
 ## P1 — wichtige funktionale Bereinigungen
 
 ### P1.6 — `portfolio_pending` sauber behandeln
-Bereits in der vorherigen Härtungssitzung (Phase 6+7) grundlegend gelöst (Statuszwischenschritt
-`portfolio_pending` → `offen`/`portfolio_blocked`, Dead-Letter-Eskalation nach
-`MAX_PORTFOLIO_CHECK_ATTEMPTS`, rein statusbasierte Rückstandsverarbeitung). Zu prüfen in
-dieser Sitzung: ist die im Auftrag verlangte Trennung "Portfolio-Risikoprüfung ≠
-Paper-Trading-Erzeugung" bereits sauber, oder braucht es eine echte Entkopplung als zwei
-unabhängig aktivierbare Features? **Geplant:** Code-Audit von `14`s Job A, Prüfung ob beide
-Teile bereits unabhängig steuerbar sind oder ob eine Trennung nötig ist.
+**Fund bestätigt.** Grundmechanik war bereits aus der vorherigen Härtungssitzung (Phase 6+7)
+korrekt vorhanden, aber `06`s Fix (self-gatend über `ENABLE_PAPER_TRADING`, sicherer Default
+`FALSE`) war bisher manuell zurückgehalten und nicht live gepusht. **Lösung:** `06` jetzt
+sicher live — bei deaktiviertem Flag direkt `status='offen'`, bei aktivem Flag
+`portfolio_pending`. **Risiko:** niedrig (reines Feature-Flag-Gating, Default deaktiviert).
+**Test:** live gepusht und verifiziert.
 
 ### P1.7 — Handelsstrategien-Lernagent korrekt integrieren
-`09b` bleibt inaktiv (Sicherheitsregel). **Geplant:** Prüfen, ob `ENABLE_TRADE_LEARNING`
-(aus der vorherigen Härtungssitzung als reserviertes Flag angelegt) tatsächlich irgendwo
-gelesen wird, Mindeststichprobe aus `pipeline_config`, kontrollierter Aufrufpfad vorbereiten
-(ohne zu aktivieren).
+**Fund bestätigt.** `09b` bekam einen `Execute Workflow Trigger` + eigenen deaktivierten
+Schedule (gleiches Muster wie `13`/`14`), bleibt `active:false` (Sicherheitsregel).
+`LEARNING_MIN_TRADE_SAMPLE_SIZE` war bereits korrekt vorhanden — kein Fund dort. **Risiko:**
+keines (Workflow bleibt inaktiv). **Test:** JS-Syntax + Graph-Integrität geprüft.
 
 ### P1.8 — Zentralen Error-Handler vereinheitlichen
-**Geplant:** Prüfen, welche der genannten Workflows (`09b`, `12`, `13`, `14`,
-`RSS-Quellen verwalten`, `Watchlist verwalten`) den zentralen Error-Workflow (`11`) hinterlegt
-haben; Webhook-Workflows auf strukturierte Fehlerantworten prüfen (kein Abbruch ohne Antwort,
-keine Preisgabe von Credentials/Stacktraces).
+**Fund bestätigt, zwei Teile.** (1) `settings.errorWorkflow` (`11 - Zentraler Error-Handler`)
+fehlte bei `09b`, `12`, `13`, `14`, `RSS-Quellen verwalten`, `Watchlist verwalten` — auf allen
+6 ergänzt, gleiches Muster wie bei allen anderen Workflows. (2) Die Lade-Nodes vor `Baue HTML`
+in `RSS-Quellen verwalten`/`Watchlist verwalten` hatten kein `onError` (Default `stopWorkflow`)
+— ein DB-Ausfall genau hier ließ den Webhook ohne jede Antwort hängen statt strukturiert zu
+antworten. **Lösung:** `onError:continueRegularOutput` + `alwaysOutputData`, plus sichtbares
+Fehlerbanner mit korrelierbarer Fehler-ID (keine Credentials/Stacktrace) statt stillschweigend
+leerer Liste. **Risiko:** niedrig (additive Settings-/Fehlerbehandlung, keine
+Geschäftslogik-Änderung). **Test:** alle 6 live gepusht + GET-Diff-verifiziert, beide Webhooks
+per curl bestätigt (200, kein Fehlerbanner im Normalbetrieb).
 
 ### P1.9 — Zeitzone Europe/Berlin
-**Geplant:** Alle Schedule-Trigger, Tagesdatumsberechnungen und SQL-Zeitausdrücke projektweit
-auf `Europe/Berlin`-Konsistenz prüfen.
+**Fund bestätigt, zwei Bugklassen.** (1) 8 Stellen in 6 Workflows (`01`, `02`, `02b`, `09`,
+`09b`, `13`) berechneten ein "heute"-Datum über `new Date().toISOString().substring(0,10)` —
+das ist der UTC-Kalendertag, nicht Berlin; im Fenster 22:00–02:00 Berliner Zeit (je nach
+Sommer-/Winterzeit) wäre das um einen Tag falsch gewesen und hätte nicht mehr zum
+`business_date`/`snapshot_date` anderer Workflows gepasst. **Lösung:** ersetzt durch die
+bereits etablierte, DST-sichere `getBusinessDate()`-Hilfsfunktion (`Intl.DateTimeFormat` mit
+explizitem `timeZone:'Europe/Berlin'`), pro betroffenem Node inline ergänzt (n8n Code-Nodes
+teilen keinen gemeinsamen Scope). (2) 28 SQL-Queries in 5 Workflows (`06`, `07`, `10`, `13`,
+`14`) filterten "heute" über unqualifiziertes `CURRENT_DATE` — hängt vom Timezone-Setting der
+Postgres-Session ab, nicht garantiert Europe/Berlin. **Lösung:** ersetzt durch
+`(now() AT TIME ZONE 'Europe/Berlin')::date`; Sonderfall 2 Stellen (`07`/`10` "DB: Vetos
+heute") vergleichen gegen eine TIMESTAMPTZ-Spalte (`created_at`) statt DATE — dort die
+präzisere, richtungssichere Form `(created_at AT TIME ZONE 'Europe/Berlin')::date >= (now()
+AT TIME ZONE 'Europe/Berlin')::date` verwendet (spiegelt `06`s bereits korrektes
+News-Filter-Muster). **Risiko:** niedrig (macht bestehendes, vermutlich meist zufällig
+korrektes Verhalten explizit und session-timezone-unabhängig). **Test:** alle 10 betroffenen
+Workflows live gepusht + GET-Diff-verifiziert, `07`/`10`-Webhooks per curl bestätigt.
 
 ## P2 — Qualitätsverbesserungen
 
