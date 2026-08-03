@@ -128,10 +128,57 @@ Workflows live gepusht + GET-Diff-verifiziert, `07`/`10`-Webhooks per curl best�
 
 ## P2 — Qualitätsverbesserungen
 
-Punkte 10-15 (Lernvorschläge dauerhaft speichern, News-Retry unabhängig vom RSS-Ergebnis,
-Cleanup-Workflow doppelte Node-IDs, veraltete TODOs, Markt-Screener-Abgrenzung, semantische
-Variablennamen) — Analyse und Umsetzung im Anschluss an P1, gleiche Methode (Fund verifizieren
-vor Fix, kleinstmögliche Änderung, kein Aktivierungszustand ändern).
+### P2.10 — Lernvorschläge dauerhaft speichern
+**Fund bestätigt.** `09`/`09b`s `Vorschlag speichern (SQL bauen)` fügte Lernvorschläge
+bedingungslos per `INSERT ... VALUES` ein — derselbe Befund (gleiche Zieldimension/-wert)
+hätte bei jedem erneuten Lauf, solange die zugrundeliegende Statistik weiter zutrifft, eine
+weitere inhaltsgleiche `status='proposed'`-Zeile angelegt, bevor die vorherige überhaupt
+geprüft/freigegeben/abgelehnt war (`12 – Lernvorschlag-Freigabe` hätte dann mehrere Duplikate
+parallel zur Auswahl gehabt). **Lösung:** `INSERT ... SELECT ... WHERE NOT EXISTS` gegen
+bereits offene (`status='proposed'`) Vorschläge für denselben Zielwert; bereits
+aktivierte/abgelehnte Vorschläge blockieren bewusst NICHT (Situation kann sich seit der letzten
+Entscheidung geändert haben). **Risiko:** niedrig (rein additive Bedingung, keine
+Geschäftslogik verändert). **Test:** JS-Syntax geprüft, beide live gepusht + verifiziert.
+
+### P2.11 — News-Retry unabhängig vom RSS-Ergebnis
+**Fund bestätigt.** `03`s `Einmal-Trigger (Faellige laden)` (Einstieg in die KI-Bewertung
+bereits gespeicherter pending/retry-News, inhaltlich unabhängig von neuen RSS-Ergebnissen) hing
+strukturell an `Einmal-Trigger (Dedup+Faellige)`, das nur ausgeführt wird, wenn nach dem
+RSS-Fetch mindestens 1 echtes News-Item durchkommt (n8n führt einen Node bei 0 Input-Items gar
+nicht erst aus). Bei einem vollständigen RSS-Ausfall (alle Quellen down) wäre die
+Retry-Bewertung für die ganze Stunde stillschweigend komplett ausgefallen. **Lösung:** Node
+hängt jetzt direkt am Schedule-Trigger (garantiert immer genau 1 Item), parallel zum
+RSS-Zweig — reine Connections-Änderung, kein Node-Code-Aufbau geändert. **Risiko:** niedrig.
+**Test:** Graph-Integrität (keine hängenden Referenzen) + JS-Syntax geprüft, live gepusht +
+verifiziert.
+
+### P2.12 — Cleanup-Workflow doppelte Node-IDs
+**Fund bestätigt.** `04 – Cleanup News-Tabellen` hatte 2 Knotenpaare mit doppelter Node-ID
+("Log Cleanup-Lauf" und "Archiviere abgeschlossene News" teilten sich beide dieselben IDs).
+**Lösung:** auf nächste freie IDs in der bestehenden fortlaufenden Nummerierung umnummeriert;
+Connections referenzieren Nodes über Namen, daher unberührt. **Risiko:** keines (reine
+ID-Kosmetik). **Test:** projektweiter Duplikat-Scan über alle 20 Workflows (0 verbleibende
+Treffer), live gepusht + verifiziert.
+
+### P2.13 — Veraltete TODOs
+**Kein Fund.** Projektweiter Scan über alle Workflow-JS-Nodes nach `// TODO`/`FIXME`-Markern:
+0 Treffer. `OFFENE_AUFGABEN.md` (das eigentliche lebende Aufgaben-Dokument) ist durchgängig
+aktuell gepflegt, keine widersprüchlichen oder erledigten-aber-offen-markierten Einträge
+gefunden. Ein historischer TODO-Platzhalter in `MIGRATIONSPLAN_AGENTEN.md` ist Teil eines
+bereits als überholt gekennzeichneten Planungsabschnitts (Archiv, nicht editieren).
+
+### P2.14 — Markt-Screener-Abgrenzung
+**Kein Fund.** Live-Code-Audit bestätigt exakt, was `docs/MARKTSCANNER.md` bereits beschreibt:
+`13` schreibt an keiner Stelle nach `trading.recommendations` oder in
+`watchlist`/`stock_instruments`, `06` liest an keiner Stelle `scan_candidates`/`scan_runs`.
+Abgrenzung ist bereits vollständig und korrekt sowohl dokumentiert als auch im Code umgesetzt.
+
+### P2.15 — Semantische Variablennamen
+**Kein Fund.** Projektweiter Scan nach typischen Platzhalter-Mustern (`tmp`/`temp`/`foo`/`bar`/
+`dataN`/`xN`) über alle Workflow-JS-Nodes: einziger Treffer war `bar`/`barsRows`/`barByTicker`
+in `14` — das ist der etablierte Fachbegriff für eine Kurskerze (OHLC-Bar), kein
+Platzhaltername. Durchgängig klare, semantische (deutsch/englisch gemischte
+Fach-)Bezeichnungen in allen geprüften Dateien.
 
 ## Nicht aktivierte Module — unverändert
 
