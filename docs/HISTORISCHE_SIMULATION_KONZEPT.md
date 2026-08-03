@@ -219,14 +219,44 @@ aktualisiert `checkpoint_json`/`heartbeat_at`. Duplikatschutz über
 gesteuert vom `overwrite_mode`-Parameter. Anbieterlimits über `pipeline_config`
 (`SIMULATION_MAX_PARALLEL_RUNS` u. ä.) statt hartkodiert.
 
-### 4.2 Workflow 16 — Historische Nachrichten importieren
+### 4.2 Workflow 16 — Historische Nachrichten importieren (GDELT, siehe Abschnitt 8.4)
 
-Gleiches Job-Muster wie Workflow 15, schreibt nach `historical_news`. Verknüpfung mit
-Instrumenten über dieselbe `ticker`-Zuordnungslogik wie `03` (Watchlist-Abgleich), **kontrolliert
-wiederverwendet**: die bestehende `KI: Nachricht bewerten`-Bewertungslogik aus `03` wird als
-eigener, per `Execute Workflow`-Aufruf angebundener Baustein genutzt (kein Copy-Paste-Duplikat
-des Prompts), aber schreibt in `historical_news`/eine noch zu ergänzende
-`historical_news_assessments`-Struktur statt in `news_assessments` — Details in Phase 5.
+Gleiches Job-/Worker-Muster wie Workflow 15, aber pro Paket ein **15-Minuten-Zeitfenster**
+statt ein Instrument (Instrumentenzuordnung passiert erst NACH dem Download, nicht beim
+Job-Zuschnitt — GDELT liefert einen globalen Strom, keine instrumentspezifische Abfrage):
+
+1. **Zeitraumpakete**: `import_job_items.period_from`/`period_to` sind hier je ein
+   15-Minuten-Fenster (nicht ein Instrument) — bei einer mehrjährigen Historie entstehen so
+   zehn- bis hunderttausende Items; Paketgröße/Fortsetzbarkeit exakt wie Workflow 15
+   (`checkpoint_json`, `heartbeat_at`, stale-Item-Selbstheilung).
+2. **Download**: pro Fenster ein kleines Suchfenster (Minute 0–5 nach der Marke) gegen
+   `data.gdeltproject.org/gdeltv3/gal/{ts}.gal.json.gz` probieren, alle antwortenden Dateien
+   laden und entpacken (kein API-Key, kein Rate-Limit-Header bekannt — konservatives Delay
+   zwischen Anfragen wie bei jedem unauthentifizierten öffentlichen Dienst).
+3. **Deduplizierung**: `UNIQUE(news_key, provider)` auf `historical_news`, `news_key` aus
+   normalisierter `url` (matches GDELTs eigene Duplikat-Warnung).
+4. **Unternehmenszuordnung** (neu, nicht in Workflow 15 nötig): pro Artikel Titel+Beschreibung
+   gegen `stock_instruments.name`/`aliases_json` (= die "Keywords" der Anforderung — `aliases_json`
+   ist bereits die Keyword-Liste, kein neues Feld nötig) sowie `exclude_patterns_json` prüfen.
+   Quelle ist `stock_instruments` direkt, nicht `trading.watchlist`: letztere enthält nur eine
+   einmalig geseedete Kopie derselben Daten (`007_runtime_schema_reconciliation.sql`,
+   `ON CONFLICT DO NOTHING`) und kann seither von `stock_instruments` abweichen. Eindeutiger
+   Treffer → `linked_tickers_json`; **mehrdeutiger Treffer (mehrere Instrumente gleichzeitig
+   plausibel) → explizit als unklar markieren**, nicht erraten; kein Treffer +
+   Wirtschafts-/Marktbezug erkennbar → `is_general_market=true`; sonst verworfen (kein
+   Datenbankeintrag, kein Bezug zum Projekt).
+5. **Analyse-Wiederverwendung**: Titel+Beschreibung durch dieselbe Bewertungslogik wie `03`s
+   `KI: Nachricht bewerten` schicken (kontrolliert wiederverwendet als `Execute Workflow`-
+   Baustein, kein Prompt-Duplikat), Ergebnis in eine noch zu ergänzende
+   `historical_news_assessments`-Struktur statt `news_assessments` — Details in Phase 5.
+6. **Datenqualität**: fehlender Volltext (GDELT liefert nur Titel/Kurzbeschreibung) wird als
+   strukturiertes Qualitätsmerkmal auf der Zeile dokumentiert, nicht verschwiegen — Simulation
+   und Dashboard müssen sichtbar machen, dass die Bewertung auf Titel+Beschreibung statt
+   Volltext beruht.
+7. **Live-Feeds unverändert**: `trading.rss_sources`/`03` bleiben ausschließlich für aktuelle
+   Nachrichten zuständig, keine Vermischung mit dem GDELT-Importpfad.
+8. **Common Crawl CC-News**: bewusst nicht in Phase 5 — als späterer, optionaler Fallback
+   vermerkt, falls GDELT-Abdeckung für bestimmte Zeiträume unzureichend ist.
 
 ### 4.3 Workflow 17 — Walk-Forward-Simulation
 
@@ -372,13 +402,39 @@ einzufuehren.
 
 ### 8.4 Datenanbieter für historische Nachrichten (Workflow 16)
 
-**Nicht spezifiziert.** Der Auftrag verlangt explizit, dass „normale RSS-Feeds nur verwendet
-werden dürfen, wenn sie tatsächlich historische Daten liefern" — die aktuellen 7 RSS-Quellen aus
-`trading.rss_sources` sind Live-Feeds ohne Archiv-Fähigkeit. Ein echtes Nachrichtenarchiv
-(z. B. ein News-API-Anbieter mit historischem Zugriff) ist bisher nicht Teil des Projekts und
-muss vom Nutzer benannt werden, bevor Workflow 16 produktiv nutzbar ist. `historical_news`
-wird unabhängig davon bereits in `sql/057` angelegt (anbieteragnostisch), damit spätere
-Anbieter-Anbindung keine weitere Schema-Änderung braucht.
+**Entschieden 2026-08-03: GDELT Article List (GAL) Historical Backfile, kein Login/API-Key.**
+Live verifiziert (nicht nur aus der Doku übernommen):
+
+- **Basis-URL:** `http://data.gdeltproject.org/gdeltv3/gal/{YYYYMMDDHHMMSS}.gal.json.gz`
+  (gzip-komprimiertes JSON-NL, ein JSON-Objekt pro Zeile).
+- **Historische Abdeckung:** ab 2020-01-01 bis heute, live an mehreren Stichproben (2020,
+  2023) bestätigt erreichbar.
+- **Zeitraster ist NICHT exakt `:00/:15/:30/:45`.** Dateien clustern typischerweise 1–4
+  Minuten NACH jeder Viertelstunden-Marke, der genaue Offset variiert (live beobachtet: 2020
+  bei +1..+3, 2023 bei +2..+3) — **pro 15-Minuten-Fenster muss ein kleines Suchfenster
+  (Minute 0–5 nach der Marke) durchprobiert werden**, alle mit HTTP 200 antwortenden Dateien
+  herunterladen (können mehrere pro Fenster sein), 404 ist der Normalfall für die meisten
+  Minuten und kein Fehler.
+- **JSON-Zeilen-Schema** (live bestätigt): `date` (Zeitstempel), `url`, `domain`,
+  `outletName`, `outletLogo`, `outletTwitter`, `title`, `image`, `desc` (Kurzbeschreibung/
+  Meta-Description, laut GDELT bei ~91% der Artikel vorhanden), `lang` (CLD2-Sprachcode),
+  `author`. **Kein Volltext** — nur Titel + Kurzbeschreibung, kein vollständiger Artikeltext.
+  Wird als Datenqualitätseinschränkung dokumentiert (`historical_news.raw_content` bleibt
+  NULL für GDELT-Quellen; Analyse arbeitet auf Titel+Beschreibung statt Volltext).
+- **Hohe Duplikatrate laut GDELT selbst** ("substantially elevated number of duplicate
+  records") — Deduplizierung über `UNIQUE(news_key, provider)` (news_key aus normalisierter
+  URL) ist Pflicht, nicht optional.
+- **Kein Ticker-/Unternehmensbezug in den Daten selbst** — das ist ein globaler,
+  themenunabhängiger Nachrichtenstrom (keine Finanz-spezifische Filterung von GDELT aus).
+  Unternehmenszuordnung muss vollständig clientseitig über die bestehende
+  `stock_instruments`-Tabelle erfolgen (Name, `aliases_json`, Keywords, `exclude_patterns_json`
+  — dieselben Felder, die `trading.watchlist`/`stock_instruments` laut Ist-Zustand bereits
+  für Themen-/Keyword-Matching vorhalten, siehe Abschnitt 1.1).
+- **Fallback (spät, optional, noch nicht spezifiziert):** Common Crawl CC-News, nur falls
+  GDELT-Abdeckung für bestimmte Zeiträume/Regionen sich als unzureichend erweist.
+- **Live-Feeds bleiben unverändert bei den bestehenden RSS-Quellen** (`trading.rss_sources`,
+  `03`) — GDELT ist ausschließlich für die historische Simulation, keine Ablösung der
+  Live-Pipeline.
 
 ### 8.5 Umfang der ersten produktiven Version
 
