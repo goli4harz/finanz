@@ -27,10 +27,62 @@ workflow = {
             "typeVersion": 2.5,
             "position": [-176, 0],
             "credentials": {"postgres": PG_CRED}
+        },
+        # Dauerhafter Diagnose-Zugang neben dem manuellen Trigger (2026-08-04): vorher musste
+        # dieser Workflow fuer jede Ad-hoc-Abfrage per API temporaer auf einen Webhook umgebaut
+        # und danach wieder zurueckgesetzt werden - fehleranfaellig (u.a. ein "kein Trigger"-
+        # Fehler beim Zuruecksetzen, weil ein aktiver Workflow keinen reinen Manual-Trigger
+        # akzeptiert) und langsam. Dieser Pfad bleibt dauerhaft bestehen, der manuelle Trigger
+        # samt seiner eigenen fest hinterlegten Query bleibt fuer den Nutzer unveraendert nutzbar.
+        # Interner Host ohne Auth (gleiche Vertrauensgrenze wie alle anderen unauthentifizierten
+        # Aktions-Webhooks in diesem Projekt) - nur fuer Diagnose/Lesezugriffe gedacht.
+        {
+            "parameters": {"httpMethod": "POST", "path": "diagnose-sql", "responseMode": "responseNode", "options": {}},
+            "id": "30000000-0000-4000-8000-000000000003",
+            "name": "Webhook Diagnose (POST)",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [-400, 200]
+        },
+        {
+            "parameters": {
+                "jsCode": "const sql = String(($json.body || {}).sql || '').trim();\nif (!sql) return [{ json: { _error: 'Feld \"sql\" fehlt im POST-Body.' } }];\nreturn [{ json: { query: sql } }];"
+            },
+            "id": "30000000-0000-4000-8000-000000000004",
+            "name": "Baue Query aus Body",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [-176, 200]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "={{ $json.query }}",
+                "options": {}
+            },
+            "id": "30000000-0000-4000-8000-000000000005",
+            "name": "Query ausfuehren (dynamisch)",
+            "type": "n8n-nodes-base.postgres",
+            "typeVersion": 2.5,
+            "position": [48, 200],
+            "alwaysOutputData": True,
+            "onError": "continueRegularOutput",
+            "credentials": {"postgres": PG_CRED}
+        },
+        {
+            "parameters": {"respondWith": "allIncomingItems", "options": {}},
+            "id": "30000000-0000-4000-8000-000000000006",
+            "name": "Antwort JSON",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [272, 200]
         }
     ],
     "connections": {
-        "Manueller Start": {"main": [[{"node": "Query ausfuehren", "type": "main", "index": 0}]]}
+        "Manueller Start": {"main": [[{"node": "Query ausfuehren", "type": "main", "index": 0}]]},
+        "Webhook Diagnose (POST)": {"main": [[{"node": "Baue Query aus Body", "type": "main", "index": 0}]]},
+        "Baue Query aus Body": {"main": [[{"node": "Query ausfuehren (dynamisch)", "type": "main", "index": 0}]]},
+        "Query ausfuehren (dynamisch)": {"main": [[{"node": "Antwort JSON", "type": "main", "index": 0}]]}
     },
     "pinData": {},
     "settings": {"executionOrder": "v1"}

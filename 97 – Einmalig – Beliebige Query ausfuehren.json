@@ -1,11 +1,5 @@
 {
-  "updatedAt": "2026-08-02T08:36:04.463Z",
-  "createdAt": "2026-07-19T13:27:11.388Z",
-  "id": "NInmI0f9TfdndwI1",
   "name": "97 – Einmalig – Beliebige Query ausfuehren",
-  "description": null,
-  "active": false,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {},
@@ -21,7 +15,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT config_key, value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_PAPER_TRADING';",
+        "query": "SELECT 1 AS platzhalter;",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -38,6 +32,72 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "diagnose-sql",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000003",
+      "name": "Webhook Diagnose (POST)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const sql = String(($json.body || {}).sql || '').trim();\nif (!sql) return [{ json: { _error: 'Feld \"sql\" fehlt im POST-Body.' } }];\nreturn [{ json: { query: sql } }];"
+      },
+      "id": "30000000-0000-4000-8000-000000000004",
+      "name": "Baue Query aus Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.query }}",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000005",
+      "name": "Query ausfuehren (dynamisch)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        48,
+        200
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000006",
+      "name": "Antwort JSON",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        200
+      ]
     }
   ],
   "connections": {
@@ -51,37 +111,43 @@
           }
         ]
       ]
+    },
+    "Webhook Diagnose (POST)": {
+      "main": [
+        [
+          {
+            "node": "Baue Query aus Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query aus Body": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren (dynamisch)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query ausfuehren (dynamisch)": {
+      "main": [
+        [
+          {
+            "node": "Antwort JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
+  "pinData": {},
   "settings": {
     "executionOrder": "v1"
-  },
-  "staticData": null,
-  "meta": null,
-  "pinData": null,
-  "versionId": "609000da-1e48-46bc-9aa0-238d1b2128e8",
-  "activeVersionId": null,
-  "versionCounter": 130,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-07-19T13:27:11.388Z",
-      "createdAt": "2026-07-19T13:27:11.388Z",
-      "role": "workflow:owner",
-      "workflowId": "NInmI0f9TfdndwI1",
-      "projectId": "CrnegVcMvlcRU0OP",
-      "project": {
-        "updatedAt": "2026-05-23T11:38:39.411Z",
-        "createdAt": "2026-05-23T11:33:40.374Z",
-        "id": "CrnegVcMvlcRU0OP",
-        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      }
-    }
-  ],
-  "tags": [],
-  "activeVersion": null
+  }
 }
