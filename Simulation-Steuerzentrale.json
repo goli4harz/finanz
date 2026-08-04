@@ -1,0 +1,528 @@
+{
+  "name": "Simulation-Steuerzentrale",
+  "nodes": [
+    {
+      "id": "sz-wh-uebersicht",
+      "name": "Webhook GET Uebersicht",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -200
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "simulation-uebersicht",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "sz-db-jobs",
+      "name": "DB: Jobs-Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -960,
+        -280
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT job_type, status, count(*) AS anzahl FROM trading.import_jobs GROUP BY job_type, status;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "sz-db-laeufe",
+      "name": "DB: Laeufe",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -960,
+        -200
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT br.id, br.name, br.status, br.start_date, br.end_date, br.progress_total, br.progress_completed, br.news_enabled, br.last_heartbeat, sm.total_return_pct, sm.trade_count, sm.max_drawdown_pct FROM trading.backtest_runs br LEFT JOIN trading.simulation_metrics sm ON sm.simulation_run_id = br.id WHERE br.created_by = 'simulation-steuerzentrale' OR br.created_by IS NOT NULL ORDER BY br.started_at DESC NULLS LAST, br.id DESC LIMIT 10;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "sz-db-datenumfang",
+      "name": "DB: Datenumfang",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -960,
+        -120
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT (SELECT count(*) FROM trading.historical_price_data) AS preis_zeilen, (SELECT count(DISTINCT ticker) FROM trading.historical_price_data) AS preis_ticker, (SELECT min(trading_date) FROM trading.historical_price_data) AS preis_von, (SELECT max(trading_date) FROM trading.historical_price_data) AS preis_bis, (SELECT count(*) FROM trading.historical_news) AS news_zeilen, (SELECT count(*) FROM trading.historical_news_assessments) AS news_bewertet;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "sz-code-uebersicht",
+      "name": "Baue Uebersicht HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "function nav(active) {\n  const items = [\n    ['simulation-uebersicht', 'Uebersicht'],\n    ['simulation-vergleich', 'Vergleich'],\n    ['historische-marktdaten', 'Marktdaten-Import (WF15)'],\n    ['historische-nachrichten', 'Nachrichten-Import (WF16)'],\n    ['historische-simulation', 'Laeufe verwalten (WF17)']\n  ];\n  return '<nav>' + items.map(([path, label]) =>\n    '<a href=\"/webhook/' + path + '\" class=\"' + (path === active ? 'active' : '') + '\">' + label + '</a>'\n  ).join('') + '</nav>';\n}\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtNum(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits); }\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\nconst CSS = 'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;max-width:1100px;margin:0 auto;}'\n  + 'h1{color:#fff;} h2{color:#fff;margin-top:28px;} table{border-collapse:collapse;width:100%;margin-top:12px;}'\n  + 'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:13px;}'\n  + 'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}'\n  + '.pos{color:#7fd88f;} .neg{color:#e08080;}'\n  + 'nav{margin-bottom:20px;} nav a{color:#8ab4f8;text-decoration:none;margin-right:16px;padding:4px 0;}'\n  + 'nav a.active{color:#fff;border-bottom:2px solid #2d6cdf;} nav a:hover{text-decoration:underline;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}'\n  + '.kpi{background:#232323;padding:12px 18px;border-radius:8px;min-width:140px;}'\n  + '.kpi .label{font-size:11px;color:#999;text-transform:uppercase;} .kpi .value{font-size:22px;color:#fff;margin-top:4px;}'\n  + '.bar-wrap{display:flex;align-items:flex-end;gap:1px;height:80px;background:#151515;padding:4px;border-radius:4px;}'\n  + '.bar{background:#2d6cdf;flex:1;min-width:1px;}'\n  + '.hint{font-size:12px;color:#888;margin-top:4px;}';\nconst jobs = $('DB: Jobs-Status').all().map(i => i.json).filter(j => j && j.job_type);\nconst runs = $('DB: Laeufe').all().map(i => i.json).filter(j => j && j.id !== undefined);\nconst umfangRows = $('DB: Datenumfang').all().map(i => i.json).filter(j => j && j.preis_zeilen !== undefined);\nconst umfang = umfangRows[0] || {};\n\nconst STATUS_LABEL = {\n  draft: 'Entwurf', queued: 'wartet', running: 'laeuft', pausing: 'pausiert (wird beendet)',\n  paused: 'pausiert', completed: 'abgeschlossen', completed_with_warnings: 'abgeschlossen (mit Warnungen)',\n  failed: 'fehlgeschlagen', cancelled: 'abgebrochen'\n};\n\nfunction jobCount(type, statuses) {\n  return jobs.filter(j => j.job_type === type && statuses.includes(j.status)).reduce((a, j) => a + Number(j.anzahl), 0);\n}\nconst marktAktiv = jobCount('market_data', ['queued', 'running', 'pausing']);\nconst newsAktiv = jobCount('news', ['queued', 'running', 'pausing']);\nconst laufeAktiv = runs.filter(r => ['queued', 'running', 'pausing'].includes(r.status)).length;\n\nconst runsHtml = runs.map(r => {\n  const prog = r.progress_total > 0 ? Math.round(100 * (r.progress_completed || 0) / r.progress_total) : 0;\n  const retKlass = r.total_return_pct > 0 ? 'pos' : (r.total_return_pct < 0 ? 'neg' : '');\n  return '<tr>' +\n    '<td><a href=\"/webhook/simulation-lauf?run_id=' + esc(r.id) + '\" style=\"color:#8ab4f8;\">' + esc(r.name || ('Lauf ' + r.id)) + '</a></td>' +\n    '<td>' + esc(fmtDateOnly(r.start_date)) + ' - ' + esc(fmtDateOnly(r.end_date)) + '</td>' +\n    '<td><span class=\"badge\">' + (STATUS_LABEL[r.status] || esc(r.status)) + '</span>' + (r.news_enabled ? ' <span class=\"badge\" title=\"Nachrichten aktiv\">News</span>' : '') + '</td>' +\n    '<td>' + prog + '%</td>' +\n    '<td class=\"' + retKlass + '\">' + (r.total_return_pct !== null ? fmtNum(r.total_return_pct) + '%' : '-') + '</td>' +\n    '<td>' + (r.trade_count ?? '-') + '</td>' +\n  '</tr>';\n}).join('');\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Historische Simulation - Uebersicht</title><style>' + CSS + '</style></head><body>' +\n  nav('simulation-uebersicht') +\n  '<h1>Historische Simulation - Uebersicht</h1>' +\n  '<div class=\"kpi-row\">' +\n    '<div class=\"kpi\"><div class=\"label\">Aktive Marktdaten-Importe</div><div class=\"value\">' + marktAktiv + '</div></div>' +\n    '<div class=\"kpi\"><div class=\"label\">Aktive Nachrichten-Importe</div><div class=\"value\">' + newsAktiv + '</div></div>' +\n    '<div class=\"kpi\"><div class=\"label\">Aktive Simulationslaeufe</div><div class=\"value\">' + laufeAktiv + '</div></div>' +\n    '<div class=\"kpi\"><div class=\"label\">Kurs-Zeilen</div><div class=\"value\">' + Number(umfang.preis_zeilen || 0).toLocaleString('de-DE') + '</div></div>' +\n    '<div class=\"kpi\"><div class=\"label\">Nachrichten (bewertet)</div><div class=\"value\">' + Number(umfang.news_zeilen || 0).toLocaleString('de-DE') + ' (' + Number(umfang.news_bewertet || 0).toLocaleString('de-DE') + ')</div></div>' +\n  '</div>' +\n  '<div class=\"hint\">Kursdaten: ' + esc(umfang.preis_ticker || 0) + ' Ticker, ' + esc(fmtDateOnly(umfang.preis_von)) + ' bis ' + esc(fmtDateOnly(umfang.preis_bis)) + '</div>' +\n  '<h2>Letzte Simulationslaeufe</h2>' +\n  '<table><tr><th>Name</th><th>Zeitraum</th><th>Status</th><th>Fortschritt</th><th>Rendite</th><th>Trades</th></tr>' +\n  (runsHtml || '<tr><td colspan=\"6\">Noch keine Laeufe.</td></tr>') +\n  '</table>' +\n  '<p class=\"hint\">Import-/Lauf-Verwaltung (starten/pausieren/abbrechen) weiterhin ueber die jeweiligen eigenen Seiten (siehe Navigation oben).</p>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "sz-resp-uebersicht",
+      "name": "Antwort Uebersicht",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        -200
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sz-wh-lauf",
+      "name": "Webhook GET Lauf-Detail",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        200
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "simulation-lauf",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "sz-code-validiere",
+      "name": "Validiere run_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const runId = Number(($json.query || {}).run_id);\nif (!Number.isInteger(runId) || runId <= 0) {\n  return [{ json: { _invalid: true } }];\n}\nreturn [{ json: { run_id: runId, _invalid: false } }];\n"
+      }
+    },
+    {
+      "id": "sz-db-lauf-info",
+      "name": "DB: Lauf-Info",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -720,
+        80
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT br.*, sm.final_equity, sm.total_return_pct, sm.annualized_return_pct, sm.max_drawdown_pct, sm.volatility_pct, sm.sharpe_ratio, sm.win_rate_pct, sm.profit_factor, sm.average_win, sm.average_loss, sm.trade_count, sm.average_holding_period_days, sm.total_commission, sm.total_slippage, sm.unfilled_order_pct FROM trading.backtest_runs br LEFT JOIN trading.simulation_metrics sm ON sm.simulation_run_id = br.id WHERE br.id = {{ $('Validiere run_id').all()[0].json.run_id || 0 }};",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sz-db-equity",
+      "name": "DB: Equity-Kurve",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -720,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT simulated_date, total_equity, drawdown_pct FROM trading.simulation_daily_portfolio WHERE simulation_run_id = {{ $('Validiere run_id').all()[0].json.run_id || 0 }} ORDER BY simulated_date;",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sz-db-trades",
+      "name": "DB: Trades",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -720,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT trade_id, ticker, strategy, direction, as_of_date, simulated_entry_price, exit_price, exit_reason, net_pnl, realized_r_multiple, status, holding_period_days FROM trading.simulation_trades WHERE simulation_run_id = {{ $('Validiere run_id').all()[0].json.run_id || 0 }} ORDER BY as_of_date DESC LIMIT 200;",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sz-db-fehler",
+      "name": "DB: Fehler",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -720,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT occurred_at, ticker, simulated_date, error_class, message, retryable FROM trading.simulation_errors WHERE simulation_run_id = {{ $('Validiere run_id').all()[0].json.run_id || 0 }} ORDER BY occurred_at DESC LIMIT 50;",
+        "options": {}
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "sz-code-lauf",
+      "name": "Baue Lauf-Detail HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        200
+      ],
+      "parameters": {
+        "jsCode": "function nav(active) {\n  const items = [\n    ['simulation-uebersicht', 'Uebersicht'],\n    ['simulation-vergleich', 'Vergleich'],\n    ['historische-marktdaten', 'Marktdaten-Import (WF15)'],\n    ['historische-nachrichten', 'Nachrichten-Import (WF16)'],\n    ['historische-simulation', 'Laeufe verwalten (WF17)']\n  ];\n  return '<nav>' + items.map(([path, label]) =>\n    '<a href=\"/webhook/' + path + '\" class=\"' + (path === active ? 'active' : '') + '\">' + label + '</a>'\n  ).join('') + '</nav>';\n}\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtNum(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits); }\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\nconst CSS = 'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;max-width:1100px;margin:0 auto;}'\n  + 'h1{color:#fff;} h2{color:#fff;margin-top:28px;} table{border-collapse:collapse;width:100%;margin-top:12px;}'\n  + 'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:13px;}'\n  + 'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}'\n  + '.pos{color:#7fd88f;} .neg{color:#e08080;}'\n  + 'nav{margin-bottom:20px;} nav a{color:#8ab4f8;text-decoration:none;margin-right:16px;padding:4px 0;}'\n  + 'nav a.active{color:#fff;border-bottom:2px solid #2d6cdf;} nav a:hover{text-decoration:underline;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}'\n  + '.kpi{background:#232323;padding:12px 18px;border-radius:8px;min-width:140px;}'\n  + '.kpi .label{font-size:11px;color:#999;text-transform:uppercase;} .kpi .value{font-size:22px;color:#fff;margin-top:4px;}'\n  + '.bar-wrap{display:flex;align-items:flex-end;gap:1px;height:80px;background:#151515;padding:4px;border-radius:4px;}'\n  + '.bar{background:#2d6cdf;flex:1;min-width:1px;}'\n  + '.hint{font-size:12px;color:#888;margin-top:4px;}';\nconst ctx = $('Validiere run_id').all()[0].json;\nif (ctx._invalid) {\n  const html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Ungueltiger Lauf</title>' +\n    '<style>' + CSS + '</style></head><body>' + nav('simulation-uebersicht') +\n    '<h1>Ungueltige Lauf-ID</h1><p>Bitte ueber die <a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;\">Uebersicht</a> einen Lauf auswaehlen.</p></body></html>';\n  return [{ json: { html } }];\n}\n\nconst infoRows = $('DB: Lauf-Info').all().map(i => i.json).filter(j => j && j.id !== undefined);\nconst equity = $('DB: Equity-Kurve').all().map(i => i.json).filter(j => j && j.simulated_date);\nconst trades = $('DB: Trades').all().map(i => i.json).filter(j => j && j.trade_id);\nconst fehler = $('DB: Fehler').all().map(i => i.json).filter(j => j && j.occurred_at);\nconst info = infoRows[0];\n\nif (!info) {\n  const html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>Lauf nicht gefunden</title>' +\n    '<style>' + CSS + '</style></head><body>' + nav('simulation-uebersicht') +\n    '<h1>Lauf ' + ctx.run_id + ' nicht gefunden</h1></body></html>';\n  return [{ json: { html } }];\n}\n\nconst STATUS_LABEL = {\n  draft: 'Entwurf', queued: 'wartet', running: 'laeuft', pausing: 'pausiert (wird beendet)',\n  paused: 'pausiert', completed: 'abgeschlossen', completed_with_warnings: 'abgeschlossen (mit Warnungen)',\n  failed: 'fehlgeschlagen', cancelled: 'abgebrochen'\n};\n\n// Equity-Kurve als einfaches Balkendiagramm (relative Hoehe zwischen Min/Max der Reihe) -\n// gleiches Stilprinzip wie 07s bestehendes Balkendiagramm, kein externes Chart-JS noetig.\nlet barsHtml = '<div class=\"hint\">Noch keine Equity-Daten.</div>';\nif (equity.length > 0) {\n  const values = equity.map(e => Number(e.total_equity));\n  const min = Math.min(...values), max = Math.max(...values);\n  const range = (max - min) || 1;\n  const bars = equity.map(e => {\n    const v = Number(e.total_equity);\n    const pct = 10 + 90 * (v - min) / range;\n    const title = esc(fmtDateOnly(e.simulated_date)) + ': ' + fmtNum(v, 0) + ' EUR';\n    return '<div class=\"bar\" style=\"height:' + pct.toFixed(1) + '%;\" title=\"' + title + '\"></div>';\n  }).join('');\n  barsHtml = '<div class=\"bar-wrap\">' + bars + '</div>' +\n    '<div class=\"hint\">' + esc(fmtDateOnly(equity[0].simulated_date)) + ' bis ' + esc(fmtDateOnly(equity[equity.length - 1].simulated_date)) +\n    ' - Min ' + fmtNum(min, 0) + ' EUR / Max ' + fmtNum(max, 0) + ' EUR</div>';\n}\n\nconst tradesHtml = trades.map(t => {\n  const pnlKlass = t.net_pnl > 0 ? 'pos' : (t.net_pnl < 0 ? 'neg' : '');\n  return '<tr>' +\n    '<td>' + esc(fmtDateOnly(t.as_of_date)) + '</td>' +\n    '<td>' + esc(t.ticker) + '</td>' +\n    '<td>' + esc(t.strategy) + '</td>' +\n    '<td>' + esc(t.direction) + '</td>' +\n    '<td>' + (t.simulated_entry_price !== null ? fmtNum(t.simulated_entry_price) : '-') + '</td>' +\n    '<td>' + (t.exit_price !== null ? fmtNum(t.exit_price) : '-') + '</td>' +\n    '<td>' + esc(t.exit_reason || '-') + '</td>' +\n    '<td class=\"' + pnlKlass + '\">' + (t.net_pnl !== null ? fmtNum(t.net_pnl) : '-') + '</td>' +\n    '<td>' + (t.realized_r_multiple !== null ? fmtNum(t.realized_r_multiple) + 'R' : '-') + '</td>' +\n    '<td><span class=\"badge\">' + esc(t.status) + '</span></td>' +\n  '</tr>';\n}).join('');\n\nconst fehlerHtml = fehler.map(f => '<tr>' +\n  '<td>' + esc(fmtDateOnly(f.simulated_date)) + '</td>' +\n  '<td>' + esc(f.ticker || '-') + '</td>' +\n  '<td>' + esc(f.error_class) + '</td>' +\n  '<td>' + esc(f.message) + '</td>' +\n  '<td>' + (f.retryable ? 'ja' : 'nein') + '</td>' +\n'</tr>').join('');\n\nfunction kpi(label, value) {\n  return '<div class=\"kpi\"><div class=\"label\">' + esc(label) + '</div><div class=\"value\">' + esc(value) + '</div></div>';\n}\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Lauf: ' + esc(info.name || info.id) + '</title><style>' + CSS + '</style></head><body>' +\n  nav('simulation-uebersicht') +\n  '<h1>' + esc(info.name || ('Lauf ' + info.id)) + '</h1>' +\n  '<div class=\"hint\">' + esc(fmtDateOnly(info.start_date)) + ' - ' + esc(fmtDateOnly(info.end_date)) +\n  ' | Status: <span class=\"badge\">' + (STATUS_LABEL[info.status] || esc(info.status)) + '</span>' +\n  (info.news_enabled ? ' <span class=\"badge\">News aktiv</span>' : '') + '</div>' +\n  '<div class=\"kpi-row\">' +\n    kpi('Endkapital', info.final_equity !== null ? fmtNum(info.final_equity, 0) + ' EUR' : '-') +\n    kpi('Gesamtrendite', info.total_return_pct !== null ? fmtNum(info.total_return_pct) + '%' : '-') +\n    kpi('Max Drawdown', info.max_drawdown_pct !== null ? fmtNum(info.max_drawdown_pct) + '%' : '-') +\n    kpi('Sharpe Ratio', info.sharpe_ratio !== null ? fmtNum(info.sharpe_ratio, 2) : '-') +\n    kpi('Trefferquote', info.win_rate_pct !== null ? fmtNum(info.win_rate_pct) + '%' : '-') +\n    kpi('Trades', info.trade_count ?? '-') +\n  '</div>' +\n  '<h2>Equity-Kurve</h2>' + barsHtml +\n  '<h2>Trades (max. 200, neueste zuerst)</h2>' +\n  '<table><tr><th>Datum</th><th>Ticker</th><th>Strategie</th><th>Richtung</th><th>Einstieg</th><th>Ausstieg</th><th>Grund</th><th>Netto-P&amp;L</th><th>R-Multiple</th><th>Status</th></tr>' +\n  (tradesHtml || '<tr><td colspan=\"10\">Noch keine Trades.</td></tr>') +\n  '</table>' +\n  '<h2>Fehler (max. 50, neueste zuerst)</h2>' +\n  '<table><tr><th>Datum</th><th>Ticker</th><th>Klasse</th><th>Meldung</th><th>Wiederholbar</th></tr>' +\n  (fehlerHtml || '<tr><td colspan=\"5\">Keine Fehler.</td></tr>') +\n  '</table>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "sz-resp-lauf",
+      "name": "Antwort Lauf-Detail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        200
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sz-wh-vergleich",
+      "name": "Webhook GET Vergleich",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        600
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "simulation-vergleich",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "sz-db-vergleich",
+      "name": "DB: Vergleich",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -960,
+        600
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT br.id, br.name, br.start_date, br.end_date, br.news_enabled, br.status, sm.total_return_pct, sm.annualized_return_pct, sm.max_drawdown_pct, sm.sharpe_ratio, sm.win_rate_pct, sm.profit_factor, sm.trade_count FROM trading.backtest_runs br JOIN trading.simulation_metrics sm ON sm.simulation_run_id = br.id ORDER BY sm.computed_at DESC LIMIT 50;",
+        "options": {}
+      },
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "sz-code-vergleich",
+      "name": "Baue Vergleich HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -720,
+        600
+      ],
+      "parameters": {
+        "jsCode": "function nav(active) {\n  const items = [\n    ['simulation-uebersicht', 'Uebersicht'],\n    ['simulation-vergleich', 'Vergleich'],\n    ['historische-marktdaten', 'Marktdaten-Import (WF15)'],\n    ['historische-nachrichten', 'Nachrichten-Import (WF16)'],\n    ['historische-simulation', 'Laeufe verwalten (WF17)']\n  ];\n  return '<nav>' + items.map(([path, label]) =>\n    '<a href=\"/webhook/' + path + '\" class=\"' + (path === active ? 'active' : '') + '\">' + label + '</a>'\n  ).join('') + '</nav>';\n}\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtNum(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits); }\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\nconst CSS = 'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;max-width:1100px;margin:0 auto;}'\n  + 'h1{color:#fff;} h2{color:#fff;margin-top:28px;} table{border-collapse:collapse;width:100%;margin-top:12px;}'\n  + 'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:13px;}'\n  + 'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}'\n  + '.pos{color:#7fd88f;} .neg{color:#e08080;}'\n  + 'nav{margin-bottom:20px;} nav a{color:#8ab4f8;text-decoration:none;margin-right:16px;padding:4px 0;}'\n  + 'nav a.active{color:#fff;border-bottom:2px solid #2d6cdf;} nav a:hover{text-decoration:underline;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;}'\n  + '.kpi{background:#232323;padding:12px 18px;border-radius:8px;min-width:140px;}'\n  + '.kpi .label{font-size:11px;color:#999;text-transform:uppercase;} .kpi .value{font-size:22px;color:#fff;margin-top:4px;}'\n  + '.bar-wrap{display:flex;align-items:flex-end;gap:1px;height:80px;background:#151515;padding:4px;border-radius:4px;}'\n  + '.bar{background:#2d6cdf;flex:1;min-width:1px;}'\n  + '.hint{font-size:12px;color:#888;margin-top:4px;}';\nconst runs = $('DB: Vergleich').all().map(i => i.json).filter(j => j && j.id !== undefined);\n\nconst rowsHtml = runs.map(r => {\n  const retKlass = r.total_return_pct > 0 ? 'pos' : (r.total_return_pct < 0 ? 'neg' : '');\n  return '<tr>' +\n    '<td><a href=\"/webhook/simulation-lauf?run_id=' + esc(r.id) + '\" style=\"color:#8ab4f8;\">' + esc(r.name || ('Lauf ' + r.id)) + '</a></td>' +\n    '<td>' + esc(fmtDateOnly(r.start_date)) + ' - ' + esc(fmtDateOnly(r.end_date)) + '</td>' +\n    '<td>' + (r.news_enabled ? 'ja' : 'nein') + '</td>' +\n    '<td class=\"' + retKlass + '\">' + fmtNum(r.total_return_pct) + '%</td>' +\n    '<td>' + fmtNum(r.annualized_return_pct) + '%</td>' +\n    '<td>' + fmtNum(r.max_drawdown_pct) + '%</td>' +\n    '<td>' + fmtNum(r.sharpe_ratio, 2) + '</td>' +\n    '<td>' + fmtNum(r.win_rate_pct) + '%</td>' +\n    '<td>' + (r.trade_count ?? '-') + '</td>' +\n  '</tr>';\n}).join('');\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Simulationslaeufe vergleichen</title><style>' + CSS + '</style></head><body>' +\n  nav('simulation-vergleich') +\n  '<h1>Simulationslaeufe vergleichen</h1>' +\n  '<div class=\"hint\">Nur Laeufe mit bereits berechneten Kennzahlen (abgeschlossen oder mit Zwischenstand).</div>' +\n  '<table><tr><th>Name</th><th>Zeitraum</th><th>News</th><th>Rendite</th><th>Rendite p.a.</th><th>Max Drawdown</th><th>Sharpe</th><th>Trefferquote</th><th>Trades</th></tr>' +\n  (rowsHtml || '<tr><td colspan=\"9\">Noch keine ausgewerteten Laeufe.</td></tr>') +\n  '</table>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "sz-resp-vergleich",
+      "name": "Antwort Vergleich",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        600
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook GET Uebersicht": {
+      "main": [
+        [
+          {
+            "node": "DB: Jobs-Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Jobs-Status": {
+      "main": [
+        [
+          {
+            "node": "DB: Laeufe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Laeufe": {
+      "main": [
+        [
+          {
+            "node": "DB: Datenumfang",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Datenumfang": {
+      "main": [
+        [
+          {
+            "node": "Baue Uebersicht HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Uebersicht HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort Uebersicht",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook GET Lauf-Detail": {
+      "main": [
+        [
+          {
+            "node": "Validiere run_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validiere run_id": {
+      "main": [
+        [
+          {
+            "node": "DB: Lauf-Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Lauf-Info": {
+      "main": [
+        [
+          {
+            "node": "DB: Equity-Kurve",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Equity-Kurve": {
+      "main": [
+        [
+          {
+            "node": "DB: Trades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trades": {
+      "main": [
+        [
+          {
+            "node": "DB: Fehler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fehler": {
+      "main": [
+        [
+          {
+            "node": "Baue Lauf-Detail HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Lauf-Detail HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort Lauf-Detail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook GET Vergleich": {
+      "main": [
+        [
+          {
+            "node": "DB: Vergleich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Vergleich": {
+      "main": [
+        [
+          {
+            "node": "Baue Vergleich HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Vergleich HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort Vergleich",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
