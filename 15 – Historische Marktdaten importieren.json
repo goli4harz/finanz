@@ -281,7 +281,7 @@
       "executeOnce": true,
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM trading.import_jobs WHERE status IN ('queued','running','pausing') ORDER BY created_at ASC LIMIT 1;",
+        "query": "SELECT * FROM trading.import_jobs WHERE job_type = 'market_data' AND status IN ('queued','running','pausing') ORDER BY created_at ASC LIMIT 1;",
         "options": {}
       }
     },
