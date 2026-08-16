@@ -1,198 +1,6 @@
 {
-  "name": "16b – Historische Nachrichten bewerten (KI)",
-  "nodes": [
-    {
-      "id": "imp16b-trigger",
-      "name": "Trigger: Bewertungs-Worker (alle 10 Min)",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -4400,
-        2016
-      ],
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 10
-            }
-          ]
-        }
-      }
-    },
-    {
-      "id": "imp16b-db-unbewertete-laden",
-      "name": "DB: Unbewertete historische News laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -4208,
-        2016
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "alwaysOutputData": true,
-      "executeOnce": true,
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT hn.id, hn.title, hn.raw_content, hn.linked_tickers_json, hn.ambiguous_candidates_json, hn.is_general_market, hn.has_full_text FROM trading.historical_news hn LEFT JOIN trading.historical_news_assessments hna ON hna.news_id = hn.id WHERE hna.id IS NULL AND (hn.ticker_match_status IN ('matched','ambiguous') OR hn.is_general_market = TRUE) ORDER BY hn.id LIMIT 45;",
-        "options": {}
-      }
-    },
-    {
-      "id": "imp16b-pruefe-paket",
-      "name": "Pruefe Paket",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4016,
-        2016
-      ],
-      "parameters": {
-        "jsCode": "// alwaysOutputData:true liefert bei 0 offenen Zeilen ein Platzhalter-Item ohne id - anhand\n// des Pflichtfelds id von einem echten Treffer unterscheiden (gleiches Prinzip wie in\n// Workflow 15/16).\nconst items = $input.all().map(i => i.json).filter(j => j && j.id !== undefined && j.id !== null);\nif (items.length === 0) {\n  return [{ json: { _placeholder: true } }];\n}\nreturn items;\n"
-      }
-    },
-    {
-      "id": "imp16b-if-paket-leer",
-      "name": "IF: Kein Paket offen?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        -3824,
-        2016
-      ],
-      "parameters": {
-        "conditions": {
-          "conditions": [
-            {
-              "id": "paket-leer",
-              "leftValue": "={{ $json._placeholder }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and",
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          }
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "imp16b-batch",
-      "name": "Batch: 15 News pro KI-Aufruf",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        -3632,
-        2016
-      ],
-      "parameters": {
-        "batchSize": 15,
-        "options": {}
-      }
-    },
-    {
-      "id": "imp16b-baue-batch-payload",
-      "name": "Baue Batch-Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -3440,
-        2016
-      ],
-      "parameters": {
-        "jsCode": "// Baut das news_batch-Array fuer die KI. Anders als 03 wird betroffene_ticker NICHT von der\n// KI neu ermittelt (Halluzinationsrisiko), sondern die bereits deterministisch in Workflow 16\n// ermittelte Zuordnung (vorgeschlagene_ticker) wird der KI zur PRUEFUNG vorgelegt - sie\n// bestaetigt oder verwirft, erfindet aber keine neuen Ticker.\nconst items = $input.all().map(i => i.json);\nconst news_batch = items.map(j => ({\n  id: j.id,\n  titel: j.title,\n  beschreibung: j.raw_content || '',\n  vorgeschlagene_ticker: Array.isArray(j.linked_tickers_json) ? j.linked_tickers_json : (Array.isArray(j.ambiguous_candidates_json) ? j.ambiguous_candidates_json : []),\n  ist_markt_makro: j.is_general_market === true\n}));\nreturn [{ json: { news_batch, _originals: items } }];\n"
-      }
-    },
-    {
-      "id": "imp16b-ki-platzhalter",
-      "name": "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -3248,
-        2016
-      ],
-      "parameters": {
-        "jsCode": "// ==========================================================================================\n// PLATZHALTER - MUSS MANUELL ERSETZT WERDEN durch einen echten OpenAI-Node\n// (Typ n8n-nodes-langchain.openAi, wie \"KI: Nachricht bewerten\" in Workflow 03).\n// Modell z.B. gpt-5.4-mini, Credential \"OpenAI account\".\n//\n// SYSTEM-PROMPT (als \"system\"-Message):\n// -------------------------------------------------------------------------------------------\n// Du bist ein sachlicher Aktien-News-Analyst fuer die historische Simulation eines\n// automatisierten Aktien-Beobachtungssystems (KEIN Live-Betrieb - diese Nachrichten liegen\n// in der Vergangenheit und werden fuer Backtesting verwendet).\n//\n// WICHTIGE EINSCHRAENKUNG: Du erhaeltst nur Titel und (falls vorhanden) eine\n// Kurzbeschreibung, NIEMALS den vollstaendigen Artikeltext (Datenquelle: GDELT Article\n// List, liefert grundsaetzlich keinen Volltext). Beruecksichtige diese Einschraenkung\n// explizit in deiner Datenqualitaetsbewertung.\n//\n// Deine Aufgabe: Bewerte ALLE Nachrichten im uebergebenen Array. Fuer jede Nachricht wurde\n// bereits automatisch (NICHT durch dich) anhand von Firmennamen/Aliasen eine vorlaeufige\n// Ticker-Zuordnung ermittelt (Feld vorgeschlagene_ticker) oder als allgemeine\n// Markt-/Makronachricht eingestuft (ist_markt_makro=true). Diese Zuordnung kann falsch/\n// irrelevant sein (z.B. \"BMW\" als Automarke in einem Verkehrsunfall statt als Boersentitel)\n// - PRUEFE KRITISCH, ob tatsaechlich ein boersenrelevanter Bezug besteht, uebernimm die\n// Vorschlaege nicht unbesehen.\n//\n// Regeln:\n// - Keine Anlageberatung, keine Kauf-/Verkaufsempfehlungen, keine erfundenen Fakten.\n// - Antworte ausschliesslich mit einem validen JSON-Array. Kein Markdown, kein Text davor\n//   oder danach.\n//\n// Bewertungsfelder pro Nachricht:\n// - id: (gleiche id wie im Input)\n// - relevanz: \"hoch\" | \"mittel\" | \"niedrig\" | \"irrelevant\"\n// - relevanz_konfidenz: 0-100\n// - sentiment: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n// - kurswirkung: \"steigend\" | \"fallend\" | \"keine\" | \"unklar\"\n// - wahrscheinlichkeit_positiv, wahrscheinlichkeit_negativ, wahrscheinlichkeit_neutral: je\n//   0-1, muessen zusammen (fast) genau 1 ergeben\n// - bezug: kurze Erklaerung\n// - news_kategorie: genau einer von quarterly_results, profit_warning, forecast_change,\n//   merger_acquisition, regulation, management_change, legal_dispute, product_news, macro,\n//   geopolitics, analyst_rating, other\n// - begruendung: ein Satz Begruendung\n// - bestaetigte_ticker: JSON-Array, NUR aus vorgeschlagene_ticker uebernehmen, was du\n//   tatsaechlich fuer zutreffend haeltst. Leer [] wenn keiner zutrifft. Keine neuen Ticker\n//   erfinden.\n// - wirkungsebene: \"einzeltitel\" | \"sektor\" | \"markt\" | \"makro\" | \"unklar\"\n// - wirkungsrichtung: \"positiv\" | \"negativ\" | \"neutral\" | \"unklar\"\n// - wirkung_staerke: \"hoch\" | \"mittel\" | \"niedrig\"\n// - staerke_konfidenz: 0-100\n// - datenqualitaet_score: 0-100, IMMER unter Beruecksichtigung dass kein Volltext vorliegt\n// - begruendung_tickerbezug: kurze Begruendung. Leer wenn kein Tickerbezug.\n//\n// USER-MESSAGE:\n// -------------------------------------------------------------------------------------------\n// Nachrichten:\n// ${JSON.stringify($json.news_batch)}\n//\n// Antworte NUR mit einem JSON-Array der Form:\n// [{\"id\":0,\"relevanz\":\"...\",\"relevanz_konfidenz\":80,\"sentiment\":\"...\",\"kurswirkung\":\"...\",\n//   \"wahrscheinlichkeit_positiv\":0.3,\"wahrscheinlichkeit_negativ\":0.2,\n//   \"wahrscheinlichkeit_neutral\":0.5,\"bezug\":\"...\",\"news_kategorie\":\"...\",\"begruendung\":\"...\",\n//   \"bestaetigte_ticker\":[],\"wirkungsebene\":\"...\",\"wirkungsrichtung\":\"...\",\n//   \"wirkung_staerke\":\"...\",\"staerke_konfidenz\":70,\"datenqualitaet_score\":85,\n//   \"begruendung_tickerbezug\":\"...\"},...]\n// ==========================================================================================\nthrow new Error('PLATZHALTER: Diesen Node durch einen echten OpenAI-Node ersetzen (siehe Kommentar im Code dieses Platzhalter-Nodes fuer den vollstaendigen Prompt).');\n"
-      }
-    },
-    {
-      "id": "imp16b-ki-aufbereiten",
-      "name": "KI-Bewertung aufbereiten",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -3056,
-        2016
-      ],
-      "parameters": {
-        "jsCode": "// Analog 03s \"KI-Bewertung aufbereiten\", angepasst: keine Watchlist-Pruefung der Ticker\n// noetig (die KI bestaetigt/verwirft nur aus der bereits deterministisch ermittelten\n// vorgeschlagene_ticker-Liste, erfindet keine neuen - siehe Prompt im Platzhalter-Node).\nfunction getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  if (resp && resp.choices && resp.choices[0] && resp.choices[0].message) return resp.choices[0].message.content || '';\n  if (resp && typeof resp.content === 'string') return resp.content;\n  return JSON.stringify(resp || '');\n}\n\nfunction parseKiArray(text) {\n  let t = String(text || '').trim();\n  t = t.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```\\s*$/i, '').trim();\n  try {\n    const p = JSON.parse(t);\n    if (Array.isArray(p)) return p;\n  } catch (e) {}\n  const start = t.indexOf('[');\n  const end = t.lastIndexOf(']');\n  if (start >= 0 && end > start) {\n    try {\n      const p = JSON.parse(t.substring(start, end + 1));\n      if (Array.isArray(p)) return p;\n    } catch (e) {}\n  }\n  return null;\n}\n\nfunction confNum(v, min, max) {\n  const n = Number(v);\n  if (!Number.isFinite(n)) return null;\n  return Math.min(max, Math.max(min, n));\n}\n\nfunction probTriple(pos, neg, neu) {\n  const p = Number(pos), n = Number(neg), z = Number(neu);\n  if (![p, n, z].every(Number.isFinite)) return { positive: null, negative: null, neutral: null };\n  const sum = p + n + z;\n  if (sum < 0.99 || sum > 1.01) return { positive: null, negative: null, neutral: null };\n  return { positive: p, negative: n, neutral: z };\n}\n\nconst originals = $('Baue Batch-Payload').item.json._originals;\nconst rawText = getAiText($json);\nconst bewertungen = parseKiArray(rawText);\n\nconst results = [];\n\nif (!bewertungen) {\n  for (const orig of originals) {\n    results.push({ json: { _action: 'retry', _error: 'KI-Antwort nicht als JSON-Array parsebar' } });\n  }\n  return results;\n}\n\nconst byId = new Map(bewertungen.filter(x => x && x.id !== undefined).map(x => [String(x.id), x]));\n\nfor (const orig of originals) {\n  const b = byId.get(String(orig.id));\n  if (!b) {\n    results.push({ json: { _action: 'retry', _error: 'Keine Bewertung fuer diese News in der KI-Antwort enthalten', news_id: orig.id } });\n    continue;\n  }\n  const relevant = b.relevanz && b.relevanz !== 'irrelevant';\n\n  const vorgeschlagen = Array.isArray(orig.linked_tickers_json) ? orig.linked_tickers_json : (Array.isArray(orig.ambiguous_candidates_json) ? orig.ambiguous_candidates_json : []);\n  const vorgeschlagenSet = new Set(vorgeschlagen.map(t => String(t).trim()));\n  const gemeldeteTicker = Array.isArray(b.bestaetigte_ticker) ? b.bestaetigte_ticker : [];\n  // Verteidigung in der Tiefe: nur Ticker uebernehmen, die tatsaechlich unter den\n  // deterministisch vorgeschlagenen waren - eine von der KI neu \"erfundene\" Zuordnung wird\n  // nicht durchgereicht (gleiches Prinzip wie 03s Watchlist-Filter, hier gegen die eigene\n  // Vorschlagsliste statt gegen die Watchlist).\n  const bestaetigteTickerGeprueft = gemeldeteTicker.filter(t => vorgeschlagenSet.has(String(t).trim()));\n\n  const wahrscheinlichkeiten = probTriple(b.wahrscheinlichkeit_positiv, b.wahrscheinlichkeit_negativ, b.wahrscheinlichkeit_neutral);\n\n  results.push({ json: {\n    _action: 'persist',\n    news_id: orig.id,\n    relevant,\n    wirkungsebene: b.wirkungsebene || 'unklar',\n    betroffene_ticker: bestaetigteTickerGeprueft,\n    wirkungsrichtung: ['positiv','negativ','neutral','unklar'].includes(b.wirkungsrichtung) ? b.wirkungsrichtung : 'unklar',\n    wirkung_staerke: ['hoch','mittel','niedrig','unklar'].includes(b.wirkung_staerke) ? b.wirkung_staerke : 'unklar',\n    sentiment: b.sentiment || 'unklar',\n    konfidenz: confNum(b.relevanz_konfidenz, 0, 100),\n    news_kategorie: ['quarterly_results','profit_warning','forecast_change','merger_acquisition','regulation','management_change','legal_dispute','product_news','macro','geopolitics','analyst_rating','other'].includes(b.news_kategorie) ? b.news_kategorie : 'other',\n    ticker_begruendung: b.begruendung_tickerbezug || '',\n    wirkungs_begruendung: b.begruendung || '',\n    based_on_full_text: orig.has_full_text === true\n  } });\n}\n\nreturn results;\n"
-      }
-    },
-    {
-      "id": "imp16b-ergebnis-sql-bauen",
-      "name": "Ergebnis persistieren (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2864,
-        2016
-      ],
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'[]'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst j = $json;\nlet sql;\n\nif (j._action === 'persist') {\n  sql = `INSERT INTO trading.historical_news_assessments\n    (news_id, relevant, wirkungsebene, betroffene_ticker_json, wirkungsrichtung, wirkung_staerke,\n     sentiment, konfidenz, news_kategorie, ticker_begruendung, wirkungs_begruendung,\n     based_on_full_text, modell_version, prompt_version)\n    VALUES (${pgNum(j.news_id)}, ${pgBool(j.relevant)}, ${pgStr(j.wirkungsebene)}, ${pgJsonb(j.betroffene_ticker)},\n            ${pgStr(j.wirkungsrichtung)}, ${pgStr(j.wirkung_staerke)}, ${pgStr(j.sentiment)}, ${pgNum(j.konfidenz)},\n            ${pgStr(j.news_kategorie)}, ${pgStr(j.ticker_begruendung)}, ${pgStr(j.wirkungs_begruendung)},\n            ${pgBool(j.based_on_full_text)}, ${pgStr('gpt-5.4-mini')}, ${pgStr('historische-news-v1')});`;\n} else {\n  // Kein Retry-Zaehler auf historical_news (anders als news_items) - ein fehlgeschlagenes\n  // Item bleibt einfach ohne Bewertungszeile und wird beim naechsten Worker-Lauf automatisch\n  // erneut aufgegriffen (kein Live-Zeitdruck bei historischen Daten, im Unterschied zu 03).\n  // Ein reiner SQL-Kommentar ohne echtes Statement koennte je nach Treiberverhalten als\n  // leere/ungueltige Query abgelehnt werden - stattdessen ein echtes, harmloses No-Op.\n  sql = `SELECT 1; -- retry, kein Insert: ${String(j._error || 'unbekannter Fehler').replace(/[\\r\\n]/g, ' ')}`;\n}\n\nreturn { json: { ...j, sql } };\n",
-        "mode": "runOnceForEachItem"
-      }
-    },
-    {
-      "id": "imp16b-ergebnis-ausfuehren",
-      "name": "Ergebnis persistieren (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2672,
-        2016
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "alwaysOutputData": true,
-      "onError": "continueRegularOutput",
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      }
-    }
-  ],
+  "active": true,
   "connections": {
-    "Trigger: Bewertungs-Worker (alle 10 Min)": {
-      "main": [
-        [
-          {
-            "node": "DB: Unbewertete historische News laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "DB: Unbewertete historische News laden": {
       "main": [
         [
@@ -243,18 +51,7 @@
       "main": [
         [
           {
-            "node": "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "KI: Historische Nachricht bewerten (PLATZHALTER - ersetzen!)": {
-      "main": [
-        [
-          {
-            "node": "KI-Bewertung aufbereiten",
+            "node": "Message a model",
             "type": "main",
             "index": 0
           }
@@ -293,10 +90,248 @@
           }
         ]
       ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "KI-Bewertung aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aufruf durch 16 nach GDELT-Import": {
+      "main": [
+        [
+          {
+            "node": "DB: Unbewertete historische News laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
+  "id": "tnk4o1ZMpxXfPFI9",
+  "meta": {
+    "templateCredsSetupCompleted": true
   },
-  "pinData": {}
+  "name": "16b – Historische Nachrichten bewerten (KI)",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH cfg AS (\n  SELECT\n    COALESCE(\n      (SELECT value_text::jsonb FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_UNSAFE_EXCLUSION_PHRASES'),\n      '[]'::jsonb\n    ) AS unsafe_phrases_json,\n    COALESCE(\n      (SELECT jsonb_agg(jsonb_build_object('ticker', ticker, 'name', name, 'aliases', aliases_json))\n       FROM trading.stock_instruments WHERE aktiv = TRUE),\n      '[]'::jsonb\n    ) AS instruments_json,\n    COALESCE(\n      (SELECT value_numeric::integer FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_ASSESSMENT_MAX_ATTEMPTS'),\n      3\n    ) AS max_attempts\n), candidates AS (\n  SELECT hn.id\n  FROM trading.historical_news hn\n  CROSS JOIN cfg\n  WHERE NOT EXISTS (\n      SELECT 1 FROM trading.historical_news_assessments hna WHERE hna.news_id = hn.id\n    )\n    AND (hn.ticker_match_status IN ('matched', 'ambiguous') OR hn.is_general_market = TRUE)\n    AND (\n      hn.assessment_status = 'pending'\n      OR (hn.assessment_status = 'retry' AND COALESCE(hn.assessment_next_retry_at, '-infinity'::timestamptz) <= now())\n      OR (hn.assessment_status = 'processing' AND COALESCE(hn.assessment_claimed_at, '-infinity'::timestamptz) < now() - interval '30 minutes')\n    )\n    AND hn.assessment_attempt < cfg.max_attempts\n  ORDER BY hn.id\n  FOR UPDATE OF hn SKIP LOCKED\n  LIMIT 10\n), claimed AS (\n  UPDATE trading.historical_news hn\n  SET assessment_status = 'processing',\n      assessment_claimed_at = now(),\n      assessment_claim_token = '{{ $execution.id }}',\n      assessment_attempt = hn.assessment_attempt + 1,\n      assessment_last_error = NULL\n  FROM candidates c\n  WHERE hn.id = c.id\n  RETURNING hn.id, hn.title, hn.raw_content, hn.linked_tickers_json,\n            hn.ambiguous_candidates_json, hn.is_general_market, hn.has_full_text,\n            hn.assessment_claim_token, hn.assessment_attempt\n)\nSELECT claimed.*, cfg.unsafe_phrases_json, cfg.instruments_json, cfg.max_attempts\nFROM claimed CROSS JOIN cfg\nORDER BY claimed.id;",
+        "options": {}
+      },
+      "id": "imp16b-db-unbewertete-laden",
+      "name": "DB: Unbewertete historische News laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -4208,
+        2016
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// alwaysOutputData:true liefert bei 0 offenen Zeilen ein Platzhalter-Item ohne id - anhand\n// des Pflichtfelds id von einem echten Treffer unterscheiden (gleiches Prinzip wie in\n// Workflow 15/16).\nconst items = $input.all().map(i => i.json).filter(j => j && j.id !== undefined && j.id !== null);\nif (items.length === 0) {\n  return [{ json: { _placeholder: true } }];\n}\nreturn items;\n"
+      },
+      "id": "imp16b-pruefe-paket",
+      "name": "Pruefe Paket",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4016,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "paket-leer",
+              "leftValue": "={{ $json._placeholder }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "imp16b-if-paket-leer",
+      "name": "IF: Kein Paket offen?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -3824,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 15,
+        "options": {}
+      },
+      "id": "imp16b-batch",
+      "name": "Batch: 15 News pro KI-Aufruf",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3632,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Baut das news_batch-Array fuer die KI. Anders als 03 wird betroffene_ticker NICHT von der\n// KI neu ermittelt (Halluzinationsrisiko), sondern die bereits deterministisch in Workflow 16\n// ermittelte Zuordnung (vorgeschlagene_ticker) wird der KI zur PRUEFUNG vorgelegt - sie\n// bestaetigt oder verwirft, erfindet aber keine neuen Ticker.\nconst items = $input.all().map(i => i.json);\nconst news_batch = items.map(j => ({\n  id: j.id,\n  titel: j.title,\n  beschreibung: j.raw_content || '',\n  vorgeschlagene_ticker: Array.isArray(j.linked_tickers_json) ? j.linked_tickers_json : (Array.isArray(j.ambiguous_candidates_json) ? j.ambiguous_candidates_json : []),\n  ist_markt_makro: j.is_general_market === true\n}));\nreturn [{ json: { news_batch, _originals: items } }];\n"
+      },
+      "id": "imp16b-baue-batch-payload",
+      "name": "Baue Batch-Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3440,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Historische KI-Bewertung aufbereiten – zentrale Normalisierung und sichere Kandidatenprüfung.\nfunction getAiText(resp) {\n  if (typeof resp === 'string') return resp;\n  if (resp && Array.isArray(resp.output)) {\n    const msg = resp.output.find(o => o.type === 'message');\n    const part = msg && Array.isArray(msg.content) ? msg.content.find(c => c.type === 'output_text') : null;\n    if (part && part.text) return part.text;\n  }\n  if (resp && Array.isArray(resp.choices) && resp.choices[0] && resp.choices[0].message) return resp.choices[0].message.content || '';\n  if (resp && typeof resp.content === 'string') return resp.content;\n  return JSON.stringify(resp || '');\n}\nfunction parseKiArray(text) {\n  const value = String(text || '').trim().replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/```\\s*$/i, '').trim();\n  try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) return parsed; } catch {}\n  const start = value.indexOf('['), end = value.lastIndexOf(']');\n  if (start >= 0 && end > start) { try { const parsed = JSON.parse(value.slice(start, end + 1)); if (Array.isArray(parsed)) return parsed; } catch {} }\n  return null;\n}\nfunction numberInRange(value, min, max) {\n  if (value === null || value === undefined || value === '') return null;\n  const number = Number(typeof value === 'string' ? value.replace('%', '').trim() : value);\n  return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : null;\n}\nfunction key(value) { return String(value || '').trim().toLocaleLowerCase('de-DE').replace(/[^\\p{L}\\p{N}]+/gu, '_').replace(/^_+|_+$/g, ''); }\nfunction mapValue(value, mapping, fallback) { return mapping[key(value)] || fallback; }\nconst MAP = {\n  relevanz: { relevant:'mittel', high:'hoch', hoch:'hoch', medium:'mittel', mittel:'mittel', low:'niedrig', niedrig:'niedrig', irrelevant:'irrelevant' },\n  ebene: { einzeltitel:'einzeltitel', einzelwert:'einzeltitel', unternehmen:'einzeltitel', company:'einzeltitel', sektor:'sektor', branche:'sektor', sector:'sektor', markt:'markt', market:'markt', makro:'makro', macro:'makro', unklar:'unklar', unbekannt:'unklar', keine:'unklar', nicht_anwendbar:'unklar', kein_klarebene:'unklar', keine_klare_ebene:'unklar' },\n  richtung: { positiv:'positiv', positive:'positiv', steigend:'positiv', leicht_positiv:'positiv', negativ:'negativ', negative:'negativ', fallend:'negativ', leicht_negativ:'negativ', neutral:'neutral', keine:'neutral', unklar:'unklar', unknown:'unklar', unbekannt:'unklar' },\n  staerke: { hoch:'hoch', stark:'hoch', high:'hoch', mittel:'mittel', moderat:'mittel', medium:'mittel', niedrig:'niedrig', gering:'niedrig', leicht:'niedrig', schwach:'niedrig', low:'niedrig', keine:'niedrig', unklar:'unklar', unknown:'unklar', unbekannt:'unklar' },\n  tickerstatus: { bestaetigt:'bestaetigt', bestätigt:'bestaetigt', confirmed:'bestaetigt', false_positive:'false_positive', falsch_positiv:'false_positive', fehlbezug:'false_positive', unklar:'unklar', unclear:'unklar' },\n  kategorie: {\n    quarterly_results:'quarterly_results', quartalszahlen:'quarterly_results', jahreszahlen:'quarterly_results', halbjahreszahlen:'quarterly_results', geschäftszahlen_operatives:'quarterly_results', geschaeftszahlen_operatives:'quarterly_results', geschäftszahlen:'quarterly_results', geschaeftszahlen:'quarterly_results',\n    profit_warning:'profit_warning', gewinnwarnung:'profit_warning', forecast_change:'forecast_change', prognoseänderung:'forecast_change', prognoseaenderung:'forecast_change', guidance:'forecast_change',\n    merger_acquisition:'merger_acquisition', übernahme:'merger_acquisition', uebernahme:'merger_acquisition', fusion:'merger_acquisition', akquisition:'merger_acquisition',\n    regulation:'regulation', regulierung:'regulation', gesetzgebung:'regulation', management_change:'management_change', managementwechsel:'management_change', vorstandswechsel:'management_change', ceo_wechsel:'management_change',\n    legal_dispute:'legal_dispute', gerichtsverfahren:'legal_dispute', rechtsstreit:'legal_dispute', klage:'legal_dispute', product_news:'product_news', produktmeldung:'product_news', produktneuigkeit:'product_news', produktrückruf:'product_news', produktrueckruf:'product_news', strategische_partnerschaft:'product_news',\n    macro:'macro', makro:'macro', geopolitics:'geopolitics', geopolitik:'geopolitics', analyst_rating:'analyst_rating', analystenkommentar:'analyst_rating', analystenrating:'analyst_rating', analysteneinstufung:'analyst_rating',\n    other:'other', sonstiges:'other', sport:'other', unterhaltung:'other', produkttest:'other', produktrezension:'other', stellenanzeige:'other', stellenanzeigen:'other', kapitalmaßnahme:'other', kapitalmassnahme:'other'\n  }\n};\nconst FALSE_POSITIVE_TYPES = new Set(['person','sportverein','stadion_veranstaltungsort','produktnutzung','verkehrsunfall','werbung_angebot','allgemeiner_begriff','anderes_unternehmen','mehrdeutiger_markenname','sonstiges']);\nfunction array(value) { return Array.isArray(value) ? [...new Set(value.map(v => String(v || '').trim()).filter(Boolean))] : []; }\nfunction jsonArray(value) { if (Array.isArray(value)) return value; if (typeof value === 'string') { try { const parsed=JSON.parse(value); return Array.isArray(parsed)?parsed:[]; } catch {} } return []; }\nfunction normalizeText(value) { return String(value || '').trim().toLocaleLowerCase('de-DE'); }\nfunction probabilities(pos, neg, neu) {\n  let values=[Number(pos),Number(neg),Number(neu)]; if(values.some(v=>!Number.isFinite(v))) return {positive:null,negative:null,neutral:null};\n  values=values.map(v=>Math.max(0,v)); const sum=values.reduce((a,b)=>a+b,0); if(!sum) return {positive:null,negative:null,neutral:null};\n  return {positive:values[0]/sum,negative:values[1]/sum,neutral:values[2]/sum};\n}\nfunction phraseOccurs(title, content, phrase) { return normalizeText(title+'\\n'+content).includes(normalizeText(phrase)); }\nfunction unsafePhrase(phrase, proposedTickers, unsafeConfigured, instruments) {\n  const normalized=normalizeText(phrase); if(!normalized || normalized.length<4) return true;\n  if(normalized.split(/\\s+/u).filter(Boolean).length<2) return true; // keine unspezifischen Einzelwörter\n  const blocked=new Set(unsafeConfigured.map(normalizeText));\n  for(const ticker of proposedTickers) blocked.add(normalizeText(ticker));\n  for(const instrument of instruments) {\n    if(!proposedTickers.includes(String(instrument.ticker||'').trim())) continue;\n    blocked.add(normalizeText(instrument.name));\n    for(const alias of jsonArray(instrument.aliases)) blocked.add(normalizeText(alias));\n  }\n  return blocked.has(normalized);\n}\n\nconst payload=$('Baue Batch-Payload').item.json;\nconst originals=Array.isArray(payload._originals)?payload._originals:[];\nconst rawText=getAiText($json), assessments=parseKiArray(rawText), results=[];\nif(!assessments) return originals.map(original=>({json:{_action:'retry',_error:'KI-Antwort nicht als JSON-Array parsebar',news_id:original.id,claim_token:original.assessment_claim_token,assessment_attempt:original.assessment_attempt,max_attempts:original.max_attempts}}));\nconst byId=new Map(assessments.filter(a=>a && a.id!==undefined && a.id!==null).map(a=>[String(a.id),a]));\nfor(const original of originals){\n  const assessment=byId.get(String(original.id));\n  if(!assessment){results.push({json:{_action:'retry',_error:'Keine Bewertung fuer diese News in der KI-Antwort enthalten',news_id:original.id,claim_token:original.assessment_claim_token,assessment_attempt:original.assessment_attempt,max_attempts:original.max_attempts}});continue;}\n  const proposed=array(original.linked_tickers_json).length?array(original.linked_tickers_json):array(original.ambiguous_candidates_json);\n  const confirmed=array(assessment.bestaetigte_ticker).filter(t=>new Set(proposed).has(t));\n  const relevanz=mapValue(assessment.relevanz,MAP.relevanz,'irrelevant');\n  const confidence=numberInRange(assessment.relevanz_konfidenz,0,100);\n  const probs=probabilities(assessment.wahrscheinlichkeit_positiv,assessment.wahrscheinlichkeit_negativ,assessment.wahrscheinlichkeit_neutral);\n  let tickerStatus=mapValue(assessment.tickerbezug_status,MAP.tickerstatus,'unklar');\n  if(proposed.length>0&&confirmed.length>0) tickerStatus='bestaetigt';\n  if(confirmed.length===0&&tickerStatus==='bestaetigt') tickerStatus='unklar';\n  const fpType=FALSE_POSITIVE_TYPES.has(key(assessment.false_positive_typ))?key(assessment.false_positive_typ):null;\n  const fpConfidence=numberInRange(assessment.ausschluss_sicherheit,0,100);\n  let phrase=typeof assessment.ausschlussphrase==='string'?assessment.ausschlussphrase.trim():null;\n  const unsafeConfigured=jsonArray(original.unsafe_phrases_json), instruments=jsonArray(original.instruments_json);\n  if(phrase&&(!phraseOccurs(original.title,original.raw_content,phrase)||unsafePhrase(phrase,proposed,unsafeConfigured,instruments))) phrase=null;\n  const candidate=tickerStatus==='false_positive'&&proposed.length===1&&confirmed.length===0&&relevanz==='irrelevant'&&confidence>=85&&fpConfidence>=85&&fpType!==null&&phrase!==null;\n  results.push({json:{_action:'persist',news_id:original.id,claim_token:original.assessment_claim_token,assessment_attempt:original.assessment_attempt,max_attempts:original.max_attempts,relevant:relevanz!=='irrelevant',relevanz,wirkungsebene:mapValue(assessment.wirkungsebene,MAP.ebene,'unklar'),betroffene_ticker:confirmed,wirkungsrichtung:mapValue(assessment.wirkungsrichtung,MAP.richtung,'unklar'),wirkung_staerke:mapValue(assessment.wirkung_staerke,MAP.staerke,'unklar'),sentiment:typeof assessment.sentiment==='string'?assessment.sentiment:'unklar',konfidenz:confidence,news_kategorie:mapValue(assessment.news_kategorie,MAP.kategorie,'other'),ticker_begruendung:typeof assessment.begruendung_tickerbezug==='string'?assessment.begruendung_tickerbezug:'',wirkungs_begruendung:typeof assessment.begruendung==='string'?assessment.begruendung:'',based_on_full_text:original.has_full_text===true,wahrscheinlichkeit_positiv:probs.positive,wahrscheinlichkeit_negativ:probs.negative,wahrscheinlichkeit_neutral:probs.neutral,vorgeschlagene_ticker:proposed,tickerbezug_status:tickerStatus,false_positive_typ:fpType,ausschlussphrase:phrase,ausschluss_sicherheit:fpConfidence,blacklist_kandidat:candidate,original_title:original.title||'',original_raw_content:original.raw_content||''}});\n}\nreturn results;"
+      },
+      "id": "imp16b-ki-aufbereiten",
+      "name": "KI-Bewertung aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2688,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v){return v===null||v===undefined?'NULL':\"'\"+String(v).replace(/\\u0000/g,'').replace(/'/g,\"''\")+\"'\";} function pgNum(v){return v===null||v===undefined||v===''||!Number.isFinite(Number(v))?'NULL':String(Number(v));} function pgBool(v){return v===null||v===undefined?'NULL':v?'TRUE':'FALSE';} function pgJsonb(v){return \"'\"+JSON.stringify(v===null||v===undefined?[]:v).replace(/\\u0000/g,'').replace(/'/g,\"''\")+\"'::jsonb\";}\nconst i=$json;\nif(i._action==='persist'){\n  const candidate=i.blacklist_kandidat===true&&Array.isArray(i.vorgeschlagene_ticker)&&i.vorgeschlagene_ticker.length===1&&i.ausschlussphrase?`\nINSERT INTO trading.news_match_exclusion_candidates (news_id,ticker,title,raw_content,ki_relevanz,ki_konfidenz,ki_begruendung,false_positive_typ,suggested_pattern,suggested_pattern_type,suggested_match_scope,status)\nVALUES (${pgNum(i.news_id)},${pgStr(i.vorgeschlagene_ticker[0])},${pgStr(i.original_title)},${pgStr(i.original_raw_content)},${pgStr(i.relevanz)},${pgNum(i.konfidenz)},${pgStr(i.ticker_begruendung)},${pgStr(i.false_positive_typ)},${pgStr(i.ausschlussphrase)},'exact_phrase','title_and_content','pending')\nON CONFLICT (news_id,ticker) DO UPDATE SET title=EXCLUDED.title,raw_content=EXCLUDED.raw_content,ki_relevanz=EXCLUDED.ki_relevanz,ki_konfidenz=EXCLUDED.ki_konfidenz,ki_begruendung=EXCLUDED.ki_begruendung,false_positive_typ=EXCLUDED.false_positive_typ,suggested_pattern=EXCLUDED.suggested_pattern,suggested_pattern_type=EXCLUDED.suggested_pattern_type,suggested_match_scope=EXCLUDED.suggested_match_scope\nWHERE trading.news_match_exclusion_candidates.status='pending';`:'';\n  i.sql=`BEGIN;\nINSERT INTO trading.historical_news_assessments (news_id,relevant,wirkungsebene,betroffene_ticker_json,wirkungsrichtung,wirkung_staerke,sentiment,konfidenz,news_kategorie,ticker_begruendung,wirkungs_begruendung,based_on_full_text,modell_version,prompt_version)\nVALUES (${pgNum(i.news_id)},${pgBool(i.relevant)},${pgStr(i.wirkungsebene)},${pgJsonb(i.betroffene_ticker)},${pgStr(i.wirkungsrichtung)},${pgStr(i.wirkung_staerke)},${pgStr(i.sentiment)},${pgNum(i.konfidenz)},${pgStr(i.news_kategorie)},${pgStr(i.ticker_begruendung)},${pgStr(i.wirkungs_begruendung)},${pgBool(i.based_on_full_text)},'gpt-5.4-mini','historische-news-v2-blacklist-learning')\nON CONFLICT (news_id) DO UPDATE SET relevant=EXCLUDED.relevant,wirkungsebene=EXCLUDED.wirkungsebene,betroffene_ticker_json=EXCLUDED.betroffene_ticker_json,wirkungsrichtung=EXCLUDED.wirkungsrichtung,wirkung_staerke=EXCLUDED.wirkung_staerke,sentiment=EXCLUDED.sentiment,konfidenz=EXCLUDED.konfidenz,news_kategorie=EXCLUDED.news_kategorie,ticker_begruendung=EXCLUDED.ticker_begruendung,wirkungs_begruendung=EXCLUDED.wirkungs_begruendung,based_on_full_text=EXCLUDED.based_on_full_text,modell_version=EXCLUDED.modell_version,prompt_version=EXCLUDED.prompt_version;\n${candidate}\nUPDATE trading.historical_news SET assessment_status='assessed',assessment_claimed_at=NULL,assessment_claim_token=NULL,assessment_next_retry_at=NULL,assessment_last_error=NULL WHERE id=${pgNum(i.news_id)} AND assessment_claim_token=${pgStr(i.claim_token)} RETURNING id AS persisted_news_id;\nCOMMIT;`;\n}else{\n  const failed=Number(i.assessment_attempt||0)>=Number(i.max_attempts||3);\n  i.sql=`UPDATE trading.historical_news SET assessment_status=${pgStr(failed?'failed':'retry')},assessment_claimed_at=NULL,assessment_claim_token=NULL,assessment_next_retry_at=${failed?'NULL':\"now() + interval '10 minutes'\"},assessment_last_error=${pgStr(String(i._error||'Unbekannter KI-Fehler').slice(0,2000))} WHERE id=${pgNum(i.news_id)} AND assessment_claim_token=${pgStr(i.claim_token)} RETURNING id AS persisted_news_id;`;\n}\nreturn {json:{...i,sql:i.sql}};"
+      },
+      "id": "imp16b-ergebnis-sql-bauen",
+      "name": "Ergebnis persistieren (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2496,
+        2016
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "id": "imp16b-ergebnis-ausfuehren",
+      "name": "Ergebnis persistieren (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2304,
+        2016
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "stopWorkflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Du bist ein sachlicher Aktien-News-Analyst für die historische Simulation eines automatisierten Aktien-Beobachtungssystems (KEIN Live-Betrieb - diese Nachrichten liegen in der Vergangenheit und werden für Backtesting verwendet).\n\nWICHTIGE EINSCHRÄNKUNG:\nDu erhältst ausschließlich den Titel und – falls vorhanden – eine Kurzbeschreibung. Der vollständige Artikeltext liegt NICHT vor (Datenquelle: GDELT Article List). Berücksichtige diese Einschränkung ausdrücklich bei der Bewertung der Datenqualität.\n\nDeine Aufgabe:\nBewerte ALLE Nachrichten im übergebenen Array.\n\nFür jede Nachricht wurde bereits automatisch (NICHT durch dich) anhand von Firmennamen und Aliasen eine vorläufige Ticker-Zuordnung ermittelt (Feld \"vorgeschlagene_ticker\") oder als allgemeine Markt-/Makronachricht eingestuft (\"ist_markt_makro=true\").\n\nDiese Zuordnung kann falsch sein.\n\nDeine wichtigste Aufgabe ist daher:\n\n1. Prüfe, ob sich die Nachricht tatsächlich auf das börsennotierte Unternehmen bezieht.\n2. Prüfe, ob überhaupt ein wirtschaftlicher bzw. kapitalmarktrelevanter Bezug besteht.\n3. Bestätige einen Ticker nur dann, wenn beide Bedingungen erfüllt sind.\n\nAntworte ausschließlich mit einem gültigen JSON-Array.\nKein Markdown.\nKeine Kommentare.\nKein Text außerhalb des JSON.\n\n--------------------------------------------------\nREGELN\n--------------------------------------------------\n\nKeine Anlageberatung.\n\nKeine Kauf- oder Verkaufsempfehlungen.\n\nKeine erfundenen Fakten.\n\nErfinde niemals neue Ticker.\n\nÜbernimm ausschließlich Ticker aus \"vorgeschlagene_ticker\".\n\n--------------------------------------------------\nAUSGABEFELDER\n--------------------------------------------------\n\nFür jede Nachricht MUSS folgendes Objekt zurückgegeben werden:\n\n- id\n- relevanz\n- relevanz_konfidenz\n- sentiment\n- kurswirkung\n- wahrscheinlichkeit_positiv\n- wahrscheinlichkeit_negativ\n- wahrscheinlichkeit_neutral\n- bezug\n- news_kategorie\n- begruendung\n- bestaetigte_ticker\n- wirkungsebene\n- wirkungsrichtung\n- wirkung_staerke\n- staerke_konfidenz\n- datenqualitaet_score\n- begruendung_tickerbezug\n\nNEU:\n\n- tickerbezug_status\n\nErlaubte Werte:\n\n\"bestaetigt\"\n\"false_positive\"\n\"unklar\"\n\n--------------------------------------------------\n\n- false_positive_typ\n\nErlaubte Werte:\n\nperson\nsportverein\nstadion_veranstaltungsort\nproduktnutzung\nverkehrsunfall\nwerbung_angebot\nallgemeiner_begriff\nanderes_unternehmen\nmehrdeutiger_markenname\nsonstiges\n\noder\n\nnull\n\n--------------------------------------------------\n\n- ausschlussphrase\n\nWenn tickerbezug_status = \"false_positive\",\n\nliefere eine möglichst konkrete Phrase,\ndie den Fehlbezug eindeutig verursacht.\n\nBeispiele:\n\nMercedes Moné\n\nSAP Arena\n\nBayer Leverkusen\n\nAllianz Arena\n\nBMW Motorrad Days\n\nVolkswagen Currywurst\n\nAudi Cup\n\nMercedes Fashion Week\n\nNICHT erlaubt:\n\nMercedes\n\nBMW\n\nAudi\n\nSAP\n\nBayer\n\nHenkel\n\nAllianz\n\nUnfall\n\nAuto\n\nPolizei\n\nFußball\n\nSport\n\nDie Phrase muss wörtlich im Titel oder in der Beschreibung vorkommen.\n\nFalls keine eindeutige Phrase existiert:\n\nnull\n\n--------------------------------------------------\n\n- ausschluss_sicherheit\n\n0-100\n\nNur verwenden wenn tickerbezug_status = \"false_positive\".\n\nSonst:\n\nnull\n\n--------------------------------------------------\nRELEVANZ\n--------------------------------------------------\n\nWende eine STRIKTE Relevanzschwelle an.\n\nEine Nachricht ist nur dann relevant,\n\nwenn\n\naus Titel und Kurzbeschreibung\n\nein konkreter wirtschaftlicher Übertragungsweg\n\nauf mindestens eines der vorgeschlagenen Unternehmen,\n\ndessen Branche\n\noder das allgemeine Marktumfeld\n\nerkennbar ist.\n\n--------------------------------------------------\nALS RELEVANT GELTEN\n--------------------------------------------------\n\nQuartalszahlen\n\nGewinn\n\nVerlust\n\nCashflow\n\nMargen\n\nGuidance\n\nGewinnwarnung\n\nDividende\n\nKapitalmaßnahme\n\nAktienrückkauf\n\nÜbernahme\n\nFusion\n\nBeteiligung\n\nWerksschließung\n\nGroßauftrag\n\nProduktionsänderung\n\nLieferkette\n\nRegulierung\n\nKartell\n\nBußgeld\n\nGerichtsverfahren\n\nProduktzulassung\n\nProduktrückruf\n\nCEO\n\nVorstandswechsel\n\nRatingänderung\n\nKurszieländerung\n\nZinsentscheidung\n\nInflation\n\nRezession\n\nSanktionen\n\nZölle\n\nRohstoffpreise\n\n--------------------------------------------------\nALS IRRELEVANT GELTEN\n--------------------------------------------------\n\nBloße Namensnennung\n\nVerkehrsunfälle\n\nKriminalität\n\nProminente\n\nSport\n\nLifestyle\n\nUnterhaltung\n\nProduktrezensionen\n\nPreisvergleiche\n\nKaufberatungen\n\nStellenanzeigen\n\nLokale Veranstaltungen\n\nUnternehmensporträts\n\nHistorische Rückblicke\n\nAllgemeine Börsenberichte ohne neues Ereignis\n\nArtikel,\n\nbei denen der Firmenname lediglich zufällig vorkommt.\n\n--------------------------------------------------\nTICKERBESTÄTIGUNG\n--------------------------------------------------\n\nEin Ticker darf NUR bestätigt werden,\n\nwenn\n\ndas börsennotierte Unternehmen\n\nselbst Gegenstand der Nachricht ist.\n\nNicht ausreichend:\n\nProduktname\n\nMarkenname\n\nPersonenname\n\nStadionname\n\nSportverein\n\nSponsoring\n\nWerbung\n\nVeranstaltung\n\n--------------------------------------------------\nFALSE POSITIVE\n--------------------------------------------------\n\nWenn\n\nein vorgeschlagener Ticker\n\nnicht bestätigt wird,\n\nweil lediglich\n\neine Namensgleichheit,\n\neine Marke,\n\neine Person,\n\nein Stadion,\n\nein Verein,\n\neine Veranstaltung,\n\neine Werbung\n\noder ein anderer nicht börsenrelevanter Begriff gemeint ist,\n\ndann MUSS gelten:\n\ntickerbezug_status = \"false_positive\"\n\nfalse_positive_typ passend auswählen\n\nausschlussphrase möglichst konkret angeben\n\nausschluss_sicherheit vergeben\n\n--------------------------------------------------\nBEI ZWEIFELN\n--------------------------------------------------\n\nWenn kein eindeutiger Unternehmensbezug besteht:\n\nrelevanz = \"irrelevant\"\n\nbestaetigte_ticker = []\n\ntickerbezug_status = \"false_positive\"\n\nwenn der Grund eindeutig ist,\n\nansonsten\n\ntickerbezug_status = \"unklar\"\n\nBegründe die Entscheidung knapp und sachlich.\n\n\nZUSÄTZLICHE VERBINDLICHE AUSGABEREGELN:\n- Gib für jedes Eingabeobjekt genau ein Ausgabeobjekt mit derselben id zurück.\n- Eine bloße Namens-, Marken-, Produkt-, Veranstaltungs- oder Basiswertnennung ist nicht kapitalmarktrelevant.\n- tickerbezug_status=false_positive nur bei eindeutig belegtem Fehlbezug; bei Zweifel unklar.\n- ausschlussphrase muss wörtlich in titel oder beschreibung vorkommen.\n- ausschlussphrase darf weder ein Ticker, ein allgemeiner Firmen-/Markenname noch ein unspezifisches Einzelwort sein.\n- Erlaubte news_kategorie: quarterly_results, profit_warning, forecast_change, merger_acquisition, regulation, management_change, legal_dispute, product_news, macro, geopolitics, analyst_rating, other.\n"
+            },
+            {
+              "content": "={{ `Nachrichten:\n${JSON.stringify($json.news_batch)}\n\nAntworte NUR mit einem JSON-Array. Jedes Objekt muss enthalten:\n{\"id\":0,\"relevanz\":\"hoch|mittel|niedrig|irrelevant\",\"relevanz_konfidenz\":80,\"sentiment\":\"...\",\"kurswirkung\":\"...\",\"wahrscheinlichkeit_positiv\":0.3,\"wahrscheinlichkeit_negativ\":0.2,\"wahrscheinlichkeit_neutral\":0.5,\"bezug\":\"...\",\"news_kategorie\":\"quarterly_results|profit_warning|forecast_change|merger_acquisition|regulation|management_change|legal_dispute|product_news|macro|geopolitics|analyst_rating|other\",\"begruendung\":\"...\",\"bestaetigte_ticker\":[],\"wirkungsebene\":\"einzeltitel|sektor|markt|makro|unklar\",\"wirkungsrichtung\":\"positiv|negativ|neutral|unklar\",\"wirkung_staerke\":\"niedrig|mittel|hoch|unklar\",\"staerke_konfidenz\":70,\"datenqualitaet_score\":85,\"begruendung_tickerbezug\":\"...\",\"tickerbezug_status\":\"bestaetigt|false_positive|unklar\",\"false_positive_typ\":null,\"ausschlussphrase\":null,\"ausschluss_sicherheit\":null}\n` }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -3232,
+        2016
+      ],
+      "id": "4ddbf505-64f4-4a39-89d1-df5abe484fdf",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "RiT1gwJpQWzSo6NO",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "events": "worklfow_call",
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "source",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "imp16b-trigger",
+      "name": "Aufruf durch 16 nach GDELT-Import",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -4400,
+        2016
+      ]
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "executionTimeout": 480
+  },
+  "tags": [],
+  "versionId": "5eb49857-2653-42ef-a89b-2d94969a7e3c"
 }
