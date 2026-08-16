@@ -859,7 +859,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=WITH candidate AS (\n  SELECT iji.id\n  FROM trading.import_job_items iji\n  WHERE iji.job_id = '{{ $json.job_id }}'\n    AND (\n      iji.status = 'pending'\n      OR (\n        iji.status = 'running'\n        AND COALESCE(iji.heartbeat_at, iji.started_at, '-infinity'::timestamptz)\n            < now() - interval '4 minutes'\n      )\n    )\n  ORDER BY iji.sequence_number\n  FOR UPDATE SKIP LOCKED\n  LIMIT 1\n)\nUPDATE trading.import_job_items iji\nSET status = 'running',\n    started_at = COALESCE(iji.started_at, now()),\n    attempt = iji.attempt + 1,\n    heartbeat_at = now()\nFROM candidate\nWHERE iji.id = candidate.id\nRETURNING iji.*;",
+        "query": "=WITH give_up AS (\n  UPDATE trading.import_job_items iji\n  SET status = 'failed',\n      finished_at = now(),\n      error = COALESCE(iji.error, '') || ' | Retry-Cap (200) erreicht, vermutlich wiederholter Crash auf diesem Marken-Batch - manueller Nachtrag noetig.'\n  WHERE iji.job_id = '{{ $json.job_id }}'\n    AND iji.status = 'running'\n    AND iji.attempt >= 200\n    AND COALESCE(iji.heartbeat_at, iji.started_at, '-infinity'::timestamptz) < now() - interval '4 minutes'\n  RETURNING iji.id\n),\ncandidate AS (\n  SELECT iji.id\n  FROM trading.import_job_items iji\n  WHERE iji.job_id = '{{ $json.job_id }}'\n    AND (\n      iji.status = 'pending'\n      OR (\n        iji.status = 'running'\n        AND iji.attempt < 200\n        AND COALESCE(iji.heartbeat_at, iji.started_at, '-infinity'::timestamptz)\n            < now() - interval '4 minutes'\n      )\n    )\n  ORDER BY iji.sequence_number\n  FOR UPDATE SKIP LOCKED\n  LIMIT 1\n)\nUPDATE trading.import_job_items iji\nSET status = 'running',\n    started_at = COALESCE(iji.started_at, now()),\n    attempt = iji.attempt + 1,\n    heartbeat_at = now()\nFROM candidate\nWHERE iji.id = candidate.id\nRETURNING iji.*;",
         "options": {}
       },
       "id": "imp16-db-naechstes-paket",
@@ -1263,5 +1263,5 @@
     "executionTimeout": 540
   },
   "tags": [],
-  "versionId": "40814d96-6b1b-4e2b-9da2-0167367cdab8"
+  "versionId": "4a85582d-6dd9-4611-b5eb-858b0301ee3d"
 }
