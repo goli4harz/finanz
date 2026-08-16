@@ -1,1334 +1,5 @@
 {
-  "updatedAt": "2026-08-02T07:26:46.853Z",
-  "createdAt": "2026-07-19T13:09:43.709Z",
-  "id": "ncMZzkqDHpSiDGPm",
-  "name": "00 – Tagesabschluss-Orchestrator",
-  "description": null,
   "active": true,
-  "isArchived": false,
-  "nodes": [
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 50 17 * * 1-5"
-            }
-          ]
-        }
-      },
-      "id": "00000000-0000-4000-8000-000000000001",
-      "name": "Trigger: Tagesabschluss (17:50 Werktage)",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -2400,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\nfunction getBerlinTimeParts(date = new Date()) {\n  const fmt = new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false\n  }).formatToParts(date);\n  const p = Object.fromEntries(fmt.map(x => [x.type, x.value]));\n  return `${p.hour}${p.minute}${p.second}`;\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nconst businessDate = getBusinessDate();\nconst timePart = getBerlinTimeParts();\nconst runId = `daily-${businessDate}-${timePart}-${randHex(6)}`;\nconst startedAt = new Date().toISOString();\n\nreturn { json: {\n  run_id: runId,\n  business_date: businessDate,\n  started_at: startedAt\n} };\n"
-      },
-      "id": "00000000-0000-4000-8000-000000000002",
-      "name": "Run-ID erzeugen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2176,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "9zO3uZeZeakTnLnX",
-          "mode": "list",
-          "cachedResultName": "02b – Marktumfeld täglich"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $json.run_id } }}",
-            "config": "={{ {} }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "00000000-0000-4000-8000-000000000003",
-      "name": "Ausfuehren: Marktumfeld (02b)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        -1952,
-        0
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02b – Marktumfeld täglich')}, ${pgStr('marktumfeld')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "00000004-0000-4000-8000-00000000000a",
-      "name": "Log Marktumfeld (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1728,
-        -80
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "00000004-0000-4000-8000-00000000000b",
-      "name": "Log Marktumfeld (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -1552,
-        -80
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "dd000000-0000-4000-8000-0000010001",
-      "name": "Marktumfeld: Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1900,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "id": "dd000000-0000-4000-8000-0000010002",
-      "name": "Marktumfeld: Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1780,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Marktumfeld (02b)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "00000000-0000-4000-8000-000000000005",
-      "name": "IF: Marktumfeld ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -1504,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "vgT6IrPp3ATaJg8s",
-          "mode": "list",
-          "cachedResultName": "02 – Technische Signale täglich"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id } }}",
-            "config": "={{ {} }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "00000000-0000-4000-8000-000000000006",
-      "name": "Ausfuehren: Technische Signale (02)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        -1280,
-        0
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Punkt 15/16: 02 liefert jetzt {status, processed, successful, failed, errors[]}\n// statt nur error/leer. Alte Ternary hier war ohnehin fehlerhaft (lieferte\n// immer nur das Wort 'failed' oder '', nie die echte Fehlermeldung, Auftrag\n// Punkt 19) -- gleich mitbehoben.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02 – Technische Signale täglich')}, ${pgStr('technische_signale')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "00000007-0000-4000-8000-00000000000a",
-      "name": "Log Technische Signale (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1056,
-        -80
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "00000007-0000-4000-8000-00000000000b",
-      "name": "Log Technische Signale (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -880,
-        -80
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "dd000000-0000-4000-8000-0000020001",
-      "name": "Technische Signale: Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1224,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "id": "dd000000-0000-4000-8000-0000020002",
-      "name": "Technische Signale: Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1104,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Technische Signale (02)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "00000000-0000-4000-8000-000000000008",
-      "name": "IF: Technische Signale ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        -832,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "GDMAKrvQovPcBItA",
-          "mode": "list",
-          "cachedResultName": "stock_technical_signals"
-        },
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "datum",
-              "keyValue": "={{ $('Run-ID erzeugen').item.json.business_date }}"
-            }
-          ]
-        },
-        "returnAll": true
-      },
-      "id": "00000000-0000-4000-8000-000000000009",
-      "name": "DB: Heutige Signale zaehlen",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -608,
-        -80
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT id FROM trading.news_items WHERE (created_at AT TIME ZONE 'Europe/Berlin')::date = '{{ $('Run-ID erzeugen').item.json.business_date }}'::date;",
-        "options": {}
-      },
-      "id": "0000000a-0000-4000-8000-00000000000a",
-      "name": "DB: Heutige News zaehlen",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -608,
-        80
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "0000000b-0000-4000-8000-00000000000b",
-      "name": "Merge: Datenqualitaet",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -384,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Datenqualitaetspruefung: mindestens 1 aktuelles technisches Signal muss\n// vorliegen, sonst gilt der Geschaeftstag als unvollstaendig (harte Abbruchregel).\n// Fehlende News-Aktivitaet ist nur eine Warnung (an ruhigen Tagen kann News=0\n// legitim sein), kein harter Abbruch.\nconst signale = $('DB: Heutige Signale zaehlen').all();\nconst news = $('DB: Heutige News zaehlen').all();\n\nconst signaleOk = signale.length > 0;\nconst newsOk = news.length > 0;\n\nreturn { json: {\n  run_id: $('Run-ID erzeugen').item.json.run_id,\n  business_date: $('Run-ID erzeugen').item.json.business_date,\n  signale_count: signale.length,\n  news_count: news.length,\n  signale_ok: signaleOk,\n  news_ok: newsOk,\n  datenqualitaet_ok: signaleOk\n} };\n"
-      },
-      "id": "0000000c-0000-4000-8000-00000000000c",
-      "name": "Pruefe Datenqualitaet",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -160,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.datenqualitaet_ok ? 'success' : 'failed';\nconst errorMessage = $json.datenqualitaet_ok ? 'success' : 'failed' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = { signale_count: $json.signale_count, news_count: $json.news_count, news_ok: $json.news_ok };\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('datenqualitaet')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "0000000d-0000-4000-8000-00000000000a",
-      "name": "Log Datenqualitaet (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        64,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "0000000d-0000-4000-8000-00000000000b",
-      "name": "Log Datenqualitaet (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        240,
-        0
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $('Pruefe Datenqualitaet').item.json.datenqualitaet_ok }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "0000000e-0000-4000-8000-00000000000e",
-      "name": "IF: Datenqualitaet ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        288,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "aguWZUolRizBnsj4",
-          "mode": "list",
-          "cachedResultName": "06 – Empfehlungswatchlist"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "0000000f-0000-4000-8000-00000000000f",
-      "name": "Ausfuehren: Empfehlungswatchlist (06)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        512,
-        0
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\n// FIX 2026-08-02 (Fehleranalyse B7): dry_run_source aus 06s Envelope mitprotokollieren.\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || [],\n  dry_run_source: envelope.dry_run_source || null\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "00000010-0000-4000-8000-000000000a",
-      "name": "Log Empfehlungswatchlist (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        736,
-        -80
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "00000010-0000-4000-8000-000000000b",
-      "name": "Log Empfehlungswatchlist (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        912,
-        -80
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "dd000000-0000-4000-8000-0000030001",
-      "name": "Empfehlungswatchlist: Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        568,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "id": "dd000000-0000-4000-8000-0000030002",
-      "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        688,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "BFlxfLyarzR2xbBT",
-          "mode": "list",
-          "cachedResultName": "10 – Report- und Prüfagent"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id, business_date: $('Run-ID erzeugen').item.json.business_date } }}",
-            "config": "={{ {} }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "00000011-0000-4000-8000-000000000011",
-      "name": "Ausfuehren: Report- und Pruefagent (10)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        960,
-        0
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 10 liefert jetzt zusaetzlich {status, processed, successful,\n// failed, warnings[], errors[]} additiv neben approved/report_markdown/... .\nconst status = envelope.status || (envelope.error ? 'failed' : (envelope.approved ? 'success' : 'failed'));\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('10 – Report- und Prüfagent')}, ${pgStr('report_pruef_agent')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "00000012-0000-4000-8000-000000000a",
-      "name": "Log Report-Pruef-Agent (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1184,
-        -80
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "00000012-0000-4000-8000-000000000b",
-      "name": "Log Report-Pruef-Agent (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1360,
-        -80
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {},
-      "id": "dd000000-0000-4000-8000-0000040001",
-      "name": "Report-Pruef-Agent: Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        1016,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "id": "dd000000-0000-4000-8000-0000040002",
-      "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1136,
-        -160
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $('Ausfuehren: Report- und Pruefagent (10)').item.json.approved }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "00000013-0000-4000-8000-000000000013",
-      "name": "IF: Freigegeben?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1408,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "VRr5jIHj7G7dsMwi",
-          "mode": "list",
-          "cachedResultName": "05 – Tagesreport"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
-            "payload": "={{ { report_markdown: $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown, approved: true } }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "00000014-0000-4000-8000-000000000014",
-      "name": "Ausfuehren: Tagesreport-Versand (05)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        1632,
-        -120
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 05 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b/06.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('05 – Tagesreport')}, ${pgStr('tagesreport_versand')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "00000015-0000-4000-8000-000000000a",
-      "name": "Log Versand (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1856,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "00000015-0000-4000-8000-000000000b",
-      "name": "Log Versand (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        2032,
-        -120
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Empfehlungswatchlist (06)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "00000000-0000-4000-8000-00000000e001",
-      "name": "IF: Empfehlungswatchlist ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        936,
-        -40
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Tagesreport-Versand (05)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "00000000-0000-4000-8000-00000000e002",
-      "name": "IF: Versand ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2056,
-        -100
-      ]
-    },
-    {
-      "parameters": {},
-      "id": "dd000000-0000-4000-8000-0000050001",
-      "name": "Versand: Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        1688,
-        -280
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "id": "dd000000-0000-4000-8000-0000050002",
-      "name": "Versand: Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1808,
-        -280
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "return { json: { ...$json, final_status: 'success' } };"
-      },
-      "id": "00000016-0000-4000-8000-000000000016",
-      "name": "Lauf abschliessen (Erfolg)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2080,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\n\nlet gruende = [];\ntry { if ($('Ausfuehren: Marktumfeld (02b)').item.json.error) gruende.push('Marktumfeld fehlgeschlagen: ' + $('Ausfuehren: Marktumfeld (02b)').item.json.error); } catch(e) {}\ntry { if ($('Ausfuehren: Technische Signale (02)').item.json.error) gruende.push('Technische Signale fehlgeschlagen: ' + $('Ausfuehren: Technische Signale (02)').item.json.error); } catch(e) {}\ntry { if ($('Pruefe Datenqualitaet').item.json.datenqualitaet_ok === false) gruende.push('Datenqualitaet unzureichend (Signale: ' + $('Pruefe Datenqualitaet').item.json.signale_count + ', News: ' + $('Pruefe Datenqualitaet').item.json.news_count + ')'); } catch(e) {}\ntry { if ($('Ausfuehren: Report- und Pruefagent (10)').item.json.approved === false) gruende.push('Pruef-Agent hat den Bericht abgelehnt: ' + JSON.stringify($('Ausfuehren: Report- und Pruefagent (10)').item.json.required_corrections || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Empfehlungswatchlist (06)').item.json.status === 'failed') gruende.push('Empfehlungswatchlist fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Empfehlungswatchlist (06)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Markt-Screener (13)').item.json.status === 'failed') gruende.push('Markt-Screener fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Markt-Screener (13)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Portfolio-Risiko und Paper-Trading (14)').item.json.status === 'failed') gruende.push('Portfolio-Risiko/Paper-Trading fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Portfolio-Risiko und Paper-Trading (14)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Tagesreport-Versand (05)').item.json.status === 'failed') gruende.push('Tagesreport-Versand fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Tagesreport-Versand (05)').item.json.errors || [])); } catch(e) {}\nif (gruende.length === 0) gruende.push('Unbekannter Abbruchgrund - siehe trading.pipeline_runs fuer run_id ' + runId);\n\nconst text = '⚠️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde NICHT automatisch versendet:\\n\\n- ' + gruende.join('\\n- ');\n\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning' } };\n"
-      },
-      "id": "00000017-0000-4000-8000-000000000017",
-      "name": "Baue technische Warnung",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1632,
-        120
-      ]
-    },
-    {
-      "parameters": {
-        "method": "PUT",
-        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'orchestrator_warn_' + $json.run_id }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ msgtype: 'm.text', body: $json.warnung_text }) }}",
-        "options": {
-          "timeout": 30000
-        }
-      },
-      "id": "00000018-0000-4000-8000-000000000018",
-      "name": "Matrix: Technische Warnung senden",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1856,
-        120
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "od1pN1F5wy2irSDs",
-          "name": "Header Auth account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-      },
-      "name": "Matrix-Warnung pruefen (sonst werfen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1980,
-        120
-      ],
-      "id": "p8-check-00-matrix-warnung"
-    },
-    {
-      "parameters": {
-        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2): dieser Node wird sowohl vom\n// urspruenglichen Fehler-/Abbruchpfad (\"Baue technische Warnung\") als auch\n// vom neuen Teilausfall-Pfad (\"Baue Teilausfall-Warnung\") ueber denselben\n// Matrix-HTTP-Node erreicht. Der HTTP-Request-Node ersetzt $json durch die\n// rohe Matrix-Antwort - die vorher gesetzten Felder gehen dabei verloren und\n// muessen hier ueber den jeweiligen Quell-Node zurueckgeholt werden.\nlet partial_failure_details = [];\ntry {\n  partial_failure_details = $('Baue Teilausfall-Warnung').item.json.partial_failure_details || [];\n} catch (e) {\n  // Kein Teilausfall-Pfad gelaufen (regulaerer Abbruch/Fehler) - unveraendertes bisheriges Verhalten.\n}\n\nreturn { json: { ...$json, final_status: $json.final_status || 'warning', partial_failure_details } };\n"
-      },
-      "id": "00000019-0000-4000-8000-000000000019",
-      "name": "Lauf abschliessen (Warnung/Fehler)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2080,
-        120
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN und dessen Quelle (echter DB-Wert vs. sicherer\n// Fallback bei fehlender/ungueltiger Config, siehe B4) wurden bisher nur berechnet\n// (Kontext zusammenfuehren) und weitergereicht, aber nie irgendwo tatsaechlich protokolliert -\n// aus keinem Log war im Nachhinein erkennbar, ob ein Lauf im Fallback-Modus lief. Landet jetzt\n// in derselben metadata_json wie die bereits bestehenden partial_failure_details.\nconst kontext = $('Kontext zusammenfuehren').item.json;\nconst metadata = {\n  ...((Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0) ? { partial_failure_details: $json.partial_failure_details } : {}),\n  dry_run: kontext.DRY_RUN,\n  dry_run_source: kontext.DRY_RUN_SOURCE\n};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "id": "0000001a-0000-4000-8000-00000000a",
-      "name": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2304,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "id": "0000001a-0000-4000-8000-00000000b",
-      "name": "Log Gesamtlauf abgeschlossen (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        2480,
-        0
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-      },
-      "name": "Log Gesamtlauf pruefen (sonst werfen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2704,
-        0
-      ],
-      "id": "p8-check-00-log-gesamtlauf"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'DRY_RUN') AS dry_run,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_MARKET_SCANNER') AS enable_market_scanner,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_PAPER_TRADING') AS enable_paper_trading,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_TRADE_LEARNING') AS enable_trade_learning;",
-        "options": {}
-      },
-      "id": "f2575829-c666-46ef-96dd-58b948e404c6",
-      "name": "Config: DRY_RUN laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -1976,
-        0
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\n// FIX 2026-08-01 (Fehleranalyse B4, kritisch): der alte Fallback sprang bei fehlender/\n// ungueltiger Config (0 Zeilen, DB-Fehler, NULL-Wert) auf DRY_RUN=false - also den unsicheren\n// Echtpfad - statt auf den sicheren DRY_RUN=true zurueck. Eine reine Konfigurationsstoerung\n// haette so lautlos den Realpfad aktiviert. Fallback jetzt auf true gedreht, Quelle protokolliert.\nconst dryRunFromDb = cfg && typeof cfg.dry_run === 'boolean';\nconst dryRun = dryRunFromDb ? cfg.dry_run : true;\nconst dryRunSource = dryRunFromDb ? 'db' : 'fallback_unsicher_config_fehlt_oder_ungueltig';\n\n// FIX (Haertung Welle 1-3, Phase 14): Feature-Flags fuer 13/14 - sicherer Default ist\n// \"false\" (deaktiviert), nicht \"true\", wenn die Konfiguration fehlt oder ungueltig ist.\nfunction safeFlag(v) { return typeof v === 'boolean' ? v : false; }\nconst enableMarketScanner = safeFlag(cfg && cfg.enable_market_scanner);\nconst enablePaperTrading = safeFlag(cfg && cfg.enable_paper_trading);\nconst enableTradeLearning = safeFlag(cfg && cfg.enable_trade_learning);\n\nreturn [{ json: { ...base, DRY_RUN: dryRun, DRY_RUN_SOURCE: dryRunSource,\n  ENABLE_MARKET_SCANNER: enableMarketScanner, ENABLE_PAPER_TRADING: enablePaperTrading, ENABLE_TRADE_LEARNING: enableTradeLearning } }];"
-      },
-      "id": "88be6e21-2351-42c4-a53a-ee63b4b7c1a8",
-      "name": "Kontext zusammenfuehren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1776,
-        0
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): die vier Gates (IF: ... ok?) lassen\n// bereits seit B1 success/partial_failure/skipped gleichermassen durch - das\n// ist fuer den Lauf-Fortschritt richtig, verschluckt aber, DASS eine Stufe\n// nur einen Teilerfolg hatte. \"Lauf abschliessen (Erfolg)\" hat das bisher\n// nirgends festgehalten. Sammelt hier einmalig alle vier Stufenstatus und\n// stellt fest, ob mindestens eine Stufe nicht 'success' war.\nconst stufen = [\n  { label: 'Marktumfeld (02b)', node: 'Ausfuehren: Marktumfeld (02b)' },\n  { label: 'Technische Signale (02)', node: 'Ausfuehren: Technische Signale (02)' },\n  { label: 'Empfehlungswatchlist (06)', node: 'Ausfuehren: Empfehlungswatchlist (06)' },\n  { label: 'Markt-Screener (13)', node: 'Ausfuehren: Markt-Screener (13)' },\n  { label: 'Portfolio-Risiko und Paper-Trading (14)', node: 'Ausfuehren: Portfolio-Risiko und Paper-Trading (14)' },\n  { label: 'Tagesreport-Versand (05)', node: 'Ausfuehren: Tagesreport-Versand (05)' }\n];\n\nconst partial_failure_details = [];\nfor (const s of stufen) {\n  let status = null;\n  try { status = $(s.node).all()[0]?.json?.status ?? null; } catch (e) {}\n  if (status === 'partial_failure' || status === 'skipped') {\n    partial_failure_details.push({ stufe: s.label, status });\n  }\n}\n\nreturn { json: { ...$json, partial_failure_details, hat_teilausfall: partial_failure_details.length > 0 } };\n"
-      },
-      "id": "b2fix-sammle-teilstatus-0001",
-      "name": "Sammle Teilstatus (Erfolg)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2300,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "options": {
-          "caseSensitive": true,
-          "leftValue": "",
-          "typeValidation": "strict"
-        },
-        "conditions": [
-          {
-            "leftValue": "={{ $json.hat_teilausfall }}",
-            "rightValue": true,
-            "operator": {
-              "type": "boolean",
-              "operation": "equals"
-            }
-          }
-        ],
-        "combinator": "and"
-      },
-      "id": "b2fix-if-teilausfall-0002",
-      "name": "IF: Teilausfall trotz Erfolg?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2540,
-        -120
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): macht einen Teilausfall trotz\n// insgesamt erfolgreichem Lauf sichtbar (Matrix-Hinweis + final_status in\n// trading.pipeline_runs), statt ihn stillschweigend wie einen vollen Erfolg\n// zu behandeln. Nutzt bewusst denselben Matrix-Versandpfad wie \"Baue\n// technische Warnung\" (Node \"Matrix: Technische Warnung senden\" danach) -\n// kein zweiter Matrix-Kanal noetig.\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst details = $json.partial_failure_details || [];\nconst liste = details.map(d => d.stufe + ': ' + d.status).join('\\n- ');\n\nconst text = 'ℹ️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde versendet, aber mit Teilausfall in ' + details.length + ' Stufe(n):\\n\\n- ' + liste + '\\n\\nDetails: trading.pipeline_runs (run_id ' + runId + ').';\n\n// trading.pipeline_runs.status hat eine CHECK-Constraint auf einen festen\n// Wertebereich (sql/001: pending/running/success/warning/failed/skipped/\n// retrying) - kein neuer Statuswert, sondern das bereits vorhandene 'warning'\n// (passend: \"Aufmerksamkeit noetig, aber kein Abbruch\"). Die eigentliche\n// Nuance (versendet trotz Teilausfall, nicht blockiert) steht in\n// partial_failure_details/metadata_json, nicht im Statuswert selbst.\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning', partial_failure_details: details } };\n"
-      },
-      "id": "b2fix-baue-teilausfall-0003",
-      "name": "Baue Teilausfall-Warnung",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2780,
-        40
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $('Kontext zusammenfuehren').all()[0].json.ENABLE_MARKET_SCANNER }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "name": "IF: Markt-Screener (13) aktiviert?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        320,
-        -320
-      ],
-      "id": "n-p14-gate-markt_screener"
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "43lG9aZVHwzIp0jq",
-          "mode": "list",
-          "cachedResultName": "13 – Markt-Screener täglich"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "n-p14-exec-markt_screener",
-      "name": "Ausfuehren: Markt-Screener (13)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        480,
-        -320
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {},
-      "name": "Markt-Screener (13): Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        640,
-        -400
-      ],
-      "id": "n-p14-merge-markt_screener"
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "name": "Markt-Screener (13): Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        800,
-        -400
-      ],
-      "id": "n-p14-dedup-markt_screener"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('13 – Markt-Screener täglich')}, ${pgStr('markt_screener')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "name": "Log Markt-Screener (13) (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        960,
-        -400
-      ],
-      "id": "n-p14-logsql-markt_screener"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "name": "Log Markt-Screener (13) (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1120,
-        -400
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-p14-logexec-markt_screener",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Markt-Screener (13)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "name": "IF: Markt-Screener (13) ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1280,
-        -400
-      ],
-      "id": "n-p14-ok-markt_screener"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $('Kontext zusammenfuehren').all()[0].json.ENABLE_PAPER_TRADING }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "name": "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        960,
-        -320
-      ],
-      "id": "n-p14-gate-portfolio_risiko"
-    },
-    {
-      "parameters": {
-        "source": "database",
-        "workflowId": {
-          "__rl": true,
-          "value": "H0iZrWQy1HQi6iro",
-          "mode": "list",
-          "cachedResultName": "14 – Portfolio-Risiko und Paper-Trading"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-            "payload": "={{ {} }}"
-          }
-        },
-        "options": {
-          "waitForSubWorkflow": true
-        }
-      },
-      "id": "n-p14-exec-portfolio_risiko",
-      "name": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
-      "type": "n8n-nodes-base.executeWorkflow",
-      "alwaysOutputData": true,
-      "typeVersion": 1.2,
-      "position": [
-        1120,
-        -320
-      ],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {},
-      "name": "Portfolio-Risiko und Paper-Trading (14): Zweige zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        1280,
-        -400
-      ],
-      "id": "n-p14-merge-portfolio_risiko"
-    },
-    {
-      "parameters": {
-        "jsCode": "// REPARATUR (Reparaturauftrag P0.4): akzeptiert nur noch Items mit type ===\n// 'workflow_result' statt zu erraten, welches Item das meiste \"aussieht\" wie ein Ergebnis.\nconst items = $input.all();\nconst results = items.filter(it => it.json && it.json.type === 'workflow_result');\nif (results.length > 0) return [results[results.length - 1]];\nreturn [{ json: {\n  type: 'workflow_result', status: 'failed', ok: false,\n  processed: 0, successful: 0, failed: 1, warnings: [],\n  errors: [{ node: 'Ergebnis entduplizieren', message: 'Kein gueltiges workflow_result-Item vom Sub-Workflow erhalten (' + items.length + ' Item(s) ohne type:workflow_result).' }]\n} }];"
-      },
-      "name": "Portfolio-Risiko und Paper-Trading (14): Ergebnis entduplizieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1440,
-        -400
-      ],
-      "id": "n-p14-dedup-portfolio_risiko"
-    },
-    {
-      "parameters": {
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('14 – Portfolio-Risiko und Paper-Trading')}, ${pgStr('portfolio_risiko')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-      },
-      "name": "Log Portfolio-Risiko und Paper-Trading (14) (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1600,
-        -400
-      ],
-      "id": "n-p14-logsql-portfolio_risiko"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "name": "Log Portfolio-Risiko und Paper-Trading (14) (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1760,
-        -400
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-p14-logexec-portfolio_risiko",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Portfolio-Risiko und Paper-Trading (14)').all()[0]?.json?.status) }",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "name": "IF: Portfolio-Risiko und Paper-Trading (14) ok?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1920,
-        -400
-      ],
-      "id": "n-p14-ok-portfolio_risiko"
-    }
-  ],
   "connections": {
     "Trigger: Tagesabschluss (17:50 Werktage)": {
       "main": [
@@ -1984,86 +655,6 @@
       "main": [
         [
           {
-            "node": "Ausfuehren: Markt-Screener (13)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Ausfuehren: Empfehlungswatchlist (06)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Markt-Screener (13)": {
-      "main": [
-        [
-          {
-            "node": "Markt-Screener (13): Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Markt-Screener (13): Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Markt-Screener (13): Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Markt-Screener (13): Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Markt-Screener (13): Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Markt-Screener (13) (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Markt-Screener (13) (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Markt-Screener (13) (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Markt-Screener (13) (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Markt-Screener (13) ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Markt-Screener (13) ok?": {
-      "main": [
-        [
-          {
             "node": "Ausfuehren: Empfehlungswatchlist (06)",
             "type": "main",
             "index": 0
@@ -2071,7 +662,7 @@
         ],
         [
           {
-            "node": "Baue technische Warnung",
+            "node": "Ausfuehren: Empfehlungswatchlist (06)",
             "type": "main",
             "index": 0
           }
@@ -2082,7 +673,7 @@
       "main": [
         [
           {
-            "node": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
+            "node": "Ausfuehren: Report- und Pruefagent (10)",
             "type": "main",
             "index": 0
           }
@@ -2095,1107 +686,139 @@
           }
         ]
       ]
-    },
-    "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)": {
-      "main": [
-        [
-          {
-            "node": "Portfolio-Risiko und Paper-Trading (14): Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Portfolio-Risiko und Paper-Trading (14): Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Portfolio-Risiko und Paper-Trading (14): Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Portfolio-Risiko und Paper-Trading (14): Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Portfolio-Risiko und Paper-Trading (14): Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Portfolio-Risiko und Paper-Trading (14) (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Portfolio-Risiko und Paper-Trading (14) (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Portfolio-Risiko und Paper-Trading (14) (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Portfolio-Risiko und Paper-Trading (14) (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Portfolio-Risiko und Paper-Trading (14) ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Portfolio-Risiko und Paper-Trading (14) ok?": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Report- und Pruefagent (10)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
-  },
-  "staticData": {
-    "node:Trigger: Tagesabschluss (17:50 Werktage)": {
-      "recurrenceRules": []
-    }
-  },
+  "id": "ncMZzkqDHpSiDGPm",
   "meta": null,
-  "pinData": null,
-  "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
-  "activeVersionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
-  "versionCounter": 106,
-  "triggerCount": 1,
-  "shared": [
+  "name": "00 – Tagesabschluss-Orchestrator",
+  "nodes": [
     {
-      "updatedAt": "2026-07-19T13:09:43.709Z",
-      "createdAt": "2026-07-19T13:09:43.709Z",
-      "role": "workflow:owner",
-      "workflowId": "ncMZzkqDHpSiDGPm",
-      "projectId": "CrnegVcMvlcRU0OP",
-      "project": {
-        "updatedAt": "2026-05-23T11:38:39.411Z",
-        "createdAt": "2026-05-23T11:33:40.374Z",
-        "id": "CrnegVcMvlcRU0OP",
-        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 50 17 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000001",
+      "name": "Trigger: Tagesabschluss (17:50 Werktage)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\nfunction getBerlinTimeParts(date = new Date()) {\n  const fmt = new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false\n  }).formatToParts(date);\n  const p = Object.fromEntries(fmt.map(x => [x.type, x.value]));\n  return `${p.hour}${p.minute}${p.second}`;\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nconst businessDate = getBusinessDate();\nconst timePart = getBerlinTimeParts();\nconst runId = `daily-${businessDate}-${timePart}-${randHex(6)}`;\nconst startedAt = new Date().toISOString();\n\nreturn { json: {\n  run_id: runId,\n  business_date: businessDate,\n  started_at: startedAt\n} };\n"
+      },
+      "id": "00000000-0000-4000-8000-000000000002",
+      "name": "Run-ID erzeugen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2176,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "9zO3uZeZeakTnLnX",
+          "mode": "list",
+          "cachedResultName": "02b – Marktumfeld täglich"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "00000000-0000-4000-8000-000000000003",
+      "name": "Ausfuehren: Marktumfeld (02b)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "alwaysOutputData": true,
+      "typeVersion": 1.2,
+      "position": [
+        -1952,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02b – Marktumfeld täglich')}, ${pgStr('marktumfeld')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "00000004-0000-4000-8000-00000000000a",
+      "name": "Log Marktumfeld (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1728,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "00000004-0000-4000-8000-00000000000b",
+      "name": "Log Marktumfeld (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1552,
+        -80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
       }
-    }
-  ],
-  "tags": [],
-  "activeVersion": {
-    "updatedAt": "2026-08-02T07:26:46.858Z",
-    "createdAt": "2026-08-02T07:26:46.858Z",
-    "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
-    "workflowId": "ncMZzkqDHpSiDGPm",
-    "nodes": [
-      {
-        "parameters": {
-          "rule": {
-            "interval": [
-              {
-                "field": "cronExpression",
-                "expression": "0 50 17 * * 1-5"
-              }
-            ]
-          }
-        },
-        "id": "00000000-0000-4000-8000-000000000001",
-        "name": "Trigger: Tagesabschluss (17:50 Werktage)",
-        "type": "n8n-nodes-base.scheduleTrigger",
-        "typeVersion": 1.1,
-        "position": [
-          -2400,
-          0
-        ]
+    },
+    {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000010001",
+      "name": "Marktumfeld: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1900,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      {
-        "parameters": {
-          "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\nfunction getBerlinTimeParts(date = new Date()) {\n  const fmt = new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false\n  }).formatToParts(date);\n  const p = Object.fromEntries(fmt.map(x => [x.type, x.value]));\n  return `${p.hour}${p.minute}${p.second}`;\n}\n\nfunction randHex(n) {\n  let s = '';\n  for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 16).toString(16);\n  return s;\n}\n\nconst businessDate = getBusinessDate();\nconst timePart = getBerlinTimeParts();\nconst runId = `daily-${businessDate}-${timePart}-${randHex(6)}`;\nconst startedAt = new Date().toISOString();\n\nreturn { json: {\n  run_id: runId,\n  business_date: businessDate,\n  started_at: startedAt\n} };\n"
-        },
-        "id": "00000000-0000-4000-8000-000000000002",
-        "name": "Run-ID erzeugen",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -2176,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "9zO3uZeZeakTnLnX",
-            "mode": "list",
-            "cachedResultName": "02b – Marktumfeld täglich"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "context": "={{ { run_id: $json.run_id } }}",
-              "config": "={{ {} }}",
-              "payload": "={{ {} }}"
-            }
-          },
-          "options": {
-            "waitForSubWorkflow": true
-          }
-        },
-        "id": "00000000-0000-4000-8000-000000000003",
-        "name": "Ausfuehren: Marktumfeld (02b)",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "alwaysOutputData": true,
-        "typeVersion": 1.2,
-        "position": [
-          -1952,
-          0
-        ],
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02b – Marktumfeld täglich')}, ${pgStr('marktumfeld')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "00000004-0000-4000-8000-00000000000a",
-        "name": "Log Marktumfeld (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1728,
-          -80
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "00000004-0000-4000-8000-00000000000b",
-        "name": "Log Marktumfeld (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -1552,
-          -80
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {},
-        "id": "dd000000-0000-4000-8000-0000010001",
-        "name": "Marktumfeld: Zweige zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          -1900,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
-        },
-        "id": "dd000000-0000-4000-8000-0000010002",
-        "name": "Marktumfeld: Ergebnis entduplizieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1780,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Marktumfeld (02b)').all()[0]?.json?.status) }",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "00000000-0000-4000-8000-000000000005",
-        "name": "IF: Marktumfeld ok?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          -1504,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "vgT6IrPp3ATaJg8s",
-            "mode": "list",
-            "cachedResultName": "02 – Technische Signale täglich"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id } }}",
-              "config": "={{ {} }}",
-              "payload": "={{ {} }}"
-            }
-          },
-          "options": {
-            "waitForSubWorkflow": true
-          }
-        },
-        "id": "00000000-0000-4000-8000-000000000006",
-        "name": "Ausfuehren: Technische Signale (02)",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "alwaysOutputData": true,
-        "typeVersion": 1.2,
-        "position": [
-          -1280,
-          0
-        ],
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Punkt 15/16: 02 liefert jetzt {status, processed, successful, failed, errors[]}\n// statt nur error/leer. Alte Ternary hier war ohnehin fehlerhaft (lieferte\n// immer nur das Wort 'failed' oder '', nie die echte Fehlermeldung, Auftrag\n// Punkt 19) -- gleich mitbehoben.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02 – Technische Signale täglich')}, ${pgStr('technische_signale')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "00000007-0000-4000-8000-00000000000a",
-        "name": "Log Technische Signale (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1056,
-          -80
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "00000007-0000-4000-8000-00000000000b",
-        "name": "Log Technische Signale (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -880,
-          -80
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {},
-        "id": "dd000000-0000-4000-8000-0000020001",
-        "name": "Technische Signale: Zweige zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          -1224,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
-        },
-        "id": "dd000000-0000-4000-8000-0000020002",
-        "name": "Technische Signale: Ergebnis entduplizieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1104,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Technische Signale (02)').all()[0]?.json?.status) }",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "00000000-0000-4000-8000-000000000008",
-        "name": "IF: Technische Signale ok?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          -832,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "get",
-          "dataTableId": {
-            "__rl": true,
-            "value": "GDMAKrvQovPcBItA",
-            "mode": "list",
-            "cachedResultName": "stock_technical_signals"
-          },
-          "filters": {
-            "conditions": [
-              {
-                "keyName": "datum",
-                "keyValue": "={{ $('Run-ID erzeugen').item.json.business_date }}"
-              }
-            ]
-          },
-          "returnAll": true
-        },
-        "id": "00000000-0000-4000-8000-000000000009",
-        "name": "DB: Heutige Signale zaehlen",
-        "type": "n8n-nodes-base.dataTable",
-        "typeVersion": 1,
-        "position": [
-          -608,
-          -80
-        ],
-        "onError": "continueRegularOutput"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "=SELECT id FROM trading.news_items WHERE (created_at AT TIME ZONE 'Europe/Berlin')::date = '{{ $('Run-ID erzeugen').item.json.business_date }}'::date;",
-          "options": {}
-        },
-        "id": "0000000a-0000-4000-8000-00000000000a",
-        "name": "DB: Heutige News zaehlen",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -608,
-          80
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {},
-        "id": "0000000b-0000-4000-8000-00000000000b",
-        "name": "Merge: Datenqualitaet",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          -384,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "// Datenqualitaetspruefung: mindestens 1 aktuelles technisches Signal muss\n// vorliegen, sonst gilt der Geschaeftstag als unvollstaendig (harte Abbruchregel).\n// Fehlende News-Aktivitaet ist nur eine Warnung (an ruhigen Tagen kann News=0\n// legitim sein), kein harter Abbruch.\nconst signale = $('DB: Heutige Signale zaehlen').all();\nconst news = $('DB: Heutige News zaehlen').all();\n\nconst signaleOk = signale.length > 0;\nconst newsOk = news.length > 0;\n\nreturn { json: {\n  run_id: $('Run-ID erzeugen').item.json.run_id,\n  business_date: $('Run-ID erzeugen').item.json.business_date,\n  signale_count: signale.length,\n  news_count: news.length,\n  signale_ok: signaleOk,\n  news_ok: newsOk,\n  datenqualitaet_ok: signaleOk\n} };\n"
-        },
-        "id": "0000000c-0000-4000-8000-00000000000c",
-        "name": "Pruefe Datenqualitaet",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -160,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.datenqualitaet_ok ? 'success' : 'failed';\nconst errorMessage = $json.datenqualitaet_ok ? 'success' : 'failed' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = { signale_count: $json.signale_count, news_count: $json.news_count, news_ok: $json.news_ok };\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('datenqualitaet')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "0000000d-0000-4000-8000-00000000000a",
-        "name": "Log Datenqualitaet (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          64,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "0000000d-0000-4000-8000-00000000000b",
-        "name": "Log Datenqualitaet (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          240,
-          0
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "loose"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $('Pruefe Datenqualitaet').item.json.datenqualitaet_ok }}",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "true",
-                  "singleValue": true
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "0000000e-0000-4000-8000-00000000000e",
-        "name": "IF: Datenqualitaet ok?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          288,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "aguWZUolRizBnsj4",
-            "mode": "list",
-            "cachedResultName": "06 – Empfehlungswatchlist"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-              "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
-              "payload": "={{ {} }}"
-            }
-          },
-          "options": {
-            "waitForSubWorkflow": true
-          }
-        },
-        "id": "0000000f-0000-4000-8000-00000000000f",
-        "name": "Ausfuehren: Empfehlungswatchlist (06)",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "alwaysOutputData": true,
-        "typeVersion": 1.2,
-        "position": [
-          512,
-          0
-        ],
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\n// FIX 2026-08-02 (Fehleranalyse B7): dry_run_source aus 06s Envelope mitprotokollieren.\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || [],\n  dry_run_source: envelope.dry_run_source || null\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "00000010-0000-4000-8000-000000000a",
-        "name": "Log Empfehlungswatchlist (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          736,
-          -80
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "00000010-0000-4000-8000-000000000b",
-        "name": "Log Empfehlungswatchlist (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          912,
-          -80
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {},
-        "id": "dd000000-0000-4000-8000-0000030001",
-        "name": "Empfehlungswatchlist: Zweige zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          568,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
-        },
-        "id": "dd000000-0000-4000-8000-0000030002",
-        "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          688,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "BFlxfLyarzR2xbBT",
-            "mode": "list",
-            "cachedResultName": "10 – Report- und Prüfagent"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id, business_date: $('Run-ID erzeugen').item.json.business_date } }}",
-              "config": "={{ {} }}",
-              "payload": "={{ {} }}"
-            }
-          },
-          "options": {
-            "waitForSubWorkflow": true
-          }
-        },
-        "id": "00000011-0000-4000-8000-000000000011",
-        "name": "Ausfuehren: Report- und Pruefagent (10)",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "alwaysOutputData": true,
-        "typeVersion": 1.2,
-        "position": [
-          960,
-          0
-        ],
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 10 liefert jetzt zusaetzlich {status, processed, successful,\n// failed, warnings[], errors[]} additiv neben approved/report_markdown/... .\nconst status = envelope.status || (envelope.error ? 'failed' : (envelope.approved ? 'success' : 'failed'));\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('10 – Report- und Prüfagent')}, ${pgStr('report_pruef_agent')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "00000012-0000-4000-8000-000000000a",
-        "name": "Log Report-Pruef-Agent (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1184,
-          -80
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "00000012-0000-4000-8000-000000000b",
-        "name": "Log Report-Pruef-Agent (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          1360,
-          -80
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {},
-        "id": "dd000000-0000-4000-8000-0000040001",
-        "name": "Report-Pruef-Agent: Zweige zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          1016,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
-        },
-        "id": "dd000000-0000-4000-8000-0000040002",
-        "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1136,
-          -160
-        ]
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "loose"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $('Ausfuehren: Report- und Pruefagent (10)').item.json.approved }}",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "true",
-                  "singleValue": true
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "00000013-0000-4000-8000-000000000013",
-        "name": "IF: Freigegeben?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          1408,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "source": "database",
-          "workflowId": {
-            "__rl": true,
-            "value": "VRr5jIHj7G7dsMwi",
-            "mode": "list",
-            "cachedResultName": "05 – Tagesreport"
-          },
-          "workflowInputs": {
-            "mappingMode": "defineBelow",
-            "value": {
-              "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
-              "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
-              "payload": "={{ { report_markdown: $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown, approved: true } }}"
-            }
-          },
-          "options": {
-            "waitForSubWorkflow": true
-          }
-        },
-        "id": "00000014-0000-4000-8000-000000000014",
-        "name": "Ausfuehren: Tagesreport-Versand (05)",
-        "type": "n8n-nodes-base.executeWorkflow",
-        "alwaysOutputData": true,
-        "typeVersion": 1.2,
-        "position": [
-          1632,
-          -120
-        ],
-        "onError": "continueErrorOutput"
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 05 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b/06.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('05 – Tagesreport')}, ${pgStr('tagesreport_versand')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "00000015-0000-4000-8000-000000000a",
-        "name": "Log Versand (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1856,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "00000015-0000-4000-8000-000000000b",
-        "name": "Log Versand (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          2032,
-          -120
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Empfehlungswatchlist (06)').all()[0]?.json?.status) }",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "00000000-0000-4000-8000-00000000e001",
-        "name": "IF: Empfehlungswatchlist ok?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          936,
-          -40
-        ]
-      },
-      {
-        "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Tagesreport-Versand (05)').all()[0]?.json?.status) }",
-                "rightValue": true,
-                "operator": {
-                  "type": "boolean",
-                  "operation": "equals"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
-        },
-        "id": "00000000-0000-4000-8000-00000000e002",
-        "name": "IF: Versand ok?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          2056,
-          -100
-        ]
-      },
-      {
-        "parameters": {},
-        "id": "dd000000-0000-4000-8000-0000050001",
-        "name": "Versand: Zweige zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          1688,
-          -280
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
-        },
-        "id": "dd000000-0000-4000-8000-0000050002",
-        "name": "Versand: Ergebnis entduplizieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1808,
-          -280
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "return { json: { ...$json, final_status: 'success' } };"
-        },
-        "id": "00000016-0000-4000-8000-000000000016",
-        "name": "Lauf abschliessen (Erfolg)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2080,
-          -120
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "const runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\n\nlet gruende = [];\ntry { if ($('Ausfuehren: Marktumfeld (02b)').item.json.error) gruende.push('Marktumfeld fehlgeschlagen: ' + $('Ausfuehren: Marktumfeld (02b)').item.json.error); } catch(e) {}\ntry { if ($('Ausfuehren: Technische Signale (02)').item.json.error) gruende.push('Technische Signale fehlgeschlagen: ' + $('Ausfuehren: Technische Signale (02)').item.json.error); } catch(e) {}\ntry { if ($('Pruefe Datenqualitaet').item.json.datenqualitaet_ok === false) gruende.push('Datenqualitaet unzureichend (Signale: ' + $('Pruefe Datenqualitaet').item.json.signale_count + ', News: ' + $('Pruefe Datenqualitaet').item.json.news_count + ')'); } catch(e) {}\ntry { if ($('Ausfuehren: Report- und Pruefagent (10)').item.json.approved === false) gruende.push('Pruef-Agent hat den Bericht abgelehnt: ' + JSON.stringify($('Ausfuehren: Report- und Pruefagent (10)').item.json.required_corrections || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Empfehlungswatchlist (06)').item.json.status === 'failed') gruende.push('Empfehlungswatchlist fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Empfehlungswatchlist (06)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Tagesreport-Versand (05)').item.json.status === 'failed') gruende.push('Tagesreport-Versand fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Tagesreport-Versand (05)').item.json.errors || [])); } catch(e) {}\nif (gruende.length === 0) gruende.push('Unbekannter Abbruchgrund - siehe trading.pipeline_runs fuer run_id ' + runId);\n\nconst text = '⚠️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde NICHT automatisch versendet:\\n\\n- ' + gruende.join('\\n- ');\n\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning' } };\n"
-        },
-        "id": "00000017-0000-4000-8000-000000000017",
-        "name": "Baue technische Warnung",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1632,
-          120
-        ]
-      },
-      {
-        "parameters": {
-          "method": "PUT",
-          "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'orchestrator_warn_' + $json.run_id }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "contentType": "raw",
-          "rawContentType": "application/json",
-          "body": "={{ JSON.stringify({ msgtype: 'm.text', body: $json.warnung_text }) }}",
-          "options": {
-            "timeout": 30000
-          }
-        },
-        "id": "00000018-0000-4000-8000-000000000018",
-        "name": "Matrix: Technische Warnung senden",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.2,
-        "position": [
-          1856,
-          120
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "od1pN1F5wy2irSDs",
-            "name": "Header Auth account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-        },
-        "name": "Matrix-Warnung pruefen (sonst werfen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          1980,
-          120
-        ],
-        "id": "p8-check-00-matrix-warnung"
-      },
-      {
-        "parameters": {
-          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2): dieser Node wird sowohl vom\n// urspruenglichen Fehler-/Abbruchpfad (\"Baue technische Warnung\") als auch\n// vom neuen Teilausfall-Pfad (\"Baue Teilausfall-Warnung\") ueber denselben\n// Matrix-HTTP-Node erreicht. Der HTTP-Request-Node ersetzt $json durch die\n// rohe Matrix-Antwort - die vorher gesetzten Felder gehen dabei verloren und\n// muessen hier ueber den jeweiligen Quell-Node zurueckgeholt werden.\nlet partial_failure_details = [];\ntry {\n  partial_failure_details = $('Baue Teilausfall-Warnung').item.json.partial_failure_details || [];\n} catch (e) {\n  // Kein Teilausfall-Pfad gelaufen (regulaerer Abbruch/Fehler) - unveraendertes bisheriges Verhalten.\n}\n\nreturn { json: { ...$json, final_status: $json.final_status || 'warning', partial_failure_details } };\n"
-        },
-        "id": "00000019-0000-4000-8000-000000000019",
-        "name": "Lauf abschliessen (Warnung/Fehler)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2080,
-          120
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN und dessen Quelle (echter DB-Wert vs. sicherer\n// Fallback bei fehlender/ungueltiger Config, siehe B4) wurden bisher nur berechnet\n// (Kontext zusammenfuehren) und weitergereicht, aber nie irgendwo tatsaechlich protokolliert -\n// aus keinem Log war im Nachhinein erkennbar, ob ein Lauf im Fallback-Modus lief. Landet jetzt\n// in derselben metadata_json wie die bereits bestehenden partial_failure_details.\nconst kontext = $('Kontext zusammenfuehren').item.json;\nconst metadata = {\n  ...((Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0) ? { partial_failure_details: $json.partial_failure_details } : {}),\n  dry_run: kontext.DRY_RUN,\n  dry_run_source: kontext.DRY_RUN_SOURCE\n};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
-        },
-        "id": "0000001a-0000-4000-8000-00000000a",
-        "name": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2304,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "id": "0000001a-0000-4000-8000-00000000b",
-        "name": "Log Gesamtlauf abgeschlossen (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          2480,
-          0
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-        },
-        "name": "Log Gesamtlauf pruefen (sonst werfen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2704,
-          0
-        ],
-        "id": "p8-check-00-log-gesamtlauf"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'DRY_RUN';",
-          "options": {}
-        },
-        "id": "f2575829-c666-46ef-96dd-58b948e404c6",
-        "name": "Config: DRY_RUN laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -1976,
-          0
-        ],
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "onError": "continueRegularOutput",
-        "alwaysOutputData": true
-      },
-      {
-        "parameters": {
-          "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\n// FIX 2026-08-01 (Fehleranalyse B4, kritisch): der alte Fallback sprang bei fehlender/\n// ungueltiger Config (0 Zeilen, DB-Fehler, NULL-Wert) auf DRY_RUN=false - also den unsicheren\n// Echtpfad - statt auf den sicheren DRY_RUN=true zurueck. Eine reine Konfigurationsstoerung\n// haette so lautlos den Realpfad aktiviert. Fallback jetzt auf true gedreht, Quelle protokolliert.\nconst dryRunFromDb = cfg && typeof cfg.value_bool === 'boolean';\nconst dryRun = dryRunFromDb ? cfg.value_bool : true;\nconst dryRunSource = dryRunFromDb ? 'db' : 'fallback_unsicher_config_fehlt_oder_ungueltig';\nreturn [{ json: { ...base, DRY_RUN: dryRun, DRY_RUN_SOURCE: dryRunSource } }];"
-        },
-        "id": "88be6e21-2351-42c4-a53a-ee63b4b7c1a8",
-        "name": "Kontext zusammenfuehren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1776,
-          0
-        ]
-      },
-      {
-        "parameters": {
-          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): die vier Gates (IF: ... ok?) lassen\n// bereits seit B1 success/partial_failure/skipped gleichermassen durch - das\n// ist fuer den Lauf-Fortschritt richtig, verschluckt aber, DASS eine Stufe\n// nur einen Teilerfolg hatte. \"Lauf abschliessen (Erfolg)\" hat das bisher\n// nirgends festgehalten. Sammelt hier einmalig alle vier Stufenstatus und\n// stellt fest, ob mindestens eine Stufe nicht 'success' war.\nconst stufen = [\n  { label: 'Marktumfeld (02b)', node: 'Ausfuehren: Marktumfeld (02b)' },\n  { label: 'Technische Signale (02)', node: 'Ausfuehren: Technische Signale (02)' },\n  { label: 'Empfehlungswatchlist (06)', node: 'Ausfuehren: Empfehlungswatchlist (06)' },\n  { label: 'Tagesreport-Versand (05)', node: 'Ausfuehren: Tagesreport-Versand (05)' }\n];\n\nconst partial_failure_details = [];\nfor (const s of stufen) {\n  let status = null;\n  try { status = $(s.node).all()[0]?.json?.status ?? null; } catch (e) {}\n  if (status === 'partial_failure' || status === 'skipped') {\n    partial_failure_details.push({ stufe: s.label, status });\n  }\n}\n\nreturn { json: { ...$json, partial_failure_details, hat_teilausfall: partial_failure_details.length > 0 } };\n"
-        },
-        "id": "b2fix-sammle-teilstatus-0001",
-        "name": "Sammle Teilstatus (Erfolg)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2300,
-          -120
-        ]
-      },
-      {
-        "parameters": {
+      "id": "dd000000-0000-4000-8000-0000010002",
+      "name": "Marktumfeld: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1780,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
           "options": {
             "caseSensitive": true,
             "leftValue": "",
@@ -3203,7 +826,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ $json.hat_teilausfall }}",
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Marktumfeld (02b)').all()[0]?.json?.status) }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -3213,702 +836,947 @@
           ],
           "combinator": "and"
         },
-        "id": "b2fix-if-teilausfall-0002",
-        "name": "IF: Teilausfall trotz Erfolg?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.2,
-        "position": [
-          2540,
-          -120
-        ]
+        "options": {}
       },
-      {
-        "parameters": {
-          "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): macht einen Teilausfall trotz\n// insgesamt erfolgreichem Lauf sichtbar (Matrix-Hinweis + final_status in\n// trading.pipeline_runs), statt ihn stillschweigend wie einen vollen Erfolg\n// zu behandeln. Nutzt bewusst denselben Matrix-Versandpfad wie \"Baue\n// technische Warnung\" (Node \"Matrix: Technische Warnung senden\" danach) -\n// kein zweiter Matrix-Kanal noetig.\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst details = $json.partial_failure_details || [];\nconst liste = details.map(d => d.stufe + ': ' + d.status).join('\\n- ');\n\nconst text = 'ℹ️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde versendet, aber mit Teilausfall in ' + details.length + ' Stufe(n):\\n\\n- ' + liste + '\\n\\nDetails: trading.pipeline_runs (run_id ' + runId + ').';\n\n// trading.pipeline_runs.status hat eine CHECK-Constraint auf einen festen\n// Wertebereich (sql/001: pending/running/success/warning/failed/skipped/\n// retrying) - kein neuer Statuswert, sondern das bereits vorhandene 'warning'\n// (passend: \"Aufmerksamkeit noetig, aber kein Abbruch\"). Die eigentliche\n// Nuance (versendet trotz Teilausfall, nicht blockiert) steht in\n// partial_failure_details/metadata_json, nicht im Statuswert selbst.\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning', partial_failure_details: details } };\n"
+      "id": "00000000-0000-4000-8000-000000000005",
+      "name": "IF: Marktumfeld ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1504,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "vgT6IrPp3ATaJg8s",
+          "mode": "list",
+          "cachedResultName": "02 – Technische Signale täglich"
         },
-        "id": "b2fix-baue-teilausfall-0003",
-        "name": "Baue Teilausfall-Warnung",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          2780,
-          40
-        ]
-      }
-    ],
-    "connections": {
-      "Trigger: Tagesabschluss (17:50 Werktage)": {
-        "main": [
-          [
-            {
-              "node": "Run-ID erzeugen",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
       },
-      "Run-ID erzeugen": {
-        "main": [
-          [
-            {
-              "node": "Config: DRY_RUN laden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "id": "00000000-0000-4000-8000-000000000006",
+      "name": "Ausfuehren: Technische Signale (02)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "alwaysOutputData": true,
+      "typeVersion": 1.2,
+      "position": [
+        -1280,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Punkt 15/16: 02 liefert jetzt {status, processed, successful, failed, errors[]}\n// statt nur error/leer. Alte Ternary hier war ohnehin fehlerhaft (lieferte\n// immer nur das Wort 'failed' oder '', nie die echte Fehlermeldung, Auftrag\n// Punkt 19) -- gleich mitbehoben.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('02 – Technische Signale täglich')}, ${pgStr('technische_signale')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
       },
-      "Log Marktumfeld (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Marktumfeld (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "id": "00000007-0000-4000-8000-00000000000a",
+      "name": "Log Technische Signale (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1056,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
       },
-      "Marktumfeld: Zweige zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Marktumfeld: Ergebnis entduplizieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Ausfuehren: Marktumfeld (02b)": {
-        "main": [
-          [
-            {
-              "node": "Marktumfeld: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Marktumfeld: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Marktumfeld: Ergebnis entduplizieren": {
-        "main": [
-          [
-            {
-              "node": "Log Marktumfeld (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Marktumfeld (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Marktumfeld ok?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Marktumfeld ok?": {
-        "main": [
-          [
-            {
-              "node": "Ausfuehren: Technische Signale (02)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Technische Signale (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Technische Signale (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Technische Signale: Zweige zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Technische Signale: Ergebnis entduplizieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Ausfuehren: Technische Signale (02)": {
-        "main": [
-          [
-            {
-              "node": "Technische Signale: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Technische Signale: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Technische Signale: Ergebnis entduplizieren": {
-        "main": [
-          [
-            {
-              "node": "Log Technische Signale (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Technische Signale (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Technische Signale ok?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Technische Signale ok?": {
-        "main": [
-          [
-            {
-              "node": "DB: Heutige Signale zaehlen",
-              "type": "main",
-              "index": 0
-            },
-            {
-              "node": "DB: Heutige News zaehlen",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Heutige Signale zaehlen": {
-        "main": [
-          [
-            {
-              "node": "Merge: Datenqualitaet",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Heutige News zaehlen": {
-        "main": [
-          [
-            {
-              "node": "Merge: Datenqualitaet",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Merge: Datenqualitaet": {
-        "main": [
-          [
-            {
-              "node": "Pruefe Datenqualitaet",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Datenqualitaet (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Datenqualitaet (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Pruefe Datenqualitaet": {
-        "main": [
-          [
-            {
-              "node": "Log Datenqualitaet (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Datenqualitaet (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Datenqualitaet ok?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Datenqualitaet ok?": {
-        "main": [
-          [
-            {
-              "node": "Ausfuehren: Empfehlungswatchlist (06)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Empfehlungswatchlist (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Empfehlungswatchlist (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Empfehlungswatchlist: Zweige zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Ausfuehren: Empfehlungswatchlist (06)": {
-        "main": [
-          [
-            {
-              "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Empfehlungswatchlist: Ergebnis entduplizieren": {
-        "main": [
-          [
-            {
-              "node": "Log Empfehlungswatchlist (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Empfehlungswatchlist (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Empfehlungswatchlist ok?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Empfehlungswatchlist ok?": {
-        "main": [
-          [
-            {
-              "node": "Ausfuehren: Report- und Pruefagent (10)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Report-Pruef-Agent (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Report-Pruef-Agent (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Report-Pruef-Agent: Zweige zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Ausfuehren: Report- und Pruefagent (10)": {
-        "main": [
-          [
-            {
-              "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Report-Pruef-Agent: Ergebnis entduplizieren": {
-        "main": [
-          [
-            {
-              "node": "Log Report-Pruef-Agent (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Report-Pruef-Agent (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Freigegeben?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Freigegeben?": {
-        "main": [
-          [
-            {
-              "node": "Ausfuehren: Tagesreport-Versand (05)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Versand (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Versand (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Versand: Zweige zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Versand: Ergebnis entduplizieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Ausfuehren: Tagesreport-Versand (05)": {
-        "main": [
-          [
-            {
-              "node": "Versand: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Versand: Zweige zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Versand: Ergebnis entduplizieren": {
-        "main": [
-          [
-            {
-              "node": "Log Versand (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Versand (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "IF: Versand ok?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Versand ok?": {
-        "main": [
-          [
-            {
-              "node": "Sammle Teilstatus (Erfolg)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue technische Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Baue technische Warnung": {
-        "main": [
-          [
-            {
-              "node": "Matrix: Technische Warnung senden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Matrix: Technische Warnung senden": {
-        "main": [
-          [
-            {
-              "node": "Matrix-Warnung pruefen (sonst werfen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Matrix-Warnung pruefen (sonst werfen)": {
-        "main": [
-          [
-            {
-              "node": "Lauf abschliessen (Warnung/Fehler)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Gesamtlauf abgeschlossen (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "Log Gesamtlauf pruefen (sonst werfen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Log Gesamtlauf abgeschlossen (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Log Gesamtlauf abgeschlossen (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Lauf abschliessen (Erfolg)": {
-        "main": [
-          [
-            {
-              "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Lauf abschliessen (Warnung/Fehler)": {
-        "main": [
-          [
-            {
-              "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Config: DRY_RUN laden": {
-        "main": [
-          [
-            {
-              "node": "Kontext zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Kontext zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Ausfuehren: Marktumfeld (02b)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Sammle Teilstatus (Erfolg)": {
-        "main": [
-          [
-            {
-              "node": "IF: Teilausfall trotz Erfolg?",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "IF: Teilausfall trotz Erfolg?": {
-        "main": [
-          [
-            {
-              "node": "Lauf abschliessen (Erfolg)",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "Baue Teilausfall-Warnung",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Baue Teilausfall-Warnung": {
-        "main": [
-          [
-            {
-              "node": "Matrix: Technische Warnung senden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
+      "id": "00000007-0000-4000-8000-00000000000b",
+      "name": "Log Technische Signale (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -880,
+        -80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
       }
     },
-    "authors": "Oliver Lietz",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "workflowPublishHistory": [
-      {
-        "createdAt": "2026-08-02T07:26:47.182Z",
-        "id": 2259,
-        "workflowId": "ncMZzkqDHpSiDGPm",
-        "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
-        "event": "deactivated",
-        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+    {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000020001",
+      "name": "Technische Signale: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1224,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
       },
-      {
-        "createdAt": "2026-08-02T07:26:47.275Z",
-        "id": 2260,
-        "workflowId": "ncMZzkqDHpSiDGPm",
-        "versionId": "b3ef8507-158e-4e94-a011-9de1ef1d2b87",
-        "event": "activated",
-        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      "id": "dd000000-0000-4000-8000-0000020002",
+      "name": "Technische Signale: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Technische Signale (02)').all()[0]?.json?.status) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-000000000008",
+      "name": "IF: Technische Signale ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -832,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "datum",
+              "keyValue": "={{ $('Run-ID erzeugen').item.json.business_date }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "id": "00000000-0000-4000-8000-000000000009",
+      "name": "DB: Heutige Signale zaehlen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        -80
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT id FROM trading.news_items WHERE (created_at AT TIME ZONE 'Europe/Berlin')::date = '{{ $('Run-ID erzeugen').item.json.business_date }}'::date;",
+        "options": {}
+      },
+      "id": "0000000a-0000-4000-8000-00000000000a",
+      "name": "DB: Heutige News zaehlen",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -608,
+        80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
       }
-    ]
-  }
+    },
+    {
+      "parameters": {},
+      "id": "0000000b-0000-4000-8000-00000000000b",
+      "name": "Merge: Datenqualitaet",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -384,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Datenqualitaetspruefung: mindestens 1 aktuelles technisches Signal muss\n// vorliegen, sonst gilt der Geschaeftstag als unvollstaendig (harte Abbruchregel).\n// Fehlende News-Aktivitaet ist nur eine Warnung (an ruhigen Tagen kann News=0\n// legitim sein), kein harter Abbruch.\nconst signale = $('DB: Heutige Signale zaehlen').all();\nconst news = $('DB: Heutige News zaehlen').all();\n\nconst signaleOk = signale.length > 0;\nconst newsOk = news.length > 0;\n\nreturn { json: {\n  run_id: $('Run-ID erzeugen').item.json.run_id,\n  business_date: $('Run-ID erzeugen').item.json.business_date,\n  signale_count: signale.length,\n  news_count: news.length,\n  signale_ok: signaleOk,\n  news_ok: newsOk,\n  datenqualitaet_ok: signaleOk\n} };\n"
+      },
+      "id": "0000000c-0000-4000-8000-00000000000c",
+      "name": "Pruefe Datenqualitaet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.datenqualitaet_ok ? 'success' : 'failed';\nconst errorMessage = $json.datenqualitaet_ok ? 'success' : 'failed' === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\nconst metadata = { signale_count: $json.signale_count, news_count: $json.news_count, news_ok: $json.news_ok };\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('datenqualitaet')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "0000000d-0000-4000-8000-00000000000a",
+      "name": "Log Datenqualitaet (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "0000000d-0000-4000-8000-00000000000b",
+      "name": "Log Datenqualitaet (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        240,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Pruefe Datenqualitaet').item.json.datenqualitaet_ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0000000e-0000-4000-8000-00000000000e",
+      "name": "IF: Datenqualitaet ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        288,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "aguWZUolRizBnsj4",
+          "mode": "list",
+          "cachedResultName": "06 – Empfehlungswatchlist"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "0000000f-0000-4000-8000-00000000000f",
+      "name": "Ausfuehren: Empfehlungswatchlist (06)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "alwaysOutputData": true,
+      "typeVersion": 1.2,
+      "position": [
+        512,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 06 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b. Alte Ternary hier war der gleiche tote\n// Vergleich ('success' === 'failed', immer false) wie bei 02 vor dem Fix --\n// errorMessage war dadurch immer leer, status ignorierte das Envelope komplett.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.ticker || e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\n// FIX 2026-08-02 (Fehleranalyse B7): dry_run_source aus 06s Envelope mitprotokollieren.\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || [],\n  dry_run_source: envelope.dry_run_source || null\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('06 – Empfehlungswatchlist')}, ${pgStr('empfehlungswatchlist')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "00000010-0000-4000-8000-000000000a",
+      "name": "Log Empfehlungswatchlist (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "00000010-0000-4000-8000-000000000b",
+      "name": "Log Empfehlungswatchlist (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        912,
+        -80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000030001",
+      "name": "Empfehlungswatchlist: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        568,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-0000030002",
+      "name": "Empfehlungswatchlist: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "BFlxfLyarzR2xbBT",
+          "mode": "list",
+          "cachedResultName": "10 – Report- und Prüfagent"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Run-ID erzeugen').item.json.run_id, business_date: $('Run-ID erzeugen').item.json.business_date } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "00000011-0000-4000-8000-000000000011",
+      "name": "Ausfuehren: Report- und Pruefagent (10)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "alwaysOutputData": true,
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 10 liefert jetzt zusaetzlich {status, processed, successful,\n// failed, warnings[], errors[]} additiv neben approved/report_markdown/... .\nconst status = envelope.status || (envelope.error ? 'failed' : (envelope.approved ? 'success' : 'failed'));\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('10 – Report- und Prüfagent')}, ${pgStr('report_pruef_agent')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "00000012-0000-4000-8000-000000000a",
+      "name": "Log Report-Pruef-Agent (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "00000012-0000-4000-8000-000000000b",
+      "name": "Log Report-Pruef-Agent (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1360,
+        -80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000040001",
+      "name": "Report-Pruef-Agent: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1016,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-0000040002",
+      "name": "Report-Pruef-Agent: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Ausfuehren: Report- und Pruefagent (10)').item.json.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000013-0000-4000-8000-000000000013",
+      "name": "IF: Freigegeben?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1408,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "VRr5jIHj7G7dsMwi",
+          "mode": "list",
+          "cachedResultName": "05 – Tagesreport"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ { DRY_RUN: $('Kontext zusammenfuehren').all()[0].json.DRY_RUN } }}",
+            "payload": "={{ { report_markdown: $('Ausfuehren: Report- und Pruefagent (10)').item.json.report_markdown, approved: true } }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "00000014-0000-4000-8000-000000000014",
+      "name": "Ausfuehren: Tagesreport-Versand (05)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "alwaysOutputData": true,
+      "typeVersion": 1.2,
+      "position": [
+        1632,
+        -120
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst envelope = $json;\n// Prioritaet 6: 05 liefert jetzt {status, processed, successful, failed,\n// warnings[], errors[]} wie 02/02b/06.\nconst status = envelope.status || (envelope.error ? 'failed' : 'success');\nconst errorMessage = Array.isArray(envelope.errors) && envelope.errors.length\n  ? envelope.errors.map(e => `${e.node || '?'}: ${e.message || ''}`).join('; ')\n  : String((envelope.error && (envelope.error.message || envelope.error)) || '');\nconst metadata = envelope.status ? {\n  processed: envelope.processed, successful: envelope.successful, failed: envelope.failed,\n  warnings: envelope.warnings || [], errors: envelope.errors || []\n} : {};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('05 – Tagesreport')}, ${pgStr('tagesreport_versand')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "00000015-0000-4000-8000-000000000a",
+      "name": "Log Versand (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "00000015-0000-4000-8000-000000000b",
+      "name": "Log Versand (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2032,
+        -120
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Empfehlungswatchlist (06)').all()[0]?.json?.status) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-00000000e001",
+      "name": "IF: Empfehlungswatchlist ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        936,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ ['success','partial_failure','skipped'].includes($('Ausfuehren: Tagesreport-Versand (05)').all()[0]?.json?.status) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "00000000-0000-4000-8000-00000000e002",
+      "name": "IF: Versand ok?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2056,
+        -100
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "dd000000-0000-4000-8000-0000050001",
+      "name": "Versand: Zweige zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1688,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length <= 1) return items;\nlet best = items[0];\nfor (const it of items) {\n  if (Object.keys(it.json || {}).length > Object.keys(best.json || {}).length) best = it;\n}\nreturn [best];"
+      },
+      "id": "dd000000-0000-4000-8000-0000050002",
+      "name": "Versand: Ergebnis entduplizieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        -280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return { json: { ...$json, final_status: 'success' } };"
+      },
+      "id": "00000016-0000-4000-8000-000000000016",
+      "name": "Lauf abschliessen (Erfolg)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\n\nlet gruende = [];\ntry { if ($('Ausfuehren: Marktumfeld (02b)').item.json.error) gruende.push('Marktumfeld fehlgeschlagen: ' + $('Ausfuehren: Marktumfeld (02b)').item.json.error); } catch(e) {}\ntry { if ($('Ausfuehren: Technische Signale (02)').item.json.error) gruende.push('Technische Signale fehlgeschlagen: ' + $('Ausfuehren: Technische Signale (02)').item.json.error); } catch(e) {}\ntry { if ($('Pruefe Datenqualitaet').item.json.datenqualitaet_ok === false) gruende.push('Datenqualitaet unzureichend (Signale: ' + $('Pruefe Datenqualitaet').item.json.signale_count + ', News: ' + $('Pruefe Datenqualitaet').item.json.news_count + ')'); } catch(e) {}\ntry { if ($('Ausfuehren: Report- und Pruefagent (10)').item.json.approved === false) gruende.push('Pruef-Agent hat den Bericht abgelehnt: ' + JSON.stringify($('Ausfuehren: Report- und Pruefagent (10)').item.json.required_corrections || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Empfehlungswatchlist (06)').item.json.status === 'failed') gruende.push('Empfehlungswatchlist fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Empfehlungswatchlist (06)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Markt-Screener (13)').item.json.status === 'failed') gruende.push('Markt-Screener fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Markt-Screener (13)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Portfolio-Risiko und Paper-Trading (14)').item.json.status === 'failed') gruende.push('Portfolio-Risiko/Paper-Trading fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Portfolio-Risiko und Paper-Trading (14)').item.json.errors || [])); } catch(e) {}\ntry { if ($('Ausfuehren: Tagesreport-Versand (05)').item.json.status === 'failed') gruende.push('Tagesreport-Versand fehlgeschlagen: ' + JSON.stringify($('Ausfuehren: Tagesreport-Versand (05)').item.json.errors || [])); } catch(e) {}\nif (gruende.length === 0) gruende.push('Unbekannter Abbruchgrund - siehe trading.pipeline_runs fuer run_id ' + runId);\n\nconst text = '⚠️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde NICHT automatisch versendet:\\n\\n- ' + gruende.join('\\n- ');\n\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning' } };\n"
+      },
+      "id": "00000017-0000-4000-8000-000000000017",
+      "name": "Baue technische Warnung",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ 'orchestrator_warn_' + $json.run_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ msgtype: 'm.text', body: $json.warnung_text }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "00000018-0000-4000-8000-000000000018",
+      "name": "Matrix: Technische Warnung senden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1856,
+        120
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Matrix Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Matrix-Warnung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        120
+      ],
+      "id": "p8-check-00-matrix-warnung"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2): dieser Node wird sowohl vom\n// urspruenglichen Fehler-/Abbruchpfad (\"Baue technische Warnung\") als auch\n// vom neuen Teilausfall-Pfad (\"Baue Teilausfall-Warnung\") ueber denselben\n// Matrix-HTTP-Node erreicht. Der HTTP-Request-Node ersetzt $json durch die\n// rohe Matrix-Antwort - die vorher gesetzten Felder gehen dabei verloren und\n// muessen hier ueber den jeweiligen Quell-Node zurueckgeholt werden.\nlet partial_failure_details = [];\ntry {\n  partial_failure_details = $('Baue Teilausfall-Warnung').item.json.partial_failure_details || [];\n} catch (e) {\n  // Kein Teilausfall-Pfad gelaufen (regulaerer Abbruch/Fehler) - unveraendertes bisheriges Verhalten.\n}\n\nreturn { json: { ...$json, final_status: $json.final_status || 'warning', partial_failure_details } };\n"
+      },
+      "id": "00000019-0000-4000-8000-000000000019",
+      "name": "Lauf abschliessen (Warnung/Fehler)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\n\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst startedAt = $('Run-ID erzeugen').item.json.started_at;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst status = $json.final_status;\nconst errorMessage = $json.final_status === 'failed' ? String(($json.error && ($json.error.message || $json.error)) || '') : '';\n// FIX 2026-08-01 (Fehleranalyse B2): partial_failure_details (falls vorhanden -\n// eine oder mehrere Stufen liefen mit success/partial_failure/skipped statt\n// vollem success durch die Gates, der Lauf wurde aber trotzdem abgeschlossen)\n// landet jetzt in metadata_json statt stillschweigend verworfen zu werden.\n// FIX 2026-08-02 (Fehleranalyse B7): DRY_RUN und dessen Quelle (echter DB-Wert vs. sicherer\n// Fallback bei fehlender/ungueltiger Config, siehe B4) wurden bisher nur berechnet\n// (Kontext zusammenfuehren) und weitergereicht, aber nie irgendwo tatsaechlich protokolliert -\n// aus keinem Log war im Nachhinein erkennbar, ob ein Lauf im Fallback-Modus lief. Landet jetzt\n// in derselben metadata_json wie die bereits bestehenden partial_failure_details.\nconst kontext = $('Kontext zusammenfuehren').item.json;\nconst metadata = {\n  ...((Array.isArray($json.partial_failure_details) && $json.partial_failure_details.length > 0) ? { partial_failure_details: $json.partial_failure_details } : {}),\n  dry_run: kontext.DRY_RUN,\n  dry_run_source: kontext.DRY_RUN_SOURCE\n};\n\nconst sql = `INSERT INTO trading.pipeline_runs\n  (run_id, business_date, workflow_name, stage_name, status, started_at, finished_at, error_message, metadata_json)\n  VALUES (${pgStr(runId)}, ${pgStr(businessDate)}, ${pgStr('00 – Tagesabschluss-Orchestrator')}, ${pgStr('orchestrator_ende')}, ${pgStr(status)},\n          ${pgStr(startedAt)}, ${pgStr(new Date().toISOString())}, ${pgStr(errorMessage)}, ${pgJson(metadata)});`;\n\nreturn { json: { ...$json, sql } };\n"
+      },
+      "id": "0000001a-0000-4000-8000-00000000a",
+      "name": "Log Gesamtlauf abgeschlossen (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "0000001a-0000-4000-8000-00000000b",
+      "name": "Log Gesamtlauf abgeschlossen (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        2480,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Log Gesamtlauf pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        0
+      ],
+      "id": "p8-check-00-log-gesamtlauf"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'DRY_RUN') AS dry_run,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_MARKET_SCANNER') AS enable_market_scanner,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_PAPER_TRADING') AS enable_paper_trading,\n  (SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'ENABLE_TRADE_LEARNING') AS enable_trade_learning;",
+        "options": {}
+      },
+      "id": "f2575829-c666-46ef-96dd-58b948e404c6",
+      "name": "Config: DRY_RUN laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1976,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Run-ID erzeugen').all()[0].json;\nconst cfg = $json;\n// FIX 2026-08-01 (Fehleranalyse B4, kritisch): der alte Fallback sprang bei fehlender/\n// ungueltiger Config (0 Zeilen, DB-Fehler, NULL-Wert) auf DRY_RUN=false - also den unsicheren\n// Echtpfad - statt auf den sicheren DRY_RUN=true zurueck. Eine reine Konfigurationsstoerung\n// haette so lautlos den Realpfad aktiviert. Fallback jetzt auf true gedreht, Quelle protokolliert.\nconst dryRunFromDb = cfg && typeof cfg.dry_run === 'boolean';\nconst dryRun = dryRunFromDb ? cfg.dry_run : true;\nconst dryRunSource = dryRunFromDb ? 'db' : 'fallback_unsicher_config_fehlt_oder_ungueltig';\n\n// FIX (Haertung Welle 1-3, Phase 14): Feature-Flags fuer 13/14 - sicherer Default ist\n// \"false\" (deaktiviert), nicht \"true\", wenn die Konfiguration fehlt oder ungueltig ist.\nfunction safeFlag(v) { return typeof v === 'boolean' ? v : false; }\nconst enableMarketScanner = safeFlag(cfg && cfg.enable_market_scanner);\nconst enablePaperTrading = safeFlag(cfg && cfg.enable_paper_trading);\nconst enableTradeLearning = safeFlag(cfg && cfg.enable_trade_learning);\n\nreturn [{ json: { ...base, DRY_RUN: dryRun, DRY_RUN_SOURCE: dryRunSource,\n  ENABLE_MARKET_SCANNER: enableMarketScanner, ENABLE_PAPER_TRADING: enablePaperTrading, ENABLE_TRADE_LEARNING: enableTradeLearning } }];"
+      },
+      "id": "88be6e21-2351-42c4-a53a-ee63b4b7c1a8",
+      "name": "Kontext zusammenfuehren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1776,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): die vier Gates (IF: ... ok?) lassen\n// bereits seit B1 success/partial_failure/skipped gleichermassen durch - das\n// ist fuer den Lauf-Fortschritt richtig, verschluckt aber, DASS eine Stufe\n// nur einen Teilerfolg hatte. \"Lauf abschliessen (Erfolg)\" hat das bisher\n// nirgends festgehalten. Sammelt hier einmalig alle vier Stufenstatus und\n// stellt fest, ob mindestens eine Stufe nicht 'success' war.\nconst stufen = [\n  { label: 'Marktumfeld (02b)', node: 'Ausfuehren: Marktumfeld (02b)' },\n  { label: 'Technische Signale (02)', node: 'Ausfuehren: Technische Signale (02)' },\n  { label: 'Empfehlungswatchlist (06)', node: 'Ausfuehren: Empfehlungswatchlist (06)' },\n  { label: 'Markt-Screener (13)', node: 'Ausfuehren: Markt-Screener (13)' },\n  { label: 'Portfolio-Risiko und Paper-Trading (14)', node: 'Ausfuehren: Portfolio-Risiko und Paper-Trading (14)' },\n  { label: 'Tagesreport-Versand (05)', node: 'Ausfuehren: Tagesreport-Versand (05)' }\n];\n\nconst partial_failure_details = [];\nfor (const s of stufen) {\n  let status = null;\n  try { status = $(s.node).all()[0]?.json?.status ?? null; } catch (e) {}\n  if (status === 'partial_failure' || status === 'skipped') {\n    partial_failure_details.push({ stufe: s.label, status });\n  }\n}\n\nreturn { json: { ...$json, partial_failure_details, hat_teilausfall: partial_failure_details.length > 0 } };\n"
+      },
+      "id": "b2fix-sammle-teilstatus-0001",
+      "name": "Sammle Teilstatus (Erfolg)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2300,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "caseSensitive": true,
+          "leftValue": "",
+          "typeValidation": "strict"
+        },
+        "conditions": [
+          {
+            "leftValue": "={{ $json.hat_teilausfall }}",
+            "rightValue": true,
+            "operator": {
+              "type": "boolean",
+              "operation": "equals"
+            }
+          }
+        ],
+        "combinator": "and"
+      },
+      "id": "b2fix-if-teilausfall-0002",
+      "name": "IF: Teilausfall trotz Erfolg?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2540,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX 2026-08-01 (Fehleranalyse B2, hoch): macht einen Teilausfall trotz\n// insgesamt erfolgreichem Lauf sichtbar (Matrix-Hinweis + final_status in\n// trading.pipeline_runs), statt ihn stillschweigend wie einen vollen Erfolg\n// zu behandeln. Nutzt bewusst denselben Matrix-Versandpfad wie \"Baue\n// technische Warnung\" (Node \"Matrix: Technische Warnung senden\" danach) -\n// kein zweiter Matrix-Kanal noetig.\nconst runId = $('Run-ID erzeugen').item.json.run_id;\nconst businessDate = $('Run-ID erzeugen').item.json.business_date;\nconst details = $json.partial_failure_details || [];\nconst liste = details.map(d => d.stufe + ': ' + d.status).join('\\n- ');\n\nconst text = 'ℹ️ Tagesabschluss ' + businessDate + ' (run_id ' + runId + ') wurde versendet, aber mit Teilausfall in ' + details.length + ' Stufe(n):\\n\\n- ' + liste + '\\n\\nDetails: trading.pipeline_runs (run_id ' + runId + ').';\n\n// trading.pipeline_runs.status hat eine CHECK-Constraint auf einen festen\n// Wertebereich (sql/001: pending/running/success/warning/failed/skipped/\n// retrying) - kein neuer Statuswert, sondern das bereits vorhandene 'warning'\n// (passend: \"Aufmerksamkeit noetig, aber kein Abbruch\"). Die eigentliche\n// Nuance (versendet trotz Teilausfall, nicht blockiert) steht in\n// partial_failure_details/metadata_json, nicht im Statuswert selbst.\nreturn { json: { run_id: runId, business_date: businessDate, warnung_text: text, final_status: 'warning', partial_failure_details: details } };\n"
+      },
+      "id": "b2fix-baue-teilausfall-0003",
+      "name": "Baue Teilausfall-Warnung",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Kontext zusammenfuehren').all()[0].json.ENABLE_MARKET_SCANNER }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF: Markt-Screener (13) aktiviert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        -320
+      ],
+      "id": "n-p14-gate-markt_screener"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $('Kontext zusammenfuehren').all()[0].json.ENABLE_PAPER_TRADING }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "name": "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        -320
+      ],
+      "id": "n-p14-gate-portfolio_risiko"
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+  },
+  "tags": [],
+  "versionId": "c4162f6a-d360-4f15-98f2-92a238287a4c"
 }
