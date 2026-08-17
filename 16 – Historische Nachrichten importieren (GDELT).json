@@ -660,7 +660,7 @@
           "interval": [
             {
               "field": "minutes",
-              "minutesInterval": 2
+              "minutesInterval": 6
             }
           ]
         }
@@ -1263,5 +1263,5 @@
     "executionTimeout": 540
   },
   "tags": [],
-  "versionId": "acf77d11-cd47-478e-8216-54051d82da5d"
+  "versionId": "1b04df8a-5352-48b2-8592-3828a2857363"
 }
