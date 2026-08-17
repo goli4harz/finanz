@@ -659,8 +659,8 @@
         "rule": {
           "interval": [
             {
-              "field": "seconds",
-              "secondsInterval": 15
+              "field": "minutes",
+              "minutesInterval": 2
             }
           ]
         }
@@ -1263,5 +1263,5 @@
     "executionTimeout": 540
   },
   "tags": [],
-  "versionId": "57226c94-456f-46f4-9295-23a5fc51e174"
+  "versionId": "acf77d11-cd47-478e-8216-54051d82da5d"
 }
