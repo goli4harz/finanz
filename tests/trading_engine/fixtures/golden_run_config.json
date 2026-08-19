@@ -1,0 +1,41 @@
+{
+  "initial_capital": 25000,
+  "rule_version": "golden-run-v1",
+  "fee_model": {
+    "kind": "mini_future",
+    "mini_future_leverage": 5,
+    "mini_future_spread_pct": 0.5,
+    "mini_future_financing_pct_pa": 3.0
+  },
+  "risk_cfg": {
+    "model_portfolio_value": 25000,
+    "max_risk_per_trade_pct": 1.0,
+    "max_total_open_risk_pct": 6.0,
+    "max_sector_exposure_pct": 40.0,
+    "max_single_position_pct": 25.0,
+    "max_open_positions": 5,
+    "max_directional_exposure_pct": 80.0,
+    "max_portfolio_drawdown_pct": 25.0,
+    "max_pairwise_correlation": 0.9,
+    "max_region_exposure_pct": 100.0,
+    "max_non_eur_exposure_pct": 100.0,
+    "stress_risk_reduction_factor": 0.5,
+    "max_position_value_pct": 25.0,
+    "min_reward_risk_ratio": 0.5
+  },
+  "ticker_sektor": {
+    "GOLD_A": "Tech",
+    "GOLD_B": "Tech",
+    "GOLD_C": "Health"
+  },
+  "ticker_region": {
+    "GOLD_A": "US",
+    "GOLD_B": "US",
+    "GOLD_C": "EU"
+  },
+  "ticker_currency": {
+    "GOLD_A": "EUR",
+    "GOLD_B": "EUR",
+    "GOLD_C": "EUR"
+  }
+}
