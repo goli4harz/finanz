@@ -1517,7 +1517,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM trading.strategy_regime_matrix WHERE active = TRUE;",
+        "query": "SELECT * FROM trading.strategy_regime_matrix WHERE rule_version = 'regime-matrix-v1';",
         "options": {}
       },
       "name": "DB: Regime-Matrix laden (Empf.)",
@@ -1962,5 +1962,5 @@
     "availableInMCP": false
   },
   "tags": [],
-  "versionId": "da789dcb-57ff-47e6-b5a0-0fa0287865ee"
+  "versionId": "e1d7a859-0371-493a-801d-67cf5e6cf572"
 }

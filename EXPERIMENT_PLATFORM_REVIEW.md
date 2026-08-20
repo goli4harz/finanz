@@ -4,7 +4,23 @@ Stand: 2026-08-20. Bestandsaufnahme vor jeder Implementierung (Auftragsvorgabe: 
 vorhandene Tabellen, Workflows, Lernagenten und Simulationen vollständig prüfen"). Basiert auf
 einer systematischen Durchsuchung aller `sql/*.sql`-Migrationen, aller Root-Workflow-JSONs und
 aller `docs/*.md`-Dateien, plus einer gezielten Graph-Traversierung des Worker-Trigger-Pfads von
-Workflow 17. **Noch nichts wurde verändert.**
+Workflow 17.
+
+**Umsetzungsstand (laufend aktualisiert):**
+- [x] Punkt 1 (Config-Snapshot in WF17) — bereits vor diesem Bericht live gefixt, siehe
+  Commit `ab8af30`.
+- [x] Punkt 3 (Champion/Challenger-Zwischenschritt) — 2026-08-20 live umgesetzt: Workflow 12
+  jetzt `proposed → approved → activated` statt direkt `proposed → activated`, nur der manuelle
+  Zwischenschritt (kein automatischer Vergleichslauf, Nutzerentscheidung). Commit `e8bacfa`.
+- [x] Punkt 2 (`strategy_regime_matrix`-Versionierung) — 2026-08-20 live umgesetzt: `active`-
+  Spalte (sql/067) ersetzt `rule_version`-String als "aktuelle Version"-Kriterium. Workflow 12
+  dektiviert bei `regime_restriction`-Freigabe die alte Zeile und fügt eine neu versionierte
+  ein statt in-place zu überschreiben; Workflow 06 und der Config-Snapshot in Workflow 17 lesen
+  jetzt `WHERE active = TRUE` statt des festen Strings.
+- [ ] Punkt 4 (`market_context_history` Point-in-Time)
+- [ ] Punkt 5 (Experiment-Register als View)
+- [ ] Punkt 6 (Monitoring: Queue-Länge)
+- [ ] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren)
 
 ---
 
