@@ -186,3 +186,11 @@ def test_new_candidate_generates_order_when_no_open_position():
     assert order.ticker == "BBB"
     assert order.intended_execution_date == date(2026, 8, 20)
     assert order.quantity > 0
+    # BUGFIX 2026-08-20 (gefunden beim ersten echten WF17-Vergleichslauf, Phase-8-Migration): ein
+    # neu erzeugter, aber noch NICHT gefuellter Order-Kandidat darf nicht in die Tages-Equity
+    # eingehen - kein Cash wurde ausgegeben, keine Position existiert. Live reproduziert mit einem
+    # 0-Trades-Testlauf, der trotzdem +23,9% "Rendite" zeigte, weil positions_value faelschlich
+    # den vollen Wert jedes neuen Kandidaten mitzaehlte.
+    assert result.portfolio.positions_value == 0
+    assert result.portfolio.total_equity == 100000
+    assert result.portfolio.drawdown_pct == 0

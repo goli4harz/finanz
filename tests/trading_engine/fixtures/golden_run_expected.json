@@ -3,10 +3,10 @@
   "winning_trades": 10,
   "losing_trades": 104,
   "net_pnl": -5495.83,
-  "total_return_pct": 17.5958,
-  "max_drawdown_pct": 52.3709,
+  "total_return_pct": -21.9332,
+  "max_drawdown_pct": 21.9332,
   "profit_factor": 0.1089,
   "expectancy_r": -0.9776,
-  "final_equity": 29398.96,
+  "final_equity": 19516.71,
   "open_trades_at_end": 1
 }

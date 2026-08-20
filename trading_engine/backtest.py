@@ -170,6 +170,18 @@ def step(
     open_trades_result = still_open
 
     open_positions_view = [_trade_to_position(t, ticker_currency.get(t.ticker, "EUR")) for t in open_trades_result]
+    # BUGFIX 2026-08-20 (gefunden beim ersten echten WF17-Vergleichslauf, Phase-8-Migration):
+    # ein neu erzeugter Order-Kandidat ist NOCH NICHT gefuellt - er darf fuer NACHFOLGENDE
+    # Kandidaten DESSELBEN Tages als Portfolio-Risiko mitzaehlen (deshalb die separate
+    # candidate_check_positions-Arbeitskopie unten), aber NICHT in die Tages-Equity/
+    # positions_value eingehen (kein Cash wurde ausgegeben, keine Position existiert). Vorher
+    # wurde open_positions_view direkt mutiert und dieselbe, bereits um Kandidaten erweiterte
+    # Liste an calculate_portfolio_equity() weitergereicht - das Live-System (WF17s eigener
+    # JS-Code) filtert genau dafuer explizit `_pending_only`-Eintraege vor der Tages-Portfolio-
+    # Zeile wieder heraus. Ohne diesen Fix wird total_equity/positions_value um den vollen
+    # Positionswert JEDES neuen (auch nie gefuellten) Kandidaten aufgeblaeht - live reproduziert
+    # mit einem 0-Trades-Testlauf, der trotzdem +23,9% "Rendite" zeigte.
+    candidate_check_positions = list(open_positions_view)
 
     # --- 4. Neue Kandidaten pruefen ---
     new_orders: list[Order] = []
@@ -187,10 +199,10 @@ def step(
         bar = bars_today[ticker]
         sektor = ticker_sektor.get(ticker, "unbekannt")
         region = ticker_region.get(ticker, "global")
-        sizing = size_position(best, bar.close, risk_cfg, open_positions_view, sektor, region, sizing_mode, fee_model)
+        sizing = size_position(best, bar.close, risk_cfg, candidate_check_positions, sektor, region, sizing_mode, fee_model)
         if sizing.blocked:
             continue
-        portfolio_for_check = PortfolioState(cash=cash, positions_value=0, total_equity=0, peak_equity=0, drawdown_pct=0, open_positions=open_positions_view)
+        portfolio_for_check = PortfolioState(cash=cash, positions_value=0, total_equity=0, peak_equity=0, drawdown_pct=0, open_positions=candidate_check_positions)
         blockers = check_portfolio_limits(sizing, ticker, sektor, region, ticker_currency.get(ticker, "EUR"), best.direction, portfolio_for_check, risk_cfg, is_stress_regime, correlation_data)
         if blockers:
             continue
@@ -203,7 +215,7 @@ def step(
             clamp_reason=sizing.reason if sizing.clamped else None,
         )
         new_orders.append(order)
-        open_positions_view.append(Position(ticker=ticker, direction=best.direction, quantity=sizing.quantity, position_value=sizing.position_value, sektor=sektor, region=region, currency=ticker_currency.get(ticker, "EUR"), risk_amount=sizing.risk_amount))
+        candidate_check_positions.append(Position(ticker=ticker, direction=best.direction, quantity=sizing.quantity, position_value=sizing.position_value, sektor=sektor, region=region, currency=ticker_currency.get(ticker, "EUR"), risk_amount=sizing.risk_amount))
 
     portfolio = _calculate_portfolio_equity(cash, open_positions_view, bars_today, previous_peak_equity)
 
