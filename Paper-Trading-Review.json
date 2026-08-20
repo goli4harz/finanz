@@ -1,0 +1,371 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (GET)": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Review)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (POST)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (POST)": {
+      "main": [
+        [
+          {
+            "node": "POST: Baue Load-Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query (Liste/Detail)": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Baue Load-Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Trade laden (fuer Review)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trade laden (fuer Review)": {
+      "main": [
+        [
+          {
+            "node": "POST: Review normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Review normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "GOcawG43GQPPtxCQ",
+  "meta": null,
+  "name": "Paper-Trading-Review",
+  "nodes": [
+    {
+      "id": "pr-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "trade-review",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "pr-get-webhook-id"
+    },
+    {
+      "id": "pr-webhook-post",
+      "name": "Webhook POST (Review)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        300
+      ],
+      "parameters": {
+        "path": "trade-review-abgeben",
+        "httpMethod": "POST",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "pr-post-webhook-id"
+    },
+    {
+      "id": "pr-nav-get",
+      "name": "Nav laden (GET)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'trade-review' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "pr-nav-post",
+      "name": "Nav laden (POST)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'trade-review' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "pr-baue-query",
+      "name": "Baue Query (Liste/Detail)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Ermittelt Modus (Liste offener Reviews / Detail-Review-Formular) und baut die passende Query.\n// Gleiches Muster wie Trading-Entscheidungszentrale: Nav-Aufruf INLINE vor diesem Node (nicht\n// parallel - vermeidet die dort gefundene n8n-Ausfuehrungsreihenfolge-Race), Trigger-Daten per\n// Namens-Lookup. POST-Fallthrough referenziert den Code-Node VOR dem Postgres-Ausfuehren-Node,\n// nie den Postgres-Node selbst (der ersetzt $json durch das rohe Query-Ergebnis).\nlet fromPost = null;\ntry { fromPost = $('POST: Review normalisieren + SQL bauen').first().json; } catch (e) { fromPost = null; }\nconst isFromPost = fromPost && fromPost.mode === 'detail_nach_post' && fromPost.trade_id !== undefined;\n\nlet tradeId;\nif (isFromPost) {\n  tradeId = fromPost.trade_id;\n} else {\n  const trigger = $('Webhook GET (Ansicht)').first().json;\n  tradeId = (trigger.query && trigger.query.id) ? String(trigger.query.id) : null;\n}\n\nfunction pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nlet sql;\nif (tradeId) {\n  sql = `SELECT pt.trade_id, pt.ticker, pt.strategy, pt.direction, pt.status,\n      pt.simulated_entry_price, pt.stop_price_initial, pt.target_price_initial, pt.exit_price,\n      pt.exit_reason, pt.simulated_entry_time, pt.exit_time, pt.net_pnl, pt.gross_pnl,\n      pt.realized_r_multiple, pt.holding_period_days, pt.maximum_favorable_excursion,\n      pt.maximum_adverse_excursion, pt.theoretical_quantity, pt.risk_amount,\n      pt.opportunity_score_at_entry, pt.risk_score_at_entry, pt.evidence_confidence_at_entry,\n      r.entry_grund, r.trade_thesis,\n      tr.vorschlag_sinnvoll, tr.entry_sinnvoll, tr.stop_sinnvoll, tr.target_sinnvoll,\n      tr.hebel_sinnvoll, tr.richtung_richtig, tr.begruendung_korrekt, tr.kommentar, tr.reviewed_at\n    FROM trading.paper_trades pt\n    LEFT JOIN trading.recommendations r ON r.id = pt.recommendation_id\n    LEFT JOIN trading.trade_reviews tr ON tr.trade_id = pt.trade_id\n    WHERE pt.trade_id = ${pgStr(tradeId)};`;\n} else {\n  // Liste-Modus: EIN SELECT liefert genau eine Zeile mit drei JSON-Spalten (Vergleichs-Kennzahlen\n  // System-vs-Nutzer + die eigentliche Liste offener Reviews) - vermeidet Mehrfach-Statements in\n  // einem Postgres-Node (deren Rueckgabeverhalten bei mehreren Result-Sets uneinheitlich ist).\n  sql = `SELECT\n      (SELECT json_build_object(\n         'anzahl', count(*),\n         'avg_pnl', round(avg(net_pnl)::numeric, 2)\n       ) FROM trading.paper_trades WHERE status = 'closed') AS system_stats,\n      (SELECT json_build_object(\n         'anzahl', count(*),\n         'avg_pnl', round(avg(pt2.net_pnl)::numeric, 2)\n       ) FROM trading.paper_trades pt2\n        JOIN trading.recommendation_decisions rd\n          ON rd.recommendation_id = pt2.recommendation_id AND rd.status = 'aktuell' AND rd.entscheidung = 'angenommen'\n        WHERE pt2.status = 'closed') AS user_stats,\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT pt.trade_id, pt.ticker, pt.strategy, pt.direction, pt.exit_reason,\n                pt.net_pnl, pt.realized_r_multiple, pt.simulated_entry_time, pt.exit_time\n         FROM trading.paper_trades pt\n         LEFT JOIN trading.trade_reviews tr ON tr.trade_id = pt.trade_id\n         WHERE pt.status = 'closed' AND tr.id IS NULL\n         ORDER BY pt.exit_time DESC\n         LIMIT 20\n       ) t) AS offene_liste;`;\n}\n\nreturn [{ json: { sql, mode: tradeId ? 'detail' : 'liste', trade_id: tradeId } }];\n"
+      }
+    },
+    {
+      "id": "pr-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "pr-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst ctx = $('Baue Query (Liste/Detail)').first().json;\nlet nav = {};\ntry { nav = $('Nav laden (GET)').first().json; } catch (e1) {\n  try { nav = $('Nav laden (POST)').first().json; } catch (e2) { nav = {}; }\n}\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtNum(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits); }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nconst RICHTUNG_LABEL = { long: 'LONG', short: 'SHORT' };\nconst URTEIL_BADGE = { ja: 'ok', teilweise: 'warn', nein: 'danger' };\nconst URTEIL_LABEL = { ja: 'Ja', teilweise: 'Teilweise', nein: 'Nein' };\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:1000px;margin:0 auto;}'\n  + 'h1{font-size:22px;color:#fff;margin-bottom:4px;} h2{font-size:15px;color:#fff;margin-top:24px;margin-bottom:8px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:16px;} .hint{color:#9aa0a6;font-size:12px;}'\n  + '.card{background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px 20px;margin-bottom:14px;}'\n  + '.card h3{margin:0 0 6px 0;font-size:16px;color:#fff;} .card a{color:#8ab4f8;text-decoration:none;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;}'\n  + '.kpi{background:#1a1c20;padding:10px 16px;border-radius:6px;min-width:110px;}'\n  + '.kpi .label{font-size:10px;color:#999;text-transform:uppercase;} .kpi .value{font-size:18px;color:#fff;margin-top:2px;}'\n  + '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}'\n  + '.badge.ok{background:#1c3a2a;color:#6bcf8e;} .badge.warn{background:#3a2c1c;color:#e0a854;}'\n  + '.badge.danger{background:#3a1c1c;color:#e0665a;} .badge.muted{background:#22242a;color:#7a7d84;}'\n  + 'button{background:#5b8def;border:none;color:#0f1115;font-weight:600;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;margin:4px 6px 4px 0;}'\n  + 'button:hover{background:#7ba3f2;}'\n  + 'select,textarea,input{background:#0f1115;border:1px solid #2a2d34;color:#e6e6e6;border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box;}'\n  + 'textarea{width:100%;min-height:60px;margin-top:6px;}'\n  + '.review-form{background:#1a1c20;border:1px solid #2a2d34;border-radius:6px;padding:14px;margin-top:10px;}'\n  + '.review-form .feld{display:block;margin-bottom:10px;} .review-form label{display:block;font-size:12px;color:#9aa0a6;margin-bottom:3px;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nlet html;\n\nif (ctx.mode === 'liste') {\n  const row = rows[0] || {};\n  const systemStats = row.system_stats || { anzahl: 0, avg_pnl: null };\n  const userStats = row.user_stats || { anzahl: 0, avg_pnl: null };\n  const liste = Array.isArray(row.offene_liste) ? row.offene_liste : [];\n  const now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n\n  const vergleichHtml = '<h2>System- vs. Nutzer-Performance</h2>'\n    + '<div class=\"kpi-row\">'\n    + '<div class=\"kpi\"><div class=\"label\">Alle Paper Trades</div><div class=\"value\">' + esc(systemStats.anzahl) + ' Stück</div></div>'\n    + '<div class=\"kpi\"><div class=\"label\">Ø PnL (alle)</div><div class=\"value\">' + fmtNum(systemStats.avg_pnl) + ' EUR</div></div>'\n    + '<div class=\"kpi\"><div class=\"label\">Davon von dir angenommen</div><div class=\"value\">' + esc(userStats.anzahl) + ' Stück</div></div>'\n    + '<div class=\"kpi\"><div class=\"label\">Ø PnL (angenommen)</div><div class=\"value\">' + fmtNum(userStats.avg_pnl) + ' EUR</div></div>'\n    + '</div>'\n    + (userStats.anzahl < 5 ? '<div class=\"hint\">Noch zu wenige eigene Entscheidungen für einen belastbaren Vergleich (Fallzahl unter 5).</div>' : '');\n\n  if (liste.length === 0) {\n    html = pageWrap('Paper-Trading-Review', ''\n      + '<h1>Paper-Trading-Review</h1>'\n      + '<div class=\"meta\">Stand: ' + now + '</div>'\n      + vergleichHtml\n      + '<h2>Offene Reviews</h2>'\n      + '<div class=\"card\" style=\"text-align:center;padding:32px 20px;\">'\n      + '<h3>Keine offenen Reviews</h3>'\n      + '<div class=\"hint\">Alle geschlossenen Paper Trades sind bereits bewertet, oder es gibt noch keine geschlossenen Trades.</div>'\n      + '</div>');\n  } else {\n    const cards = liste.map(t => {\n      const richtungLabel = RICHTUNG_LABEL[t.direction] || esc(t.direction);\n      const pnlKlass = (t.net_pnl || 0) >= 0 ? 'ok' : 'danger';\n      return '<div class=\"card\">'\n        + '<h3><a href=\"/webhook/trade-review?id=' + esc(t.trade_id) + '\">' + esc(t.ticker) + ' - ' + richtungLabel + '</a></h3>'\n        + '<div class=\"hint\">' + esc(t.strategy || '') + ' &middot; Exit-Grund: ' + esc(t.exit_reason || '-') + ' &middot; geschlossen: ' + fmtDate(t.exit_time) + '</div>'\n        + '<div class=\"kpi-row\">'\n        + '<div class=\"kpi\"><div class=\"label\">PnL</div><div class=\"value\"><span class=\"badge ' + pnlKlass + '\">' + fmtNum(t.net_pnl) + ' EUR</span></div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">R-Multiple</div><div class=\"value\">' + fmtNum(t.realized_r_multiple) + '</div></div>'\n        + '</div>'\n        + '<a href=\"/webhook/trade-review?id=' + esc(t.trade_id) + '\">Review ausfüllen &rarr;</a>'\n        + '</div>';\n    }).join('');\n    html = pageWrap('Paper-Trading-Review', ''\n      + '<h1>Paper-Trading-Review</h1>'\n      + '<div class=\"meta\">Stand: ' + now + ' &middot; ' + liste.length + ' offene Review(s)</div>'\n      + vergleichHtml\n      + '<h2>Offene Reviews</h2>'\n      + cards);\n  }\n} else {\n  const t = rows[0];\n  if (!t || !t.trade_id) {\n    html = pageWrap('Paper-Trading-Review', '<h1>Paper-Trading-Review</h1><div class=\"card\">Trade nicht gefunden. <a href=\"/webhook/trade-review\">Zurück zur Liste</a></div>');\n  } else {\n    const richtungLabel = RICHTUNG_LABEL[t.direction] || esc(t.direction);\n    const pnlKlass = (t.net_pnl || 0) >= 0 ? 'ok' : 'danger';\n    const bereitsBewertet = t.reviewed_at\n      ? '<div class=\"card\" style=\"border-color:#5b8def;\"><strong>Bereits bewertet</strong> am ' + fmtDate(t.reviewed_at) + '. Erneutes Absenden überschreibt die bisherige Bewertung.</div>'\n      : '';\n\n    function urteilSelect(name, current) {\n      const opts = [['', 'Bitte wählen'], ['ja', 'Ja'], ['teilweise', 'Teilweise'], ['nein', 'Nein']];\n      return '<select name=\"' + name + '\" form=\"form-review\">' + opts.map(([v, l]) =>\n        '<option value=\"' + v + '\"' + (current === v ? ' selected' : '') + '>' + l + '</option>'\n      ).join('') + '</select>';\n    }\n\n    const bisherigeUrteile = ['vorschlag_sinnvoll', 'entry_sinnvoll', 'stop_sinnvoll', 'target_sinnvoll', 'hebel_sinnvoll', 'richtung_richtig', 'begruendung_korrekt']\n      .filter(k => t[k])\n      .map(k => '<span class=\"badge ' + (URTEIL_BADGE[t[k]] || 'muted') + '\">' + k + ': ' + (URTEIL_LABEL[t[k]] || t[k]) + '</span>')\n      .join(' ');\n\n    html = pageWrap(t.ticker + ' - Trade-Review', ''\n      + '<a href=\"/webhook/trade-review\" class=\"hint\">&larr; Zurück zur Liste</a>'\n      + '<h1>' + esc(t.ticker) + ' - ' + richtungLabel + '</h1>'\n      + '<div class=\"meta\">Strategie: ' + esc(t.strategy || '-') + ' &middot; Exit-Grund: ' + esc(t.exit_reason || '-') + '</div>'\n      + bereitsBewertet\n      + (t.reviewed_at ? '<div class=\"meta\">Bisherige Urteile: ' + bisherigeUrteile + (t.kommentar ? '<div class=\"hint\">\"' + esc(t.kommentar) + '\"</div>' : '') + '</div>' : '')\n\n      + '<h2>Trade-Verlauf</h2>'\n      + '<div class=\"kpi-row\">'\n      + '<div class=\"kpi\"><div class=\"label\">Einstieg</div><div class=\"value\">' + fmtNum(t.simulated_entry_price) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Stop (initial)</div><div class=\"value\">' + fmtNum(t.stop_price_initial) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Target (initial)</div><div class=\"value\">' + fmtNum(t.target_price_initial) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Exit-Kurs</div><div class=\"value\">' + fmtNum(t.exit_price) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Haltedauer</div><div class=\"value\">' + (t.holding_period_days !== null && t.holding_period_days !== undefined ? t.holding_period_days + ' Tage' : '-') + '</div></div>'\n      + '</div>'\n      + '<div class=\"kpi-row\">'\n      + '<div class=\"kpi\"><div class=\"label\">PnL (netto)</div><div class=\"value\"><span class=\"badge ' + pnlKlass + '\">' + fmtNum(t.net_pnl) + ' EUR</span></div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">R-Multiple</div><div class=\"value\">' + fmtNum(t.realized_r_multiple) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">MFE</div><div class=\"value\">' + fmtNum(t.maximum_favorable_excursion) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">MAE</div><div class=\"value\">' + fmtNum(t.maximum_adverse_excursion) + '</div></div>'\n      + '</div>'\n      + '<div class=\"meta\">Einstieg: ' + fmtDate(t.simulated_entry_time) + ' &middot; Exit: ' + fmtDate(t.exit_time) + '</div>'\n      + (t.trade_thesis ? '<div class=\"hint\">These: ' + esc(t.trade_thesis) + '</div>' : '')\n      + (t.entry_grund ? '<div class=\"hint\">Entry-Begründung: ' + esc(t.entry_grund) + '</div>' : '')\n\n      + '<h2>Review</h2>'\n      + '<div class=\"review-form\">'\n      + '<form id=\"form-review\" method=\"POST\" action=\"/webhook/trade-review-abgeben\">'\n      + '<input type=\"hidden\" name=\"trade_id\" value=\"' + esc(t.trade_id) + '\">'\n      + '<div class=\"feld\"><label>War der ursprüngliche Vorschlag insgesamt sinnvoll?</label>' + urteilSelect('vorschlag_sinnvoll', t.vorschlag_sinnvoll) + '</div>'\n      + '<div class=\"feld\"><label>Entry sinnvoll?</label>' + urteilSelect('entry_sinnvoll', t.entry_sinnvoll) + '</div>'\n      + '<div class=\"feld\"><label>Stop sinnvoll?</label>' + urteilSelect('stop_sinnvoll', t.stop_sinnvoll) + '</div>'\n      + '<div class=\"feld\"><label>Target sinnvoll?</label>' + urteilSelect('target_sinnvoll', t.target_sinnvoll) + '</div>'\n      + '<div class=\"feld\"><label>Hebel sinnvoll?</label>' + urteilSelect('hebel_sinnvoll', t.hebel_sinnvoll) + '</div>'\n      + '<div class=\"feld\"><label>Richtung (Long/Short) richtig?</label>' + urteilSelect('richtung_richtig', t.richtung_richtig) + '</div>'\n      + '<div class=\"feld\"><label>War die Begründung im Nachhinein korrekt?</label>' + urteilSelect('begruendung_korrekt', t.begruendung_korrekt) + '</div>'\n      + '<textarea name=\"kommentar\" placeholder=\"Kommentar (optional)\" form=\"form-review\">' + esc(t.kommentar || '') + '</textarea>'\n      + '<div style=\"margin-top:8px;\"><button type=\"submit\" form=\"form-review\">Review speichern</button></div>'\n      + '</form>'\n      + '<div class=\"hint\">Dieses Urteil fließt nicht automatisch in Regeln ein - es wird gesammelt und erst nach Aggregation über mehrere Fälle als Lernvorschlag geprüft.</div>'\n      + '</div>'\n    );\n  }\n}\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "pr-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "pr-post-buildload",
+      "name": "POST: Baue Load-Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// $json ist hier \"Nav laden (POST)\" (Nav-Call INLINE vor diesem Node, gleiches Muster wie\n// Trading-Entscheidungszentrale) - Trigger-Daten deshalb per Namens-Lookup statt aus $json.\nconst trigger = $('Webhook POST (Review)').first().json;\nconst j = trigger.body || trigger;\n\nfunction pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nconst tradeId = j.trade_id ? String(j.trade_id).trim() : null;\nconst jaTeilweiseNein = new Set(['ja', 'teilweise', 'nein']);\nfunction normUrteil(v) {\n  const s = String(v || '').trim().toLowerCase();\n  return jaTeilweiseNein.has(s) ? s : null;\n}\nconst review = {\n  vorschlag_sinnvoll: normUrteil(j.vorschlag_sinnvoll),\n  entry_sinnvoll: normUrteil(j.entry_sinnvoll),\n  stop_sinnvoll: normUrteil(j.stop_sinnvoll),\n  target_sinnvoll: normUrteil(j.target_sinnvoll),\n  hebel_sinnvoll: normUrteil(j.hebel_sinnvoll),\n  richtung_richtig: normUrteil(j.richtung_richtig),\n  begruendung_korrekt: normUrteil(j.begruendung_korrekt),\n  kommentar: String(j.kommentar || '').trim(),\n};\n\nreturn {\n  json: {\n    trade_id: tradeId,\n    review,\n    // Nur pruefen, ob der Trade existiert und geschlossen ist - inhaltliche Werte werden nie aus\n    // dem Body uebernommen (gleiches \"nie dem Client vertrauen\"-Muster wie\n    // Trading-Entscheidungszentrale).\n    load_sql: tradeId\n      ? `SELECT trade_id, status FROM trading.paper_trades WHERE trade_id = ${pgStr(tradeId)};`\n      : `SELECT NULL::text AS trade_id WHERE FALSE;`\n  }\n};\n"
+      }
+    },
+    {
+      "id": "pr-db-trade-laden",
+      "name": "DB: Trade laden (fuer Review)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.load_sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "pr-post-normalize",
+      "name": "POST: Review normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Baut die UPSERT-SQL fuer trading.trade_reviews. Anders als bei Trading-Entscheidungszentrale\n// braucht es hier kein optimistisches Locking und keinen system_werte_json-Snapshot: paper_trades\n// ist nach status='closed' unveraendlich (eigene Audit-Historie), und ein Review darf jederzeit\n// ueberschrieben werden (kein Verlauf pro Review noetig - eine Meinung des Nutzers pro Trade).\nconst loaded = $input.first().json; // Ergebnis von \"DB: Trade laden (fuer Review)\"\nconst ctx = $('POST: Baue Load-Query').first().json;\nconst { trade_id, review } = ctx;\n\nfunction pgVal(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nlet sql;\nlet fehler = null;\n\nif (!trade_id) {\n  fehler = 'Keine trade_id uebermittelt.';\n} else if (!loaded || !loaded.trade_id) {\n  fehler = `Trade ${trade_id} existiert nicht.`;\n} else if (loaded.status !== 'closed') {\n  fehler = `Trade ${trade_id} ist noch nicht geschlossen (Status: ${loaded.status}) - Review erst nach Trade-Abschluss moeglich.`;\n} else {\n  sql = `INSERT INTO trading.trade_reviews\n      (trade_id, vorschlag_sinnvoll, entry_sinnvoll, stop_sinnvoll, target_sinnvoll,\n       hebel_sinnvoll, richtung_richtig, begruendung_korrekt, kommentar, reviewed_von, reviewed_at)\n    VALUES\n      (${pgVal(trade_id)}, ${pgVal(review.vorschlag_sinnvoll)}, ${pgVal(review.entry_sinnvoll)},\n       ${pgVal(review.stop_sinnvoll)}, ${pgVal(review.target_sinnvoll)}, ${pgVal(review.hebel_sinnvoll)},\n       ${pgVal(review.richtung_richtig)}, ${pgVal(review.begruendung_korrekt)}, ${pgVal(review.kommentar)},\n       'oliver', now())\n    ON CONFLICT (trade_id) DO UPDATE SET\n      vorschlag_sinnvoll = EXCLUDED.vorschlag_sinnvoll,\n      entry_sinnvoll = EXCLUDED.entry_sinnvoll,\n      stop_sinnvoll = EXCLUDED.stop_sinnvoll,\n      target_sinnvoll = EXCLUDED.target_sinnvoll,\n      hebel_sinnvoll = EXCLUDED.hebel_sinnvoll,\n      richtung_richtig = EXCLUDED.richtung_richtig,\n      begruendung_korrekt = EXCLUDED.begruendung_korrekt,\n      kommentar = EXCLUDED.kommentar,\n      reviewed_von = EXCLUDED.reviewed_von,\n      reviewed_at = now();`;\n}\n\nreturn [{\n  json: {\n    sql: sql || `SELECT 1;`,\n    mode: 'detail_nach_post',\n    trade_id,\n    fehler,\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "pr-post-exec",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -700,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "e61c1ac1-74e8-48ec-af08-e1a22414c214"
+}
