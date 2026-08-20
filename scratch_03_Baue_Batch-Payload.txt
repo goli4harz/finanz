@@ -1,0 +1,13 @@
+{
+  "parameters": {
+    "jsCode": "// Baut das news_batch-Array fuer die KI (id = echte trading.news_items.id,\n// nicht mehr Array-Index -> robustere Rueckzuordnung, ersetzt die vorherige\n// $getWorkflowStaticData-Zwischenspeicherung vollstaendig.\n// FIX 2026-08-01 (Fehleranalyse D3/D4, kritisch): beschreibung war hier unbedingt auf ''\n// gesetzt (der vom Vorfilter bereits sauber extrahierte RSS-Kurztext ging nie in die KI-\n// Bewertung ein), type war konstant 'stock_news' obwohl der System-Prompt je nach Typ\n// (stock_news/market_news/market_candidate) unterschiedlich instruiert. Beide Felder kommen\n// jetzt aus der DB (siehe \"DB: Faellige News laden\", die description/preclassified_type\n// mittlerweile mitliest), mit sicherem Fallback falls eine sehr alte Zeile vor D5 angelegt\n// wurde und die neuen Spalten noch leer sind.\nconst items = $input.all().map(i => i.json);\nconst news_batch = items.map(j => ({\n  id: j.id,\n  type: j.type || 'stock_news',\n  titel: j.titel,\n  beschreibung: j.beschreibung || '',\n  quelle: j.quelle\n}));\nreturn [{ json: { news_batch, _originals: items } }];"
+  },
+  "name": "Baue Batch-Payload",
+  "type": "n8n-nodes-base.code",
+  "typeVersion": 2,
+  "position": [
+    -4208,
+    2016
+  ],
+  "id": "n-00000011-0000-4000-8000-0000000000"
+}

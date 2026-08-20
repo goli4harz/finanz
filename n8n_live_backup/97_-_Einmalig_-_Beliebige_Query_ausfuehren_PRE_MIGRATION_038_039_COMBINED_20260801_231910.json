@@ -1,0 +1,87 @@
+{
+  "updatedAt": "2026-08-01T20:29:48.439Z",
+  "createdAt": "2026-07-19T13:27:11.388Z",
+  "id": "NInmI0f9TfdndwI1",
+  "name": "97 – Einmalig – Beliebige Query ausfuehren",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "30000000-0000-4000-8000-000000000001",
+      "name": "Manueller Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- ============================================================================\n-- 038_learning_proposal_activation_failed_status.sql\n--\n-- Haertungsauftrag Teil A (Fehleranalyse A6): \"Ein Vorschlag darf nur dann als\n-- activated markiert werden, wenn das tatsaechliche Ziel-Update exakt die\n-- erwartete Anzahl von Zeilen geaendert hat.\" Bisher setzte der Freigabe-\n-- Workflow (12) den Status unbedingt auf 'activated', unabhaengig davon, ob\n-- das eigentliche Ziel-Update (pipeline_config/strategy_parameters/\n-- strategy_regime_matrix/strategy_status/scoring_weights) ueberhaupt eine\n-- Zeile getroffen hat.\n--\n-- Neuer Status 'activation_failed': das Ziel-Update hat 0 Zeilen betroffen\n-- (falscher/veralteter target_type/target_value, ungueltiger proposed_value,\n-- oder der Vorschlag wurde parallel bereits anders bearbeitet). Bleibt fuer\n-- manuelle Nachpruefung sichtbar, wird NICHT automatisch erneut versucht.\n--\n-- Additiv, idempotent (DROP+ADD nur falls die Bedingung noch nicht die neue\n-- Werteliste enthaelt), aendert keine bestehenden Zeilen.\n-- ============================================================================\n\nDO $$\nBEGIN\n    IF NOT EXISTS (\n        SELECT 1 FROM pg_constraint\n        WHERE conname = 'chk_learning_rule_proposals_status'\n          AND pg_get_constraintdef(oid) LIKE '%activation_failed%'\n    ) THEN\n        ALTER TABLE trading.learning_rule_proposals\n            DROP CONSTRAINT IF EXISTS chk_learning_rule_proposals_status;\n        ALTER TABLE trading.learning_rule_proposals\n            ADD CONSTRAINT chk_learning_rule_proposals_status\n            CHECK (status IN ('proposed','approved','rejected','activated','activation_failed','expired'));\n    END IF;\nEND $$;\n\nCOMMENT ON COLUMN trading.learning_rule_proposals.status IS\n    'proposed=neu vom Lernagenten, approved/rejected=Zwischenstatus (aktuell ungenutzt, Freigabe geht direkt proposed->activated), activated=Ziel-Update hat mind. 1 Zeile getroffen, activation_failed=Freigabe versucht aber Ziel-Update traf 0 Zeilen (siehe Fehleranalyse A6), expired=nicht mehr gueltig.';\n",
+        "options": {}
+      },
+      "id": "30000000-0000-4000-8000-000000000002",
+      "name": "Query ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -176,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "dee31502-e9dd-45f0-8bcb-7eeca5bbbd55",
+  "activeVersionId": null,
+  "versionCounter": 115,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-07-19T13:27:11.388Z",
+      "createdAt": "2026-07-19T13:27:11.388Z",
+      "role": "workflow:owner",
+      "workflowId": "NInmI0f9TfdndwI1",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}

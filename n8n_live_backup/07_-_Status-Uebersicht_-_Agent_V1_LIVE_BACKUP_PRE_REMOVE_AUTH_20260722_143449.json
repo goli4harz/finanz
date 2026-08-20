@@ -1,0 +1,2037 @@
+﻿{
+    "updatedAt":  "2026-07-21T18:25:56.153Z",
+    "createdAt":  "2026-07-19T13:02:26.199Z",
+    "id":  "7hQ3t6KrSo9uDNML",
+    "name":  "07 – Status-Uebersicht – Agent V1",
+    "description":  null,
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "path":  "aktien-status",
+                                         "authentication":  "headerAuth",
+                                         "responseMode":  "responseNode",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Webhook Status-Uebersicht",
+                      "type":  "n8n-nodes-base.webhook",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -3600,
+                                       0
+                                   ],
+                      "webhookId":  "eeeeeeee-0000-4000-8000-100000000001",
+                      "credentials":  {
+                                          "httpHeaderAuth":  {
+                                                                 "id":  "5lPS4iU0YNbMcjWR",
+                                                                 "name":  "Status-Webhook Token"
+                                                             }
+                                      },
+                      "id":  "n-00000001-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "get",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "Le3FJQ6pctb6qtGi",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "stock_fundamentals"
+                                                         },
+                                         "returnAll":  true
+                                     },
+                      "name":  "DB: Fundamentaldaten laden",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -3400,
+                                       -320
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000002-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "get",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "dzUOoGnfASjaaVhn",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "stock_market_context"
+                                                         },
+                                         "returnAll":  true
+                                     },
+                      "name":  "DB: Marktumfeld laden",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -3400,
+                                       -160
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000003-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "get",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "GDMAKrvQovPcBItA",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "stock_technical_signals"
+                                                         },
+                                         "returnAll":  true
+                                     },
+                      "name":  "DB: Technische Signale laden",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -3400,
+                                       0
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000004-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT * FROM trading.recommendations ORDER BY id;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Empfehlungen laden",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       160
+                                   ],
+                      "id":  "n-00000005-0000-4000-8000-0000000000",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      }
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "get",
+                                         "dataTableId":  {
+                                                             "__rl":  true,
+                                                             "value":  "Mc3Pem5RGio6bqXt",
+                                                             "mode":  "list",
+                                                             "cachedResultName":  "stock_price_history"
+                                                         },
+                                         "returnAll":  true
+                                     },
+                      "name":  "DB: Kursverlauf laden",
+                      "type":  "n8n-nodes-base.dataTable",
+                      "typeVersion":  1,
+                      "position":  [
+                                       -3400,
+                                       320
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000006-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT ni.published_at, ni.created_at, na.wirkung_staerke, na.relevant\nFROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: News laden (trading.*)",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       480
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000007-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT DISTINCT ON (workflow_name, stage_name) workflow_name, stage_name, status, started_at, finished_at,\n       duration_ms, retry_count, error_message, warning_count, error_count\nFROM trading.pipeline_runs ORDER BY workflow_name, stage_name, started_at DESC;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Letzte Pipeline-Laeufe je Stufe",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       640
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000008-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT DISTINCT ON (workflow_name) workflow_name, finished_at\nFROM trading.pipeline_runs WHERE status = \u0027success\u0027 ORDER BY workflow_name, finished_at DESC;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Letzter erfolgreicher Lauf je Workflow",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       800
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000009-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT DISTINCT ON (agent_name) agent_name, model_name, prompt_version, status, started_at, confidence\nFROM trading.agent_runs ORDER BY agent_name, started_at DESC;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Letzter Lauf je Agent",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       960
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000010-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT status, count(*) AS anzahl FROM trading.news_items GROUP BY status;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: News-Zustandsverteilung",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       1120
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000011-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT status, count(*) AS anzahl,\n       count(*) FILTER (WHERE confounded) AS confounded_anzahl,\n       round(100.0 * count(*) FILTER (WHERE direction_correct = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct IS NOT NULL), 0), 1) AS trefferquote\nFROM trading.news_impact_tracking GROUP BY status;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Wirkungsanalyse-Fortschritt",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       1280
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000012-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT count(*) AS offene_vorschlaege, max(created_at) AS letzter_vorschlag_am\nFROM trading.learning_rule_proposals WHERE status = \u0027proposed\u0027;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Offene Lernvorschlaege",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       1440
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000013-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT source AS value, count(*) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct IS NOT NULL), 0), 1) AS trefferquote\nFROM trading.news_impact_tracking\nWHERE status = \u0027completed\u0027 AND confounded = FALSE AND source IS NOT NULL\n  AND created_at \u003e= now() - interval \u002790 days\u0027\nGROUP BY source ORDER BY sample_size DESC LIMIT 10;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Trefferquote je Quelle",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       1600
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000014-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT config_key, value_bool, value_text, value_numeric, description, updated_at FROM trading.pipeline_config ORDER BY config_key;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Pipeline-Konfiguration laden",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -3400,
+                                       1760
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "p12-db-pipeline-config"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 1",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -3160,
+                                       30
+                                   ],
+                      "id":  "n-00000015-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 2",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -3120,
+                                       60
+                                   ],
+                      "id":  "n-00000016-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 3",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -3080,
+                                       90
+                                   ],
+                      "id":  "n-00000017-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 4",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -3040,
+                                       120
+                                   ],
+                      "id":  "n-00000018-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 5",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -3000,
+                                       150
+                                   ],
+                      "id":  "n-00000019-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 6",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2960,
+                                       180
+                                   ],
+                      "id":  "n-00000020-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 7",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2920,
+                                       210
+                                   ],
+                      "id":  "n-00000021-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 8",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2880,
+                                       240
+                                   ],
+                      "id":  "n-00000022-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 9",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2840,
+                                       270
+                                   ],
+                      "id":  "n-00000023-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 10",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2800,
+                                       300
+                                   ],
+                      "id":  "n-00000024-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 11",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2760,
+                                       330
+                                   ],
+                      "id":  "n-00000025-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 12",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2720,
+                                       360
+                                   ],
+                      "id":  "n-00000026-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Merge Status 13",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -2680,
+                                       390
+                                   ],
+                      "id":  "p12-merge-status-13"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "function safeStr(v) { return v === null || v === undefined ? \u0027\u0027 : String(v).trim(); }\nfunction esc(s) {\n  return safeStr(s).replace(/\u0026/g, \u0027\u0026amp;\u0027).replace(/\u003c/g, \u0027\u0026lt;\u0027).replace(/\u003e/g, \u0027\u0026gt;\u0027);\n}\nfunction num(v) {\n  const n = Number(v);\n  return isNaN(n) ? null : n;\n}\nfunction rows(nodeName) {\n  try { return $(nodeName).all().map(i =\u003e i.json || {}); } catch (e) { return []; }\n}\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat(\u0027sv-SE\u0027, {\n    timeZone: \u0027Europe/Berlin\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027\n  }).format(date);\n}\nconst heute = getBusinessDate();\nconst now = new Date().toLocaleString(\u0027de-DE\u0027, { timeZone: \u0027Europe/Berlin\u0027 });\n\nconst fundamentaldaten = rows(\u0027DB: Fundamentaldaten laden\u0027);\nconst marktKontext     = rows(\u0027DB: Marktumfeld laden\u0027);\nconst techSignale      = rows(\u0027DB: Technische Signale laden\u0027);\nconst news             = rows(\u0027DB: News laden (trading.*)\u0027).map(r =\u003e ({ datum_iso: r.published_at || r.created_at, relevanz: r.wirkung_staerke === \u0027hoch\u0027 ? \u0027hoch\u0027 : (r.wirkung_staerke === \u0027mittel\u0027 ? \u0027mittel\u0027 : \u0027\u0027) }));\nconst empfehlungen     = rows(\u0027DB: Empfehlungen laden\u0027);\nconst kursHistorie     = rows(\u0027DB: Kursverlauf laden\u0027);\n\nfunction letzterStand(list, getFeld) {\n  const daten = list.map(r =\u003e safeStr(getFeld(r))).filter(Boolean).sort();\n  return daten.length \u003e 0 ? daten[daten.length - 1] : null;\n}\n\nfunction quelleZeile(name, list, getFeld) {\n  const stand = letzterStand(list, getFeld);\n  const standDatum = stand ? stand.substring(0, 10) : null;\n  const aktuell = standDatum === heute;\n  const badge = list.length === 0\n    ? \u0027\u003cspan class=\"badge warn\"\u003eleer\u003c/span\u003e\u0027\n    : aktuell\n      ? \u0027\u003cspan class=\"badge ok\"\u003eaktuell\u003c/span\u003e\u0027\n      : \u0027\u003cspan class=\"badge warn\"\u003everaltet (\u0027 + esc(standDatum || \u0027unbekannt\u0027) + \u0027)\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(name) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + list.length + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + (stand ? esc(stand) : \u0027—\u0027) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\n\nconst quellenHtml =\n  quelleZeile(\u0027stock_fundamentals\u0027, fundamentaldaten, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_market_context\u0027, marktKontext, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_technical_signals\u0027, techSignale, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_news_evaluated\u0027, news, r =\u003e r.datum_iso || r.datum) +\n  quelleZeile(\u0027stock_empfehlungen\u0027, empfehlungen, r =\u003e r.letzte_aktualisierung) +\n  quelleZeile(\u0027stock_price_history\u0027, kursHistorie, r =\u003e r.datum);\n\n// Technische Signale heute\nconst techHeute = techSignale.filter(s =\u003e safeStr(s.datum).startsWith(heute));\nconst handelskandidaten = techHeute.filter(s =\u003e s.handels_status === \u0027handelskandidat\u0027);\nconst beobachten = techHeute.filter(s =\u003e s.handels_status === \u0027beobachten\u0027);\n\nfunction signalZeile(s) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(s.ticker) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.handels_status_text || s.handels_status) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(s.rsi) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.macd_signal) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.richtung) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst kandidatenHtml = handelskandidaten.length \u003e 0 ? handelskandidaten.map(signalZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003ekeine heute\u003c/td\u003e\u003c/tr\u003e\u0027;\nconst beobachtenHtml = beobachten.length \u003e 0 ? beobachten.map(signalZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003ekeine heute\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// Empfehlungs-Watchlist\nconst offen = empfehlungen.filter(e =\u003e e.status === \u0027offen\u0027);\nconst geschlossen = empfehlungen.filter(e =\u003e e.status === \u0027geschlossen\u0027);\nconst perfWerte = geschlossen.map(e =\u003e num(e.performance_pct)).filter(v =\u003e v !== null);\nconst avgPerf = perfWerte.length \u003e 0 ? (perfWerte.reduce((a, b) =\u003e a + b, 0) / perfWerte.length).toFixed(2) : null;\nconst hitRate = perfWerte.length \u003e 0 ? Math.round((perfWerte.filter(v =\u003e v \u003e 0).length / perfWerte.length) * 100) : null;\n\nfunction empfehlungZeile(e) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(e.ticker) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.richtung) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.entry_datum) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(e.entry_kurs) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.status) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst offenHtml = offen.length \u003e 0 ? offen.map(empfehlungZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"5\" class=\"empty\"\u003ekeine offenen Positionen\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// News heute\nconst newsHeute = news.filter(n =\u003e safeStr(n.datum_iso || n.datum).startsWith(heute));\nconst newsHoch = newsHeute.filter(n =\u003e n.relevanz === \u0027hoch\u0027).length;\nconst newsMittel = newsHeute.filter(n =\u003e n.relevanz === \u0027mittel\u0027).length;\n\nconst html = \u0027\u003c!DOCTYPE html\u003e\u0027 +\n\u0027\u003chtml lang=\"de\"\u003e\u0027 +\n\u0027\u003chead\u003e\u0027 +\n\u0027\u003cmeta charset=\"utf-8\"\u003e\u0027 +\n\u0027\u003ctitle\u003eAktien-Pipeline Status-Uebersicht\u003c/title\u003e\u0027 +\n\u0027\u003cstyle\u003e\u0027 +\n\u0027  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }\u0027 +\n\u0027  h1 { font-size:20px; margin-bottom:4px; }\u0027 +\n\u0027  .meta { color:#9aa0a6; font-size:13px; margin-bottom:24px; }\u0027 +\n\u0027  table { border-collapse: collapse; width:100%; margin-bottom:32px; }\u0027 +\n\u0027  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; font-variant-numeric: tabular-nums; }\u0027 +\n\u0027  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }\u0027 +\n\u0027  td.num { text-align:right; }\u0027 +\n\u0027  .empty { color:#5f6368; font-style:italic; }\u0027 +\n\u0027  h2 { font-size:15px; margin-top:8px; margin-bottom:8px; color:#e6e6e6; }\u0027 +\n\u0027  .hint { color:#9aa0a6; font-size:12px; margin-bottom:12px; }\u0027 +\n\u0027  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }\u0027 +\n\u0027  .badge.ok { background:#1c3a2a; color:#6bcf8e; }\u0027 +\n\u0027  .badge.warn { background:#3a2c1c; color:#e0a854; }\u0027 +\n\u0027  .summary { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }\u0027 +\n\u0027  .stat { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:12px 16px; min-width:140px; }\u0027 +\n\u0027  .stat .label { color:#9aa0a6; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }\u0027 +\n\u0027  .stat .value { font-size:22px; font-weight:700; font-variant-numeric: tabular-nums; }\u0027 +\n\u0027  .stat .value.good { color:#6bcf8e; }\u0027 +\n\u0027  .stat .value.bad { color:#e0665a; }\u0027 +\n\u0027\u003c/style\u003e\u0027 +\n\u0027\u003c/head\u003e\u0027 +\n\u0027\u003cbody\u003e\u0027 +\n\u0027  \u003ch1\u003eAktien-Report-Pipeline \u0026mdash; Status-Uebersicht\u003c/h1\u003e\u0027 +\n\u0027  \u003cdiv class=\"meta\"\u003eStand: \u0027 + esc(now) + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eDatenquellen\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTabelle\u003c/th\u003e\u003cth\u003eZeilen\u003c/th\u003e\u003cth\u003eLetzter Stand\u003c/th\u003e\u003cth\u003e\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + quellenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eKennzahlen heute\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eHandelskandidaten\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + handelskandidaten.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eBeobachten\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + beobachten.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eNews hoch/mittel\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + newsHoch + \u0027 / \u0027 + newsMittel + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Empfehlungen\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + offen.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eØ Performance geschlossen\u003c/div\u003e\u003cdiv class=\"value \u0027 + (avgPerf !== null \u0026\u0026 avgPerf \u003e= 0 ? \u0027good\u0027 : avgPerf !== null ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + (avgPerf !== null ? avgPerf + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eTrefferquote\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (hitRate !== null ? hitRate + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eHandelskandidaten heute\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eName\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eRSI\u003c/th\u003e\u003cth\u003eMACD\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + kandidatenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eBeobachten heute\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eName\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eRSI\u003c/th\u003e\u003cth\u003eMACD\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + beobachtenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eOffene Empfehlungs-Positionen\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"hint\"\u003eHypothetische Watchlist aus News+Signal-Treffern, keine echten Trades.\u003c/div\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003cth\u003eEntry-Datum\u003c/th\u003e\u003cth\u003eEntry-Kurs\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + offenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027\u003c/body\u003e\u0027 +\n\u0027\u003c/html\u003e\u0027;\n\n// ─── Phase 13: Orchestrator-/Agenten-/Lernprozess-Kennzahlen ──────────────────\nconst pipelineLaeufe = rows(\u0027DB: Letzte Pipeline-Laeufe je Stufe\u0027);\nconst letzterErfolg = rows(\u0027DB: Letzter erfolgreicher Lauf je Workflow\u0027);\nconst agentLaeufe = rows(\u0027DB: Letzter Lauf je Agent\u0027);\nconst newsZustand = rows(\u0027DB: News-Zustandsverteilung\u0027);\nconst wirkungsFortschritt = rows(\u0027DB: Wirkungsanalyse-Fortschritt\u0027);\nconst lernVorschlaege = rows(\u0027DB: Offene Lernvorschlaege\u0027)[0] || {};\nconst pipelineConfig = rows(\u0027DB: Pipeline-Konfiguration laden\u0027);\n\nfunction pipelineZeile(p) {\n  const erfolgTreffer = letzterErfolg.find(e =\u003e e.workflow_name === p.workflow_name);\n  const badge = p.status === \u0027success\u0027 ? \u0027\u003cspan class=\"badge ok\"\u003esuccess\u003c/span\u003e\u0027\n    : p.status === \u0027failed\u0027 ? \u0027\u003cspan class=\"badge warn\"\u003efailed\u003c/span\u003e\u0027\n    : \u0027\u003cspan class=\"badge warn\"\u003e\u0027 + esc(p.status) + \u0027\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(p.workflow_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(p.stage_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + esc(p.finished_at) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(erfolgTreffer ? erfolgTreffer.finished_at : \u0027—\u0027) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(p.duration_ms) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(p.retry_count || 0) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(p.warning_count || 0) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(p.error_count || 0) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst pipelineHtml = pipelineLaeufe.length \u003e 0 ? pipelineLaeufe.map(pipelineZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"9\" class=\"empty\"\u003enoch keine Orchestrator-Laeufe protokolliert\u003c/td\u003e\u003c/tr\u003e\u0027;\n\nfunction agentZeile(a) {\n  const badge = a.status === \u0027success\u0027 ? \u0027\u003cspan class=\"badge ok\"\u003esuccess\u003c/span\u003e\u0027 : \u0027\u003cspan class=\"badge warn\"\u003e\u0027 + esc(a.status) + \u0027\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(a.agent_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.model_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.prompt_version) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.started_at) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(a.confidence ?? \u0027\u0027) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst agentHtml = agentLaeufe.length \u003e 0 ? agentLaeufe.map(agentZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003enoch keine Agentenlaeufe protokolliert\u003c/td\u003e\u003c/tr\u003e\u0027;\n\nconst trefferquoteJeQuelle = rows(\u0027DB: Trefferquote je Quelle\u0027);\n\nfunction configWert(c) {\n  if (c.value_bool !== null \u0026\u0026 c.value_bool !== undefined) return String(c.value_bool);\n  if (c.value_numeric !== null \u0026\u0026 c.value_numeric !== undefined) return String(c.value_numeric);\n  if (c.value_text !== null \u0026\u0026 c.value_text !== undefined \u0026\u0026 c.value_text !== \u0027\u0027) return c.value_text;\n  return \u0027—\u0027;\n}\nfunction configZeile(c) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(c.config_key) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(configWert(c)) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + esc(c.description) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(c.updated_at) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst configHtml = pipelineConfig.length \u003e 0 ? pipelineConfig.map(configZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"4\" class=\"empty\"\u003etrading.pipeline_config leer\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// ─── Einfache horizontale Balkendiagramme, reines SVG, kein externer Dienst ──\nfunction escSvg(v) { return String(v ?? \u0027\u0027).replace(/\u0026/g, \u0027\u0026amp;\u0027).replace(/\u003c/g, \u0027\u0026lt;\u0027).replace(/\u003e/g, \u0027\u0026gt;\u0027); }\nfunction svgBarChart(rowsIn, opts) {\n  opts = opts || {};\n  const width = opts.width || 640;\n  const barHeight = 20;\n  const gap = 10;\n  const labelWidth = opts.labelWidth || 170;\n  const chartWidth = width - labelWidth - 60;\n  const maxVal = opts.maxValue || Math.max(1, ...rowsIn.map(r =\u003e Number(r.value) || 0));\n  const height = rowsIn.length * (barHeight + gap) + gap;\n  let svg = \u0027\u003csvg viewBox=\"0 0 \u0027 + width + \u0027 \u0027 + height + \u0027\" width=\"100%\" style=\"max-width:\u0027 + width + \u0027px;height:auto\" xmlns=\"http://www.w3.org/2000/svg\"\u003e\u0027;\n  rowsIn.forEach((r, i) =\u003e {\n    const y = gap + i * (barHeight + gap);\n    const val = Number(r.value) || 0;\n    const barW = Math.max(2, (val / maxVal) * chartWidth);\n    const color = r.color || \u0027#6bcf8e\u0027;\n    svg += \u0027\u003ctext x=\"0\" y=\"\u0027 + (y + barHeight / 2 + 4) + \u0027\" fill=\"#9aa0a6\" font-size=\"12\"\u003e\u0027 + escSvg(r.label) + \u0027\u003c/text\u003e\u0027;\n    svg += \u0027\u003crect x=\"\u0027 + labelWidth + \u0027\" y=\"\u0027 + y + \u0027\" width=\"\u0027 + barW + \u0027\" height=\"\u0027 + barHeight + \u0027\" rx=\"4\" fill=\"\u0027 + color + \u0027\"/\u003e\u0027;\n    svg += \u0027\u003ctext x=\"\u0027 + (labelWidth + barW + 8) + \u0027\" y=\"\u0027 + (y + barHeight / 2 + 4) + \u0027\" fill=\"#e6e6e6\" font-size=\"12\"\u003e\u0027 + escSvg(r.valueText != null ? r.valueText : r.value) + \u0027\u003c/text\u003e\u0027;\n  });\n  svg += \u0027\u003c/svg\u003e\u0027;\n  return svg;\n}\nfunction trefferquoteColor(pct) {\n  if (pct === null || pct === undefined) return \u0027#5f6368\u0027;\n  if (pct \u003e= 60) return \u0027#6bcf8e\u0027;\n  if (pct \u003e= 40) return \u0027#e0a854\u0027;\n  return \u0027#e0665a\u0027;\n}\n\nconst wirkungsChartRows = wirkungsFortschritt\n  .filter(w =\u003e Number(w.anzahl) \u003e 0)\n  .map(w =\u003e ({ label: w.status, value: Number(w.anzahl), valueText: w.anzahl, color: w.status === \u0027completed\u0027 ? \u0027#6bcf8e\u0027 : (w.status === \u0027confounded\u0027 ? \u0027#e0665a\u0027 : \u0027#4a90d9\u0027) }));\nconst wirkungsChartHtml = wirkungsChartRows.length \u003e 0\n  ? svgBarChart(wirkungsChartRows, {})\n  : \u0027\u003cp class=\"empty\"\u003enoch keine Wirkungsanalyse-Daten\u003c/p\u003e\u0027;\n\nconst trefferquoteChartRows = trefferquoteJeQuelle\n  .filter(q =\u003e q.trefferquote !== null \u0026\u0026 q.trefferquote !== undefined)\n  .map(q =\u003e ({ label: q.value + \u0027 (n=\u0027 + q.sample_size + \u0027)\u0027, value: Number(q.trefferquote), valueText: q.trefferquote + \u0027%\u0027, color: trefferquoteColor(Number(q.trefferquote)) }));\nconst trefferquoteChartHtml = trefferquoteChartRows.length \u003e 0\n  ? svgBarChart(trefferquoteChartRows, { maxValue: 100 })\n  : \u0027\u003cp class=\"empty\"\u003enoch keine abgeschlossenen Wirkungsanalysen je Quelle (mindestens 1 abgeschlossener Fall noetig)\u003c/p\u003e\u0027;\n\nconst newsZustandMap = {};\nfor (const z of newsZustand) newsZustandMap[z.status] = Number(z.anzahl);\nconst newsOffenRetry = (newsZustandMap.pending || 0) + (newsZustandMap.retry || 0);\nconst newsFailed = newsZustandMap.failed || 0;\n\nconst impactMap = {};\nfor (const w of wirkungsFortschritt) impactMap[w.status] = w;\nconst impactCompleted = impactMap.completed || { anzahl: 0, trefferquote: null };\nconst impactConfounded = wirkungsFortschritt.reduce((sum, w) =\u003e sum + Number(w.confounded_anzahl || 0), 0);\nconst impactOffen = wirkungsFortschritt.filter(w =\u003e String(w.status).startsWith(\u0027waiting_\u0027)).reduce((sum, w) =\u003e sum + Number(w.anzahl || 0), 0);\n\nconst zusatzHtml =\n\u0027  \u003ch2\u003eOrchestrator-Laeufe (letzter Lauf je Stufe)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eWorkflow\u003c/th\u003e\u003cth\u003eStufe\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eBeendet\u003c/th\u003e\u003cth\u003eLetzter Erfolg\u003c/th\u003e\u003cth\u003eDauer (ms)\u003c/th\u003e\u003cth\u003eRetries\u003c/th\u003e\u003cth\u003eWarnungen\u003c/th\u003e\u003cth\u003eFehler\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + pipelineHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eAgentenlaeufe (letzter Lauf je Agent)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eAgent\u003c/th\u003e\u003cth\u003eModell\u003c/th\u003e\u003cth\u003ePrompt-Version\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eGestartet\u003c/th\u003e\u003cth\u003eKonfidenz\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + agentHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eNews-Verarbeitung \u0026amp; Wirkungsanalyse\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene News-Retries\u003c/div\u003e\u003cdiv class=\"value \u0027 + (newsOffenRetry \u003e 20 ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + newsOffenRetry + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eFehlgeschlagene News\u003c/div\u003e\u003cdiv class=\"value \u0027 + (newsFailed \u003e 0 ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + newsFailed + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Wirkungsanalysen\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactOffen + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eAbgeschlossene D+1..D+20\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactCompleted.anzahl + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eTrefferquote (sauber)\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (impactCompleted.trefferquote !== null \u0026\u0026 impactCompleted.trefferquote !== undefined ? impactCompleted.trefferquote + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eKonfundierte Faelle\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactConfounded + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eWirkungsanalyse -- Status-Verteilung\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv style=\"background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto\"\u003e\u0027 + wirkungsChartHtml + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eTrefferquote je Quelle (abgeschlossene, unverunreinigte Faelle)\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv style=\"background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto\"\u003e\u0027 + trefferquoteChartHtml + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eLernagent\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Lernvorschlaege\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (lernVorschlaege.offene_vorschlaege || 0) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eLetzter Vorschlag am\u003c/div\u003e\u003cdiv class=\"value\" style=\"font-size:14px\"\u003e\u0027 + esc(lernVorschlaege.letzter_vorschlag_am || \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eKonfiguration (trading.pipeline_config)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eWert\u003c/th\u003e\u003cth\u003eBeschreibung\u003c/th\u003e\u003cth\u003eZuletzt geaendert\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + configHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027;\n\n// In den bestehenden HTML-String VOR dem schliessenden \u003c/body\u003e einfuegen,\n// ohne die restliche Original-Struktur zu veraendern.\nconst htmlErweitert = html.replace(\u0027\u003c/body\u003e\u0027, zusatzHtml + \u0027\u003c/body\u003e\u0027);\n\nreturn [{ json: { html: htmlErweitert } }];\n"
+                                     },
+                      "name":  "Baue Uebersicht",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -2800,
+                                       500
+                                   ],
+                      "id":  "n-00000027-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "respondWith":  "text",
+                                         "responseBody":  "={{ $json.html }}",
+                                         "options":  {
+                                                         "responseHeaders":  {
+                                                                                 "entries":  [
+                                                                                                 {
+                                                                                                     "name":  "Content-Type",
+                                                                                                     "value":  "text/html; charset=utf-8"
+                                                                                                 }
+                                                                                             ]
+                                                                             }
+                                                     }
+                                     },
+                      "id":  "104f65b6-454d-4a90-90f8-d38b8be57bc6",
+                      "name":  "Antwort mit HTML",
+                      "type":  "n8n-nodes-base.respondToWebhook",
+                      "typeVersion":  1.4,
+                      "position":  [
+                                       -2600,
+                                       500
+                                   ]
+                  }
+              ],
+    "connections":  {
+                        "Webhook Status-Uebersicht":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "DB: Fundamentaldaten laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Marktumfeld laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Technische Signale laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Empfehlungen laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Kursverlauf laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: News laden (trading.*)",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Letzte Pipeline-Laeufe je Stufe",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Letzter erfolgreicher Lauf je Workflow",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Letzter Lauf je Agent",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: News-Zustandsverteilung",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Wirkungsanalyse-Fortschritt",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Offene Lernvorschlaege",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Trefferquote je Quelle",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           },
+                                                                           {
+                                                                               "node":  "DB: Pipeline-Konfiguration laden",
+                                                                               "type":  "main",
+                                                                               "index":  0
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "DB: Fundamentaldaten laden":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Merge Status 1",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "DB: Marktumfeld laden":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Merge Status 1",
+                                                                           "type":  "main",
+                                                                           "index":  1
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Merge Status 1":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 2",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Technische Signale laden":  {
+                                                             "main":  [
+                                                                          [
+                                                                              {
+                                                                                  "node":  "Merge Status 2",
+                                                                                  "type":  "main",
+                                                                                  "index":  1
+                                                                              }
+                                                                          ]
+                                                                      ]
+                                                         },
+                        "Merge Status 2":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 3",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Empfehlungen laden":  {
+                                                       "main":  [
+                                                                    [
+                                                                        {
+                                                                            "node":  "Merge Status 3",
+                                                                            "type":  "main",
+                                                                            "index":  1
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                   },
+                        "Merge Status 3":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 4",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Kursverlauf laden":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "Merge Status 4",
+                                                                           "type":  "main",
+                                                                           "index":  1
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "Merge Status 4":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 5",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: News laden (trading.*)":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Merge Status 5",
+                                                                                "type":  "main",
+                                                                                "index":  1
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Merge Status 5":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 6",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Letzte Pipeline-Laeufe je Stufe":  {
+                                                                    "main":  [
+                                                                                 [
+                                                                                     {
+                                                                                         "node":  "Merge Status 6",
+                                                                                         "type":  "main",
+                                                                                         "index":  1
+                                                                                     }
+                                                                                 ]
+                                                                             ]
+                                                                },
+                        "Merge Status 6":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 7",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Letzter erfolgreicher Lauf je Workflow":  {
+                                                                           "main":  [
+                                                                                        [
+                                                                                            {
+                                                                                                "node":  "Merge Status 7",
+                                                                                                "type":  "main",
+                                                                                                "index":  1
+                                                                                            }
+                                                                                        ]
+                                                                                    ]
+                                                                       },
+                        "Merge Status 7":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 8",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Letzter Lauf je Agent":  {
+                                                          "main":  [
+                                                                       [
+                                                                           {
+                                                                               "node":  "Merge Status 8",
+                                                                               "type":  "main",
+                                                                               "index":  1
+                                                                           }
+                                                                       ]
+                                                                   ]
+                                                      },
+                        "Merge Status 8":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 9",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: News-Zustandsverteilung":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Merge Status 9",
+                                                                                 "type":  "main",
+                                                                                 "index":  1
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Merge Status 9":  {
+                                               "main":  [
+                                                            [
+                                                                {
+                                                                    "node":  "Merge Status 10",
+                                                                    "type":  "main",
+                                                                    "index":  0
+                                                                }
+                                                            ]
+                                                        ]
+                                           },
+                        "DB: Wirkungsanalyse-Fortschritt":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Merge Status 10",
+                                                                                     "type":  "main",
+                                                                                     "index":  1
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Merge Status 10":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Merge Status 11",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "DB: Offene Lernvorschlaege":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Merge Status 11",
+                                                                                "type":  "main",
+                                                                                "index":  1
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Merge Status 11":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Merge Status 12",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "DB: Trefferquote je Quelle":  {
+                                                           "main":  [
+                                                                        [
+                                                                            {
+                                                                                "node":  "Merge Status 12",
+                                                                                "type":  "main",
+                                                                                "index":  1
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Merge Status 12":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Merge Status 13",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "DB: Pipeline-Konfiguration laden":  {
+                                                                 "main":  [
+                                                                              [
+                                                                                  {
+                                                                                      "node":  "Merge Status 13",
+                                                                                      "type":  "main",
+                                                                                      "index":  1
+                                                                                  }
+                                                                              ]
+                                                                          ]
+                                                             },
+                        "Merge Status 13":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Baue Uebersicht",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            },
+                        "Baue Uebersicht":  {
+                                                "main":  [
+                                                             [
+                                                                 {
+                                                                     "node":  "Antwort mit HTML",
+                                                                     "type":  "main",
+                                                                     "index":  0
+                                                                 }
+                                                             ]
+                                                         ]
+                                            }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "binaryMode":  "separate",
+                     "errorWorkflow":  "VTBfUuzQfMZNGYDM"
+                 },
+    "staticData":  null,
+    "meta":  null,
+    "pinData":  {
+
+                },
+    "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+    "activeVersionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+    "versionCounter":  97,
+    "triggerCount":  1,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-07-19T13:02:26.199Z",
+                       "createdAt":  "2026-07-19T13:02:26.199Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "7hQ3t6KrSo9uDNML",
+                       "projectId":  "CrnegVcMvlcRU0OP",
+                       "project":  {
+                                       "updatedAt":  "2026-05-23T11:38:39.411Z",
+                                       "createdAt":  "2026-05-23T11:33:40.374Z",
+                                       "id":  "CrnegVcMvlcRU0OP",
+                                       "name":  "Oliver Lietz \u003coliver.lietz@golietz.de\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "creatorId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-07-21T15:31:58.570Z",
+                          "createdAt":  "2026-07-21T15:31:58.570Z",
+                          "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                          "workflowId":  "7hQ3t6KrSo9uDNML",
+                          "nodes":  [
+                                        {
+                                            "parameters":  {
+                                                               "path":  "aktien-status",
+                                                               "authentication":  "headerAuth",
+                                                               "responseMode":  "responseNode",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Webhook Status-Uebersicht",
+                                            "type":  "n8n-nodes-base.webhook",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -3600,
+                                                             0
+                                                         ],
+                                            "webhookId":  "eeeeeeee-0000-4000-8000-100000000001",
+                                            "credentials":  {
+                                                                "httpHeaderAuth":  {
+                                                                                       "id":  "5lPS4iU0YNbMcjWR",
+                                                                                       "name":  "Status-Webhook Token"
+                                                                                   }
+                                                            },
+                                            "id":  "n-00000001-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "get",
+                                                               "dataTableId":  {
+                                                                                   "__rl":  true,
+                                                                                   "value":  "Le3FJQ6pctb6qtGi",
+                                                                                   "mode":  "list",
+                                                                                   "cachedResultName":  "stock_fundamentals"
+                                                                               },
+                                                               "returnAll":  true
+                                                           },
+                                            "name":  "DB: Fundamentaldaten laden",
+                                            "type":  "n8n-nodes-base.dataTable",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             -3400,
+                                                             -320
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000002-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "get",
+                                                               "dataTableId":  {
+                                                                                   "__rl":  true,
+                                                                                   "value":  "dzUOoGnfASjaaVhn",
+                                                                                   "mode":  "list",
+                                                                                   "cachedResultName":  "stock_market_context"
+                                                                               },
+                                                               "returnAll":  true
+                                                           },
+                                            "name":  "DB: Marktumfeld laden",
+                                            "type":  "n8n-nodes-base.dataTable",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             -3400,
+                                                             -160
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000003-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "get",
+                                                               "dataTableId":  {
+                                                                                   "__rl":  true,
+                                                                                   "value":  "GDMAKrvQovPcBItA",
+                                                                                   "mode":  "list",
+                                                                                   "cachedResultName":  "stock_technical_signals"
+                                                                               },
+                                                               "returnAll":  true
+                                                           },
+                                            "name":  "DB: Technische Signale laden",
+                                            "type":  "n8n-nodes-base.dataTable",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             -3400,
+                                                             0
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000004-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT * FROM trading.recommendations ORDER BY id;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Empfehlungen laden",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             160
+                                                         ],
+                                            "id":  "n-00000005-0000-4000-8000-0000000000",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            }
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "get",
+                                                               "dataTableId":  {
+                                                                                   "__rl":  true,
+                                                                                   "value":  "Mc3Pem5RGio6bqXt",
+                                                                                   "mode":  "list",
+                                                                                   "cachedResultName":  "stock_price_history"
+                                                                               },
+                                                               "returnAll":  true
+                                                           },
+                                            "name":  "DB: Kursverlauf laden",
+                                            "type":  "n8n-nodes-base.dataTable",
+                                            "typeVersion":  1,
+                                            "position":  [
+                                                             -3400,
+                                                             320
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000006-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT ni.published_at, ni.created_at, na.wirkung_staerke, na.relevant\nFROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: News laden (trading.*)",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             480
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000007-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT DISTINCT ON (workflow_name, stage_name) workflow_name, stage_name, status, started_at, finished_at,\n       duration_ms, retry_count, error_message, warning_count, error_count\nFROM trading.pipeline_runs ORDER BY workflow_name, stage_name, started_at DESC;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Letzte Pipeline-Laeufe je Stufe",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             640
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000008-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT DISTINCT ON (workflow_name) workflow_name, finished_at\nFROM trading.pipeline_runs WHERE status = \u0027success\u0027 ORDER BY workflow_name, finished_at DESC;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Letzter erfolgreicher Lauf je Workflow",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             800
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000009-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT DISTINCT ON (agent_name) agent_name, model_name, prompt_version, status, started_at, confidence\nFROM trading.agent_runs ORDER BY agent_name, started_at DESC;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Letzter Lauf je Agent",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             960
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000010-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT status, count(*) AS anzahl FROM trading.news_items GROUP BY status;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: News-Zustandsverteilung",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             1120
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000011-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT status, count(*) AS anzahl,\n       count(*) FILTER (WHERE confounded) AS confounded_anzahl,\n       round(100.0 * count(*) FILTER (WHERE direction_correct = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct IS NOT NULL), 0), 1) AS trefferquote\nFROM trading.news_impact_tracking GROUP BY status;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Wirkungsanalyse-Fortschritt",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             1280
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000012-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT count(*) AS offene_vorschlaege, max(created_at) AS letzter_vorschlag_am\nFROM trading.learning_rule_proposals WHERE status = \u0027proposed\u0027;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Offene Lernvorschlaege",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             1440
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000013-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT source AS value, count(*) AS sample_size,\n  round(100.0 * count(*) FILTER (WHERE direction_correct = TRUE) / NULLIF(count(*) FILTER (WHERE direction_correct IS NOT NULL), 0), 1) AS trefferquote\nFROM trading.news_impact_tracking\nWHERE status = \u0027completed\u0027 AND confounded = FALSE AND source IS NOT NULL\n  AND created_at \u003e= now() - interval \u002790 days\u0027\nGROUP BY source ORDER BY sample_size DESC LIMIT 10;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Trefferquote je Quelle",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             1600
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000014-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT config_key, value_bool, value_text, value_numeric, description, updated_at FROM trading.pipeline_config ORDER BY config_key;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Pipeline-Konfiguration laden",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -3400,
+                                                             1760
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "p12-db-pipeline-config"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 1",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -3160,
+                                                             30
+                                                         ],
+                                            "id":  "n-00000015-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 2",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -3120,
+                                                             60
+                                                         ],
+                                            "id":  "n-00000016-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 3",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -3080,
+                                                             90
+                                                         ],
+                                            "id":  "n-00000017-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 4",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -3040,
+                                                             120
+                                                         ],
+                                            "id":  "n-00000018-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 5",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -3000,
+                                                             150
+                                                         ],
+                                            "id":  "n-00000019-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 6",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2960,
+                                                             180
+                                                         ],
+                                            "id":  "n-00000020-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 7",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2920,
+                                                             210
+                                                         ],
+                                            "id":  "n-00000021-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 8",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2880,
+                                                             240
+                                                         ],
+                                            "id":  "n-00000022-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 9",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2840,
+                                                             270
+                                                         ],
+                                            "id":  "n-00000023-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 10",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2800,
+                                                             300
+                                                         ],
+                                            "id":  "n-00000024-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 11",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2760,
+                                                             330
+                                                         ],
+                                            "id":  "n-00000025-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 12",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2720,
+                                                             360
+                                                         ],
+                                            "id":  "n-00000026-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Merge Status 13",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -2680,
+                                                             390
+                                                         ],
+                                            "id":  "p12-merge-status-13"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "function safeStr(v) { return v === null || v === undefined ? \u0027\u0027 : String(v).trim(); }\nfunction esc(s) {\n  return safeStr(s).replace(/\u0026/g, \u0027\u0026amp;\u0027).replace(/\u003c/g, \u0027\u0026lt;\u0027).replace(/\u003e/g, \u0027\u0026gt;\u0027);\n}\nfunction num(v) {\n  const n = Number(v);\n  return isNaN(n) ? null : n;\n}\nfunction rows(nodeName) {\n  try { return $(nodeName).all().map(i =\u003e i.json || {}); } catch (e) { return []; }\n}\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat(\u0027sv-SE\u0027, {\n    timeZone: \u0027Europe/Berlin\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027\n  }).format(date);\n}\nconst heute = getBusinessDate();\nconst now = new Date().toLocaleString(\u0027de-DE\u0027, { timeZone: \u0027Europe/Berlin\u0027 });\n\nconst fundamentaldaten = rows(\u0027DB: Fundamentaldaten laden\u0027);\nconst marktKontext     = rows(\u0027DB: Marktumfeld laden\u0027);\nconst techSignale      = rows(\u0027DB: Technische Signale laden\u0027);\nconst news             = rows(\u0027DB: News laden (trading.*)\u0027).map(r =\u003e ({ datum_iso: r.published_at || r.created_at, relevanz: r.wirkung_staerke === \u0027hoch\u0027 ? \u0027hoch\u0027 : (r.wirkung_staerke === \u0027mittel\u0027 ? \u0027mittel\u0027 : \u0027\u0027) }));\nconst empfehlungen     = rows(\u0027DB: Empfehlungen laden\u0027);\nconst kursHistorie     = rows(\u0027DB: Kursverlauf laden\u0027);\n\nfunction letzterStand(list, getFeld) {\n  const daten = list.map(r =\u003e safeStr(getFeld(r))).filter(Boolean).sort();\n  return daten.length \u003e 0 ? daten[daten.length - 1] : null;\n}\n\nfunction quelleZeile(name, list, getFeld) {\n  const stand = letzterStand(list, getFeld);\n  const standDatum = stand ? stand.substring(0, 10) : null;\n  const aktuell = standDatum === heute;\n  const badge = list.length === 0\n    ? \u0027\u003cspan class=\"badge warn\"\u003eleer\u003c/span\u003e\u0027\n    : aktuell\n      ? \u0027\u003cspan class=\"badge ok\"\u003eaktuell\u003c/span\u003e\u0027\n      : \u0027\u003cspan class=\"badge warn\"\u003everaltet (\u0027 + esc(standDatum || \u0027unbekannt\u0027) + \u0027)\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(name) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + list.length + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + (stand ? esc(stand) : \u0027—\u0027) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\n\nconst quellenHtml =\n  quelleZeile(\u0027stock_fundamentals\u0027, fundamentaldaten, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_market_context\u0027, marktKontext, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_technical_signals\u0027, techSignale, r =\u003e r.datum) +\n  quelleZeile(\u0027stock_news_evaluated\u0027, news, r =\u003e r.datum_iso || r.datum) +\n  quelleZeile(\u0027stock_empfehlungen\u0027, empfehlungen, r =\u003e r.letzte_aktualisierung) +\n  quelleZeile(\u0027stock_price_history\u0027, kursHistorie, r =\u003e r.datum);\n\n// Technische Signale heute\nconst techHeute = techSignale.filter(s =\u003e safeStr(s.datum).startsWith(heute));\nconst handelskandidaten = techHeute.filter(s =\u003e s.handels_status === \u0027handelskandidat\u0027);\nconst beobachten = techHeute.filter(s =\u003e s.handels_status === \u0027beobachten\u0027);\n\nfunction signalZeile(s) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(s.ticker) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.handels_status_text || s.handels_status) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(s.rsi) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.macd_signal) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(s.richtung) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst kandidatenHtml = handelskandidaten.length \u003e 0 ? handelskandidaten.map(signalZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003ekeine heute\u003c/td\u003e\u003c/tr\u003e\u0027;\nconst beobachtenHtml = beobachten.length \u003e 0 ? beobachten.map(signalZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003ekeine heute\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// Empfehlungs-Watchlist\nconst offen = empfehlungen.filter(e =\u003e e.status === \u0027offen\u0027);\nconst geschlossen = empfehlungen.filter(e =\u003e e.status === \u0027geschlossen\u0027);\nconst perfWerte = geschlossen.map(e =\u003e num(e.performance_pct)).filter(v =\u003e v !== null);\nconst avgPerf = perfWerte.length \u003e 0 ? (perfWerte.reduce((a, b) =\u003e a + b, 0) / perfWerte.length).toFixed(2) : null;\nconst hitRate = perfWerte.length \u003e 0 ? Math.round((perfWerte.filter(v =\u003e v \u003e 0).length / perfWerte.length) * 100) : null;\n\nfunction empfehlungZeile(e) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(e.ticker) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.richtung) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.entry_datum) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(e.entry_kurs) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(e.status) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst offenHtml = offen.length \u003e 0 ? offen.map(empfehlungZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"5\" class=\"empty\"\u003ekeine offenen Positionen\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// News heute\nconst newsHeute = news.filter(n =\u003e safeStr(n.datum_iso || n.datum).startsWith(heute));\nconst newsHoch = newsHeute.filter(n =\u003e n.relevanz === \u0027hoch\u0027).length;\nconst newsMittel = newsHeute.filter(n =\u003e n.relevanz === \u0027mittel\u0027).length;\n\nconst html = \u0027\u003c!DOCTYPE html\u003e\u0027 +\n\u0027\u003chtml lang=\"de\"\u003e\u0027 +\n\u0027\u003chead\u003e\u0027 +\n\u0027\u003cmeta charset=\"utf-8\"\u003e\u0027 +\n\u0027\u003ctitle\u003eAktien-Pipeline Status-Uebersicht\u003c/title\u003e\u0027 +\n\u0027\u003cstyle\u003e\u0027 +\n\u0027  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }\u0027 +\n\u0027  h1 { font-size:20px; margin-bottom:4px; }\u0027 +\n\u0027  .meta { color:#9aa0a6; font-size:13px; margin-bottom:24px; }\u0027 +\n\u0027  table { border-collapse: collapse; width:100%; margin-bottom:32px; }\u0027 +\n\u0027  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; font-variant-numeric: tabular-nums; }\u0027 +\n\u0027  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }\u0027 +\n\u0027  td.num { text-align:right; }\u0027 +\n\u0027  .empty { color:#5f6368; font-style:italic; }\u0027 +\n\u0027  h2 { font-size:15px; margin-top:8px; margin-bottom:8px; color:#e6e6e6; }\u0027 +\n\u0027  .hint { color:#9aa0a6; font-size:12px; margin-bottom:12px; }\u0027 +\n\u0027  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }\u0027 +\n\u0027  .badge.ok { background:#1c3a2a; color:#6bcf8e; }\u0027 +\n\u0027  .badge.warn { background:#3a2c1c; color:#e0a854; }\u0027 +\n\u0027  .summary { display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }\u0027 +\n\u0027  .stat { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:12px 16px; min-width:140px; }\u0027 +\n\u0027  .stat .label { color:#9aa0a6; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }\u0027 +\n\u0027  .stat .value { font-size:22px; font-weight:700; font-variant-numeric: tabular-nums; }\u0027 +\n\u0027  .stat .value.good { color:#6bcf8e; }\u0027 +\n\u0027  .stat .value.bad { color:#e0665a; }\u0027 +\n\u0027\u003c/style\u003e\u0027 +\n\u0027\u003c/head\u003e\u0027 +\n\u0027\u003cbody\u003e\u0027 +\n\u0027  \u003ch1\u003eAktien-Report-Pipeline \u0026mdash; Status-Uebersicht\u003c/h1\u003e\u0027 +\n\u0027  \u003cdiv class=\"meta\"\u003eStand: \u0027 + esc(now) + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eDatenquellen\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTabelle\u003c/th\u003e\u003cth\u003eZeilen\u003c/th\u003e\u003cth\u003eLetzter Stand\u003c/th\u003e\u003cth\u003e\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + quellenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eKennzahlen heute\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eHandelskandidaten\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + handelskandidaten.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eBeobachten\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + beobachten.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eNews hoch/mittel\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + newsHoch + \u0027 / \u0027 + newsMittel + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Empfehlungen\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + offen.length + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eØ Performance geschlossen\u003c/div\u003e\u003cdiv class=\"value \u0027 + (avgPerf !== null \u0026\u0026 avgPerf \u003e= 0 ? \u0027good\u0027 : avgPerf !== null ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + (avgPerf !== null ? avgPerf + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eTrefferquote\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (hitRate !== null ? hitRate + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eHandelskandidaten heute\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eName\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eRSI\u003c/th\u003e\u003cth\u003eMACD\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + kandidatenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eBeobachten heute\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eName\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eRSI\u003c/th\u003e\u003cth\u003eMACD\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + beobachtenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eOffene Empfehlungs-Positionen\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"hint\"\u003eHypothetische Watchlist aus News+Signal-Treffern, keine echten Trades.\u003c/div\u003e\u0027 +\n\u0027  \u003ctable\u003e\u0027 +\n\u0027    \u003cthead\u003e\u003ctr\u003e\u003cth\u003eTicker\u003c/th\u003e\u003cth\u003eRichtung\u003c/th\u003e\u003cth\u003eEntry-Datum\u003c/th\u003e\u003cth\u003eEntry-Kurs\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + offenHtml + \u0027\u003c/tbody\u003e\u0027 +\n\u0027  \u003c/table\u003e\u0027 +\n\u0027\u003c/body\u003e\u0027 +\n\u0027\u003c/html\u003e\u0027;\n\n// ─── Phase 13: Orchestrator-/Agenten-/Lernprozess-Kennzahlen ──────────────────\nconst pipelineLaeufe = rows(\u0027DB: Letzte Pipeline-Laeufe je Stufe\u0027);\nconst letzterErfolg = rows(\u0027DB: Letzter erfolgreicher Lauf je Workflow\u0027);\nconst agentLaeufe = rows(\u0027DB: Letzter Lauf je Agent\u0027);\nconst newsZustand = rows(\u0027DB: News-Zustandsverteilung\u0027);\nconst wirkungsFortschritt = rows(\u0027DB: Wirkungsanalyse-Fortschritt\u0027);\nconst lernVorschlaege = rows(\u0027DB: Offene Lernvorschlaege\u0027)[0] || {};\nconst pipelineConfig = rows(\u0027DB: Pipeline-Konfiguration laden\u0027);\n\nfunction pipelineZeile(p) {\n  const erfolgTreffer = letzterErfolg.find(e =\u003e e.workflow_name === p.workflow_name);\n  const badge = p.status === \u0027success\u0027 ? \u0027\u003cspan class=\"badge ok\"\u003esuccess\u003c/span\u003e\u0027\n    : p.status === \u0027failed\u0027 ? \u0027\u003cspan class=\"badge warn\"\u003efailed\u003c/span\u003e\u0027\n    : \u0027\u003cspan class=\"badge warn\"\u003e\u0027 + esc(p.status) + \u0027\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(p.workflow_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(p.stage_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + esc(p.finished_at) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(erfolgTreffer ? erfolgTreffer.finished_at : \u0027—\u0027) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(p.duration_ms) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(p.retry_count || 0) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd class=\"num\"\u003e\u0027 + esc(p.warning_count || 0) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(p.error_count || 0) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst pipelineHtml = pipelineLaeufe.length \u003e 0 ? pipelineLaeufe.map(pipelineZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"9\" class=\"empty\"\u003enoch keine Orchestrator-Laeufe protokolliert\u003c/td\u003e\u003c/tr\u003e\u0027;\n\nfunction agentZeile(a) {\n  const badge = a.status === \u0027success\u0027 ? \u0027\u003cspan class=\"badge ok\"\u003esuccess\u003c/span\u003e\u0027 : \u0027\u003cspan class=\"badge warn\"\u003e\u0027 + esc(a.status) + \u0027\u003c/span\u003e\u0027;\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(a.agent_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.model_name) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.prompt_version) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + badge + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(a.started_at) + \u0027\u003c/td\u003e\u003ctd class=\"num\"\u003e\u0027 + esc(a.confidence ?? \u0027\u0027) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst agentHtml = agentLaeufe.length \u003e 0 ? agentLaeufe.map(agentZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"6\" class=\"empty\"\u003enoch keine Agentenlaeufe protokolliert\u003c/td\u003e\u003c/tr\u003e\u0027;\n\nconst trefferquoteJeQuelle = rows(\u0027DB: Trefferquote je Quelle\u0027);\n\nfunction configWert(c) {\n  if (c.value_bool !== null \u0026\u0026 c.value_bool !== undefined) return String(c.value_bool);\n  if (c.value_numeric !== null \u0026\u0026 c.value_numeric !== undefined) return String(c.value_numeric);\n  if (c.value_text !== null \u0026\u0026 c.value_text !== undefined \u0026\u0026 c.value_text !== \u0027\u0027) return c.value_text;\n  return \u0027—\u0027;\n}\nfunction configZeile(c) {\n  return \u0027\u003ctr\u003e\u003ctd\u003e\u0027 + esc(c.config_key) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(configWert(c)) + \u0027\u003c/td\u003e\u0027 +\n    \u0027\u003ctd\u003e\u0027 + esc(c.description) + \u0027\u003c/td\u003e\u003ctd\u003e\u0027 + esc(c.updated_at) + \u0027\u003c/td\u003e\u003c/tr\u003e\u0027;\n}\nconst configHtml = pipelineConfig.length \u003e 0 ? pipelineConfig.map(configZeile).join(\u0027\u0027) : \u0027\u003ctr\u003e\u003ctd colspan=\"4\" class=\"empty\"\u003etrading.pipeline_config leer\u003c/td\u003e\u003c/tr\u003e\u0027;\n\n// ─── Einfache horizontale Balkendiagramme, reines SVG, kein externer Dienst ──\nfunction escSvg(v) { return String(v ?? \u0027\u0027).replace(/\u0026/g, \u0027\u0026amp;\u0027).replace(/\u003c/g, \u0027\u0026lt;\u0027).replace(/\u003e/g, \u0027\u0026gt;\u0027); }\nfunction svgBarChart(rowsIn, opts) {\n  opts = opts || {};\n  const width = opts.width || 640;\n  const barHeight = 20;\n  const gap = 10;\n  const labelWidth = opts.labelWidth || 170;\n  const chartWidth = width - labelWidth - 60;\n  const maxVal = opts.maxValue || Math.max(1, ...rowsIn.map(r =\u003e Number(r.value) || 0));\n  const height = rowsIn.length * (barHeight + gap) + gap;\n  let svg = \u0027\u003csvg viewBox=\"0 0 \u0027 + width + \u0027 \u0027 + height + \u0027\" width=\"100%\" style=\"max-width:\u0027 + width + \u0027px;height:auto\" xmlns=\"http://www.w3.org/2000/svg\"\u003e\u0027;\n  rowsIn.forEach((r, i) =\u003e {\n    const y = gap + i * (barHeight + gap);\n    const val = Number(r.value) || 0;\n    const barW = Math.max(2, (val / maxVal) * chartWidth);\n    const color = r.color || \u0027#6bcf8e\u0027;\n    svg += \u0027\u003ctext x=\"0\" y=\"\u0027 + (y + barHeight / 2 + 4) + \u0027\" fill=\"#9aa0a6\" font-size=\"12\"\u003e\u0027 + escSvg(r.label) + \u0027\u003c/text\u003e\u0027;\n    svg += \u0027\u003crect x=\"\u0027 + labelWidth + \u0027\" y=\"\u0027 + y + \u0027\" width=\"\u0027 + barW + \u0027\" height=\"\u0027 + barHeight + \u0027\" rx=\"4\" fill=\"\u0027 + color + \u0027\"/\u003e\u0027;\n    svg += \u0027\u003ctext x=\"\u0027 + (labelWidth + barW + 8) + \u0027\" y=\"\u0027 + (y + barHeight / 2 + 4) + \u0027\" fill=\"#e6e6e6\" font-size=\"12\"\u003e\u0027 + escSvg(r.valueText != null ? r.valueText : r.value) + \u0027\u003c/text\u003e\u0027;\n  });\n  svg += \u0027\u003c/svg\u003e\u0027;\n  return svg;\n}\nfunction trefferquoteColor(pct) {\n  if (pct === null || pct === undefined) return \u0027#5f6368\u0027;\n  if (pct \u003e= 60) return \u0027#6bcf8e\u0027;\n  if (pct \u003e= 40) return \u0027#e0a854\u0027;\n  return \u0027#e0665a\u0027;\n}\n\nconst wirkungsChartRows = wirkungsFortschritt\n  .filter(w =\u003e Number(w.anzahl) \u003e 0)\n  .map(w =\u003e ({ label: w.status, value: Number(w.anzahl), valueText: w.anzahl, color: w.status === \u0027completed\u0027 ? \u0027#6bcf8e\u0027 : (w.status === \u0027confounded\u0027 ? \u0027#e0665a\u0027 : \u0027#4a90d9\u0027) }));\nconst wirkungsChartHtml = wirkungsChartRows.length \u003e 0\n  ? svgBarChart(wirkungsChartRows, {})\n  : \u0027\u003cp class=\"empty\"\u003enoch keine Wirkungsanalyse-Daten\u003c/p\u003e\u0027;\n\nconst trefferquoteChartRows = trefferquoteJeQuelle\n  .filter(q =\u003e q.trefferquote !== null \u0026\u0026 q.trefferquote !== undefined)\n  .map(q =\u003e ({ label: q.value + \u0027 (n=\u0027 + q.sample_size + \u0027)\u0027, value: Number(q.trefferquote), valueText: q.trefferquote + \u0027%\u0027, color: trefferquoteColor(Number(q.trefferquote)) }));\nconst trefferquoteChartHtml = trefferquoteChartRows.length \u003e 0\n  ? svgBarChart(trefferquoteChartRows, { maxValue: 100 })\n  : \u0027\u003cp class=\"empty\"\u003enoch keine abgeschlossenen Wirkungsanalysen je Quelle (mindestens 1 abgeschlossener Fall noetig)\u003c/p\u003e\u0027;\n\nconst newsZustandMap = {};\nfor (const z of newsZustand) newsZustandMap[z.status] = Number(z.anzahl);\nconst newsOffenRetry = (newsZustandMap.pending || 0) + (newsZustandMap.retry || 0);\nconst newsFailed = newsZustandMap.failed || 0;\n\nconst impactMap = {};\nfor (const w of wirkungsFortschritt) impactMap[w.status] = w;\nconst impactCompleted = impactMap.completed || { anzahl: 0, trefferquote: null };\nconst impactConfounded = wirkungsFortschritt.reduce((sum, w) =\u003e sum + Number(w.confounded_anzahl || 0), 0);\nconst impactOffen = wirkungsFortschritt.filter(w =\u003e String(w.status).startsWith(\u0027waiting_\u0027)).reduce((sum, w) =\u003e sum + Number(w.anzahl || 0), 0);\n\nconst zusatzHtml =\n\u0027  \u003ch2\u003eOrchestrator-Laeufe (letzter Lauf je Stufe)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eWorkflow\u003c/th\u003e\u003cth\u003eStufe\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eBeendet\u003c/th\u003e\u003cth\u003eLetzter Erfolg\u003c/th\u003e\u003cth\u003eDauer (ms)\u003c/th\u003e\u003cth\u003eRetries\u003c/th\u003e\u003cth\u003eWarnungen\u003c/th\u003e\u003cth\u003eFehler\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + pipelineHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eAgentenlaeufe (letzter Lauf je Agent)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eAgent\u003c/th\u003e\u003cth\u003eModell\u003c/th\u003e\u003cth\u003ePrompt-Version\u003c/th\u003e\u003cth\u003eStatus\u003c/th\u003e\u003cth\u003eGestartet\u003c/th\u003e\u003cth\u003eKonfidenz\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + agentHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027 +\n\u0027  \u003ch2\u003eNews-Verarbeitung \u0026amp; Wirkungsanalyse\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene News-Retries\u003c/div\u003e\u003cdiv class=\"value \u0027 + (newsOffenRetry \u003e 20 ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + newsOffenRetry + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eFehlgeschlagene News\u003c/div\u003e\u003cdiv class=\"value \u0027 + (newsFailed \u003e 0 ? \u0027bad\u0027 : \u0027\u0027) + \u0027\"\u003e\u0027 + newsFailed + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Wirkungsanalysen\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactOffen + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eAbgeschlossene D+1..D+20\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactCompleted.anzahl + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eTrefferquote (sauber)\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (impactCompleted.trefferquote !== null \u0026\u0026 impactCompleted.trefferquote !== undefined ? impactCompleted.trefferquote + \u0027%\u0027 : \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eKonfundierte Faelle\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + impactConfounded + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eWirkungsanalyse -- Status-Verteilung\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv style=\"background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto\"\u003e\u0027 + wirkungsChartHtml + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eTrefferquote je Quelle (abgeschlossene, unverunreinigte Faelle)\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv style=\"background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px;margin-bottom:24px;overflow-x:auto\"\u003e\u0027 + trefferquoteChartHtml + \u0027\u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eLernagent\u003c/h2\u003e\u0027 +\n\u0027  \u003cdiv class=\"summary\"\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eOffene Lernvorschlaege\u003c/div\u003e\u003cdiv class=\"value\"\u003e\u0027 + (lernVorschlaege.offene_vorschlaege || 0) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027    \u003cdiv class=\"stat\"\u003e\u003cdiv class=\"label\"\u003eLetzter Vorschlag am\u003c/div\u003e\u003cdiv class=\"value\" style=\"font-size:14px\"\u003e\u0027 + esc(lernVorschlaege.letzter_vorschlag_am || \u0027—\u0027) + \u0027\u003c/div\u003e\u003c/div\u003e\u0027 +\n\u0027  \u003c/div\u003e\u0027 +\n\u0027  \u003ch2\u003eKonfiguration (trading.pipeline_config)\u003c/h2\u003e\u0027 +\n\u0027  \u003ctable\u003e\u003cthead\u003e\u003ctr\u003e\u003cth\u003eKey\u003c/th\u003e\u003cth\u003eWert\u003c/th\u003e\u003cth\u003eBeschreibung\u003c/th\u003e\u003cth\u003eZuletzt geaendert\u003c/th\u003e\u003c/tr\u003e\u003c/thead\u003e\u0027 +\n\u0027    \u003ctbody\u003e\u0027 + configHtml + \u0027\u003c/tbody\u003e\u003c/table\u003e\u0027;\n\n// In den bestehenden HTML-String VOR dem schliessenden \u003c/body\u003e einfuegen,\n// ohne die restliche Original-Struktur zu veraendern.\nconst htmlErweitert = html.replace(\u0027\u003c/body\u003e\u0027, zusatzHtml + \u0027\u003c/body\u003e\u0027);\n\nreturn [{ json: { html: htmlErweitert } }];\n"
+                                                           },
+                                            "name":  "Baue Uebersicht",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -2800,
+                                                             500
+                                                         ],
+                                            "id":  "n-00000027-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "respondWith":  "text",
+                                                               "responseBody":  "={{ $json.html }}",
+                                                               "options":  {
+                                                                               "responseHeaders":  {
+                                                                                                       "entries":  [
+                                                                                                                       {
+                                                                                                                           "name":  "Content-Type",
+                                                                                                                           "value":  "text/html; charset=utf-8"
+                                                                                                                       }
+                                                                                                                   ]
+                                                                                                   }
+                                                                           }
+                                                           },
+                                            "id":  "104f65b6-454d-4a90-90f8-d38b8be57bc6",
+                                            "name":  "Antwort mit HTML",
+                                            "type":  "n8n-nodes-base.respondToWebhook",
+                                            "typeVersion":  1.4,
+                                            "position":  [
+                                                             -2600,
+                                                             500
+                                                         ]
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Webhook Status-Uebersicht":  {
+                                                                                "main":  [
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "DB: Fundamentaldaten laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Marktumfeld laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Technische Signale laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Empfehlungen laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Kursverlauf laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: News laden (trading.*)",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Letzte Pipeline-Laeufe je Stufe",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Letzter erfolgreicher Lauf je Workflow",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Letzter Lauf je Agent",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: News-Zustandsverteilung",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Wirkungsanalyse-Fortschritt",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Offene Lernvorschlaege",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Trefferquote je Quelle",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "node":  "DB: Pipeline-Konfiguration laden",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  0
+                                                                                                 }
+                                                                                             ]
+                                                                                         ]
+                                                                            },
+                                              "DB: Fundamentaldaten laden":  {
+                                                                                 "main":  [
+                                                                                              [
+                                                                                                  {
+                                                                                                      "node":  "Merge Status 1",
+                                                                                                      "type":  "main",
+                                                                                                      "index":  0
+                                                                                                  }
+                                                                                              ]
+                                                                                          ]
+                                                                             },
+                                              "DB: Marktumfeld laden":  {
+                                                                            "main":  [
+                                                                                         [
+                                                                                             {
+                                                                                                 "node":  "Merge Status 1",
+                                                                                                 "type":  "main",
+                                                                                                 "index":  1
+                                                                                             }
+                                                                                         ]
+                                                                                     ]
+                                                                        },
+                                              "Merge Status 1":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 2",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Technische Signale laden":  {
+                                                                                   "main":  [
+                                                                                                [
+                                                                                                    {
+                                                                                                        "node":  "Merge Status 2",
+                                                                                                        "type":  "main",
+                                                                                                        "index":  1
+                                                                                                    }
+                                                                                                ]
+                                                                                            ]
+                                                                               },
+                                              "Merge Status 2":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 3",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Empfehlungen laden":  {
+                                                                             "main":  [
+                                                                                          [
+                                                                                              {
+                                                                                                  "node":  "Merge Status 3",
+                                                                                                  "type":  "main",
+                                                                                                  "index":  1
+                                                                                              }
+                                                                                          ]
+                                                                                      ]
+                                                                         },
+                                              "Merge Status 3":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 4",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Kursverlauf laden":  {
+                                                                            "main":  [
+                                                                                         [
+                                                                                             {
+                                                                                                 "node":  "Merge Status 4",
+                                                                                                 "type":  "main",
+                                                                                                 "index":  1
+                                                                                             }
+                                                                                         ]
+                                                                                     ]
+                                                                        },
+                                              "Merge Status 4":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 5",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: News laden (trading.*)":  {
+                                                                                 "main":  [
+                                                                                              [
+                                                                                                  {
+                                                                                                      "node":  "Merge Status 5",
+                                                                                                      "type":  "main",
+                                                                                                      "index":  1
+                                                                                                  }
+                                                                                              ]
+                                                                                          ]
+                                                                             },
+                                              "Merge Status 5":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 6",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Letzte Pipeline-Laeufe je Stufe":  {
+                                                                                          "main":  [
+                                                                                                       [
+                                                                                                           {
+                                                                                                               "node":  "Merge Status 6",
+                                                                                                               "type":  "main",
+                                                                                                               "index":  1
+                                                                                                           }
+                                                                                                       ]
+                                                                                                   ]
+                                                                                      },
+                                              "Merge Status 6":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 7",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Letzter erfolgreicher Lauf je Workflow":  {
+                                                                                                 "main":  [
+                                                                                                              [
+                                                                                                                  {
+                                                                                                                      "node":  "Merge Status 7",
+                                                                                                                      "type":  "main",
+                                                                                                                      "index":  1
+                                                                                                                  }
+                                                                                                              ]
+                                                                                                          ]
+                                                                                             },
+                                              "Merge Status 7":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 8",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Letzter Lauf je Agent":  {
+                                                                                "main":  [
+                                                                                             [
+                                                                                                 {
+                                                                                                     "node":  "Merge Status 8",
+                                                                                                     "type":  "main",
+                                                                                                     "index":  1
+                                                                                                 }
+                                                                                             ]
+                                                                                         ]
+                                                                            },
+                                              "Merge Status 8":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 9",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: News-Zustandsverteilung":  {
+                                                                                  "main":  [
+                                                                                               [
+                                                                                                   {
+                                                                                                       "node":  "Merge Status 9",
+                                                                                                       "type":  "main",
+                                                                                                       "index":  1
+                                                                                                   }
+                                                                                               ]
+                                                                                           ]
+                                                                              },
+                                              "Merge Status 9":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Merge Status 10",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                                              "DB: Wirkungsanalyse-Fortschritt":  {
+                                                                                      "main":  [
+                                                                                                   [
+                                                                                                       {
+                                                                                                           "node":  "Merge Status 10",
+                                                                                                           "type":  "main",
+                                                                                                           "index":  1
+                                                                                                       }
+                                                                                                   ]
+                                                                                               ]
+                                                                                  },
+                                              "Merge Status 10":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Merge Status 11",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                                              "DB: Offene Lernvorschlaege":  {
+                                                                                 "main":  [
+                                                                                              [
+                                                                                                  {
+                                                                                                      "node":  "Merge Status 11",
+                                                                                                      "type":  "main",
+                                                                                                      "index":  1
+                                                                                                  }
+                                                                                              ]
+                                                                                          ]
+                                                                             },
+                                              "Merge Status 11":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Merge Status 12",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                                              "DB: Trefferquote je Quelle":  {
+                                                                                 "main":  [
+                                                                                              [
+                                                                                                  {
+                                                                                                      "node":  "Merge Status 12",
+                                                                                                      "type":  "main",
+                                                                                                      "index":  1
+                                                                                                  }
+                                                                                              ]
+                                                                                          ]
+                                                                             },
+                                              "Merge Status 12":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Merge Status 13",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                                              "DB: Pipeline-Konfiguration laden":  {
+                                                                                       "main":  [
+                                                                                                    [
+                                                                                                        {
+                                                                                                            "node":  "Merge Status 13",
+                                                                                                            "type":  "main",
+                                                                                                            "index":  1
+                                                                                                        }
+                                                                                                    ]
+                                                                                                ]
+                                                                                   },
+                                              "Merge Status 13":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Baue Uebersicht",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  },
+                                              "Baue Uebersicht":  {
+                                                                      "main":  [
+                                                                                   [
+                                                                                       {
+                                                                                           "node":  "Antwort mit HTML",
+                                                                                           "type":  "main",
+                                                                                           "index":  0
+                                                                                       }
+                                                                                   ]
+                                                                               ]
+                                                                  }
+                                          },
+                          "authors":  "Oliver Lietz",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:31:58.803Z",
+                                                             "id":  1040,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:31:58.877Z",
+                                                             "id":  1041,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:32:03.458Z",
+                                                             "id":  1056,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:32:03.546Z",
+                                                             "id":  1057,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:36:48.214Z",
+                                                             "id":  1066,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:36:48.285Z",
+                                                             "id":  1067,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T17:21:36.622Z",
+                                                             "id":  1068,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T17:21:36.698Z",
+                                                             "id":  1069,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:23:20.479Z",
+                                                             "id":  1086,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:23:20.558Z",
+                                                             "id":  1087,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:25:56.299Z",
+                                                             "id":  1112,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:25:56.491Z",
+                                                             "id":  1113,
+                                                             "workflowId":  "7hQ3t6KrSo9uDNML",
+                                                             "versionId":  "d21b748a-6328-469b-acc2-c8c651eb258b",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         }
+                                                     ]
+                      }
+}

@@ -1,5 +1,4 @@
 {
-  "active": true,
   "connections": {
     "DB: Unbewertete historische News laden": {
       "main": [
@@ -113,10 +112,6 @@
         ]
       ]
     }
-  },
-  "id": "tnk4o1ZMpxXfPFI9",
-  "meta": {
-    "templateCredsSetupCompleted": true
   },
   "name": "16b – Historische Nachrichten bewerten (KI)",
   "nodes": [
@@ -329,9 +324,7 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "executionTimeout": 480
-  },
-  "tags": [],
-  "versionId": "5eb49857-2653-42ef-a89b-2d94969a7e3c"
+    "executionTimeout": 480,
+    "saveDataSuccessExecution": "all"
+  }
 }

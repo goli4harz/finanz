@@ -413,7 +413,7 @@
     }
   },
   "id": "1XzEIhzWbpGLZ9QI",
-  "meta": {},
+  "meta": null,
   "name": "16 – Historische Nachrichten importieren (GDELT)",
   "nodes": [
     {
@@ -659,8 +659,8 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 6
+              "field": "cronExpression",
+              "expression": "0 2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
             }
           ]
         }
@@ -993,7 +993,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Baut fuer diesen Worker-Tick die Liste der zu probierenden GDELT-Dateikandidaten.\n// Ein Tag hat 96 Viertelstunden-Marken (0..95); pro Tick werden nur marksPerRun davon\n// abgearbeitet, ab der zuletzt vollstaendig verarbeiteten Marke (checkpoint_json.last_mark_index).\n// \"DB: Tages-Item auf running setzen\" (Postgres-UPDATE ohne RETURNING) hat das Item-JSON durch\n// sein eigenes Ergebnis ersetzt - der eigentliche Tages-Item-Kontext kommt deshalb explizit vom\n// Node VOR dem UPDATE (gleiche Bugklasse wie mehrfach in Workflow 15 dokumentiert).\nconst it = $('Baue Tages-Item-Kontext').all()[0].json;\n\nfunction parseJsonField(v, fallback) {\n  if (v === null || v === undefined) return fallback;\n  if (typeof v === 'object') return v;\n  try { return JSON.parse(v); } catch (e) { return fallback; }\n}\nconst checkpoint = parseJsonField(it.checkpoint_json, { last_mark_index: -1, article_count: 0 });\nconst lastMarkIndex = Number.isInteger(checkpoint.last_mark_index) ? checkpoint.last_mark_index : -1;\n\n// FIX 2026-08-17 (2. Iteration): adaptive Batchgroesse (AIMD, siehe Git-Historie) wieder\n// zurueckgebaut - Nutzer-Entscheidung: immer nur 1 Marke pro Tick verarbeiten (schliesst das\n// Speicher-Crash-Risiko bei groesseren Batches komplett aus), dafuer feuert der Trigger jetzt\n// alle 15s statt alle 6min (siehe \"Trigger: News-Worker\"). Tempo stellt sich dadurch von selbst\n// auf die tatsaechliche Verarbeitungsdauer pro Marke ein, ohne Crash-Erkennung noetig zu haben.\nconst marksPerRun = 1;\n\nconst probeWindowMin = Math.max(1, Number(it._probe_window_min || 5));\n\nconst startMark = lastMarkIndex + 1;\nconst endMark = Math.min(95, startMark + marksPerRun - 1);\n\nif (startMark > 95) {\n  // Sollte normalerweise nicht vorkommen (Item waere dann schon 'completed') - trotzdem robust\n  // behandeln statt die Kette abbrechen zu lassen: Sentinel-Item ohne echte Marke durchreichen.\n  return [{ json: { mark_index: -1, offset_min: 0, url: null, ts: null, _all_marks_done: true,\n    _day: it.period_from, _job_id: it._job_id, _item_id: it.id, _request_delay_ms: it._request_delay_ms,\n    _max_retries: it._max_retries, _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint } }];\n}\n\n// period_from kommt aus einer DATE-Spalte als voller ISO-Zeitstempel zurueck (gleiche\n// Eigenheit wie in Workflow 15 bei period_from/period_to) - auf reines Datum kuerzen.\nconst day = String(it.period_from).slice(0, 10);\nconst dayStart = new Date(day + 'T00:00:00Z');\n\nfunction fmtTs(d) {\n  const p = n => String(n).padStart(2, '0');\n  return '' + d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + '00';\n}\n\nconst out = [];\nfor (let mark = startMark; mark <= endMark; mark++) {\n  const markMinutes = mark * 15;\n  for (let offset = 1; offset <= probeWindowMin; offset++) {\n    const ts = new Date(dayStart.getTime() + (markMinutes + offset) * 60000);\n    out.push({\n      json: {\n        mark_index: mark, offset_min: offset, ts: fmtTs(ts),\n        url: 'http://data.gdeltproject.org/gdeltv3/gal/' + fmtTs(ts) + '.gal.json.gz',\n        _all_marks_done: false, _day: day, _job_id: it._job_id, _item_id: it.id,\n        _request_delay_ms: it._request_delay_ms, _max_retries: it._max_retries,\n        _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint, _end_mark_this_tick: endMark\n      }\n    });\n  }\n}\nreturn out;\n"
+        "jsCode": "// Baut fuer diesen Worker-Tick die Liste der zu probierenden GDELT-Dateikandidaten.\n// Ein Tag hat 96 Viertelstunden-Marken (0..95); pro Tick werden nur marksPerRun davon\n// abgearbeitet, ab der zuletzt vollstaendig verarbeiteten Marke (checkpoint_json.last_mark_index).\n// \"DB: Tages-Item auf running setzen\" (Postgres-UPDATE ohne RETURNING) hat das Item-JSON durch\n// sein eigenes Ergebnis ersetzt - der eigentliche Tages-Item-Kontext kommt deshalb explizit vom\n// Node VOR dem UPDATE (gleiche Bugklasse wie mehrfach in Workflow 15 dokumentiert).\nconst it = $('Baue Tages-Item-Kontext').all()[0].json;\n\nfunction parseJsonField(v, fallback) {\n  if (v === null || v === undefined) return fallback;\n  if (typeof v === 'object') return v;\n  try { return JSON.parse(v); } catch (e) { return fallback; }\n}\nconst checkpoint = parseJsonField(it.checkpoint_json, { last_mark_index: -1, article_count: 0 });\nconst lastMarkIndex = Number.isInteger(checkpoint.last_mark_index) ? checkpoint.last_mark_index : -1;\n\n// UPDATE 2026-08-18: nach Behebung der eigentlichen Ursache der n8n-Instabilitaet an diesem\n// Tag (2.21.7-Scheduler-Regression, nicht Task-Runner-Kapazitaet) und Umstellung auf External\n// Task Runner Mode mit mehr Kapazitaet wurde marksPerRun bewusst von 1 auf 4 angehoben (Trigger\n// laeuft im 5-Minuten-Cron-Raster, siehe \"Trigger: News-Worker\"). Die fruehere 1-Marke-Vorsicht\n// war eine Reaktion auf ein inzwischen anders geloestes Problem, kein aktueller Speicher-Grund.\nconst marksPerRun = 4;\n\nconst probeWindowMin = Math.max(1, Number(it._probe_window_min || 5));\n\nconst startMark = lastMarkIndex + 1;\nconst endMark = Math.min(95, startMark + marksPerRun - 1);\n\nif (startMark > 95) {\n  // Sollte normalerweise nicht vorkommen (Item waere dann schon 'completed') - trotzdem robust\n  // behandeln statt die Kette abbrechen zu lassen: Sentinel-Item ohne echte Marke durchreichen.\n  return [{ json: { mark_index: -1, offset_min: 0, url: null, ts: null, _all_marks_done: true,\n    _day: it.period_from, _job_id: it._job_id, _item_id: it.id, _request_delay_ms: it._request_delay_ms,\n    _max_retries: it._max_retries, _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint } }];\n}\n\n// period_from kommt aus einer DATE-Spalte als voller ISO-Zeitstempel zurueck (gleiche\n// Eigenheit wie in Workflow 15 bei period_from/period_to) - auf reines Datum kuerzen.\nconst day = String(it.period_from).slice(0, 10);\nconst dayStart = new Date(day + 'T00:00:00Z');\n\nfunction fmtTs(d) {\n  const p = n => String(n).padStart(2, '0');\n  return '' + d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + '00';\n}\n\nconst out = [];\nfor (let mark = startMark; mark <= endMark; mark++) {\n  const markMinutes = mark * 15;\n  for (let offset = 1; offset <= probeWindowMin; offset++) {\n    const ts = new Date(dayStart.getTime() + (markMinutes + offset) * 60000);\n    out.push({\n      json: {\n        mark_index: mark, offset_min: offset, ts: fmtTs(ts),\n        url: 'http://data.gdeltproject.org/gdeltv3/gal/' + fmtTs(ts) + '.gal.json.gz',\n        _all_marks_done: false, _day: day, _job_id: it._job_id, _item_id: it.id,\n        _request_delay_ms: it._request_delay_ms, _max_retries: it._max_retries,\n        _attempt: Number(it.attempt || 0) + 1, _checkpoint: checkpoint, _end_mark_this_tick: endMark\n      }\n    });\n  }\n}\nreturn out;\n"
       },
       "id": "imp16-baue-marken-kandidaten",
       "name": "Baue Marken-Kandidaten",
@@ -1259,9 +1259,12 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "executionTimeout": 540
+    "executionTimeout": 540,
+    "timeSavedMode": "fixed",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
   "tags": [],
-  "versionId": "1b04df8a-5352-48b2-8592-3828a2857363"
+  "versionId": "51146291-21f6-48e1-980b-36e47abe8ad7"
 }

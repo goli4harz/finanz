@@ -1120,8 +1120,11 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
   "tags": [],
-  "versionId": "bdd0764b-220e-4b32-a5d7-e0ae8c715f0d"
+  "versionId": "c5df10a2-a1bd-455f-add4-3ba9b1298245"
 }

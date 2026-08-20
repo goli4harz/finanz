@@ -1,5 +1,5 @@
 {
-  "name": "16c - False-Positive-Lernvorschläge freigeben",
+  "active": true,
   "connections": {
     "Webhook GET (Kandidaten)": {
       "main": [
@@ -119,6 +119,9 @@
       ]
     }
   },
+  "id": "3J0Ybgnat1JlCOoe",
+  "meta": null,
+  "name": "16c - False-Positive-Lernvorschläge freigeben",
   "nodes": [
     {
       "parameters": {
@@ -335,10 +338,12 @@
       ]
     }
   ],
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "executionTimeout": 30
+    "executionTimeout": 30,
+    "saveDataSuccessExecution": "all"
   },
-  "tags": []
+  "tags": [],
+  "versionId": "70e4a42c-dc3e-48ad-a8cf-14df7de84534"
 }

@@ -1,11 +1,456 @@
 {
-  "updatedAt": "2026-08-02T15:05:56.600Z",
-  "createdAt": "2026-07-31T23:33:51.642Z",
+  "active": true,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "DB: Scanner-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Universum laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Technische Signale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: News heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Scanner (18:20 Werktage)": {
+      "main": [
+        [
+          {
+            "node": "DB: Scanner-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Universum laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Technische Signale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: News heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Scanner-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Scanner-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Universum laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Universum laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Technische Signale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategiesignale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategiesignale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 3": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktregime laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktregime laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 4": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Kursverlauf laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Kursverlauf laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 5": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: News heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 6": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamentaltrend-Basis laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Vorbereitung 7": {
+      "main": [
+        [
+          {
+            "node": "Stufe A+B: Scan berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stufe A+B: Scan berechnen": {
+      "main": [
+        [
+          {
+            "node": "Scan-Kandidaten: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan-Kandidaten: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Scan-Kandidaten: schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan-Kandidaten: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Scan-Run: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan-Run: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Scan-Run: schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Scanner-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Universum laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Technische Signale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Kursverlauf laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: News heute laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)": {
+      "main": [
+        [
+          {
+            "node": "Merge Vorbereitung 7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Scanner-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Universum laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Technische Signale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: News heute laden (Scanner)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scan-Run: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Endergebnis fuer Aufrufer aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "id": "43lG9aZVHwzIp0jq",
+  "meta": null,
   "name": "13 – Markt-Screener täglich",
-  "description": null,
-  "active": false,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {},
@@ -528,7 +973,10 @@
       "id": "n-13-p2-wrap-8"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "events": "worklfow_call",
+        "inputSource": "passthrough"
+      },
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -552,484 +1000,11 @@
       "id": "n-p14-13-envelope"
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "DB: Scanner-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Universum laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Technische Signale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategiesignale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: News heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Scanner (18:20 Werktage)": {
-      "main": [
-        [
-          {
-            "node": "DB: Scanner-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Universum laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Technische Signale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategiesignale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: News heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Scanner-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Scanner-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Universum laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Universum laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 1": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Technische Signale heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Technische Signale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 2": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Strategiesignale heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Strategiesignale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 3": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 4",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktregime laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Marktregime laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 4": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Kursverlauf laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Kursverlauf laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 5": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 6",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: News heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: News heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 6": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 7",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Fundamentaltrend-Basis laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Vorbereitung 7": {
-      "main": [
-        [
-          {
-            "node": "Stufe A+B: Scan berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Stufe A+B: Scan berechnen": {
-      "main": [
-        [
-          {
-            "node": "Scan-Kandidaten: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Scan-Kandidaten: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "Scan-Kandidaten: schreiben",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Scan-Kandidaten: schreiben": {
-      "main": [
-        [
-          {
-            "node": "Scan-Run: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Scan-Run: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "Scan-Run: schreiben",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Scanner-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Universum laden": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Technische Signale heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Strategiesignale heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 3",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Marktregime laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 4",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Kursverlauf laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 5",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: News heute laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 6",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Fundamentaltrend-Basis laden (Scanner)": {
-      "main": [
-        [
-          {
-            "node": "Merge Vorbereitung 7",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "DB: Scanner-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Universum laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Technische Signale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategiesignale heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: News heute laden (Scanner)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Fundamentaltrend-Basis laden (Scanner)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Scan-Run: schreiben": {
-      "main": [
-        [
-          {
-            "node": "Endergebnis fuer Aufrufer aufbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
-  "staticData": null,
-  "meta": null,
-  "pinData": null,
-  "versionId": "da3caea3-179b-4631-bf82-ef3aaf8fdc4e",
-  "activeVersionId": null,
-  "versionCounter": 5,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-07-31T23:33:51.642Z",
-      "createdAt": "2026-07-31T23:33:51.642Z",
-      "role": "workflow:owner",
-      "workflowId": "43lG9aZVHwzIp0jq",
-      "projectId": "CrnegVcMvlcRU0OP",
-      "project": {
-        "updatedAt": "2026-05-23T11:38:39.411Z",
-        "createdAt": "2026-05-23T11:33:40.374Z",
-        "id": "CrnegVcMvlcRU0OP",
-        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      }
-    }
-  ],
   "tags": [],
-  "activeVersion": null
+  "versionId": "f11b9343-e4fc-4537-a19f-56a11ae6416d"
 }

@@ -1,0 +1,472 @@
+{
+  "updatedAt": "2026-08-03T04:37:35.077Z",
+  "createdAt": "2026-07-22T13:24:26.372Z",
+  "id": "spOdAPmBfBGiel6u",
+  "name": "Watchlist verwalten",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aktien-watchlist",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wm-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        0
+      ],
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000001"
+    },
+    {
+      "parameters": {
+        "path": "aktien-watchlist",
+        "httpMethod": "POST",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wm-webhook-post",
+      "name": "Webhook POST (Aenderung)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        240
+      ],
+      "webhookId": "aaaaaaaa-1111-4000-8000-100000000002"
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction values(v) {\n  return String(v || '').split(',').map(s => s.trim()).filter(Boolean);\n}\n// FIX 2026-08-01 (Fehleranalyse A1, SQL-Injection): das alte pgArr() escapte nur doppelte\n// Anfuehrungszeichen, nicht das einfache Anfuehrungszeichen, mit dem das Array-Literal selbst\n// umschlossen wurde - ein Apostroph in Keywords/Ausschlussbegriffen brach die SQL-Struktur auf\n// (z.B. \"a'); DROP TABLE trading.watchlist;--\"). Jetzt ueber Postgres' eigene ARRAY[...]-Syntax\n// gebaut, jedes Element einzeln durch das bereits korrekt escapende pgStr() - kein\n// String-Literal-Bruch mehr moeglich.\nfunction pgArr(v) {\n  const arr = values(v);\n  if (!arr.length) return `'{}'::text[]`;\n  return `ARRAY[` + arr.map(x => pgStr(x)).join(',') + `]::text[]`;\n}\nfunction pgJson(v) {\n  return `'` + JSON.stringify(values(v)).replace(/'/g, `''`) + `'::jsonb`;\n}\n\n// FIX 2026-08-01 (Fehleranalyse A3/A4): serverseitige Validierung statt nur clientseitiger\n// Formularpruefung. Ungueltige Eingaben erzeugen jetzt einen sichtbaren Fehlerstatus\n// (validation_error, von \"Baue HTML\" ausgewertet) statt eines stillen 'SELECT 1;'-No-Ops mit\n// vorgetaeuschter Erfolgsseite.\nconst TICKER_RE = /^[A-Z0-9][A-Z0-9.\\-]{0,14}$/;\nconst ALLOWED_ACTIONS = new Set(['add', 'edit', 'delete', 'toggle_active']);\n\nfunction validateKeywordList(raw, fieldLabel, errors) {\n  const arr = values(raw);\n  if (arr.length > 30) errors.push(fieldLabel + ': maximal 30 Eintraege erlaubt.');\n  for (const k of arr) {\n    if (k.length > 50) { errors.push(fieldLabel + ': ein Eintrag ist laenger als 50 Zeichen.'); break; }\n  }\n}\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst ticker = String(j.ticker || '').trim().toUpperCase();\n\nlet sql;\nlet validation_error = '';\n\nif (!ALLOWED_ACTIONS.has(action)) {\n  sql = 'SELECT 1;';\n  validation_error = 'Unbekannte Aktion.';\n} else if (!TICKER_RE.test(ticker)) {\n  sql = 'SELECT 1;';\n  validation_error = 'Ungueltiges Tickerformat (erlaubt: Grossbuchstaben/Ziffern/Punkt/Bindestrich, max. 15 Zeichen).';\n} else if (action === 'add' || action === 'edit') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  const errors = [];\n  if (!name) errors.push('Name darf nicht leer sein.');\n  if (name.length > 200) errors.push('Name ist laenger als 200 Zeichen.');\n  if (sektor.length > 100) errors.push('Sektor ist laenger als 100 Zeichen.');\n  validateKeywordList(j.keywords, 'Keywords', errors);\n  validateKeywordList(j.exclude_keywords, 'Ausschlussbegriffe', errors);\n\n  if (errors.length) {\n    sql = 'SELECT 1;';\n    validation_error = errors.join(' ');\n  } else if (action === 'add') {\n    sql = `BEGIN;\n      INSERT INTO trading.watchlist (ticker, name, sektor, keywords, exclude_keywords, active)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, ${pgArr(j.keywords)}, ${pgArr(j.exclude_keywords)}, TRUE)\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, keywords = EXCLUDED.keywords,\n        exclude_keywords = EXCLUDED.exclude_keywords, active = TRUE, updated_at = now();\n      INSERT INTO trading.stock_instruments\n        (ticker, name, sektor, aktiv, aliases_json, exclude_patterns_json, updated_at)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, TRUE, ${pgJson(j.keywords)}, ${pgJson(j.exclude_keywords)}, now())\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, aktiv = TRUE,\n        aliases_json = EXCLUDED.aliases_json, exclude_patterns_json = EXCLUDED.exclude_patterns_json,\n        updated_at = now();\n      COMMIT;`;\n  } else {\n    sql = `BEGIN;\n      UPDATE trading.watchlist SET\n        name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, keywords = ${pgArr(j.keywords)},\n        exclude_keywords = ${pgArr(j.exclude_keywords)}, updated_at = now()\n        WHERE ticker = ${pgStr(ticker)};\n      UPDATE trading.stock_instruments SET\n        name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, aliases_json = ${pgJson(j.keywords)},\n        exclude_patterns_json = ${pgJson(j.exclude_keywords)}, updated_at = now()\n        WHERE ticker = ${pgStr(ticker)};\n      COMMIT;`;\n  }\n} else if (action === 'delete') {\n  sql = `BEGIN;\n    DELETE FROM trading.watchlist WHERE ticker = ${pgStr(ticker)};\n    DELETE FROM trading.stock_instruments WHERE ticker = ${pgStr(ticker)};\n    COMMIT;`;\n} else if (action === 'toggle_active') {\n  sql = `BEGIN;\n    UPDATE trading.watchlist SET active = NOT active, updated_at = now() WHERE ticker = ${pgStr(ticker)};\n    UPDATE trading.stock_instruments si SET aktiv = w.active, updated_at = now()\n      FROM trading.watchlist w WHERE si.ticker = w.ticker AND w.ticker = ${pgStr(ticker)};\n    COMMIT;`;\n}\n\nreturn [{ json: { sql, validation_error } }];"
+      },
+      "id": "wm-post-normalize",
+      "name": "POST: Formular normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "wm-post-exec",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -352,
+        240
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT ticker, name, sektor, keywords, exclude_keywords, active FROM trading.watchlist ORDER BY ticker;",
+        "options": {}
+      },
+      "id": "wm-db-load",
+      "name": "DB: Watchlist laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -576,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// FIX 2026-07-25: gleicher n8n-Plattform-Bug wie in 12 - Lernvorschlag-Freigabe gefunden -\n// 0 Ergebniszeilen liessen den nachfolgenden Node gar nicht erst ausfuehren (leere, fehlerlose\n// Webhook-Antwort). Bisher hier nie ausgeloest, da die Watchlist nie leer war, aber latent\n// vorhanden. alwaysOutputData:true auf dem DB-Node + Platzhalter-Item hier rausfiltern.\nconst _rawInput = $input.all().map(i => i.json);\nconst _loadError = _rawInput.find(r => r && r.error);\nconst rows = _rawInput.filter(r => r && r.ticker !== undefined);\n\n// REPARATUR P1.8: strukturierter Fehlerhinweis statt stillschweigend leerer Liste bei einem\n// DB-Ausfall - keine Credentials/SQL-Verbindungsdaten/Stacktrace in der Antwort, nur eine\n// technische Fehler-ID zur Korrelation mit den Server-Logs.\nlet dbErrorBanner = '';\nif (_loadError) {\n  const errorId = 'ERR-' + Date.now().toString(36).toUpperCase();\n  dbErrorBanner = '  <div class=\"meta\" style=\"background:#3a1c1c;color:#ff8a8a;padding:8px 14px;border-radius:6px;margin-bottom:12px;\">\\u26a0 Daten konnten nicht geladen werden (Fehler-ID: ' + errorId + ').</div>';\n}\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction arrToText(arr) {\n  return (Array.isArray(arr) ? arr : []).join(', ');\n}\n\nconst rowsHtml = rows.map(r => {\n  // formId/toggleId are attribute values (id=/form=) too - must be escaped just like\n  // the value=\"\" attributes, otherwise a ticker containing &/\"/< would break the\n  // markup or the id<->form linkage (caught by testing with a deliberately odd ticker).\n  const formId = esc('f-' + r.ticker);\n  const toggleId = esc('ft-' + r.ticker);\n  const deleteId = esc('fd-' + r.ticker);\n  const badge = r.active ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge warn\">inaktiv</span>';\n  const toggleLabel = r.active ? 'Deaktivieren' : 'Aktivieren';\n  return `<tr>\n    <td>${esc(r.ticker)}</td>\n    <td><input form=\"${formId}\" name=\"name\" value=\"${esc(r.name)}\"></td>\n    <td><input form=\"${formId}\" name=\"sektor\" value=\"${esc(r.sektor)}\"></td>\n    <td><input form=\"${formId}\" name=\"keywords\" value=\"${esc(arrToText(r.keywords))}\"></td>\n    <td><input form=\"${formId}\" name=\"exclude_keywords\" value=\"${esc(arrToText(r.exclude_keywords))}\"></td>\n    <td>${badge}</td>\n    <td>\n      <button form=\"${formId}\" type=\"submit\">Speichern</button>\n      <button form=\"${toggleId}\" type=\"submit\">${toggleLabel}</button>\n      <button class=\"danger\" form=\"${deleteId}\" type=\"submit\" onclick=\"return confirm('Ticker wirklich loeschen?')\">Loeschen</button>\n    </td>\n  </tr>\n  <form id=\"${formId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"edit\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${toggleId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"toggle_active\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${deleteId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"delete\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>`;\n}).join('\\n');\n\n// FIX 2026-08-01 (Fehleranalyse A4): Validierungsfehler aus dem POST-Normalisierungsschritt\n// sichtbar machen statt stillschweigend eine normale Erfolgsseite zu zeigen. Bei einem GET-\n// Aufruf hat dieser Node nie ausgefuehrt - try/catch faengt das ab, validationError bleibt leer.\nlet validationError = '';\ntry {\n  const normalizeItem = $('POST: Formular normalisieren + SQL bauen').first();\n  if (normalizeItem && normalizeItem.json && normalizeItem.json.validation_error) {\n    validationError = String(normalizeItem.json.validation_error);\n  }\n} catch (e) { /* GET-Aufruf, Node existiert in diesem Ausfuehrungspfad nicht */ }\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst activeCount = rows.filter(r => r.active).length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Watchlist verwalten</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  h2 { font-size:15px; margin-top:32px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; vertical-align:middle; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; width:100%; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px; white-space:nowrap; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .add-form { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end; }' +\n'  .add-form label { display:block; font-size:11px; color:#9aa0a6; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'  .banner-error { background:#3a1c1c; border:1px solid #e0665a; color:#f2a89e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'  ' + dbErrorBanner +\n'  <h1>Aktien-Watchlist verwalten</h1>' +\n'  ' + (validationError ? '<div class=\"banner-error\">' + esc(validationError) + '</div>' : '') +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Ticker insgesamt (' + activeCount + ' aktiv)</div>' +\n'  <div class=\"hint\">Aenderungen wirken direkt auf 01 (Fundamentaldaten), 02 (Technische Signale) und 03 (News-Ingestion) - Keywords/Ausschluss-Begriffe kommagetrennt eingeben.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Keywords</th><th>Ausschluss-Begriffe</th><th>Status</th><th>Aktionen</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Neuen Ticker hinzufuegen</h2>' +\n'  <form class=\"add-form\" method=\"POST\" action=\"/webhook/aktien-watchlist\">' +\n'    <input type=\"hidden\" name=\"action\" value=\"add\">' +\n'    <div><label>Ticker (z.B. XYZ.DE)</label><input name=\"ticker\" required></div>' +\n'    <div><label>Name</label><input name=\"name\" required></div>' +\n'    <div><label>Sektor</label><input name=\"sektor\"></div>' +\n'    <div><label>Keywords</label><input name=\"keywords\" placeholder=\"z.B. Beispiel AG, Beispiel\"></div>' +\n'    <div><label>Ausschluss-Begriffe</label><input name=\"exclude_keywords\"></div>' +\n'    <div><button type=\"submit\">Hinzufuegen</button></div>' +\n'  </form>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
+      },
+      "id": "wm-build-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      },
+      "id": "wm-respond",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -128,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Aenderung)": {
+      "main": [
+        [
+          {
+            "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Formular normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Watchlist laden": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "03b00cd6-407d-4530-b2f9-d0f62cb76b72",
+  "activeVersionId": "03b00cd6-407d-4530-b2f9-d0f62cb76b72",
+  "versionCounter": 37,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-07-22T13:24:26.372Z",
+      "createdAt": "2026-07-22T13:24:26.372Z",
+      "role": "workflow:owner",
+      "workflowId": "spOdAPmBfBGiel6u",
+      "projectId": "CrnegVcMvlcRU0OP",
+      "project": {
+        "updatedAt": "2026-05-23T11:38:39.411Z",
+        "createdAt": "2026-05-23T11:33:40.374Z",
+        "id": "CrnegVcMvlcRU0OP",
+        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-08-03T04:37:35.082Z",
+    "createdAt": "2026-08-03T04:37:35.082Z",
+    "versionId": "03b00cd6-407d-4530-b2f9-d0f62cb76b72",
+    "workflowId": "spOdAPmBfBGiel6u",
+    "nodes": [
+      {
+        "parameters": {
+          "path": "aktien-watchlist",
+          "httpMethod": "GET",
+          "authentication": "none",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "wm-webhook-get",
+        "name": "Webhook GET (Ansicht)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -800,
+          0
+        ],
+        "webhookId": "aaaaaaaa-1111-4000-8000-100000000001"
+      },
+      {
+        "parameters": {
+          "path": "aktien-watchlist",
+          "httpMethod": "POST",
+          "authentication": "none",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "wm-webhook-post",
+        "name": "Webhook POST (Aenderung)",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -800,
+          240
+        ],
+        "webhookId": "aaaaaaaa-1111-4000-8000-100000000002"
+      },
+      {
+        "parameters": {
+          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction values(v) {\n  return String(v || '').split(',').map(s => s.trim()).filter(Boolean);\n}\n// FIX 2026-08-01 (Fehleranalyse A1, SQL-Injection): das alte pgArr() escapte nur doppelte\n// Anfuehrungszeichen, nicht das einfache Anfuehrungszeichen, mit dem das Array-Literal selbst\n// umschlossen wurde - ein Apostroph in Keywords/Ausschlussbegriffen brach die SQL-Struktur auf\n// (z.B. \"a'); DROP TABLE trading.watchlist;--\"). Jetzt ueber Postgres' eigene ARRAY[...]-Syntax\n// gebaut, jedes Element einzeln durch das bereits korrekt escapende pgStr() - kein\n// String-Literal-Bruch mehr moeglich.\nfunction pgArr(v) {\n  const arr = values(v);\n  if (!arr.length) return `'{}'::text[]`;\n  return `ARRAY[` + arr.map(x => pgStr(x)).join(',') + `]::text[]`;\n}\nfunction pgJson(v) {\n  return `'` + JSON.stringify(values(v)).replace(/'/g, `''`) + `'::jsonb`;\n}\n\n// FIX 2026-08-01 (Fehleranalyse A3/A4): serverseitige Validierung statt nur clientseitiger\n// Formularpruefung. Ungueltige Eingaben erzeugen jetzt einen sichtbaren Fehlerstatus\n// (validation_error, von \"Baue HTML\" ausgewertet) statt eines stillen 'SELECT 1;'-No-Ops mit\n// vorgetaeuschter Erfolgsseite.\nconst TICKER_RE = /^[A-Z0-9][A-Z0-9.\\-]{0,14}$/;\nconst ALLOWED_ACTIONS = new Set(['add', 'edit', 'delete', 'toggle_active']);\n\nfunction validateKeywordList(raw, fieldLabel, errors) {\n  const arr = values(raw);\n  if (arr.length > 30) errors.push(fieldLabel + ': maximal 30 Eintraege erlaubt.');\n  for (const k of arr) {\n    if (k.length > 50) { errors.push(fieldLabel + ': ein Eintrag ist laenger als 50 Zeichen.'); break; }\n  }\n}\n\nconst j = $json.body || $json;\nconst action = String(j.action || '').trim();\nconst ticker = String(j.ticker || '').trim().toUpperCase();\n\nlet sql;\nlet validation_error = '';\n\nif (!ALLOWED_ACTIONS.has(action)) {\n  sql = 'SELECT 1;';\n  validation_error = 'Unbekannte Aktion.';\n} else if (!TICKER_RE.test(ticker)) {\n  sql = 'SELECT 1;';\n  validation_error = 'Ungueltiges Tickerformat (erlaubt: Grossbuchstaben/Ziffern/Punkt/Bindestrich, max. 15 Zeichen).';\n} else if (action === 'add' || action === 'edit') {\n  const name = String(j.name || '').trim();\n  const sektor = String(j.sektor || '').trim();\n  const errors = [];\n  if (!name) errors.push('Name darf nicht leer sein.');\n  if (name.length > 200) errors.push('Name ist laenger als 200 Zeichen.');\n  if (sektor.length > 100) errors.push('Sektor ist laenger als 100 Zeichen.');\n  validateKeywordList(j.keywords, 'Keywords', errors);\n  validateKeywordList(j.exclude_keywords, 'Ausschlussbegriffe', errors);\n\n  if (errors.length) {\n    sql = 'SELECT 1;';\n    validation_error = errors.join(' ');\n  } else if (action === 'add') {\n    sql = `BEGIN;\n      INSERT INTO trading.watchlist (ticker, name, sektor, keywords, exclude_keywords, active)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, ${pgArr(j.keywords)}, ${pgArr(j.exclude_keywords)}, TRUE)\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, keywords = EXCLUDED.keywords,\n        exclude_keywords = EXCLUDED.exclude_keywords, active = TRUE, updated_at = now();\n      INSERT INTO trading.stock_instruments\n        (ticker, name, sektor, aktiv, aliases_json, exclude_patterns_json, updated_at)\n      VALUES (${pgStr(ticker)}, ${pgStr(name)}, ${pgStr(sektor)}, TRUE, ${pgJson(j.keywords)}, ${pgJson(j.exclude_keywords)}, now())\n      ON CONFLICT (ticker) DO UPDATE SET\n        name = EXCLUDED.name, sektor = EXCLUDED.sektor, aktiv = TRUE,\n        aliases_json = EXCLUDED.aliases_json, exclude_patterns_json = EXCLUDED.exclude_patterns_json,\n        updated_at = now();\n      COMMIT;`;\n  } else {\n    sql = `BEGIN;\n      UPDATE trading.watchlist SET\n        name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, keywords = ${pgArr(j.keywords)},\n        exclude_keywords = ${pgArr(j.exclude_keywords)}, updated_at = now()\n        WHERE ticker = ${pgStr(ticker)};\n      UPDATE trading.stock_instruments SET\n        name = ${pgStr(name)}, sektor = ${pgStr(sektor)}, aliases_json = ${pgJson(j.keywords)},\n        exclude_patterns_json = ${pgJson(j.exclude_keywords)}, updated_at = now()\n        WHERE ticker = ${pgStr(ticker)};\n      COMMIT;`;\n  }\n} else if (action === 'delete') {\n  sql = `BEGIN;\n    DELETE FROM trading.watchlist WHERE ticker = ${pgStr(ticker)};\n    DELETE FROM trading.stock_instruments WHERE ticker = ${pgStr(ticker)};\n    COMMIT;`;\n} else if (action === 'toggle_active') {\n  sql = `BEGIN;\n    UPDATE trading.watchlist SET active = NOT active, updated_at = now() WHERE ticker = ${pgStr(ticker)};\n    UPDATE trading.stock_instruments si SET aktiv = w.active, updated_at = now()\n      FROM trading.watchlist w WHERE si.ticker = w.ticker AND w.ticker = ${pgStr(ticker)};\n    COMMIT;`;\n}\n\nreturn [{ json: { sql, validation_error } }];"
+        },
+        "id": "wm-post-normalize",
+        "name": "POST: Formular normalisieren + SQL bauen",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -576,
+          240
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "={{ $json.sql }}",
+          "options": {}
+        },
+        "id": "wm-post-exec",
+        "name": "POST: SQL ausfuehren",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -352,
+          240
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "onError": "continueRegularOutput",
+        "alwaysOutputData": true
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT ticker, name, sektor, keywords, exclude_keywords, active FROM trading.watchlist ORDER BY ticker;",
+          "options": {}
+        },
+        "id": "wm-db-load",
+        "name": "DB: Watchlist laden",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -576,
+          0
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "NWckNyl8ZfwVVJCd",
+            "name": "Postgres account"
+          }
+        },
+        "alwaysOutputData": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "jsCode": "// FIX 2026-07-25: gleicher n8n-Plattform-Bug wie in 12 - Lernvorschlag-Freigabe gefunden -\n// 0 Ergebniszeilen liessen den nachfolgenden Node gar nicht erst ausfuehren (leere, fehlerlose\n// Webhook-Antwort). Bisher hier nie ausgeloest, da die Watchlist nie leer war, aber latent\n// vorhanden. alwaysOutputData:true auf dem DB-Node + Platzhalter-Item hier rausfiltern.\nconst _rawInput = $input.all().map(i => i.json);\nconst _loadError = _rawInput.find(r => r && r.error);\nconst rows = _rawInput.filter(r => r && r.ticker !== undefined);\n\n// REPARATUR P1.8: strukturierter Fehlerhinweis statt stillschweigend leerer Liste bei einem\n// DB-Ausfall - keine Credentials/SQL-Verbindungsdaten/Stacktrace in der Antwort, nur eine\n// technische Fehler-ID zur Korrelation mit den Server-Logs.\nlet dbErrorBanner = '';\nif (_loadError) {\n  const errorId = 'ERR-' + Date.now().toString(36).toUpperCase();\n  dbErrorBanner = '  <div class=\"meta\" style=\"background:#3a1c1c;color:#ff8a8a;padding:8px 14px;border-radius:6px;margin-bottom:12px;\">\\u26a0 Daten konnten nicht geladen werden (Fehler-ID: ' + errorId + ').</div>';\n}\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction arrToText(arr) {\n  return (Array.isArray(arr) ? arr : []).join(', ');\n}\n\nconst rowsHtml = rows.map(r => {\n  // formId/toggleId are attribute values (id=/form=) too - must be escaped just like\n  // the value=\"\" attributes, otherwise a ticker containing &/\"/< would break the\n  // markup or the id<->form linkage (caught by testing with a deliberately odd ticker).\n  const formId = esc('f-' + r.ticker);\n  const toggleId = esc('ft-' + r.ticker);\n  const deleteId = esc('fd-' + r.ticker);\n  const badge = r.active ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge warn\">inaktiv</span>';\n  const toggleLabel = r.active ? 'Deaktivieren' : 'Aktivieren';\n  return `<tr>\n    <td>${esc(r.ticker)}</td>\n    <td><input form=\"${formId}\" name=\"name\" value=\"${esc(r.name)}\"></td>\n    <td><input form=\"${formId}\" name=\"sektor\" value=\"${esc(r.sektor)}\"></td>\n    <td><input form=\"${formId}\" name=\"keywords\" value=\"${esc(arrToText(r.keywords))}\"></td>\n    <td><input form=\"${formId}\" name=\"exclude_keywords\" value=\"${esc(arrToText(r.exclude_keywords))}\"></td>\n    <td>${badge}</td>\n    <td>\n      <button form=\"${formId}\" type=\"submit\">Speichern</button>\n      <button form=\"${toggleId}\" type=\"submit\">${toggleLabel}</button>\n      <button class=\"danger\" form=\"${deleteId}\" type=\"submit\" onclick=\"return confirm('Ticker wirklich loeschen?')\">Loeschen</button>\n    </td>\n  </tr>\n  <form id=\"${formId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"edit\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${toggleId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"toggle_active\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${deleteId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"delete\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>`;\n}).join('\\n');\n\n// FIX 2026-08-01 (Fehleranalyse A4): Validierungsfehler aus dem POST-Normalisierungsschritt\n// sichtbar machen statt stillschweigend eine normale Erfolgsseite zu zeigen. Bei einem GET-\n// Aufruf hat dieser Node nie ausgefuehrt - try/catch faengt das ab, validationError bleibt leer.\nlet validationError = '';\ntry {\n  const normalizeItem = $('POST: Formular normalisieren + SQL bauen').first();\n  if (normalizeItem && normalizeItem.json && normalizeItem.json.validation_error) {\n    validationError = String(normalizeItem.json.validation_error);\n  }\n} catch (e) { /* GET-Aufruf, Node existiert in diesem Ausfuehrungspfad nicht */ }\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst activeCount = rows.filter(r => r.active).length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Watchlist verwalten</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  h2 { font-size:15px; margin-top:32px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; vertical-align:middle; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; width:100%; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px; white-space:nowrap; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .add-form { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end; }' +\n'  .add-form label { display:block; font-size:11px; color:#9aa0a6; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'  .banner-error { background:#3a1c1c; border:1px solid #e0665a; color:#f2a89e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'  ' + dbErrorBanner +\n'  <h1>Aktien-Watchlist verwalten</h1>' +\n'  ' + (validationError ? '<div class=\"banner-error\">' + esc(validationError) + '</div>' : '') +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Ticker insgesamt (' + activeCount + ' aktiv)</div>' +\n'  <div class=\"hint\">Aenderungen wirken direkt auf 01 (Fundamentaldaten), 02 (Technische Signale) und 03 (News-Ingestion) - Keywords/Ausschluss-Begriffe kommagetrennt eingeben.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Keywords</th><th>Ausschluss-Begriffe</th><th>Status</th><th>Aktionen</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Neuen Ticker hinzufuegen</h2>' +\n'  <form class=\"add-form\" method=\"POST\" action=\"/webhook/aktien-watchlist\">' +\n'    <input type=\"hidden\" name=\"action\" value=\"add\">' +\n'    <div><label>Ticker (z.B. XYZ.DE)</label><input name=\"ticker\" required></div>' +\n'    <div><label>Name</label><input name=\"name\" required></div>' +\n'    <div><label>Sektor</label><input name=\"sektor\"></div>' +\n'    <div><label>Keywords</label><input name=\"keywords\" placeholder=\"z.B. Beispiel AG, Beispiel\"></div>' +\n'    <div><label>Ausschluss-Begriffe</label><input name=\"exclude_keywords\"></div>' +\n'    <div><button type=\"submit\">Hinzufuegen</button></div>' +\n'  </form>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
+        },
+        "id": "wm-build-html",
+        "name": "Baue HTML",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -352,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ $json.html }}",
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ]
+            }
+          }
+        },
+        "id": "wm-respond",
+        "name": "Antwort mit HTML",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          -128,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook GET (Ansicht)": {
+        "main": [
+          [
+            {
+              "node": "DB: Watchlist laden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook POST (Aenderung)": {
+        "main": [
+          [
+            {
+              "node": "POST: Formular normalisieren + SQL bauen",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "POST: Formular normalisieren + SQL bauen": {
+        "main": [
+          [
+            {
+              "node": "POST: SQL ausfuehren",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "POST: SQL ausfuehren": {
+        "main": [
+          [
+            {
+              "node": "DB: Watchlist laden",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "DB: Watchlist laden": {
+        "main": [
+          [
+            {
+              "node": "Baue HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Baue HTML": {
+        "main": [
+          [
+            {
+              "node": "Antwort mit HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Oliver Lietz",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-08-03T04:37:35.361Z",
+        "id": 2323,
+        "workflowId": "spOdAPmBfBGiel6u",
+        "versionId": "03b00cd6-407d-4530-b2f9-d0f62cb76b72",
+        "event": "deactivated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      },
+      {
+        "createdAt": "2026-08-03T04:37:35.447Z",
+        "id": 2324,
+        "workflowId": "spOdAPmBfBGiel6u",
+        "versionId": "03b00cd6-407d-4530-b2f9-d0f62cb76b72",
+        "event": "activated",
+        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+      }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "16d - Aktive News-Matching-Ausschlüsse (Audit)",
+  "active": true,
   "connections": {
     "Webhook GET (Regeln)": {
       "main": [
@@ -68,6 +68,9 @@
       ]
     }
   },
+  "id": "NWTw1WdqFS3PqtN5",
+  "meta": null,
+  "name": "16d - Aktive News-Matching-Ausschlüsse (Audit)",
   "nodes": [
     {
       "parameters": {
@@ -206,7 +209,9 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "executionTimeout": 30
+    "executionTimeout": 30,
+    "saveDataSuccessExecution": "all"
   },
-  "tags": []
+  "tags": [],
+  "versionId": "e150ac40-4a50-4b81-9cf8-7f36d6d7a7d0"
 }

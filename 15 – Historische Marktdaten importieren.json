@@ -1,5 +1,347 @@
 {
-  "name": "15 – Historische Marktdaten importieren",
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist fuer Formular laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Watchlist fuer Formular laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Jobs laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Jobs laden": {
+      "main": [
+        [
+          {
+            "node": "DB: Job-Item-Fortschritt laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Job-Item-Fortschritt laden": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Aenderung)": {
+      "main": [
+        [
+          {
+            "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Formular normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "IF: Validierungsfehler?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Validierungsfehler?": {
+      "main": [
+        [
+          {
+            "node": "Baue POST-Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue POST-Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue POST-Antwort (JSON)": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Import-Worker (alle 2 Min)": {
+      "main": [
+        [
+          {
+            "node": "DB: Naechsten aktiven Job finden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Naechsten aktiven Job finden": {
+      "main": [
+        [
+          {
+            "node": "Pruefe Job-Zustand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe Job-Zustand": {
+      "main": [
+        [
+          {
+            "node": "IF: Kein aktiver Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Kein aktiver Job?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "IF: Job pausierend?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Job pausierend?": {
+      "main": [
+        [
+          {
+            "node": "DB: Job pausieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Job auf running setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Job auf running setzen": {
+      "main": [
+        [
+          {
+            "node": "DB: Import-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Import-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Paket-Kontext",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Paket-Kontext": {
+      "main": [
+        [
+          {
+            "node": "DB: Naechstes Paket laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Naechstes Paket laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Item-Kontext",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Item-Kontext": {
+      "main": [
+        [
+          {
+            "node": "IF: Paket leer (Job evtl. fertig)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Paket leer (Job evtl. fertig)?": {
+      "main": [
+        [
+          {
+            "node": "DB: Job abschliessen (falls fertig)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop: Instrumente verarbeiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop: Instrumente verarbeiten": {
+      "main": [
+        [
+          {
+            "node": "DB: Job-Fortschritt aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Item auf running setzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Item auf running setzen": {
+      "main": [
+        [
+          {
+            "node": "Baue Abruf-URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Abruf-URLs": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Kurse abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Kurse abrufen": {
+      "main": [
+        [
+          {
+            "node": "HTTP: Corporate Actions abrufen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP: Corporate Actions abrufen": {
+      "main": [
+        [
+          {
+            "node": "Verarbeite Antwort + baue SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verarbeite Antwort + baue SQL": {
+      "main": [
+        [
+          {
+            "node": "DB: Ergebnis speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ergebnis speichern": {
+      "main": [
+        [
+          {
+            "node": "Loop: Instrumente verarbeiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "SI3RWoIicctN2BSK",
+  "meta": null,
+  "name": "15 - Historische Marktdaten importieren",
   "nodes": [
     {
       "id": "imp15-webhook-get",
@@ -98,7 +440,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction fmtDate(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return '-';\n  return d.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\n\n// alwaysOutputData:true auf den DB-Nodes liefert bei 0 echten Treffern ein Platzhalter-Item\n// (sonst wuerde n8n die nachfolgenden Nodes bei 0 Zeilen gar nicht erst ausfuehren) - anhand\n// des jeweiligen Pflichtfelds herausfiltern, bevor weiterverarbeitet wird.\nconst watchlistTicker = $('DB: Watchlist fuer Formular laden').all().map(i => i.json).filter(j => j && j.ticker).map(j => j.ticker);\nconst jobs = $('DB: Jobs laden').all().map(i => i.json).filter(j => j && j.job_id);\nconst progressRows = $('DB: Job-Item-Fortschritt laden').all().map(i => i.json).filter(j => j && j.job_id);\n\nconst progressByJob = {};\nfor (const r of progressRows) {\n  if (!progressByJob[r.job_id]) progressByJob[r.job_id] = {};\n  progressByJob[r.job_id][r.status] = Number(r.anzahl);\n}\n\nconst STATUS_LABEL = {\n  draft: 'Entwurf', queued: 'wartet', running: 'laeuft', pausing: 'pausiert (wird beendet)',\n  paused: 'pausiert', completed: 'abgeschlossen', completed_with_warnings: 'abgeschlossen (mit Warnungen)',\n  failed: 'fehlgeschlagen', cancelled: 'abgebrochen'\n};\n\nconst jobsHtml = jobs.map(j => {\n  let jParams = {};\n  try { jParams = typeof j.parameters_json === 'string' ? JSON.parse(j.parameters_json || '{}') : (j.parameters_json || {}); } catch (e) {}\n  const zeitraum = (j.period_from && j.period_to) ? (esc(fmtDateOnly(j.period_from)) + ' - ' + esc(fmtDateOnly(j.period_to))) : esc(jParams.period || '-');\n  const prog = progressByJob[j.job_id] || {};\n  const done = (prog.completed || 0);\n  const failed = (prog.failed || 0);\n  const skipped = (prog.skipped || 0);\n  const total = j.progress_total || 0;\n  const pct = total > 0 ? Math.round(100 * (done + failed + skipped) / total) : 0;\n  const statusLabel = STATUS_LABEL[j.status] || esc(j.status);\n  const canPause = ['queued', 'running'].includes(j.status);\n  const canResume = j.status === 'paused';\n  const canCancel = ['draft', 'queued', 'running', 'pausing', 'paused'].includes(j.status);\n  const canRetry = failed > 0 && ['completed_with_warnings', 'failed'].includes(j.status);\n\n  let instruments = [];\n  try { instruments = typeof j.instrument_selection_json === 'string' ? JSON.parse(j.instrument_selection_json || '[]') : (j.instrument_selection_json || []); } catch (e) {}\n\n  function actionForm(action, label) {\n    return '<form method=\"post\" action=\"/webhook/historische-marktdaten\" style=\"display:inline;\">' +\n      '<input type=\"hidden\" name=\"action\" value=\"' + action + '\">' +\n      '<input type=\"hidden\" name=\"job_id\" value=\"' + esc(j.job_id) + '\">' +\n      '<button type=\"submit\">' + label + '</button></form>';\n  }\n\n  return '<tr>' +\n    '<td>' + esc(j.job_id) + '</td>' +\n    '<td>' + esc(j.provider) + '</td>' +\n    '<td>' + instruments.length + ' Instrument(e)</td>' +\n    '<td>' + zeitraum + '</td>' +\n    '<td><span class=\"badge\">' + statusLabel + '</span></td>' +\n    '<td>' + done + '/' + total + ' (' + pct + '%)' + (failed ? ', ' + failed + ' fehlgeschlagen' : '') + '</td>' +\n    '<td>' + fmtDate(j.heartbeat_at) + '</td>' +\n    '<td>' +\n      (canPause ? actionForm('pause', 'Pausieren') : '') +\n      (canResume ? actionForm('resume', 'Fortsetzen') : '') +\n      (canCancel ? actionForm('cancel', 'Abbrechen') : '') +\n      (canRetry ? actionForm('retry_failed', 'Fehlgeschlagene wiederholen') : '') +\n    '</td>' +\n  '</tr>';\n}).join('');\n\nconst prefillInstruments = watchlistTicker.join(', ');\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Historische Marktdaten importieren</title>' +\n  '<style>' +\n  'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;}' +\n  'h1{color:#fff;} table{border-collapse:collapse;width:100%;margin-top:12px;}' +\n  'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:14px;}' +\n  'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}' +\n  'form.import-form{background:#232323;padding:16px;border-radius:8px;margin-bottom:24px;max-width:700px;}' +\n  'label{display:block;margin-top:10px;font-size:13px;color:#aaa;}' +\n  'input[type=text],input[type=date],select{width:100%;padding:6px;background:#1a1a1a;color:#e0e0e0;border:1px solid #444;border-radius:4px;}' +\n  'button{margin-top:12px;padding:8px 16px;background:#2d6cdf;color:#fff;border:none;border-radius:4px;cursor:pointer;}' +\n  '.hint{font-size:12px;color:#888;margin-top:4px;}' +\n  '</style></head><body>' +\n  '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>' +\n  '<h1>Historische Marktdaten importieren</h1>' +\n  '<form class=\"import-form\" method=\"post\" action=\"/webhook/historische-marktdaten\">' +\n    '<input type=\"hidden\" name=\"action\" value=\"create_import\">' +\n    '<label>Instrumente (Komma-getrennt)</label>' +\n    '<input type=\"text\" name=\"instruments\" value=\"' + esc(prefillInstruments) + '\" required>' +\n    '<div class=\"hint\">Vorbelegt mit der aktuellen Watchlist - kann frei geaendert/erweitert werden (auch Instrumente ausserhalb der Watchlist).</div>' +\n    '<label>Zeitraum</label>' +\n    '<select name=\"period_mode\">' +\n      '<option value=\"period\">Vordefinierte Periode</option>' +\n      '<option value=\"range\">Fester Zeitraum (Start/Ende)</option>' +\n    '</select>' +\n    '<label>Periode (falls oben gewaehlt)</label>' +\n    '<select name=\"period\">' +\n      '<option value=\"5y\">5 Jahre</option>' +\n      '<option value=\"10y\">10 Jahre</option>' +\n      '<option value=\"max\">Maximal verfuegbare Historie</option>' +\n    '</select>' +\n    '<label>Startdatum (falls \"Fester Zeitraum\" gewaehlt)</label>' +\n    '<input type=\"date\" name=\"period_from\">' +\n    '<label>Enddatum (falls \"Fester Zeitraum\" gewaehlt)</label>' +\n    '<input type=\"date\" name=\"period_to\">' +\n    '<label>Umgang mit bereits vorhandenen Daten</label>' +\n    '<select name=\"overwrite_mode\">' +\n      '<option value=\"fill_gaps\">Nur Luecken ergaenzen</option>' +\n      '<option value=\"skip_existing\">Vorhandene ueberspringen</option>' +\n      '<option value=\"overwrite\">Vorhandene ueberschreiben</option>' +\n    '</select>' +\n    '<label><input type=\"checkbox\" name=\"dry_run\" value=\"true\" style=\"width:auto;display:inline;\"> Testlauf (prueft nur, schreibt keine Daten)</label>' +\n    '<div class=\"hint\">Ein Testlauf prueft Instrumente und Erreichbarkeit des Datenanbieters, schreibt aber keine historischen Daten.</div>' +\n    '<button type=\"submit\">Import starten</button>' +\n  '</form>' +\n  '<h2>Bisherige Importe</h2>' +\n  '<table><tr><th>Job-ID</th><th>Anbieter</th><th>Instrumente</th><th>Zeitraum</th><th>Status</th><th>Fortschritt</th><th>Letzter Heartbeat</th><th>Aktionen</th></tr>' +\n  jobsHtml +\n  '</table>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
+        "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\nfunction esc(s) {\n  return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction fmtDate(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return '-';\n  return d.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction fmtDateOnly(v) {\n  if (!v) return '-';\n  const d = new Date(v);\n  if (isNaN(d.getTime())) return String(v).slice(0, 10);\n  return d.toISOString().slice(0, 10);\n}\n\n// alwaysOutputData:true auf den DB-Nodes liefert bei 0 echten Treffern ein Platzhalter-Item\n// (sonst wuerde n8n die nachfolgenden Nodes bei 0 Zeilen gar nicht erst ausfuehren) - anhand\n// des jeweiligen Pflichtfelds herausfiltern, bevor weiterverarbeitet wird.\nconst watchlistTicker = $('DB: Watchlist fuer Formular laden').all().map(i => i.json).filter(j => j && j.ticker).map(j => j.ticker);\nconst jobs = $('DB: Jobs laden').all().map(i => i.json).filter(j => j && j.job_id);\nconst progressRows = $('DB: Job-Item-Fortschritt laden').all().map(i => i.json).filter(j => j && j.job_id);\n\nconst progressByJob = {};\nfor (const r of progressRows) {\n  if (!progressByJob[r.job_id]) progressByJob[r.job_id] = {};\n  progressByJob[r.job_id][r.status] = Number(r.anzahl);\n}\n\nconst STATUS_LABEL = {\n  draft: 'Entwurf', queued: 'wartet', running: 'laeuft', pausing: 'pausiert (wird beendet)',\n  paused: 'pausiert', completed: 'abgeschlossen', completed_with_warnings: 'abgeschlossen (mit Warnungen)',\n  failed: 'fehlgeschlagen', cancelled: 'abgebrochen'\n};\n\nconst jobsHtml = jobs.map(j => {\n  let jParams = {};\n  try { jParams = typeof j.parameters_json === 'string' ? JSON.parse(j.parameters_json || '{}') : (j.parameters_json || {}); } catch (e) {}\n  const zeitraum = (j.period_from && j.period_to) ? (esc(fmtDateOnly(j.period_from)) + ' - ' + esc(fmtDateOnly(j.period_to))) : esc(jParams.period || '-');\n  const prog = progressByJob[j.job_id] || {};\n  const done = (prog.completed || 0);\n  const failed = (prog.failed || 0);\n  const skipped = (prog.skipped || 0);\n  const total = j.progress_total || 0;\n  const pct = total > 0 ? Math.round(100 * (done + failed + skipped) / total) : 0;\n  const statusLabel = STATUS_LABEL[j.status] || esc(j.status);\n  const canPause = ['queued', 'running'].includes(j.status);\n  const canResume = j.status === 'paused';\n  const canCancel = ['draft', 'queued', 'running', 'pausing', 'paused'].includes(j.status);\n  const canRetry = failed > 0 && ['completed_with_warnings', 'failed'].includes(j.status);\n\n  let instruments = [];\n  try { instruments = typeof j.instrument_selection_json === 'string' ? JSON.parse(j.instrument_selection_json || '[]') : (j.instrument_selection_json || []); } catch (e) {}\n\n  function actionForm(action, label) {\n    return '<form method=\"post\" action=\"/webhook/historische-marktdaten\" style=\"display:inline;\">' +\n      '<input type=\"hidden\" name=\"action\" value=\"' + action + '\">' +\n      '<input type=\"hidden\" name=\"job_id\" value=\"' + esc(j.job_id) + '\">' +\n      '<button type=\"submit\">' + label + '</button></form>';\n  }\n\n  return '<tr>' +\n    '<td>' + esc(j.job_id) + '</td>' +\n    '<td>' + esc(j.provider) + '</td>' +\n    '<td>' + instruments.length + ' Instrument(e)</td>' +\n    '<td>' + zeitraum + '</td>' +\n    '<td><span class=\"badge\">' + statusLabel + '</span></td>' +\n    '<td>' + done + '/' + total + ' (' + pct + '%)' + (failed ? ', ' + failed + ' fehlgeschlagen' : '') + '</td>' +\n    '<td>' + fmtDate(j.heartbeat_at) + '</td>' +\n    '<td>' +\n      (canPause ? actionForm('pause', 'Pausieren') : '') +\n      (canResume ? actionForm('resume', 'Fortsetzen') : '') +\n      (canCancel ? actionForm('cancel', 'Abbrechen') : '') +\n      (canRetry ? actionForm('retry_failed', 'Fehlgeschlagene wiederholen') : '') +\n    '</td>' +\n  '</tr>';\n}).join('');\n\nconst prefillInstruments = watchlistTicker.join(', ');\n\nconst html = '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\">' +\n  '<title>Historische Marktdaten importieren</title>' +\n  '<style>' +\n  'body{font-family:sans-serif;background:#1a1a1a;color:#e0e0e0;padding:24px;}' +\n  'h1{color:#fff;} table{border-collapse:collapse;width:100%;margin-top:12px;}' +\n  'th,td{border:1px solid #444;padding:6px 10px;text-align:left;font-size:14px;}' +\n  'th{background:#2a2a2a;} .badge{background:#333;padding:2px 8px;border-radius:4px;}' +\n  'form.import-form{background:#232323;padding:16px;border-radius:8px;margin-bottom:24px;max-width:700px;}' +\n  'label{display:block;margin-top:10px;font-size:13px;color:#aaa;}' +\n  'input[type=text],input[type=date],select{width:100%;padding:6px;background:#1a1a1a;color:#e0e0e0;border:1px solid #444;border-radius:4px;}' +\n  'button{margin-top:12px;padding:8px 16px;background:#2d6cdf;color:#fff;border:none;border-radius:4px;cursor:pointer;}' +\n  '.hint{font-size:12px;color:#888;margin-top:4px;}' +\n  '</style></head><body>' +\n  '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-news-lernkandidaten\" style=\"color:#8ab4f8;text-decoration:none;\">News-Lernkandidaten</a><a href=\"/webhook/historische-news-ausschluesse\" style=\"color:#8ab4f8;text-decoration:none;\">Ausschlussregeln</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-lauf\" style=\"color:#8ab4f8;text-decoration:none;\">Simulation starten</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>' +\n  '<h1>Historische Marktdaten importieren</h1>' +\n  '<form class=\"import-form\" method=\"post\" action=\"/webhook/historische-marktdaten\">' +\n    '<input type=\"hidden\" name=\"action\" value=\"create_import\">' +\n    '<label>Instrumente (Komma-getrennt)</label>' +\n    '<input type=\"text\" name=\"instruments\" value=\"' + esc(prefillInstruments) + '\" required>' +\n    '<div class=\"hint\">Vorbelegt mit der aktuellen Watchlist - kann frei geaendert/erweitert werden (auch Instrumente ausserhalb der Watchlist).</div>' +\n    '<label>Zeitraum</label>' +\n    '<select name=\"period_mode\">' +\n      '<option value=\"period\">Vordefinierte Periode</option>' +\n      '<option value=\"range\">Fester Zeitraum (Start/Ende)</option>' +\n    '</select>' +\n    '<label>Periode (falls oben gewaehlt)</label>' +\n    '<select name=\"period\">' +\n      '<option value=\"5y\">5 Jahre</option>' +\n      '<option value=\"10y\">10 Jahre</option>' +\n      '<option value=\"max\">Maximal verfuegbare Historie</option>' +\n    '</select>' +\n    '<label>Startdatum (falls \"Fester Zeitraum\" gewaehlt)</label>' +\n    '<input type=\"date\" name=\"period_from\">' +\n    '<label>Enddatum (falls \"Fester Zeitraum\" gewaehlt)</label>' +\n    '<input type=\"date\" name=\"period_to\">' +\n    '<label>Umgang mit bereits vorhandenen Daten</label>' +\n    '<select name=\"overwrite_mode\">' +\n      '<option value=\"fill_gaps\">Nur Luecken ergaenzen</option>' +\n      '<option value=\"skip_existing\">Vorhandene ueberspringen</option>' +\n      '<option value=\"overwrite\">Vorhandene ueberschreiben</option>' +\n    '</select>' +\n    '<label><input type=\"checkbox\" name=\"dry_run\" value=\"true\" style=\"width:auto;display:inline;\"> Testlauf (prueft nur, schreibt keine Daten)</label>' +\n    '<div class=\"hint\">Ein Testlauf prueft Instrumente und Erreichbarkeit des Datenanbieters, schreibt aber keine historischen Daten.</div>' +\n    '<button type=\"submit\">Import starten</button>' +\n  '</form>' +\n  '<h2>Bisherige Importe</h2>' +\n  '<table><tr><th>Job-ID</th><th>Anbieter</th><th>Instrumente</th><th>Zeitraum</th><th>Status</th><th>Fortschritt</th><th>Letzter Heartbeat</th><th>Aktionen</th></tr>' +\n  jobsHtml +\n  '</table>' +\n  '</body></html>';\n\nreturn [{ json: { html } }];\n"
       }
     },
     {
@@ -255,8 +597,8 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 2
+              "field": "cronExpression",
+              "expression": "0 7,17,27,37,47,57 * * * *"
             }
           ]
         }
@@ -689,347 +1031,12 @@
       }
     }
   ],
-  "connections": {
-    "Webhook GET (Ansicht)": {
-      "main": [
-        [
-          {
-            "node": "DB: Watchlist fuer Formular laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Watchlist fuer Formular laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Jobs laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Jobs laden": {
-      "main": [
-        [
-          {
-            "node": "DB: Job-Item-Fortschritt laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Job-Item-Fortschritt laden": {
-      "main": [
-        [
-          {
-            "node": "Baue HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue HTML": {
-      "main": [
-        [
-          {
-            "node": "Antwort mit HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook POST (Aenderung)": {
-      "main": [
-        [
-          {
-            "node": "POST: Formular normalisieren + SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "POST: Formular normalisieren + SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "IF: Validierungsfehler?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Validierungsfehler?": {
-      "main": [
-        [
-          {
-            "node": "Baue POST-Antwort (JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "POST: SQL ausfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "POST: SQL ausfuehren": {
-      "main": [
-        [
-          {
-            "node": "Baue POST-Antwort (JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue POST-Antwort (JSON)": {
-      "main": [
-        [
-          {
-            "node": "Antwort mit JSON",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Import-Worker (alle 2 Min)": {
-      "main": [
-        [
-          {
-            "node": "DB: Naechsten aktiven Job finden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Naechsten aktiven Job finden": {
-      "main": [
-        [
-          {
-            "node": "Pruefe Job-Zustand",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pruefe Job-Zustand": {
-      "main": [
-        [
-          {
-            "node": "IF: Kein aktiver Job?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Kein aktiver Job?": {
-      "main": [
-        [],
-        [
-          {
-            "node": "IF: Job pausierend?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Job pausierend?": {
-      "main": [
-        [
-          {
-            "node": "DB: Job pausieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Job auf running setzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Job auf running setzen": {
-      "main": [
-        [
-          {
-            "node": "DB: Import-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Import-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "Baue Paket-Kontext",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Paket-Kontext": {
-      "main": [
-        [
-          {
-            "node": "DB: Naechstes Paket laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Naechstes Paket laden": {
-      "main": [
-        [
-          {
-            "node": "Baue Item-Kontext",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Item-Kontext": {
-      "main": [
-        [
-          {
-            "node": "IF: Paket leer (Job evtl. fertig)?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Paket leer (Job evtl. fertig)?": {
-      "main": [
-        [
-          {
-            "node": "DB: Job abschliessen (falls fertig)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Loop: Instrumente verarbeiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop: Instrumente verarbeiten": {
-      "main": [
-        [
-          {
-            "node": "DB: Job-Fortschritt aktualisieren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Item auf running setzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Item auf running setzen": {
-      "main": [
-        [
-          {
-            "node": "Baue Abruf-URLs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Abruf-URLs": {
-      "main": [
-        [
-          {
-            "node": "HTTP: Kurse abrufen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP: Kurse abrufen": {
-      "main": [
-        [
-          {
-            "node": "HTTP: Corporate Actions abrufen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP: Corporate Actions abrufen": {
-      "main": [
-        [
-          {
-            "node": "Verarbeite Antwort + baue SQL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verarbeite Antwort + baue SQL": {
-      "main": [
-        [
-          {
-            "node": "DB: Ergebnis speichern",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Ergebnis speichern": {
-      "main": [
-        [
-          {
-            "node": "Loop: Instrumente verarbeiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "executionTimeout": 90,
+    "saveDataSuccessExecution": "all"
   },
-  "pinData": {}
+  "tags": [],
+  "versionId": "881053a3-0e83-4b31-bda7-8f2f9ea46237"
 }

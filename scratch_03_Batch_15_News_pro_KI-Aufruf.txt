@@ -1,0 +1,14 @@
+{
+  "parameters": {
+    "batchSize": 15,
+    "options": {}
+  },
+  "name": "Batch: 15 News pro KI-Aufruf",
+  "type": "n8n-nodes-base.splitInBatches",
+  "typeVersion": 3,
+  "position": [
+    -4416,
+    2016
+  ],
+  "id": "n-00000010-0000-4000-8000-0000000000"
+}

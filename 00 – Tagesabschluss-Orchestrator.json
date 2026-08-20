@@ -1775,7 +1775,8 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "saveDataSuccessExecution": "all"
   },
   "tags": [],
   "versionId": "c4162f6a-d360-4f15-98f2-92a238287a4c"

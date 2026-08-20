@@ -467,8 +467,9 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+    "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "dd28be63-a0ee-4d9c-8df4-6f0d85a5350b"
+  "versionId": "09d13215-0c0f-4afb-95b0-df8eb6c796ab"
 }

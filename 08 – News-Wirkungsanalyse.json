@@ -1,331 +1,5 @@
 {
-  "updatedAt": "2026-08-01T21:08:18.090Z",
-  "createdAt": "2026-07-19T13:02:26.365Z",
-  "id": "EvJKlqkuSIu9CHmR",
-  "name": "08 – News-Wirkungsanalyse",
-  "description": null,
   "active": true,
-  "isArchived": false,
-  "nodes": [
-    {
-      "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 0 19 * * 1-5"
-            }
-          ]
-        }
-      },
-      "name": "Trigger: Wirkungsanalyse (19:00 Werktage)",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
-      "position": [
-        -3000,
-        0
-      ],
-      "id": "n-00000001-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT DISTINCT ON (ni.id) ni.id AS news_id, ni.news_key, ni.published_at, ni.created_at, ni.source,\n       na.wirkungsrichtung, na.wirkung_staerke, na.konfidenz, na.news_kategorie, na.usage_type,\n       na.betroffene_ticker_json\nFROM trading.news_items ni\nJOIN trading.news_assessments na ON na.news_id = ni.id\n-- FIX 2026-08-01 (Fehleranalyse D13, kritisch): die alte Pruefung filterte pro news_id, nicht\n-- pro (news_id, ticker) - eine News mit mehreren betroffenen Tickern, bei der spaeter\n-- ('Baseline-Fall je (News,Ticker) bestimmen') ein einzelner Ticker uebersprungen wird (z.B.\n-- neuer Ticker ohne Kurshistorie), erzeugte nur fuer die uebrigen Ticker eine Tracking-Zeile.\n-- Im naechsten Lauf griff NOT EXISTS bereits (irgendeine Zeile fuer diese news_id existiert),\n-- die News galt komplett als erledigt, das fehlende Ticker-Paar wurde nie nachgezogen. Jetzt:\n-- eine News bleibt 'neu', solange MINDESTENS EIN betroffener Ticker noch keine Tracking-Zeile\n-- hat. Der nachgelagerte Node verarbeitet weiterhin die volle betroffene_ticker_json-Liste je\n-- News (unveraendert) - bereits getrackte Ticker werden per ON CONFLICT (news_id,ticker) DO\n-- UPDATE in 'Tracking-Zeile upserten' verlustfrei erneut geschrieben (bestehendes, bereits\n-- idempotentes Verhalten), nur fehlende Paare werden dadurch neu ergaenzt.\nWHERE na.relevant = TRUE\n  AND jsonb_array_length(na.betroffene_ticker_json) > 0\n  AND EXISTS (\n    SELECT 1 FROM jsonb_array_elements_text(na.betroffene_ticker_json) missing(ticker)\n    WHERE NOT EXISTS (\n      SELECT 1 FROM trading.news_impact_tracking nit\n      WHERE nit.news_id = ni.id AND nit.ticker = missing.ticker\n    )\n  )\nORDER BY ni.id,\n  CASE WHEN na.prompt_version = 'news-recherche-agent-v1' THEN 1\n       WHEN na.prompt_version = 'news-ingestion-v1' THEN 2\n       ELSE 3 END,\n  na.created_at DESC;",
-        "options": {}
-      },
-      "name": "DB: Neue News-Ticker-Paare laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2800,
-        -160
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "id": "n-00000002-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "function getBusinessDate(tz, date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: tz,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\n// FIX 2026-08-01 (Fehleranalyse D12, hoch): vorher pauschal Europe/Berlin +\n// 09:00/17:30 (XETRA) fuer JEDEN Ticker, unabhaengig von dessen tatsaechlicher\n// Boerse. Aktuell folgenlos (alle 15 Watchlist-Ticker XETRA), aber falsch\n// sobald ein nicht-europaeischer Ticker aufgenommen wird - eine abends nach\n// US-Handelsschluss veroeffentlichte News wuerde dann faelschlich als\n// \"waehrend der Handelszeit\" (mit entsprechend abgewerteter baseline_quality)\n// statt \"nach Handelsende\" eingestuft. Jetzt je Ticker ueber\n// trading.stock_instruments/market_reference aufgeloest (identische\n// Referenzdaten wie trading.v_market_session_status, sql/027) - kein neuer\n// DB-Zugriff, \"DB: Instrumente (Benchmark-Zuordnung)\" liefert die Felder\n// bereits mit.\nfunction berlinMinutesSinceMidnight(iso) {\n  const d = new Date(iso);\n  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);\n  const h = Number(parts.find(p => p.type === 'hour').value);\n  const m = Number(parts.find(p => p.type === 'minute').value);\n  return h * 60 + m;\n}\n\nfunction localMinutesSinceMidnight(iso, tz) {\n  const d = new Date(iso);\n  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);\n  const h = Number(parts.find(p => p.type === 'hour').value);\n  const m = Number(parts.find(p => p.type === 'minute').value);\n  return h * 60 + m;\n}\n\nfunction timeStrToMinutes(timeStr) {\n  // z.B. \"09:00:00\" oder \"09:00\" (trading.market_reference.session_open_local ist TIME)\n  const [h, m] = String(timeStr).split(':').map(Number);\n  return h * 60 + (m || 0);\n}\n\n// Konservativer Default (identisch zum bisherigen fest verdrahteten Verhalten):\n// nur genutzt, wenn fuer den Ticker keine eigenen Referenzdaten vorliegen -\n// zurzeit trifft das auf keinen der 15 Watchlist-Ticker zu (alle XETRA).\nconst DEFAULT_TZ = 'Europe/Berlin';\nconst DEFAULT_OPEN_MIN = 9 * 60;\nconst DEFAULT_CLOSE_MIN = 17 * 60 + 30;\n\nlet instrumentRows = [];\ntry { instrumentRows = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json || {}); } catch (e) {}\nconst instrumentByTicker = {};\nfor (const ir of instrumentRows) {\n  const k = String(ir.ticker || '').trim();\n  if (k) instrumentByTicker[k] = ir;\n}\n\nfunction sessionWindowFor(ticker) {\n  const ir = instrumentByTicker[ticker];\n  if (ir && ir.exchange_timezone && ir.session_open_local && ir.session_close_local) {\n    return {\n      tz: ir.exchange_timezone,\n      openMin: timeStrToMinutes(ir.session_open_local),\n      closeMin: timeStrToMinutes(ir.session_close_local),\n      quelle: 'exchange_mapping'\n    };\n  }\n  return { tz: DEFAULT_TZ, openMin: DEFAULT_OPEN_MIN, closeMin: DEFAULT_CLOSE_MIN, quelle: 'fallback_default' };\n}\n\nconst rows = $input.all().map(i => i.json);\nconst out = [];\n\nfor (const r of rows) {\n  const tickers = Array.isArray(r.betroffene_ticker_json) ? r.betroffene_ticker_json : [];\n  const pubIso = r.published_at || r.created_at;\n\n  for (const tickerRaw of tickers) {\n    const ticker = String(tickerRaw).trim();\n    const fenster = sessionWindowFor(ticker);\n    const minutes = localMinutesSinceMidnight(pubIso, fenster.tz);\n    const newsDate = getBusinessDate(fenster.tz, new Date(pubIso));\n\n    // Exakte Grenzen: vor Sitzungsbeginn / waehrend Handelszeit / nach\n    // Sitzungsende, jetzt je nach tatsaechlicher Boerse des Tickers statt\n    // pauschal XETRA. baseline_quality: 'high' bei vor_handelsbeginn/\n    // nach_handelsende (sauberer Tagesschlusskurs als Grenze), 'limited'\n    // waehrend_handelszeit -- es liegen nur Tagesschlusskurse vor (kein\n    // Intraday-Feed), Vortagesschluss als Baseline fuer eine untertaegige\n    // News ist damit per Definition eingeschraenkt.\n    let baselineCase, baselineQuality;\n    if (minutes < fenster.openMin) { baselineCase = 'vor_handelsbeginn'; baselineQuality = 'high'; }\n    else if (minutes < fenster.closeMin) { baselineCase = 'waehrend_handelszeit'; baselineQuality = 'limited'; }\n    else { baselineCase = 'nach_handelsende'; baselineQuality = 'high'; }\n\n    out.push({ json: {\n      news_id: r.news_id,\n      news_key: r.news_key,\n      ticker,\n      news_date: newsDate,\n      publication_timestamp: pubIso,\n      predicted_direction: r.wirkungsrichtung,\n      predicted_strength: r.wirkung_staerke,\n      prediction_confidence: r.konfidenz,\n      news_category: r.news_kategorie,\n      source: r.source,\n      baseline_case: baselineCase,\n      baseline_quality: baselineQuality,\n      session_timezone_source: fenster.quelle\n    } });\n  }\n}\n\nreturn out;\n"
-      },
-      "name": "Baseline-Fall je (News,Ticker) bestimmen",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2600,
-        -160
-      ],
-      "id": "n-00000003-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT * FROM trading.news_impact_tracking WHERE status NOT IN ('completed','confounded','failed');",
-        "options": {}
-      },
-      "name": "DB: Offene Tracking-Zeilen laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2800,
-        160
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "id": "n-00000004-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {},
-      "name": "Neu + Offen zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -2400,
-        0
-      ],
-      "id": "n-00000005-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT si.ticker, si.benchmark_symbol, si.exchange, mr.exchange_timezone, mr.session_open_local, mr.session_close_local FROM trading.stock_instruments si LEFT JOIN trading.market_reference mr ON mr.market_code = si.exchange;",
-        "options": {}
-      },
-      "name": "DB: Instrumente (Benchmark-Zuordnung)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2400,
-        -320
-      ],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "id": "n-00000006-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "const all = $input.all().map(i => i.json);\nconst tickers = [...new Set(all.map(r => r.ticker).filter(Boolean))];\nreturn tickers.map(t => ({ json: { ticker: t } }));"
-      },
-      "name": "Distinkte Ticker extrahieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2200,
-        0
-      ],
-      "id": "n-00000007-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
-        "options": {}
-      },
-      "name": "DB: Kursverlauf je Ticker laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2000,
-        0
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000008-0000-4000-8000-0000000000",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const rows = $input.all().map(i => i.json);\nconst byTicker = {};\nfor (const r of rows) {\n  if (!byTicker[r.ticker]) byTicker[r.ticker] = [];\n  byTicker[r.ticker].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const t in byTicker) byTicker[t].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { kursverlauf: byTicker } }];"
-      },
-      "name": "Kursverlauf gruppieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1800,
-        0
-      ],
-      "id": "n-00000009-0000-4000-8000-0000000000",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const all = $input.all().map(i => i.json);\nconst syms = [...new Set(all.map(r => r.benchmark_symbol).filter(Boolean))];\nif (syms.length === 0) syms.push('^GDAXI');\nreturn syms.map(s => ({ json: { symbol: s } }));"
-      },
-      "name": "Distinkte Benchmark-Symbole extrahieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2200,
-        -320
-      ],
-      "id": "n-00000010-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
-        "options": {}
-      },
-      "name": "DB: Benchmark-Kursverlauf laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2000,
-        -320
-      ],
-      "onError": "continueRegularOutput",
-      "id": "n-00000011-0000-4000-8000-0000000000",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const rows = $input.all().map(i => i.json);\nconst bySymbol = {};\nfor (const r of rows) {\n  if (!bySymbol[r.symbol]) bySymbol[r.symbol] = [];\n  bySymbol[r.symbol].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const s in bySymbol) bySymbol[s].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { benchmarkverlauf: bySymbol } }];"
-      },
-      "name": "Benchmarkverlauf gruppieren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1800,
-        -320
-      ],
-      "id": "n-00000012-0000-4000-8000-0000000000",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {},
-      "name": "Kontext zusammenfuehren",
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3,
-      "position": [
-        -1600,
-        -160
-      ],
-      "id": "n-00000013-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "jsCode": "function tickerBenchmark(instruments, ticker) {\n  const m = instruments.find(i => i.ticker === ticker);\n  return (m && m.benchmark_symbol) || '^GDAXI';\n}\n\nfunction findBaselineAndHorizons(verlauf, newsDate, baselineCase) {\n  // verlauf: sortierte Liste {datum, kurs}. newsDate: 'YYYY-MM-DD'.\n  const idxOnOrBefore = (d) => {\n    let idx = -1;\n    for (let i = 0; i < verlauf.length; i++) { if (verlauf[i].datum <= d) idx = i; else break; }\n    return idx;\n  };\n  let baselineIdx;\n  if (baselineCase === 'nach_handelsende') {\n    baselineIdx = verlauf.findIndex(v => v.datum === newsDate);\n    if (baselineIdx === -1) baselineIdx = idxOnOrBefore(newsDate);\n  } else {\n    // vor_handelsbeginn / waehrend_handelszeit -> Vortagesschluss\n    const onOrBefore = idxOnOrBefore(newsDate);\n    baselineIdx = (verlauf[onOrBefore] && verlauf[onOrBefore].datum === newsDate) ? onOrBefore - 1 : onOrBefore;\n  }\n  return baselineIdx;\n}\n\nfunction safeGrouped(nodeName, field) {\n  // Wenn der vorgelagerte Node 0 Eingabe-Items bekam (z.B. noch keine\n  // Kurshistorie fuer diesen Ticker/dieses Symbol vorhanden), wird er von\n  // n8n gar nicht erst ausgefuehrt -- .first()/.all() wuerden dann werfen.\n  // Kontrolliert mit leerem Objekt weiterlaufen statt den ganzen Lauf\n  // abzubrechen (Auftrag: 'auch bei leeren Ergebnismengen kontrolliert\n  // weiterlaufen').\n  try {\n    const res = $(nodeName).first();\n    return (res && res.json && res.json[field]) || {};\n  } catch (e) {\n    return {};\n  }\n}\n\nconst rows = $('Neu + Offen zusammenfuehren').all().map(i => i.json);\nconst otherNews = $('DB: Weitere News je Ticker laden').all().map(i => i.json);\nconst kursverlauf = safeGrouped('Kursverlauf gruppieren', 'kursverlauf');\nconst benchmarkverlauf = safeGrouped('Benchmarkverlauf gruppieren', 'benchmarkverlauf');\nconst instruments = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json);\n\nconst HORIZONS = [1, 3, 5, 10, 20];\n// Schwellenwerte vorerst als benannte Konstanten hier (Priorisierung 11 zentralisiert\n// sie spaeter in trading.pipeline_config, wie DRY_RUN/REQUIRE_CONFIRMATION bereits).\nconst CONFOUND_BENCHMARK_DAILY_MOVE = 0.02; // 2% TAEGLICHE (nicht kumulierte) Benchmark-Bewegung\nconst CATEGORY_KEYWORDS = ['quartalszahl', 'gewinnwarnung', 'dividende', 'kapitalerhoehung', 'uebernahme', 'übernahme', 'analysten', 'herabstufung', 'hochstufung'];\nconst MAJOR_FOLLOWUP_CATEGORIES = new Set(['quarterly_results', 'profit_warning', 'merger_acquisition', 'regulation']);\n\nfunction maxDailyMove(verlauf, fromIdx, toIdx) {\n  let max = 0;\n  for (let i = Math.max(fromIdx, 1); i <= toIdx && i < verlauf.length; i++) {\n    const prev = verlauf[i - 1], cur = verlauf[i];\n    if (!prev || !cur || !prev.kurs) continue;\n    const move = Math.abs((cur.kurs / prev.kurs) - 1);\n    if (move > max) max = move;\n  }\n  return max;\n}\n\nfunction findAdditionalNews(otherNewsList, ownNewsId, ticker, newsDateStr, windowDays) {\n  const start = new Date(newsDateStr);\n  return otherNewsList.filter(n => {\n    if (String(n.news_id) === String(ownNewsId)) return false;\n    const tickers = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n    if (!tickers.includes(ticker)) return false;\n    const diffDays = (new Date(n.published_at) - start) / (1000 * 60 * 60 * 24);\n    return diffDays >= 0 && diffDays <= windowDays;\n  });\n}\n\nconst results = [];\n\nfor (const row of rows) {\n  const ticker = row.ticker;\n  const verlauf = kursverlauf[ticker] || [];\n  const benchmarkSymbol = row.benchmark_symbol || tickerBenchmark(instruments, ticker);\n  const bverlauf = benchmarkverlauf[benchmarkSymbol] || [];\n\n  // FIX 2026-08-01 (Fehleranalyse D11, hoch): Aktie und Benchmark werden ab\n  // hier ausschliesslich ueber ihr gemeinsames Kalenderdatum verglichen, nicht\n  // mehr ueber Array-Position (baselineIdx+h vs. bBaselineIdx+h). Fehlt in\n  // einem der beiden Kursverlaeufe eine einzelne Zeile (z.B. ein einzelner\n  // fehlgeschlagener Lauf von \"02\"/\"02b\"), verschoben sich vorher beide Reihen\n  // ab dort dauerhaft gegeneinander - abnormal_return_d5 wurde dann gegen den\n  // falschen Kalendertag berechnet, ohne dass das irgendwo sichtbar wurde.\n  const benchmarkByDatum = {};\n  for (const b of bverlauf) benchmarkByDatum[b.datum] = b;\n\n  const isNew = row.baseline_case !== undefined;\n\n  let baselineIdx, newsDate, baselinePrice, baselineTs, firstTradingDate;\n\n  if (isNew) {\n    newsDate = row.news_date;\n    baselineIdx = findBaselineAndHorizons(verlauf, newsDate, row.baseline_case);\n    if (baselineIdx < 0 || !verlauf[baselineIdx]) {\n      // Noch keine Kursdaten fuer diesen Ticker vorhanden -> naechsten Lauf abwarten.\n      continue;\n    }\n    baselinePrice = verlauf[baselineIdx].kurs;\n    baselineTs = verlauf[baselineIdx].datum;\n    firstTradingDate = verlauf[baselineIdx + 1] ? verlauf[baselineIdx + 1].datum : null;\n  } else {\n    newsDate = row.news_date;\n    baselinePrice = Number(row.baseline_price);\n    baselineTs = row.baseline_timestamp;\n    baselineIdx = verlauf.findIndex(v => v.datum === baselineTs);\n  }\n\n  // Benchmark-Baseline war bereits vorher datumsbasiert (findIndex nach datum) -\n  // unveraendert korrekt, nur der Name macht die Konsistenz zum neuen\n  // Horizont-Lookup unten deutlicher.\n  const benchmarkBaselinePoint = benchmarkByDatum[baselineTs];\n  const benchmarkBaseline = benchmarkBaselinePoint ? benchmarkBaselinePoint.kurs : (isNew ? null : Number(row.benchmark_baseline_price));\n\n  const out = {\n    is_new: isNew,\n    id: isNew ? null : row.id,\n    news_id: row.news_id,\n    news_key: row.news_key,\n    ticker,\n    news_date: newsDate,\n    publication_timestamp: isNew ? row.publication_timestamp : row.publication_timestamp,\n    first_trading_date: isNew ? firstTradingDate : row.first_trading_date,\n    predicted_direction: isNew ? row.predicted_direction : row.predicted_direction,\n    predicted_strength: isNew ? row.predicted_strength : row.predicted_strength,\n    prediction_confidence: isNew ? row.prediction_confidence : row.prediction_confidence,\n    news_category: isNew ? row.news_category : row.news_category,\n    source: isNew ? row.source : row.source,\n    baseline_price: baselinePrice,\n    baseline_timestamp: baselineTs,\n    baseline_quality: isNew ? row.baseline_quality : row.baseline_quality,\n    benchmark_symbol: benchmarkSymbol,\n    benchmark_baseline_price: benchmarkBaseline\n  };\n\n  let maxPos = isNew ? null : row.max_positive_move;\n  let maxNeg = isNew ? null : row.max_negative_move;\n  let lastFilledIdx = -1;\n  let furthestFilledDatum = null;\n\n  for (const h of HORIZONS) {\n    const existingPrice = isNew ? null : row['price_d' + h];\n    if (existingPrice !== null && existingPrice !== undefined) {\n      out['price_d' + h] = existingPrice;\n      out['return_d' + h] = row['return_d' + h];\n      out['benchmark_return_d' + h] = row['benchmark_return_d' + h];\n      out['abnormal_return_d' + h] = row['abnormal_return_d' + h];\n      out['direction_correct_d' + h] = row['direction_correct_d' + h];\n      lastFilledIdx = h;\n      continue;\n    }\n    const targetIdx = baselineIdx + h;\n    const point = verlauf[targetIdx];\n    if (!point || baselineIdx < 0 || !baselinePrice) {\n      out['price_d' + h] = null; out['return_d' + h] = null;\n      out['benchmark_return_d' + h] = null; out['abnormal_return_d' + h] = null;\n      out['direction_correct_d' + h] = null;\n      continue;\n    }\n    // Benchmark-Punkt jetzt ueber das exakte Kalenderdatum der Aktienkerze\n    // gesucht (nicht mehr ueber bBaselineIdx+h) - fehlt der Benchmark an\n    // genau diesem Datum eine Zeile, gibt es explizit KEINEN Vergleichswert\n    // (null) statt eines falsch zugeordneten Nachbartags.\n    const bPoint = benchmarkByDatum[point.datum];\n    const ret = (point.kurs / baselinePrice) - 1;\n    const bRet = (bPoint && benchmarkBaseline) ? (bPoint.kurs / benchmarkBaseline) - 1 : null;\n    const abnormal = bRet !== null ? ret - bRet : null;\n\n    out['price_d' + h] = point.kurs;\n    out['return_d' + h] = Number(ret.toFixed(6));\n    out['benchmark_return_d' + h] = bRet !== null ? Number(bRet.toFixed(6)) : null;\n    out['abnormal_return_d' + h] = abnormal !== null ? Number(abnormal.toFixed(6)) : null;\n\n    // Richtungstreffer je Beobachtungszeitraum, nicht erst bei D+20 (Auftrag Prioritaet 3).\n    if (abnormal !== null && out.predicted_direction) {\n      const observedDirH = abnormal > 0.005 ? 'positiv' : abnormal < -0.005 ? 'negativ' : 'neutral';\n      out['direction_correct_d' + h] = out.predicted_direction === observedDirH;\n    } else {\n      out['direction_correct_d' + h] = null;\n    }\n\n    if (maxPos === null || maxPos === undefined || ret > maxPos) maxPos = ret;\n    if (maxNeg === null || maxNeg === undefined || ret < maxNeg) maxNeg = ret;\n    furthestFilledDatum = point.datum;\n  }\n\n  out.max_positive_move = maxPos;\n  out.max_negative_move = maxNeg;\n\n  const d20Filled = out.price_d20 !== null && out.price_d20 !== undefined;\n  const anyNewFilled = HORIZONS.some(h => out['price_d' + h] !== null && out['price_d' + h] !== undefined);\n\n  // Stoerfaktor-Erkennung (Phase 7): grobe, deterministische Heuristik ohne\n  // Fundamentaldaten-Kalender (nicht vorhanden) -- Kategorie-Schluesselwoerter\n  // in anderen News zum selben Ticker im Beobachtungsfenster + starke\n  // Benchmark-Bewegung am jeweiligen Tag.\n  let confounded = isNew ? false : !!row.confounded;\n  let confoundingReason = isNew ? '' : (row.confounding_reason || '');\n\n  // Taegliche statt kumulierte Bewegung (Auftrag Punkt 7): eine 10/20-Tage-Gesamtrendite\n  // von >2% ist bei normaler Marktdrift die Regel, keine Ausnahme -- deckt weder\n  // \"aussergewoehnliche Bewegung am Ereignistag\" noch \"starke Einzeltagsbewegung\n  // im Fenster\" wirklich ab. Prueft stattdessen den groessten TAGES-Sprung der\n  // Benchmark irgendwo zwischen Baseline und dem am weitesten gefuellten Horizont.\n  // Bleibt bewusst index-basiert INNERHALB von bverlauf (kein Cross-Array-\n  // Vergleich, daher von D11 nicht betroffen) - der Bezugspunkt \"bis wohin\"\n  // wird jetzt aber ueber das tatsaechliche Datum der letzten gefuellten\n  // Aktienkerze bestimmt statt ueber bBaselineIdx+furthestHorizon.\n  const bBaselineIdxForMove = benchmarkBaselinePoint ? bverlauf.indexOf(benchmarkBaselinePoint) : -1;\n  const furthestBenchmarkIdx = furthestFilledDatum ? bverlauf.findIndex(v => v.datum === furthestFilledDatum) : -1;\n  const dailyMove = (bBaselineIdxForMove >= 0 && furthestBenchmarkIdx >= 0)\n    ? maxDailyMove(bverlauf, bBaselineIdxForMove, furthestBenchmarkIdx)\n    : 0;\n  if (dailyMove > CONFOUND_BENCHMARK_DAILY_MOVE && !confounded) {\n    confounded = true;\n    confoundingReason = `Aussergewoehnliche taegliche Benchmark-Bewegung (${(dailyMove * 100).toFixed(1)}%) im Beobachtungsfenster`;\n  }\n\n  // Weitere kursrelevante News zum selben Ticker im Fenster (Auftrag Punkt 8).\n  // Fensterbreite grob an D+20 Handelstage angelehnt (Kalendertage, da der\n  // News-Strom nicht an Handelstage gebunden ist).\n  const additionalNews = findAdditionalNews(otherNews, row.news_id, ticker, newsDate, 28);\n  out.additional_news_count = additionalNews.length;\n  const majorFollowups = additionalNews.filter(n =>\n    MAJOR_FOLLOWUP_CATEGORIES.has(n.news_kategorie) ||\n    CATEGORY_KEYWORDS.some(kw => String(n.titel || '').toLowerCase().includes(kw))\n  );\n  out.has_major_followup_news = majorFollowups.length > 0;\n  if (out.has_major_followup_news && !confounded) {\n    confounded = true;\n    const cats = [...new Set(majorFollowups.map(n => n.news_kategorie || 'sonstige'))];\n    confoundingReason = `Weitere kursrelevante News im Beobachtungsfenster (${cats.join(', ')})`;\n  }\n\n  out.confounded = confounded;\n  out.confounding_reason = confoundingReason;\n\n  // Abschluss-Status\n  if (d20Filled) {\n    const observedDirection = out.abnormal_return_d20 === null ? 'unklar' : (out.abnormal_return_d20 > 0.005 ? 'positiv' : out.abnormal_return_d20 < -0.005 ? 'negativ' : 'neutral');\n    const observedStrength = out.abnormal_return_d20 === null ? 'unklar' : (Math.abs(out.abnormal_return_d20) > 0.05 ? 'hoch' : Math.abs(out.abnormal_return_d20) > 0.015 ? 'mittel' : 'niedrig');\n    out.observed_direction = observedDirection;\n    out.observed_strength = observedStrength;\n    out.direction_correct = out.predicted_direction && observedDirection !== 'unklar' ? (out.predicted_direction === observedDirection) : null;\n    out.strength_correct = out.predicted_strength && observedStrength !== 'unklar' ? (out.predicted_strength === observedStrength) : null;\n    out.quality_score = out.direction_correct === null ? null : (out.direction_correct ? (out.strength_correct ? 100 : 60) : 0);\n    out.status = confounded ? 'confounded' : 'completed';\n    out.completed_at = new Date().toISOString();\n  } else if (anyNewFilled || !isNew) {\n    const nextHorizon = HORIZONS.find(h => out['price_d' + h] === null || out['price_d' + h] === undefined);\n    out.status = nextHorizon ? ('waiting_d' + nextHorizon) : 'waiting_d1';\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  } else {\n    out.status = 'waiting_d1';\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  }\n\n  results.push({ json: out });\n}\n\nreturn results;\n"
-      },
-      "name": "D+1..D+20 berechnen + Stoerfaktoren",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1400,
-        -160
-      ],
-      "id": "n-00000014-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst num = (v) => v === null || v === undefined ? 'NULL' : pgNum(v);\n\nconst cols = {\n  news_id: pgNum(j.news_id), news_key: pgStr(j.news_key), ticker: pgStr(j.ticker),\n  news_date: pgStr(j.news_date), publication_timestamp: j.publication_timestamp ? pgStr(j.publication_timestamp) : 'NULL',\n  first_trading_date: j.first_trading_date ? pgStr(j.first_trading_date) : 'NULL',\n  predicted_direction: pgStr(j.predicted_direction), predicted_strength: pgStr(j.predicted_strength),\n  prediction_confidence: num(j.prediction_confidence), news_category: pgStr(j.news_category), source: pgStr(j.source),\n  baseline_price: num(j.baseline_price), baseline_timestamp: j.baseline_timestamp ? pgStr(j.baseline_timestamp) : 'NULL',\n  baseline_quality: pgStr(j.baseline_quality),\n  benchmark_symbol: pgStr(j.benchmark_symbol), benchmark_baseline_price: num(j.benchmark_baseline_price),\n  price_d1: num(j.price_d1), price_d3: num(j.price_d3), price_d5: num(j.price_d5), price_d10: num(j.price_d10), price_d20: num(j.price_d20),\n  return_d1: num(j.return_d1), return_d3: num(j.return_d3), return_d5: num(j.return_d5), return_d10: num(j.return_d10), return_d20: num(j.return_d20),\n  benchmark_return_d1: num(j.benchmark_return_d1), benchmark_return_d3: num(j.benchmark_return_d3), benchmark_return_d5: num(j.benchmark_return_d5),\n  benchmark_return_d10: num(j.benchmark_return_d10), benchmark_return_d20: num(j.benchmark_return_d20),\n  abnormal_return_d1: num(j.abnormal_return_d1), abnormal_return_d3: num(j.abnormal_return_d3), abnormal_return_d5: num(j.abnormal_return_d5),\n  abnormal_return_d10: num(j.abnormal_return_d10), abnormal_return_d20: num(j.abnormal_return_d20),\n  max_positive_move: num(j.max_positive_move), max_negative_move: num(j.max_negative_move),\n  observed_direction: pgStr(j.observed_direction), observed_strength: pgStr(j.observed_strength),\n  direction_correct: j.direction_correct === null ? 'NULL' : pgBool(j.direction_correct),\n  direction_correct_d1: j.direction_correct_d1 === null || j.direction_correct_d1 === undefined ? 'NULL' : pgBool(j.direction_correct_d1),\n  direction_correct_d3: j.direction_correct_d3 === null || j.direction_correct_d3 === undefined ? 'NULL' : pgBool(j.direction_correct_d3),\n  direction_correct_d5: j.direction_correct_d5 === null || j.direction_correct_d5 === undefined ? 'NULL' : pgBool(j.direction_correct_d5),\n  direction_correct_d10: j.direction_correct_d10 === null || j.direction_correct_d10 === undefined ? 'NULL' : pgBool(j.direction_correct_d10),\n  direction_correct_d20: j.direction_correct_d20 === null || j.direction_correct_d20 === undefined ? 'NULL' : pgBool(j.direction_correct_d20),\n  strength_correct: j.strength_correct === null ? 'NULL' : pgBool(j.strength_correct),\n  quality_score: num(j.quality_score),\n  confounded: pgBool(j.confounded), confounding_reason: pgStr(j.confounding_reason), additional_news_count: pgNum(j.additional_news_count),\n  has_major_followup_news: pgBool(j.has_major_followup_news),\n  status: pgStr(j.status), completed_at: j.completed_at ? pgStr(j.completed_at) : 'NULL'\n};\n\nconst colNames = Object.keys(cols).join(', ');\nconst colVals = Object.values(cols).join(', ');\nconst updateSet = Object.keys(cols).filter(k => k !== 'news_id' && k !== 'ticker').map(k => `${k} = EXCLUDED.${k}`).join(', ');\n\nconst sql = `INSERT INTO trading.news_impact_tracking (${colNames}, updated_at)\n  VALUES (${colVals}, now())\n  ON CONFLICT (news_id, ticker) DO UPDATE SET ${updateSet}, updated_at = now();`;\n\nreturn { json: { ...j, sql } };\n"
-      },
-      "name": "Tracking-Zeile upserten (SQL bauen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1200,
-        -160
-      ],
-      "id": "n-00000015-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
-      "name": "Tracking-Zeile upserten (ausfuehren)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -1024,
-        -160
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "id": "n-00000016-0000-4000-8000-0000000000"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-      },
-      "name": "Persistierung pruefen (sonst werfen)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -848,
-        -160
-      ],
-      "id": "p8-check-08-tracking-upsert"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT na.news_id, ni.title AS titel, na.betroffene_ticker_json, na.news_kategorie, na.wirkung_staerke, ni.published_at FROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id WHERE na.relevant = TRUE AND na.wirkung_staerke = 'hoch' AND ni.published_at > now() - interval '60 days' ORDER BY ni.published_at;",
-        "options": {}
-      },
-      "id": "6817d90e-1e77-4d2c-8394-952457be85fe",
-      "name": "DB: Weitere News je Ticker laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -2780,
-        260
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ json: { _sync: 'instrumente_benchmark_geladen', count: $input.all().length } }];"
-      },
-      "name": "Sync: Instrumente (Benchmark) geladen (1 Item)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2200,
-        -320
-      ],
-      "id": "n-repair-p02-wrap-08"
-    }
-  ],
   "connections": {
     "Trigger: Wirkungsanalyse (19:00 Werktage)": {
       "main": [
@@ -380,9 +54,9 @@
       "main": [
         [
           {
-            "node": "Neu + Offen zusammenfuehren",
+            "node": "Filter: Nur echte Tracking-Zeilen",
             "type": "main",
-            "index": 1
+            "index": 0
           }
         ]
       ]
@@ -403,6 +77,11 @@
         [
           {
             "node": "DB: Kursverlauf je Ticker laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Distinkte Benchmark-Symbole extrahieren",
             "type": "main",
             "index": 0
           }
@@ -529,575 +208,363 @@
           }
         ]
       ]
+    },
+    "Filter: Nur echte Tracking-Zeilen": {
+      "main": [
+        [
+          {
+            "node": "Neu + Offen zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
     }
   },
-  "settings": {
-    "executionOrder": "v1",
-    "errorWorkflow": "VTBfUuzQfMZNGYDM"
-  },
-  "staticData": {
-    "node:Trigger: Wirkungsanalyse (19:00 Werktage)": {
-      "recurrenceRules": []
-    }
-  },
+  "id": "EvJKlqkuSIu9CHmR",
   "meta": null,
-  "pinData": {},
-  "versionId": "49cbd936-4a9c-430b-84a0-a3e64ed165b8",
-  "activeVersionId": "49cbd936-4a9c-430b-84a0-a3e64ed165b8",
-  "versionCounter": 136,
-  "triggerCount": 1,
-  "shared": [
+  "name": "08 – News-Wirkungsanalyse",
+  "nodes": [
     {
-      "updatedAt": "2026-07-19T13:02:26.365Z",
-      "createdAt": "2026-07-19T13:02:26.365Z",
-      "role": "workflow:owner",
-      "workflowId": "EvJKlqkuSIu9CHmR",
-      "projectId": "CrnegVcMvlcRU0OP",
-      "project": {
-        "updatedAt": "2026-05-23T11:38:39.411Z",
-        "createdAt": "2026-05-23T11:33:40.374Z",
-        "id": "CrnegVcMvlcRU0OP",
-        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      }
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 19 * * 1-5"
+            }
+          ]
+        }
+      },
+      "name": "Trigger: Wirkungsanalyse (19:00 Werktage)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3008,
+        0
+      ],
+      "id": "n-00000001-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT ON (ni.id) ni.id AS news_id, ni.news_key, ni.published_at, ni.created_at, ni.source,\n       na.wirkungsrichtung, na.wirkung_staerke, na.konfidenz, na.news_kategorie, na.usage_type,\n       na.betroffene_ticker_json\nFROM trading.news_items ni\nJOIN trading.news_assessments na ON na.news_id = ni.id\n-- FIX 2026-08-01 (Fehleranalyse D13, kritisch): die alte Pruefung filterte pro news_id, nicht\n-- pro (news_id, ticker) - eine News mit mehreren betroffenen Tickern, bei der spaeter\n-- ('Baseline-Fall je (News,Ticker) bestimmen') ein einzelner Ticker uebersprungen wird (z.B.\n-- neuer Ticker ohne Kurshistorie), erzeugte nur fuer die uebrigen Ticker eine Tracking-Zeile.\n-- Im naechsten Lauf griff NOT EXISTS bereits (irgendeine Zeile fuer diese news_id existiert),\n-- die News galt komplett als erledigt, das fehlende Ticker-Paar wurde nie nachgezogen. Jetzt:\n-- eine News bleibt 'neu', solange MINDESTENS EIN betroffener Ticker noch keine Tracking-Zeile\n-- hat. Der nachgelagerte Node verarbeitet weiterhin die volle betroffene_ticker_json-Liste je\n-- News (unveraendert) - bereits getrackte Ticker werden per ON CONFLICT (news_id,ticker) DO\n-- UPDATE in 'Tracking-Zeile upserten' verlustfrei erneut geschrieben (bestehendes, bereits\n-- idempotentes Verhalten), nur fehlende Paare werden dadurch neu ergaenzt.\nWHERE na.relevant = TRUE\n  AND jsonb_array_length(na.betroffene_ticker_json) > 0\n  AND EXISTS (\n    SELECT 1 FROM jsonb_array_elements_text(na.betroffene_ticker_json) missing(ticker)\n    WHERE NOT EXISTS (\n      SELECT 1 FROM trading.news_impact_tracking nit\n      WHERE nit.news_id = ni.id AND nit.ticker = missing.ticker\n    )\n  )\nORDER BY ni.id,\n  CASE WHEN na.prompt_version = 'news-recherche-agent-v1' THEN 1\n       WHEN na.prompt_version = 'news-ingestion-v1' THEN 2\n       ELSE 3 END,\n  na.created_at DESC;",
+        "options": {}
+      },
+      "name": "DB: Neue News-Ticker-Paare laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2800,
+        -160
+      ],
+      "id": "n-00000002-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getBusinessDate(tz, date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: tz,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\n// FIX 2026-08-01 (Fehleranalyse D12, hoch): vorher pauschal Europe/Berlin +\n// 09:00/17:30 (XETRA) fuer JEDEN Ticker, unabhaengig von dessen tatsaechlicher\n// Boerse. Aktuell folgenlos (alle 15 Watchlist-Ticker XETRA), aber falsch\n// sobald ein nicht-europaeischer Ticker aufgenommen wird - eine abends nach\n// US-Handelsschluss veroeffentlichte News wuerde dann faelschlich als\n// \"waehrend der Handelszeit\" (mit entsprechend abgewerteter baseline_quality)\n// statt \"nach Handelsende\" eingestuft. Jetzt je Ticker ueber\n// trading.stock_instruments/market_reference aufgeloest (identische\n// Referenzdaten wie trading.v_market_session_status, sql/027) - kein neuer\n// DB-Zugriff, \"DB: Instrumente (Benchmark-Zuordnung)\" liefert die Felder\n// bereits mit.\nfunction berlinMinutesSinceMidnight(iso) {\n  const d = new Date(iso);\n  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);\n  const h = Number(parts.find(p => p.type === 'hour').value);\n  const m = Number(parts.find(p => p.type === 'minute').value);\n  return h * 60 + m;\n}\n\nfunction localMinutesSinceMidnight(iso, tz) {\n  const d = new Date(iso);\n  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);\n  const h = Number(parts.find(p => p.type === 'hour').value);\n  const m = Number(parts.find(p => p.type === 'minute').value);\n  return h * 60 + m;\n}\n\nfunction timeStrToMinutes(timeStr) {\n  // z.B. \"09:00:00\" oder \"09:00\" (trading.market_reference.session_open_local ist TIME)\n  const [h, m] = String(timeStr).split(':').map(Number);\n  return h * 60 + (m || 0);\n}\n\n// Konservativer Default (identisch zum bisherigen fest verdrahteten Verhalten):\n// nur genutzt, wenn fuer den Ticker keine eigenen Referenzdaten vorliegen -\n// zurzeit trifft das auf keinen der 15 Watchlist-Ticker zu (alle XETRA).\nconst DEFAULT_TZ = 'Europe/Berlin';\nconst DEFAULT_OPEN_MIN = 9 * 60;\nconst DEFAULT_CLOSE_MIN = 17 * 60 + 30;\n\nlet instrumentRows = [];\ntry { instrumentRows = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json || {}); } catch (e) {}\nconst instrumentByTicker = {};\nfor (const ir of instrumentRows) {\n  const k = String(ir.ticker || '').trim();\n  if (k) instrumentByTicker[k] = ir;\n}\n\nfunction sessionWindowFor(ticker) {\n  const ir = instrumentByTicker[ticker];\n  if (ir && ir.exchange_timezone && ir.session_open_local && ir.session_close_local) {\n    return {\n      tz: ir.exchange_timezone,\n      openMin: timeStrToMinutes(ir.session_open_local),\n      closeMin: timeStrToMinutes(ir.session_close_local),\n      quelle: 'exchange_mapping'\n    };\n  }\n  return { tz: DEFAULT_TZ, openMin: DEFAULT_OPEN_MIN, closeMin: DEFAULT_CLOSE_MIN, quelle: 'fallback_default' };\n}\n\nconst rows = $input.all().map(i => i.json);\nconst out = [];\n\nfor (const r of rows) {\n  const tickers = Array.isArray(r.betroffene_ticker_json) ? r.betroffene_ticker_json : [];\n  const pubIso = r.published_at || r.created_at;\n\n  for (const tickerRaw of tickers) {\n    const ticker = String(tickerRaw).trim();\n    const fenster = sessionWindowFor(ticker);\n    const minutes = localMinutesSinceMidnight(pubIso, fenster.tz);\n    const newsDate = getBusinessDate(fenster.tz, new Date(pubIso));\n\n    // Exakte Grenzen: vor Sitzungsbeginn / waehrend Handelszeit / nach\n    // Sitzungsende, jetzt je nach tatsaechlicher Boerse des Tickers statt\n    // pauschal XETRA. baseline_quality: 'high' bei vor_handelsbeginn/\n    // nach_handelsende (sauberer Tagesschlusskurs als Grenze), 'limited'\n    // waehrend_handelszeit -- es liegen nur Tagesschlusskurse vor (kein\n    // Intraday-Feed), Vortagesschluss als Baseline fuer eine untertaegige\n    // News ist damit per Definition eingeschraenkt.\n    let baselineCase, baselineQuality;\n    if (minutes < fenster.openMin) { baselineCase = 'vor_handelsbeginn'; baselineQuality = 'high'; }\n    else if (minutes < fenster.closeMin) { baselineCase = 'waehrend_handelszeit'; baselineQuality = 'limited'; }\n    else { baselineCase = 'nach_handelsende'; baselineQuality = 'high'; }\n\n    out.push({ json: {\n      news_id: r.news_id,\n      news_key: r.news_key,\n      ticker,\n      news_date: newsDate,\n      publication_timestamp: pubIso,\n      predicted_direction: r.wirkungsrichtung,\n      predicted_strength: r.wirkung_staerke,\n      prediction_confidence: r.konfidenz,\n      news_category: r.news_kategorie,\n      source: r.source,\n      baseline_case: baselineCase,\n      baseline_quality: baselineQuality,\n      session_timezone_source: fenster.quelle\n    } });\n  }\n}\n\nreturn out;\n"
+      },
+      "name": "Baseline-Fall je (News,Ticker) bestimmen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2608,
+        -160
+      ],
+      "id": "n-00000003-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH candidates AS (\n  SELECT id FROM trading.news_impact_tracking\n  WHERE status NOT IN ('completed','confounded','failed')\n    AND (processing_until IS NULL OR processing_until < now())\n    AND (next_check_date IS NULL OR next_check_date <= CURRENT_DATE)\n  ORDER BY updated_at ASC, id\n  LIMIT 500\n  FOR UPDATE SKIP LOCKED\n)\nUPDATE trading.news_impact_tracking t\nSET processing_until = now() + interval '30 minutes'\nFROM candidates c\nWHERE t.id = c.id\nRETURNING t.*;",
+        "options": {}
+      },
+      "name": "DB: Offene Tracking-Zeilen laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2784,
+        64
+      ],
+      "id": "n-00000004-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "name": "Neu + Offen zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -2400,
+        0
+      ],
+      "id": "n-00000005-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT si.ticker, si.benchmark_symbol, si.exchange, mr.exchange_timezone, mr.session_open_local, mr.session_close_local FROM trading.stock_instruments si LEFT JOIN trading.market_reference mr ON mr.market_code = si.exchange;",
+        "options": {}
+      },
+      "name": "DB: Instrumente (Benchmark-Zuordnung)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2400,
+        -320
+      ],
+      "id": "n-00000006-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function addDays(dateStr, days) {\n  const d = new Date(String(dateStr).slice(0, 10) + 'T00:00:00Z');\n  d.setUTCDate(d.getUTCDate() + days);\n  return d.toISOString().slice(0, 10);\n}\nconst all = $input.all().map(i => i.json);\nconst minDateByTicker = {};\nfor (const r of all) {\n  const t = r.ticker;\n  const d = r.news_date;\n  if (!t || !d) continue;\n  if (!minDateByTicker[t] || d < minDateByTicker[t]) minDateByTicker[t] = d;\n}\nreturn Object.keys(minDateByTicker).map(t => ({\n  json: { ticker: t, lookback_from: addDays(minDateByTicker[t], -15) }\n}));"
+      },
+      "name": "Distinkte Ticker extrahieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        0
+      ],
+      "id": "n-00000007-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs\nFROM trading.stock_price_history\nWHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}'\n  AND valid_to IS NULL\n  AND trading_date >= '{{ $json.lookback_from }}'::date\nORDER BY trading_date;",
+        "options": {}
+      },
+      "name": "DB: Kursverlauf je Ticker laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2000,
+        0
+      ],
+      "id": "n-00000008-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst byTicker = {};\nfor (const r of rows) {\n  if (!byTicker[r.ticker]) byTicker[r.ticker] = [];\n  byTicker[r.ticker].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const t in byTicker) byTicker[t].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { kursverlauf: byTicker } }];"
+      },
+      "name": "Kursverlauf gruppieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        0
+      ],
+      "id": "n-00000009-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const tickerRows = $input.all().map(i => i.json);\nlet instrumentRows = [];\ntry { instrumentRows = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json || {}); } catch (e) {}\nconst benchmarkByTicker = {};\nfor (const ir of instrumentRows) {\n  const t = String(ir.ticker || '').trim();\n  if (t) benchmarkByTicker[t] = ir.benchmark_symbol || '^GDAXI';\n}\nconst lookbackBySymbol = {};\nfor (const r of tickerRows) {\n  const symbol = benchmarkByTicker[r.ticker] || '^GDAXI';\n  if (!lookbackBySymbol[symbol] || r.lookback_from < lookbackBySymbol[symbol]) lookbackBySymbol[symbol] = r.lookback_from;\n}\nreturn Object.keys(lookbackBySymbol).map(s => ({ json: { symbol: s, lookback_from: lookbackBySymbol[s] } }));"
+      },
+      "name": "Distinkte Benchmark-Symbole extrahieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        -320
+      ],
+      "id": "n-00000010-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs\nFROM trading.stock_price_history\nWHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}'\n  AND valid_to IS NULL\n  AND trading_date >= '{{ $json.lookback_from }}'::date\nORDER BY trading_date;",
+        "options": {}
+      },
+      "name": "DB: Benchmark-Kursverlauf laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2000,
+        -320
+      ],
+      "id": "n-00000011-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst bySymbol = {};\nfor (const r of rows) {\n  if (!bySymbol[r.symbol]) bySymbol[r.symbol] = [];\n  bySymbol[r.symbol].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const s in bySymbol) bySymbol[s].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { benchmarkverlauf: bySymbol } }];"
+      },
+      "name": "Benchmarkverlauf gruppieren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        -320
+      ],
+      "id": "n-00000012-0000-4000-8000-0000000000",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "name": "Kontext zusammenfuehren",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -1600,
+        -160
+      ],
+      "id": "n-00000013-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "jsCode": "function tickerBenchmark(instruments, ticker) {\n  const m = instruments.find(i => i.ticker === ticker);\n  return (m && m.benchmark_symbol) || '^GDAXI';\n}\n\nfunction findBaselineAndHorizons(verlauf, newsDate, baselineCase) {\n  // verlauf: sortierte Liste {datum, kurs}. newsDate: 'YYYY-MM-DD'.\n  const idxOnOrBefore = (d) => {\n    let idx = -1;\n    for (let i = 0; i < verlauf.length; i++) { if (verlauf[i].datum <= d) idx = i; else break; }\n    return idx;\n  };\n  let baselineIdx;\n  if (baselineCase === 'nach_handelsende') {\n    baselineIdx = verlauf.findIndex(v => v.datum === newsDate);\n    if (baselineIdx === -1) baselineIdx = idxOnOrBefore(newsDate);\n  } else {\n    // vor_handelsbeginn / waehrend_handelszeit -> Vortagesschluss\n    const onOrBefore = idxOnOrBefore(newsDate);\n    baselineIdx = (verlauf[onOrBefore] && verlauf[onOrBefore].datum === newsDate) ? onOrBefore - 1 : onOrBefore;\n  }\n  return baselineIdx;\n}\n\nfunction safeGrouped(nodeName, field) {\n  // Wenn der vorgelagerte Node 0 Eingabe-Items bekam (z.B. noch keine\n  // Kurshistorie fuer diesen Ticker/dieses Symbol vorhanden), wird er von\n  // n8n gar nicht erst ausgefuehrt -- .first()/.all() wuerden dann werfen.\n  // Kontrolliert mit leerem Objekt weiterlaufen statt den ganzen Lauf\n  // abzubrechen (Auftrag: 'auch bei leeren Ergebnismengen kontrolliert\n  // weiterlaufen').\n  try {\n    const res = $(nodeName).first();\n    return (res && res.json && res.json[field]) || {};\n  } catch (e) {\n    return {};\n  }\n}\n\n\nfunction addCalendarDays(dateStr, days) {\n  // Bewusst konservativ: zaehlt Kalendertage statt Handelstage, unterschaetzt also\n  // die tatsaechlich noetige Wartezeit (Handelstage sind wegen Wochenenden/Feiertagen\n  // immer >= Kalendertage-Aequivalent). next_check_date ist nur ein grober Vorfilter\n  // fuer die Zeilenauswahl - die echte Pruefung (verlauf[baselineIdx+h] vorhanden?)\n  // bleibt unveraendert in dieser Funktion weiter unten. Ein zu frueh gewaehltes\n  // Datum kostet hoechstens einen wirkungslosen erneuten Blick auf die Zeile, ein\n  // zu spaetes wuerde faelschlich Zeilen von der Auswahl ausschliessen - deshalb\n  // lieber unterschaetzen.\n  // dateStr kann ein echtes Date-Objekt sein (Postgres-'date'-Spalten kommen ueber\n  // node-postgres bereits als Date zurueck) oder ein 'YYYY-MM-DD'-String (aus\n  // getBusinessDate() fuer neue Paare) - beides robust behandeln.\n  const base = dateStr instanceof Date ? dateStr : new Date(String(dateStr) + 'T00:00:00Z');\n  if (isNaN(base.getTime())) return null;\n  const d = new Date(base.getTime());\n  d.setUTCDate(d.getUTCDate() + days);\n  return d.toISOString().slice(0, 10);\n}\n\nconst rows = $('Neu + Offen zusammenfuehren').all().map(i => i.json);\nconst otherNews = $('DB: Weitere News je Ticker laden').all().map(i => i.json);\nconst kursverlauf = safeGrouped('Kursverlauf gruppieren', 'kursverlauf');\nconst benchmarkverlauf = safeGrouped('Benchmarkverlauf gruppieren', 'benchmarkverlauf');\nconst instruments = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json);\n\nconst HORIZONS = [1, 3, 5, 10, 20];\n// Schwellenwerte vorerst als benannte Konstanten hier (Priorisierung 11 zentralisiert\n// sie spaeter in trading.pipeline_config, wie DRY_RUN/REQUIRE_CONFIRMATION bereits).\nconst CONFOUND_BENCHMARK_DAILY_MOVE = 0.02; // 2% TAEGLICHE (nicht kumulierte) Benchmark-Bewegung\nconst CATEGORY_KEYWORDS = ['quartalszahl', 'gewinnwarnung', 'dividende', 'kapitalerhoehung', 'uebernahme', 'übernahme', 'analysten', 'herabstufung', 'hochstufung'];\nconst MAJOR_FOLLOWUP_CATEGORIES = new Set(['quarterly_results', 'profit_warning', 'merger_acquisition', 'regulation']);\n\nfunction maxDailyMove(verlauf, fromIdx, toIdx) {\n  let max = 0;\n  for (let i = Math.max(fromIdx, 1); i <= toIdx && i < verlauf.length; i++) {\n    const prev = verlauf[i - 1], cur = verlauf[i];\n    if (!prev || !cur || !prev.kurs) continue;\n    const move = Math.abs((cur.kurs / prev.kurs) - 1);\n    if (move > max) max = move;\n  }\n  return max;\n}\n\nfunction findAdditionalNews(otherNewsList, ownNewsId, ticker, newsDateStr, windowDays) {\n  const start = new Date(newsDateStr);\n  return otherNewsList.filter(n => {\n    if (String(n.news_id) === String(ownNewsId)) return false;\n    const tickers = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n    if (!tickers.includes(ticker)) return false;\n    const diffDays = (new Date(n.published_at) - start) / (1000 * 60 * 60 * 24);\n    return diffDays >= 0 && diffDays <= windowDays;\n  });\n}\n\nconst results = [];\n\nfor (const row of rows) {\n  const ticker = row.ticker;\n  const verlauf = kursverlauf[ticker] || [];\n  const benchmarkSymbol = row.benchmark_symbol || tickerBenchmark(instruments, ticker);\n  const bverlauf = benchmarkverlauf[benchmarkSymbol] || [];\n\n  // FIX 2026-08-01 (Fehleranalyse D11, hoch): Aktie und Benchmark werden ab\n  // hier ausschliesslich ueber ihr gemeinsames Kalenderdatum verglichen, nicht\n  // mehr ueber Array-Position (baselineIdx+h vs. bBaselineIdx+h). Fehlt in\n  // einem der beiden Kursverlaeufe eine einzelne Zeile (z.B. ein einzelner\n  // fehlgeschlagener Lauf von \"02\"/\"02b\"), verschoben sich vorher beide Reihen\n  // ab dort dauerhaft gegeneinander - abnormal_return_d5 wurde dann gegen den\n  // falschen Kalendertag berechnet, ohne dass das irgendwo sichtbar wurde.\n  const benchmarkByDatum = {};\n  for (const b of bverlauf) benchmarkByDatum[b.datum] = b;\n\n  const isNew = row.baseline_case !== undefined;\n\n  let baselineIdx, newsDate, baselinePrice, baselineTs, firstTradingDate;\n\n  if (isNew) {\n    newsDate = row.news_date;\n    baselineIdx = findBaselineAndHorizons(verlauf, newsDate, row.baseline_case);\n    if (baselineIdx < 0 || !verlauf[baselineIdx]) {\n      // Noch keine Kursdaten fuer diesen Ticker vorhanden -> naechsten Lauf abwarten.\n      continue;\n    }\n    baselinePrice = verlauf[baselineIdx].kurs;\n    baselineTs = verlauf[baselineIdx].datum;\n    firstTradingDate = verlauf[baselineIdx + 1] ? verlauf[baselineIdx + 1].datum : null;\n  } else {\n    newsDate = row.news_date;\n    baselinePrice = Number(row.baseline_price);\n    baselineTs = row.baseline_timestamp;\n    baselineIdx = verlauf.findIndex(v => v.datum === baselineTs);\n  }\n\n  // Benchmark-Baseline war bereits vorher datumsbasiert (findIndex nach datum) -\n  // unveraendert korrekt, nur der Name macht die Konsistenz zum neuen\n  // Horizont-Lookup unten deutlicher.\n  const benchmarkBaselinePoint = benchmarkByDatum[baselineTs];\n  const benchmarkBaseline = benchmarkBaselinePoint ? benchmarkBaselinePoint.kurs : (isNew ? null : Number(row.benchmark_baseline_price));\n\n  const out = {\n    is_new: isNew,\n    id: isNew ? null : row.id,\n    news_id: row.news_id,\n    news_key: row.news_key,\n    ticker,\n    news_date: newsDate,\n    publication_timestamp: isNew ? row.publication_timestamp : row.publication_timestamp,\n    first_trading_date: isNew ? firstTradingDate : row.first_trading_date,\n    predicted_direction: isNew ? row.predicted_direction : row.predicted_direction,\n    predicted_strength: isNew ? row.predicted_strength : row.predicted_strength,\n    prediction_confidence: isNew ? row.prediction_confidence : row.prediction_confidence,\n    news_category: isNew ? row.news_category : row.news_category,\n    source: isNew ? row.source : row.source,\n    baseline_price: baselinePrice,\n    baseline_timestamp: baselineTs,\n    baseline_quality: isNew ? row.baseline_quality : row.baseline_quality,\n    benchmark_symbol: benchmarkSymbol,\n    benchmark_baseline_price: benchmarkBaseline\n  };\n\n  let maxPos = isNew ? null : row.max_positive_move;\n  let maxNeg = isNew ? null : row.max_negative_move;\n  let lastFilledIdx = -1;\n  let furthestFilledDatum = null;\n\n  for (const h of HORIZONS) {\n    const existingPrice = isNew ? null : row['price_d' + h];\n    if (existingPrice !== null && existingPrice !== undefined) {\n      out['price_d' + h] = existingPrice;\n      out['return_d' + h] = row['return_d' + h];\n      out['benchmark_return_d' + h] = row['benchmark_return_d' + h];\n      out['abnormal_return_d' + h] = row['abnormal_return_d' + h];\n      out['direction_correct_d' + h] = row['direction_correct_d' + h];\n      lastFilledIdx = h;\n      continue;\n    }\n    const targetIdx = baselineIdx + h;\n    const point = verlauf[targetIdx];\n    if (!point || baselineIdx < 0 || !baselinePrice) {\n      out['price_d' + h] = null; out['return_d' + h] = null;\n      out['benchmark_return_d' + h] = null; out['abnormal_return_d' + h] = null;\n      out['direction_correct_d' + h] = null;\n      continue;\n    }\n    // Benchmark-Punkt jetzt ueber das exakte Kalenderdatum der Aktienkerze\n    // gesucht (nicht mehr ueber bBaselineIdx+h) - fehlt der Benchmark an\n    // genau diesem Datum eine Zeile, gibt es explizit KEINEN Vergleichswert\n    // (null) statt eines falsch zugeordneten Nachbartags.\n    const bPoint = benchmarkByDatum[point.datum];\n    const ret = (point.kurs / baselinePrice) - 1;\n    const bRet = (bPoint && benchmarkBaseline) ? (bPoint.kurs / benchmarkBaseline) - 1 : null;\n    const abnormal = bRet !== null ? ret - bRet : null;\n\n    out['price_d' + h] = point.kurs;\n    out['return_d' + h] = Number(ret.toFixed(6));\n    out['benchmark_return_d' + h] = bRet !== null ? Number(bRet.toFixed(6)) : null;\n    out['abnormal_return_d' + h] = abnormal !== null ? Number(abnormal.toFixed(6)) : null;\n\n    // Richtungstreffer je Beobachtungszeitraum, nicht erst bei D+20 (Auftrag Prioritaet 3).\n    if (abnormal !== null && out.predicted_direction) {\n      const observedDirH = abnormal > 0.005 ? 'positiv' : abnormal < -0.005 ? 'negativ' : 'neutral';\n      out['direction_correct_d' + h] = out.predicted_direction === observedDirH;\n    } else {\n      out['direction_correct_d' + h] = null;\n    }\n\n    if (maxPos === null || maxPos === undefined || ret > maxPos) maxPos = ret;\n    if (maxNeg === null || maxNeg === undefined || ret < maxNeg) maxNeg = ret;\n    furthestFilledDatum = point.datum;\n  }\n\n  out.max_positive_move = maxPos;\n  out.max_negative_move = maxNeg;\n\n  const d20Filled = out.price_d20 !== null && out.price_d20 !== undefined;\n  const anyNewFilled = HORIZONS.some(h => out['price_d' + h] !== null && out['price_d' + h] !== undefined);\n\n  // Stoerfaktor-Erkennung (Phase 7): grobe, deterministische Heuristik ohne\n  // Fundamentaldaten-Kalender (nicht vorhanden) -- Kategorie-Schluesselwoerter\n  // in anderen News zum selben Ticker im Beobachtungsfenster + starke\n  // Benchmark-Bewegung am jeweiligen Tag.\n  let confounded = isNew ? false : !!row.confounded;\n  let confoundingReason = isNew ? '' : (row.confounding_reason || '');\n\n  // Taegliche statt kumulierte Bewegung (Auftrag Punkt 7): eine 10/20-Tage-Gesamtrendite\n  // von >2% ist bei normaler Marktdrift die Regel, keine Ausnahme -- deckt weder\n  // \"aussergewoehnliche Bewegung am Ereignistag\" noch \"starke Einzeltagsbewegung\n  // im Fenster\" wirklich ab. Prueft stattdessen den groessten TAGES-Sprung der\n  // Benchmark irgendwo zwischen Baseline und dem am weitesten gefuellten Horizont.\n  // Bleibt bewusst index-basiert INNERHALB von bverlauf (kein Cross-Array-\n  // Vergleich, daher von D11 nicht betroffen) - der Bezugspunkt \"bis wohin\"\n  // wird jetzt aber ueber das tatsaechliche Datum der letzten gefuellten\n  // Aktienkerze bestimmt statt ueber bBaselineIdx+furthestHorizon.\n  const bBaselineIdxForMove = benchmarkBaselinePoint ? bverlauf.indexOf(benchmarkBaselinePoint) : -1;\n  const furthestBenchmarkIdx = furthestFilledDatum ? bverlauf.findIndex(v => v.datum === furthestFilledDatum) : -1;\n  const dailyMove = (bBaselineIdxForMove >= 0 && furthestBenchmarkIdx >= 0)\n    ? maxDailyMove(bverlauf, bBaselineIdxForMove, furthestBenchmarkIdx)\n    : 0;\n  if (dailyMove > CONFOUND_BENCHMARK_DAILY_MOVE && !confounded) {\n    confounded = true;\n    confoundingReason = `Aussergewoehnliche taegliche Benchmark-Bewegung (${(dailyMove * 100).toFixed(1)}%) im Beobachtungsfenster`;\n  }\n\n  // Weitere kursrelevante News zum selben Ticker im Fenster (Auftrag Punkt 8).\n  // Fensterbreite grob an D+20 Handelstage angelehnt (Kalendertage, da der\n  // News-Strom nicht an Handelstage gebunden ist).\n  const additionalNews = findAdditionalNews(otherNews, row.news_id, ticker, newsDate, 28);\n  out.additional_news_count = additionalNews.length;\n  const majorFollowups = additionalNews.filter(n =>\n    MAJOR_FOLLOWUP_CATEGORIES.has(n.news_kategorie) ||\n    CATEGORY_KEYWORDS.some(kw => String(n.titel || '').toLowerCase().includes(kw))\n  );\n  out.has_major_followup_news = majorFollowups.length > 0;\n  if (out.has_major_followup_news && !confounded) {\n    confounded = true;\n    const cats = [...new Set(majorFollowups.map(n => n.news_kategorie || 'sonstige'))];\n    confoundingReason = `Weitere kursrelevante News im Beobachtungsfenster (${cats.join(', ')})`;\n  }\n\n  out.confounded = confounded;\n  out.confounding_reason = confoundingReason;\n\n  // Abschluss-Status\n  if (d20Filled) {\n    const observedDirection = out.abnormal_return_d20 === null ? 'unklar' : (out.abnormal_return_d20 > 0.005 ? 'positiv' : out.abnormal_return_d20 < -0.005 ? 'negativ' : 'neutral');\n    const observedStrength = out.abnormal_return_d20 === null ? 'unklar' : (Math.abs(out.abnormal_return_d20) > 0.05 ? 'hoch' : Math.abs(out.abnormal_return_d20) > 0.015 ? 'mittel' : 'niedrig');\n    out.observed_direction = observedDirection;\n    out.observed_strength = observedStrength;\n    out.direction_correct = out.predicted_direction && observedDirection !== 'unklar' ? (out.predicted_direction === observedDirection) : null;\n    out.strength_correct = out.predicted_strength && observedStrength !== 'unklar' ? (out.predicted_strength === observedStrength) : null;\n    out.quality_score = out.direction_correct === null ? null : (out.direction_correct ? (out.strength_correct ? 100 : 60) : 0);\n    out.status = confounded ? 'confounded' : 'completed';\n    out.completed_at = new Date().toISOString();\n    out.next_check_date = null;\n  } else if (anyNewFilled || !isNew) {\n    const nextHorizon = HORIZONS.find(h => out['price_d' + h] === null || out['price_d' + h] === undefined);\n    out.status = nextHorizon ? ('waiting_d' + nextHorizon) : 'waiting_d1';\n    out.next_check_date = nextHorizon ? addCalendarDays(newsDate, nextHorizon) : null;\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  } else {\n    out.status = 'waiting_d1';\n    out.next_check_date = addCalendarDays(newsDate, 1);\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  }\n\n  results.push({ json: out });\n}\n\nreturn results;\n"
+      },
+      "name": "D+1..D+20 berechnen + Stoerfaktoren",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        -160
+      ],
+      "id": "n-00000014-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst num = (v) => v === null || v === undefined ? 'NULL' : pgNum(v);\n\nconst cols = {\n  news_id: pgNum(j.news_id), news_key: pgStr(j.news_key), ticker: pgStr(j.ticker),\n  news_date: pgStr(j.news_date), publication_timestamp: j.publication_timestamp ? pgStr(j.publication_timestamp) : 'NULL',\n  first_trading_date: j.first_trading_date ? pgStr(j.first_trading_date) : 'NULL',\n  predicted_direction: pgStr(j.predicted_direction), predicted_strength: pgStr(j.predicted_strength),\n  prediction_confidence: num(j.prediction_confidence), news_category: pgStr(j.news_category), source: pgStr(j.source),\n  baseline_price: num(j.baseline_price), baseline_timestamp: j.baseline_timestamp ? pgStr(j.baseline_timestamp) : 'NULL',\n  baseline_quality: pgStr(j.baseline_quality),\n  benchmark_symbol: pgStr(j.benchmark_symbol), benchmark_baseline_price: num(j.benchmark_baseline_price),\n  price_d1: num(j.price_d1), price_d3: num(j.price_d3), price_d5: num(j.price_d5), price_d10: num(j.price_d10), price_d20: num(j.price_d20),\n  return_d1: num(j.return_d1), return_d3: num(j.return_d3), return_d5: num(j.return_d5), return_d10: num(j.return_d10), return_d20: num(j.return_d20),\n  benchmark_return_d1: num(j.benchmark_return_d1), benchmark_return_d3: num(j.benchmark_return_d3), benchmark_return_d5: num(j.benchmark_return_d5),\n  benchmark_return_d10: num(j.benchmark_return_d10), benchmark_return_d20: num(j.benchmark_return_d20),\n  abnormal_return_d1: num(j.abnormal_return_d1), abnormal_return_d3: num(j.abnormal_return_d3), abnormal_return_d5: num(j.abnormal_return_d5),\n  abnormal_return_d10: num(j.abnormal_return_d10), abnormal_return_d20: num(j.abnormal_return_d20),\n  max_positive_move: num(j.max_positive_move), max_negative_move: num(j.max_negative_move),\n  observed_direction: pgStr(j.observed_direction), observed_strength: pgStr(j.observed_strength),\n  direction_correct: j.direction_correct === null ? 'NULL' : pgBool(j.direction_correct),\n  direction_correct_d1: j.direction_correct_d1 === null || j.direction_correct_d1 === undefined ? 'NULL' : pgBool(j.direction_correct_d1),\n  direction_correct_d3: j.direction_correct_d3 === null || j.direction_correct_d3 === undefined ? 'NULL' : pgBool(j.direction_correct_d3),\n  direction_correct_d5: j.direction_correct_d5 === null || j.direction_correct_d5 === undefined ? 'NULL' : pgBool(j.direction_correct_d5),\n  direction_correct_d10: j.direction_correct_d10 === null || j.direction_correct_d10 === undefined ? 'NULL' : pgBool(j.direction_correct_d10),\n  direction_correct_d20: j.direction_correct_d20 === null || j.direction_correct_d20 === undefined ? 'NULL' : pgBool(j.direction_correct_d20),\n  strength_correct: j.strength_correct === null ? 'NULL' : pgBool(j.strength_correct),\n  quality_score: num(j.quality_score),\n  confounded: pgBool(j.confounded), confounding_reason: pgStr(j.confounding_reason), additional_news_count: pgNum(j.additional_news_count),\n  has_major_followup_news: pgBool(j.has_major_followup_news),\n  status: pgStr(j.status), completed_at: j.completed_at ? pgStr(j.completed_at) : 'NULL',\n  next_check_date: j.next_check_date ? pgStr(j.next_check_date) : 'NULL'\n};\n\nconst colNames = Object.keys(cols).join(', ');\nconst colVals = Object.values(cols).join(', ');\nconst updateSet = Object.keys(cols).filter(k => k !== 'news_id' && k !== 'ticker').map(k => `${k} = EXCLUDED.${k}`).join(', ');\n\nconst sql = `INSERT INTO trading.news_impact_tracking (${colNames}, updated_at)\n  VALUES (${colVals}, now())\n  ON CONFLICT (news_id, ticker) DO UPDATE SET ${updateSet}, updated_at = now();`;\n\nreturn { json: { ...j, sql } };\n"
+      },
+      "name": "Tracking-Zeile upserten (SQL bauen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        -160
+      ],
+      "id": "n-00000015-0000-4000-8000-0000000000"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
+      "name": "Tracking-Zeile upserten (ausfuehren)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1024,
+        -160
+      ],
+      "id": "n-00000016-0000-4000-8000-0000000000",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
+      },
+      "name": "Persistierung pruefen (sonst werfen)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        -160
+      ],
+      "id": "p8-check-08-tracking-upsert"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT na.news_id, ni.title AS titel, na.betroffene_ticker_json, na.news_kategorie, na.wirkung_staerke, ni.published_at FROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id WHERE na.relevant = TRUE AND na.wirkung_staerke = 'hoch' AND ni.published_at > now() - interval '60 days' ORDER BY ni.published_at;",
+        "options": {}
+      },
+      "id": "6817d90e-1e77-4d2c-8394-952457be85fe",
+      "name": "DB: Weitere News je Ticker laden",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -2784,
+        272
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { _sync: 'instrumente_benchmark_geladen', count: $input.all().length } }];"
+      },
+      "name": "Sync: Instrumente (Benchmark) geladen (1 Item)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2208,
+        -320
+      ],
+      "id": "n-repair-p02-wrap-08"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// n8n's Postgres node gibt bei 0 getroffenen Zeilen ein Platzhalter-Item {success:true}\n// zurueck statt eines leeren Arrays. Das darf nicht als echte Tracking-Zeile in die\n// Merge-/Berechnungskette gelangen (sonst NOT-NULL-Fehler beim Upsert). Nur Items mit\n// echter 'id' durchlassen.\nreturn $input.all().filter(item => item.json && item.json.id !== undefined && item.json.id !== null);"
+      },
+      "id": "filter-echte-tracking-zeilen-1787077314815",
+      "name": "Filter: Nur echte Tracking-Zeilen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2592,
+        64
+      ]
     }
   ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "saveDataSuccessExecution": "all",
+    "binaryMode": "separate"
+  },
   "tags": [],
-  "activeVersion": {
-    "updatedAt": "2026-08-01T21:08:18.095Z",
-    "createdAt": "2026-08-01T21:08:18.095Z",
-    "versionId": "49cbd936-4a9c-430b-84a0-a3e64ed165b8",
-    "workflowId": "EvJKlqkuSIu9CHmR",
-    "nodes": [
-      {
-        "parameters": {
-          "rule": {
-            "interval": [
-              {
-                "field": "cronExpression",
-                "expression": "0 0 19 * * 1-5"
-              }
-            ]
-          }
-        },
-        "name": "Trigger: Wirkungsanalyse (19:00 Werktage)",
-        "type": "n8n-nodes-base.scheduleTrigger",
-        "typeVersion": 1.1,
-        "position": [
-          -3000,
-          0
-        ],
-        "id": "n-00000001-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "=SELECT DISTINCT ON (ni.id) ni.id AS news_id, ni.news_key, ni.published_at, ni.created_at, ni.source,\n       na.wirkungsrichtung, na.wirkung_staerke, na.konfidenz, na.news_kategorie, na.usage_type,\n       na.betroffene_ticker_json\nFROM trading.news_items ni\nJOIN trading.news_assessments na ON na.news_id = ni.id\n-- FIX 2026-08-01 (Fehleranalyse D13, kritisch): die alte Pruefung filterte pro news_id, nicht\n-- pro (news_id, ticker) - eine News mit mehreren betroffenen Tickern, bei der spaeter\n-- ('Baseline-Fall je (News,Ticker) bestimmen') ein einzelner Ticker uebersprungen wird (z.B.\n-- neuer Ticker ohne Kurshistorie), erzeugte nur fuer die uebrigen Ticker eine Tracking-Zeile.\n-- Im naechsten Lauf griff NOT EXISTS bereits (irgendeine Zeile fuer diese news_id existiert),\n-- die News galt komplett als erledigt, das fehlende Ticker-Paar wurde nie nachgezogen. Jetzt:\n-- eine News bleibt 'neu', solange MINDESTENS EIN betroffener Ticker noch keine Tracking-Zeile\n-- hat. Der nachgelagerte Node verarbeitet weiterhin die volle betroffene_ticker_json-Liste je\n-- News (unveraendert) - bereits getrackte Ticker werden per ON CONFLICT (news_id,ticker) DO\n-- UPDATE in 'Tracking-Zeile upserten' verlustfrei erneut geschrieben (bestehendes, bereits\n-- idempotentes Verhalten), nur fehlende Paare werden dadurch neu ergaenzt.\nWHERE na.relevant = TRUE\n  AND jsonb_array_length(na.betroffene_ticker_json) > 0\n  AND EXISTS (\n    SELECT 1 FROM jsonb_array_elements_text(na.betroffene_ticker_json) missing(ticker)\n    WHERE NOT EXISTS (\n      SELECT 1 FROM trading.news_impact_tracking nit\n      WHERE nit.news_id = ni.id AND nit.ticker = missing.ticker\n    )\n  )\nORDER BY ni.id,\n  CASE WHEN na.prompt_version = 'news-recherche-agent-v1' THEN 1\n       WHEN na.prompt_version = 'news-ingestion-v1' THEN 2\n       ELSE 3 END,\n  na.created_at DESC;",
-          "options": {}
-        },
-        "name": "DB: Neue News-Ticker-Paare laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2800,
-          -160
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "id": "n-00000002-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "jsCode": "function getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat('sv-SE', {\n    timeZone: 'Europe/Berlin',\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit'\n  }).format(date);\n}\n\n// Bestimmt anhand der Veroeffentlichungszeit (Europe/Berlin) den Ausgangskurs-\n// Fall gemaess Auftrag: vor Handelsbeginn (<9:00) / waehrend Handelszeit\n// (9:00-17:30, vorerst Vortagesschluss, Intraday-Ergaenzung spaeter noetig -\n// siehe Kommentar unten) / nach Handelsende (>17:30).\nfunction berlinMinutesSinceMidnight(iso) {\n  const d = new Date(iso);\n  const parts = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(d);\n  const h = Number(parts.find(p => p.type === 'hour').value);\n  const m = Number(parts.find(p => p.type === 'minute').value);\n  return h * 60 + m;\n}\n\nconst rows = $input.all().map(i => i.json);\nconst out = [];\n\nfor (const r of rows) {\n  const tickers = Array.isArray(r.betroffene_ticker_json) ? r.betroffene_ticker_json : [];\n  const pubIso = r.published_at || r.created_at;\n  const minutes = berlinMinutesSinceMidnight(pubIso);\n  const newsDate = getBusinessDate(new Date(pubIso));\n\n  // Exakte Grenzen: vor 09:00 / 09:00-17:30 (Handelszeit) / nach 17:30.\n  // baseline_quality: 'high' bei vor_handelsbeginn/nach_handelsende (sauberer\n  // Tagesschlusskurs als Grenze), 'limited' waehrend_handelszeit -- es liegen\n  // nur Tagesschlusskurse vor (kein Intraday-Feed), Vortagesschluss als\n  // Baseline fuer eine untertaegige News ist damit per Definition eingeschraenkt.\n  let baselineCase, baselineQuality;\n  if (minutes < 9 * 60) { baselineCase = 'vor_handelsbeginn'; baselineQuality = 'high'; }\n  else if (minutes < 17 * 60 + 30) { baselineCase = 'waehrend_handelszeit'; baselineQuality = 'limited'; }\n  else { baselineCase = 'nach_handelsende'; baselineQuality = 'high'; }\n\n  for (const ticker of tickers) {\n    out.push({ json: {\n      news_id: r.news_id,\n      news_key: r.news_key,\n      ticker: String(ticker).trim(),\n      news_date: newsDate,\n      publication_timestamp: pubIso,\n      predicted_direction: r.wirkungsrichtung,\n      predicted_strength: r.wirkung_staerke,\n      prediction_confidence: r.konfidenz,\n      news_category: r.news_kategorie,\n      source: r.source,\n      baseline_case: baselineCase,\n      baseline_quality: baselineQuality\n    } });\n  }\n}\n\nreturn out;\n"
-        },
-        "name": "Baseline-Fall je (News,Ticker) bestimmen",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -2600,
-          -160
-        ],
-        "id": "n-00000003-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "SELECT * FROM trading.news_impact_tracking WHERE status NOT IN ('completed','confounded','failed');",
-          "options": {}
-        },
-        "name": "DB: Offene Tracking-Zeilen laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2800,
-          160
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "id": "n-00000004-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {},
-        "name": "Neu + Offen zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          -2400,
-          0
-        ],
-        "id": "n-00000005-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "SELECT ticker, benchmark_symbol FROM trading.stock_instruments;",
-          "options": {}
-        },
-        "name": "DB: Instrumente (Benchmark-Zuordnung)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2400,
-          -320
-        ],
-        "onError": "continueRegularOutput",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "id": "n-00000006-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "jsCode": "const all = $input.all().map(i => i.json);\nconst tickers = [...new Set(all.map(r => r.ticker).filter(Boolean))];\nreturn tickers.map(t => ({ json: { ticker: t } }));"
-        },
-        "name": "Distinkte Ticker extrahieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -2200,
-          0
-        ],
-        "id": "n-00000007-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "=SELECT symbol AS ticker, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.ticker.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
-          "options": {}
-        },
-        "name": "DB: Kursverlauf je Ticker laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2000,
-          0
-        ],
-        "onError": "continueRegularOutput",
-        "id": "n-00000008-0000-4000-8000-0000000000",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "const rows = $input.all().map(i => i.json);\nconst byTicker = {};\nfor (const r of rows) {\n  if (!byTicker[r.ticker]) byTicker[r.ticker] = [];\n  byTicker[r.ticker].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const t in byTicker) byTicker[t].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { kursverlauf: byTicker } }];"
-        },
-        "name": "Kursverlauf gruppieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1800,
-          0
-        ],
-        "id": "n-00000009-0000-4000-8000-0000000000",
-        "alwaysOutputData": true
-      },
-      {
-        "parameters": {
-          "jsCode": "const all = $input.all().map(i => i.json);\nconst syms = [...new Set(all.map(r => r.benchmark_symbol).filter(Boolean))];\nif (syms.length === 0) syms.push('^GDAXI');\nreturn syms.map(s => ({ json: { symbol: s } }));"
-        },
-        "name": "Distinkte Benchmark-Symbole extrahieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -2200,
-          -320
-        ],
-        "id": "n-00000010-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "=SELECT symbol, trading_date AS datum, close AS aktueller_kurs FROM trading.stock_price_history WHERE symbol = '{{ $json.symbol.replace(/'/g, \"''\") }}' AND valid_to IS NULL ORDER BY trading_date;",
-          "options": {}
-        },
-        "name": "DB: Benchmark-Kursverlauf laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2000,
-          -320
-        ],
-        "onError": "continueRegularOutput",
-        "id": "n-00000011-0000-4000-8000-0000000000",
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        }
-      },
-      {
-        "parameters": {
-          "jsCode": "const rows = $input.all().map(i => i.json);\nconst bySymbol = {};\nfor (const r of rows) {\n  if (!bySymbol[r.symbol]) bySymbol[r.symbol] = [];\n  bySymbol[r.symbol].push({ datum: r.datum, kurs: Number(r.aktueller_kurs) });\n}\nfor (const s in bySymbol) bySymbol[s].sort((a,b) => a.datum < b.datum ? -1 : 1);\nreturn [{ json: { benchmarkverlauf: bySymbol } }];"
-        },
-        "name": "Benchmarkverlauf gruppieren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1800,
-          -320
-        ],
-        "id": "n-00000012-0000-4000-8000-0000000000",
-        "alwaysOutputData": true
-      },
-      {
-        "parameters": {},
-        "name": "Kontext zusammenfuehren",
-        "type": "n8n-nodes-base.merge",
-        "typeVersion": 3,
-        "position": [
-          -1600,
-          -160
-        ],
-        "id": "n-00000013-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "jsCode": "function tickerBenchmark(instruments, ticker) {\n  const m = instruments.find(i => i.ticker === ticker);\n  return (m && m.benchmark_symbol) || '^GDAXI';\n}\n\nfunction findBaselineAndHorizons(verlauf, newsDate, baselineCase) {\n  // verlauf: sortierte Liste {datum, kurs}. newsDate: 'YYYY-MM-DD'.\n  const idxOnOrBefore = (d) => {\n    let idx = -1;\n    for (let i = 0; i < verlauf.length; i++) { if (verlauf[i].datum <= d) idx = i; else break; }\n    return idx;\n  };\n  let baselineIdx;\n  if (baselineCase === 'nach_handelsende') {\n    baselineIdx = verlauf.findIndex(v => v.datum === newsDate);\n    if (baselineIdx === -1) baselineIdx = idxOnOrBefore(newsDate);\n  } else {\n    // vor_handelsbeginn / waehrend_handelszeit -> Vortagesschluss\n    const onOrBefore = idxOnOrBefore(newsDate);\n    baselineIdx = (verlauf[onOrBefore] && verlauf[onOrBefore].datum === newsDate) ? onOrBefore - 1 : onOrBefore;\n  }\n  return baselineIdx;\n}\n\nfunction safeGrouped(nodeName, field) {\n  // Wenn der vorgelagerte Node 0 Eingabe-Items bekam (z.B. noch keine\n  // Kurshistorie fuer diesen Ticker/dieses Symbol vorhanden), wird er von\n  // n8n gar nicht erst ausgefuehrt -- .first()/.all() wuerden dann werfen.\n  // Kontrolliert mit leerem Objekt weiterlaufen statt den ganzen Lauf\n  // abzubrechen (Auftrag: 'auch bei leeren Ergebnismengen kontrolliert\n  // weiterlaufen').\n  try {\n    const res = $(nodeName).first();\n    return (res && res.json && res.json[field]) || {};\n  } catch (e) {\n    return {};\n  }\n}\n\nconst rows = $('Neu + Offen zusammenfuehren').all().map(i => i.json);\nconst otherNews = $('DB: Weitere News je Ticker laden').all().map(i => i.json);\nconst kursverlauf = safeGrouped('Kursverlauf gruppieren', 'kursverlauf');\nconst benchmarkverlauf = safeGrouped('Benchmarkverlauf gruppieren', 'benchmarkverlauf');\nconst instruments = $('DB: Instrumente (Benchmark-Zuordnung)').all().map(i => i.json);\n\nconst HORIZONS = [1, 3, 5, 10, 20];\n// Schwellenwerte vorerst als benannte Konstanten hier (Priorisierung 11 zentralisiert\n// sie spaeter in trading.pipeline_config, wie DRY_RUN/REQUIRE_CONFIRMATION bereits).\nconst CONFOUND_BENCHMARK_DAILY_MOVE = 0.02; // 2% TAEGLICHE (nicht kumulierte) Benchmark-Bewegung\nconst CATEGORY_KEYWORDS = ['quartalszahl', 'gewinnwarnung', 'dividende', 'kapitalerhoehung', 'uebernahme', 'übernahme', 'analysten', 'herabstufung', 'hochstufung'];\nconst MAJOR_FOLLOWUP_CATEGORIES = new Set(['quarterly_results', 'profit_warning', 'merger_acquisition', 'regulation']);\n\nfunction maxDailyMove(verlauf, fromIdx, toIdx) {\n  let max = 0;\n  for (let i = Math.max(fromIdx, 1); i <= toIdx && i < verlauf.length; i++) {\n    const prev = verlauf[i - 1], cur = verlauf[i];\n    if (!prev || !cur || !prev.kurs) continue;\n    const move = Math.abs((cur.kurs / prev.kurs) - 1);\n    if (move > max) max = move;\n  }\n  return max;\n}\n\nfunction findAdditionalNews(otherNewsList, ownNewsId, ticker, newsDateStr, windowDays) {\n  const start = new Date(newsDateStr);\n  return otherNewsList.filter(n => {\n    if (String(n.news_id) === String(ownNewsId)) return false;\n    const tickers = Array.isArray(n.betroffene_ticker_json) ? n.betroffene_ticker_json : [];\n    if (!tickers.includes(ticker)) return false;\n    const diffDays = (new Date(n.published_at) - start) / (1000 * 60 * 60 * 24);\n    return diffDays >= 0 && diffDays <= windowDays;\n  });\n}\n\nconst results = [];\n\nfor (const row of rows) {\n  const ticker = row.ticker;\n  const verlauf = kursverlauf[ticker] || [];\n  const benchmarkSymbol = row.benchmark_symbol || tickerBenchmark(instruments, ticker);\n  const bverlauf = benchmarkverlauf[benchmarkSymbol] || [];\n\n  const isNew = row.baseline_case !== undefined;\n\n  let baselineIdx, newsDate, baselinePrice, baselineTs, firstTradingDate;\n\n  if (isNew) {\n    newsDate = row.news_date;\n    baselineIdx = findBaselineAndHorizons(verlauf, newsDate, row.baseline_case);\n    if (baselineIdx < 0 || !verlauf[baselineIdx]) {\n      // Noch keine Kursdaten fuer diesen Ticker vorhanden -> naechsten Lauf abwarten.\n      continue;\n    }\n    baselinePrice = verlauf[baselineIdx].kurs;\n    baselineTs = verlauf[baselineIdx].datum;\n    firstTradingDate = verlauf[baselineIdx + 1] ? verlauf[baselineIdx + 1].datum : null;\n  } else {\n    newsDate = row.news_date;\n    baselinePrice = Number(row.baseline_price);\n    baselineTs = row.baseline_timestamp;\n    baselineIdx = verlauf.findIndex(v => v.datum === baselineTs);\n  }\n\n  const bBaselineIdx = bverlauf.findIndex(v => v.datum === baselineTs);\n  const benchmarkBaseline = bBaselineIdx >= 0 ? bverlauf[bBaselineIdx].kurs : (isNew ? null : Number(row.benchmark_baseline_price));\n\n  const out = {\n    is_new: isNew,\n    id: isNew ? null : row.id,\n    news_id: row.news_id,\n    news_key: row.news_key,\n    ticker,\n    news_date: newsDate,\n    publication_timestamp: isNew ? row.publication_timestamp : row.publication_timestamp,\n    first_trading_date: isNew ? firstTradingDate : row.first_trading_date,\n    predicted_direction: isNew ? row.predicted_direction : row.predicted_direction,\n    predicted_strength: isNew ? row.predicted_strength : row.predicted_strength,\n    prediction_confidence: isNew ? row.prediction_confidence : row.prediction_confidence,\n    news_category: isNew ? row.news_category : row.news_category,\n    source: isNew ? row.source : row.source,\n    baseline_price: baselinePrice,\n    baseline_timestamp: baselineTs,\n    baseline_quality: isNew ? row.baseline_quality : row.baseline_quality,\n    benchmark_symbol: benchmarkSymbol,\n    benchmark_baseline_price: benchmarkBaseline\n  };\n\n  let maxPos = isNew ? null : row.max_positive_move;\n  let maxNeg = isNew ? null : row.max_negative_move;\n  let lastFilledIdx = -1;\n\n  for (const h of HORIZONS) {\n    const existingPrice = isNew ? null : row['price_d' + h];\n    if (existingPrice !== null && existingPrice !== undefined) {\n      out['price_d' + h] = existingPrice;\n      out['return_d' + h] = row['return_d' + h];\n      out['benchmark_return_d' + h] = row['benchmark_return_d' + h];\n      out['abnormal_return_d' + h] = row['abnormal_return_d' + h];\n      out['direction_correct_d' + h] = row['direction_correct_d' + h];\n      lastFilledIdx = h;\n      continue;\n    }\n    const targetIdx = baselineIdx + h;\n    const point = verlauf[targetIdx];\n    if (!point || baselineIdx < 0 || !baselinePrice) {\n      out['price_d' + h] = null; out['return_d' + h] = null;\n      out['benchmark_return_d' + h] = null; out['abnormal_return_d' + h] = null;\n      out['direction_correct_d' + h] = null;\n      continue;\n    }\n    const ret = (point.kurs / baselinePrice) - 1;\n    const bPoint = bverlauf[bBaselineIdx + h];\n    const bRet = (bPoint && benchmarkBaseline) ? (bPoint.kurs / benchmarkBaseline) - 1 : null;\n    const abnormal = bRet !== null ? ret - bRet : null;\n\n    out['price_d' + h] = point.kurs;\n    out['return_d' + h] = Number(ret.toFixed(6));\n    out['benchmark_return_d' + h] = bRet !== null ? Number(bRet.toFixed(6)) : null;\n    out['abnormal_return_d' + h] = abnormal !== null ? Number(abnormal.toFixed(6)) : null;\n\n    // Richtungstreffer je Beobachtungszeitraum, nicht erst bei D+20 (Auftrag Prioritaet 3).\n    if (abnormal !== null && out.predicted_direction) {\n      const observedDirH = abnormal > 0.005 ? 'positiv' : abnormal < -0.005 ? 'negativ' : 'neutral';\n      out['direction_correct_d' + h] = out.predicted_direction === observedDirH;\n    } else {\n      out['direction_correct_d' + h] = null;\n    }\n\n    if (maxPos === null || maxPos === undefined || ret > maxPos) maxPos = ret;\n    if (maxNeg === null || maxNeg === undefined || ret < maxNeg) maxNeg = ret;\n  }\n\n  out.max_positive_move = maxPos;\n  out.max_negative_move = maxNeg;\n\n  const d20Filled = out.price_d20 !== null && out.price_d20 !== undefined;\n  const anyNewFilled = HORIZONS.some(h => out['price_d' + h] !== null && out['price_d' + h] !== undefined);\n\n  // Stoerfaktor-Erkennung (Phase 7): grobe, deterministische Heuristik ohne\n  // Fundamentaldaten-Kalender (nicht vorhanden) -- Kategorie-Schluesselwoerter\n  // in anderen News zum selben Ticker im Beobachtungsfenster + starke\n  // Benchmark-Bewegung am jeweiligen Tag.\n  let confounded = isNew ? false : !!row.confounded;\n  let confoundingReason = isNew ? '' : (row.confounding_reason || '');\n\n  // Taegliche statt kumulierte Bewegung (Auftrag Punkt 7): eine 10/20-Tage-Gesamtrendite\n  // von >2% ist bei normaler Marktdrift die Regel, keine Ausnahme -- deckt weder\n  // \"aussergewoehnliche Bewegung am Ereignistag\" noch \"starke Einzeltagsbewegung\n  // im Fenster\" wirklich ab. Prueft stattdessen den groessten TAGES-Sprung der\n  // Benchmark irgendwo zwischen Baseline und dem am weitesten gefuellten Horizont.\n  const furthestHorizon = HORIZONS.filter(h => out['price_d' + h] !== null && out['price_d' + h] !== undefined).pop() || 0;\n  const dailyMove = bBaselineIdx >= 0 ? maxDailyMove(bverlauf, bBaselineIdx, bBaselineIdx + furthestHorizon) : 0;\n  if (dailyMove > CONFOUND_BENCHMARK_DAILY_MOVE && !confounded) {\n    confounded = true;\n    confoundingReason = `Aussergewoehnliche taegliche Benchmark-Bewegung (${(dailyMove * 100).toFixed(1)}%) im Beobachtungsfenster`;\n  }\n\n  // Weitere kursrelevante News zum selben Ticker im Fenster (Auftrag Punkt 8).\n  // Fensterbreite grob an D+20 Handelstage angelehnt (Kalendertage, da der\n  // News-Strom nicht an Handelstage gebunden ist).\n  const additionalNews = findAdditionalNews(otherNews, row.news_id, ticker, newsDate, 28);\n  out.additional_news_count = additionalNews.length;\n  const majorFollowups = additionalNews.filter(n =>\n    MAJOR_FOLLOWUP_CATEGORIES.has(n.news_kategorie) ||\n    CATEGORY_KEYWORDS.some(kw => String(n.titel || '').toLowerCase().includes(kw))\n  );\n  out.has_major_followup_news = majorFollowups.length > 0;\n  if (out.has_major_followup_news && !confounded) {\n    confounded = true;\n    const cats = [...new Set(majorFollowups.map(n => n.news_kategorie || 'sonstige'))];\n    confoundingReason = `Weitere kursrelevante News im Beobachtungsfenster (${cats.join(', ')})`;\n  }\n\n  out.confounded = confounded;\n  out.confounding_reason = confoundingReason;\n\n  // Abschluss-Status\n  if (d20Filled) {\n    const observedDirection = out.abnormal_return_d20 === null ? 'unklar' : (out.abnormal_return_d20 > 0.005 ? 'positiv' : out.abnormal_return_d20 < -0.005 ? 'negativ' : 'neutral');\n    const observedStrength = out.abnormal_return_d20 === null ? 'unklar' : (Math.abs(out.abnormal_return_d20) > 0.05 ? 'hoch' : Math.abs(out.abnormal_return_d20) > 0.015 ? 'mittel' : 'niedrig');\n    out.observed_direction = observedDirection;\n    out.observed_strength = observedStrength;\n    out.direction_correct = out.predicted_direction && observedDirection !== 'unklar' ? (out.predicted_direction === observedDirection) : null;\n    out.strength_correct = out.predicted_strength && observedStrength !== 'unklar' ? (out.predicted_strength === observedStrength) : null;\n    out.quality_score = out.direction_correct === null ? null : (out.direction_correct ? (out.strength_correct ? 100 : 60) : 0);\n    out.status = confounded ? 'confounded' : 'completed';\n    out.completed_at = new Date().toISOString();\n  } else if (anyNewFilled || !isNew) {\n    const nextHorizon = HORIZONS.find(h => out['price_d' + h] === null || out['price_d' + h] === undefined);\n    out.status = nextHorizon ? ('waiting_d' + nextHorizon) : 'waiting_d1';\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  } else {\n    out.status = 'waiting_d1';\n    out.observed_direction = null; out.observed_strength = null;\n    out.direction_correct = null; out.strength_correct = null; out.quality_score = null;\n    out.completed_at = null;\n  }\n\n  results.push({ json: out });\n}\n\nreturn results;\n"
-        },
-        "name": "D+1..D+20 berechnen + Stoerfaktoren",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1400,
-          -160
-        ],
-        "id": "n-00000014-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? 'NULL' : (v ? 'TRUE' : 'FALSE'); }\nfunction pgJson(v) { return `'` + JSON.stringify(v === undefined ? null : v).replace(/'/g, `''`) + `'::jsonb`; }\nfunction pgArr(v) { return `'{` + (Array.isArray(v) ? v : []).map(x => String(x).replace(/\"/g,'\\\\\"')).join(',') + `}'`; }\n\n\nconst j = $json;\nconst num = (v) => v === null || v === undefined ? 'NULL' : pgNum(v);\n\nconst cols = {\n  news_id: pgNum(j.news_id), news_key: pgStr(j.news_key), ticker: pgStr(j.ticker),\n  news_date: pgStr(j.news_date), publication_timestamp: j.publication_timestamp ? pgStr(j.publication_timestamp) : 'NULL',\n  first_trading_date: j.first_trading_date ? pgStr(j.first_trading_date) : 'NULL',\n  predicted_direction: pgStr(j.predicted_direction), predicted_strength: pgStr(j.predicted_strength),\n  prediction_confidence: num(j.prediction_confidence), news_category: pgStr(j.news_category), source: pgStr(j.source),\n  baseline_price: num(j.baseline_price), baseline_timestamp: j.baseline_timestamp ? pgStr(j.baseline_timestamp) : 'NULL',\n  baseline_quality: pgStr(j.baseline_quality),\n  benchmark_symbol: pgStr(j.benchmark_symbol), benchmark_baseline_price: num(j.benchmark_baseline_price),\n  price_d1: num(j.price_d1), price_d3: num(j.price_d3), price_d5: num(j.price_d5), price_d10: num(j.price_d10), price_d20: num(j.price_d20),\n  return_d1: num(j.return_d1), return_d3: num(j.return_d3), return_d5: num(j.return_d5), return_d10: num(j.return_d10), return_d20: num(j.return_d20),\n  benchmark_return_d1: num(j.benchmark_return_d1), benchmark_return_d3: num(j.benchmark_return_d3), benchmark_return_d5: num(j.benchmark_return_d5),\n  benchmark_return_d10: num(j.benchmark_return_d10), benchmark_return_d20: num(j.benchmark_return_d20),\n  abnormal_return_d1: num(j.abnormal_return_d1), abnormal_return_d3: num(j.abnormal_return_d3), abnormal_return_d5: num(j.abnormal_return_d5),\n  abnormal_return_d10: num(j.abnormal_return_d10), abnormal_return_d20: num(j.abnormal_return_d20),\n  max_positive_move: num(j.max_positive_move), max_negative_move: num(j.max_negative_move),\n  observed_direction: pgStr(j.observed_direction), observed_strength: pgStr(j.observed_strength),\n  direction_correct: j.direction_correct === null ? 'NULL' : pgBool(j.direction_correct),\n  direction_correct_d1: j.direction_correct_d1 === null || j.direction_correct_d1 === undefined ? 'NULL' : pgBool(j.direction_correct_d1),\n  direction_correct_d3: j.direction_correct_d3 === null || j.direction_correct_d3 === undefined ? 'NULL' : pgBool(j.direction_correct_d3),\n  direction_correct_d5: j.direction_correct_d5 === null || j.direction_correct_d5 === undefined ? 'NULL' : pgBool(j.direction_correct_d5),\n  direction_correct_d10: j.direction_correct_d10 === null || j.direction_correct_d10 === undefined ? 'NULL' : pgBool(j.direction_correct_d10),\n  direction_correct_d20: j.direction_correct_d20 === null || j.direction_correct_d20 === undefined ? 'NULL' : pgBool(j.direction_correct_d20),\n  strength_correct: j.strength_correct === null ? 'NULL' : pgBool(j.strength_correct),\n  quality_score: num(j.quality_score),\n  confounded: pgBool(j.confounded), confounding_reason: pgStr(j.confounding_reason), additional_news_count: pgNum(j.additional_news_count),\n  has_major_followup_news: pgBool(j.has_major_followup_news),\n  status: pgStr(j.status), completed_at: j.completed_at ? pgStr(j.completed_at) : 'NULL'\n};\n\nconst colNames = Object.keys(cols).join(', ');\nconst colVals = Object.values(cols).join(', ');\nconst updateSet = Object.keys(cols).filter(k => k !== 'news_id' && k !== 'ticker').map(k => `${k} = EXCLUDED.${k}`).join(', ');\n\nconst sql = `INSERT INTO trading.news_impact_tracking (${colNames}, updated_at)\n  VALUES (${colVals}, now())\n  ON CONFLICT (news_id, ticker) DO UPDATE SET ${updateSet}, updated_at = now();`;\n\nreturn { json: { ...j, sql } };\n"
-        },
-        "name": "Tracking-Zeile upserten (SQL bauen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -1200,
-          -160
-        ],
-        "id": "n-00000015-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "={{ $json.sql }}",
-          "options": {}
-        },
-        "name": "Tracking-Zeile upserten (ausfuehren)",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -1024,
-          -160
-        ],
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "onError": "continueRegularOutput",
-        "id": "n-00000016-0000-4000-8000-0000000000"
-      },
-      {
-        "parameters": {
-          "mode": "runOnceForEachItem",
-          "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
-        },
-        "name": "Persistierung pruefen (sonst werfen)",
-        "type": "n8n-nodes-base.code",
-        "typeVersion": 2,
-        "position": [
-          -848,
-          -160
-        ],
-        "id": "p8-check-08-tracking-upsert"
-      },
-      {
-        "parameters": {
-          "operation": "executeQuery",
-          "query": "SELECT na.news_id, ni.title AS titel, na.betroffene_ticker_json, na.news_kategorie, na.wirkung_staerke, ni.published_at FROM trading.news_assessments na JOIN trading.news_items ni ON ni.id = na.news_id WHERE na.relevant = TRUE AND na.wirkung_staerke = 'hoch' AND ni.published_at > now() - interval '60 days' ORDER BY ni.published_at;",
-          "options": {}
-        },
-        "id": "6817d90e-1e77-4d2c-8394-952457be85fe",
-        "name": "DB: Weitere News je Ticker laden",
-        "type": "n8n-nodes-base.postgres",
-        "typeVersion": 2.5,
-        "position": [
-          -2780,
-          260
-        ],
-        "credentials": {
-          "postgres": {
-            "id": "NWckNyl8ZfwVVJCd",
-            "name": "Postgres account"
-          }
-        },
-        "onError": "continueRegularOutput",
-        "alwaysOutputData": true
-      }
-    ],
-    "connections": {
-      "Trigger: Wirkungsanalyse (19:00 Werktage)": {
-        "main": [
-          [
-            {
-              "node": "DB: Weitere News je Ticker laden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Weitere News je Ticker laden": {
-        "main": [
-          [
-            {
-              "node": "DB: Neue News-Ticker-Paare laden",
-              "type": "main",
-              "index": 0
-            },
-            {
-              "node": "DB: Offene Tracking-Zeilen laden",
-              "type": "main",
-              "index": 0
-            },
-            {
-              "node": "DB: Instrumente (Benchmark-Zuordnung)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Neue News-Ticker-Paare laden": {
-        "main": [
-          [
-            {
-              "node": "Baseline-Fall je (News,Ticker) bestimmen",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Baseline-Fall je (News,Ticker) bestimmen": {
-        "main": [
-          [
-            {
-              "node": "Neu + Offen zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Offene Tracking-Zeilen laden": {
-        "main": [
-          [
-            {
-              "node": "Neu + Offen zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Neu + Offen zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "Distinkte Ticker extrahieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Distinkte Ticker extrahieren": {
-        "main": [
-          [
-            {
-              "node": "DB: Kursverlauf je Ticker laden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Kursverlauf je Ticker laden": {
-        "main": [
-          [
-            {
-              "node": "Kursverlauf gruppieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Instrumente (Benchmark-Zuordnung)": {
-        "main": [
-          [
-            {
-              "node": "Distinkte Benchmark-Symbole extrahieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Distinkte Benchmark-Symbole extrahieren": {
-        "main": [
-          [
-            {
-              "node": "DB: Benchmark-Kursverlauf laden",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "DB: Benchmark-Kursverlauf laden": {
-        "main": [
-          [
-            {
-              "node": "Benchmarkverlauf gruppieren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Kursverlauf gruppieren": {
-        "main": [
-          [
-            {
-              "node": "Kontext zusammenfuehren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Benchmarkverlauf gruppieren": {
-        "main": [
-          [
-            {
-              "node": "Kontext zusammenfuehren",
-              "type": "main",
-              "index": 1
-            }
-          ]
-        ]
-      },
-      "Kontext zusammenfuehren": {
-        "main": [
-          [
-            {
-              "node": "D+1..D+20 berechnen + Stoerfaktoren",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Tracking-Zeile upserten (SQL bauen)": {
-        "main": [
-          [
-            {
-              "node": "Tracking-Zeile upserten (ausfuehren)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "Tracking-Zeile upserten (ausfuehren)": {
-        "main": [
-          [
-            {
-              "node": "Persistierung pruefen (sonst werfen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      },
-      "D+1..D+20 berechnen + Stoerfaktoren": {
-        "main": [
-          [
-            {
-              "node": "Tracking-Zeile upserten (SQL bauen)",
-              "type": "main",
-              "index": 0
-            }
-          ]
-        ]
-      }
-    },
-    "authors": "Oliver Lietz",
-    "name": null,
-    "description": null,
-    "autosaved": false,
-    "workflowPublishHistory": [
-      {
-        "createdAt": "2026-08-01T21:08:18.258Z",
-        "id": 2223,
-        "workflowId": "EvJKlqkuSIu9CHmR",
-        "versionId": "49cbd936-4a9c-430b-84a0-a3e64ed165b8",
-        "event": "deactivated",
-        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      },
-      {
-        "createdAt": "2026-08-01T21:08:18.331Z",
-        "id": 2224,
-        "workflowId": "EvJKlqkuSIu9CHmR",
-        "versionId": "49cbd936-4a9c-430b-84a0-a3e64ed165b8",
-        "event": "activated",
-        "userId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      }
-    ]
-  }
+  "versionId": "582a23f6-0352-4b96-8984-4a62e6039623"
 }

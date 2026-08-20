@@ -1,5 +1,54 @@
 {
-  "name": "97 – Einmalig – Beliebige Query ausfuehren",
+  "active": false,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Diagnose (POST)": {
+      "main": [
+        [
+          {
+            "node": "Baue Query aus Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query aus Body": {
+      "main": [
+        [
+          {
+            "node": "Query ausfuehren (dynamisch)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query ausfuehren (dynamisch)": {
+      "main": [
+        [
+          {
+            "node": "Antwort JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "NInmI0f9TfdndwI1",
+  "meta": null,
+  "name": "97 - Einmalig - Beliebige Query ausfuehren",
   "nodes": [
     {
       "parameters": {},
@@ -47,11 +96,13 @@
       "position": [
         -400,
         200
-      ]
+      ],
+      "webhookId": "f265549e-e894-445b-9132-f72d0326023d",
+      "disabled": true
     },
     {
       "parameters": {
-        "jsCode": "const sql = String(($json.body || {}).sql || '').trim();\nif (!sql) return [{ json: { _error: 'Feld \"sql\" fehlt im POST-Body.' } }];\nreturn [{ json: { query: sql } }];"
+        "jsCode": "const sqlText = String(($json.body || {}).sql || '').trim();\nif (!sqlText) return [{ json: { _error: 'Feld sql fehlt im POST-Body.' } }];\nreturn [{ json: { sqlText } }];"
       },
       "id": "30000000-0000-4000-8000-000000000004",
       "name": "Baue Query aus Body",
@@ -65,7 +116,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.query }}",
+        "query": "={{ $json.sqlText }}",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000005",
@@ -100,54 +151,12 @@
       ]
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "Query ausfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook Diagnose (POST)": {
-      "main": [
-        [
-          {
-            "node": "Baue Query aus Body",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Query aus Body": {
-      "main": [
-        [
-          {
-            "node": "Query ausfuehren (dynamisch)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Query ausfuehren (dynamisch)": {
-      "main": [
-        [
-          {
-            "node": "Antwort JSON",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
-  "pinData": {},
+  "pinData": null,
   "settings": {
-    "executionOrder": "v1"
-  }
+    "executionOrder": "v1",
+    "executionTimeout": 30,
+    "saveDataSuccessExecution": "all"
+  },
+  "tags": [],
+  "versionId": "cfebe936-641a-4aee-97bc-315e4dbf8a02"
 }

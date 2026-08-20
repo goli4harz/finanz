@@ -1,11 +1,202 @@
 {
-  "updatedAt": "2026-08-02T08:33:26.561Z",
-  "createdAt": "2026-08-01T00:36:15.248Z",
+  "active": true,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Lernagent Handel (Samstag 08:30)": {
+      "main": [
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Lern-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "DB: OOS-Backtests laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: OOS-Backtests laden": {
+      "main": [
+        [
+          {
+            "node": "SQL: Gesamtkennzahlen (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Gesamtkennzahlen (Trades)": {
+      "main": [
+        [
+          {
+            "node": "SQL: Je Dimension (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Dimension (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Mindestfallzahlen klassifizieren (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mindestfallzahlen klassifizieren (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Baue Lernagent-Prompt (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Lernagent-Prompt (Trades)": {
+      "main": [
+        [
+          {
+            "node": "KI: Lernbericht interpretieren (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KI: Lernbericht interpretieren (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege gegen Fallzahlen validieren (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege gegen Fallzahlen validieren (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege auffaechern (Trades)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Agentenlauf protokollieren (Trades, SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege auffaechern (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (SQL bauen, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlag speichern (SQL bauen, Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (ausfuehren, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (Trades, SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Agentenlauf protokollieren (Trades, ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (Trades, ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Lernbericht aufbereiten (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lernbericht aufbereiten (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Lernbericht senden (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlag speichern (ausfuehren, Trades)": {
+      "main": [
+        [
+          {
+            "node": "Fehlerpruefung (Vorschlag speichern, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "id": "N91C38VeoNXUBWmB",
+  "meta": null,
   "name": "09b – Lernagent Handelsstrategien",
-  "description": null,
-  "active": false,
-  "isArchived": false,
   "nodes": [
     {
       "parameters": {},
@@ -355,7 +546,10 @@
       "id": "n-welle3-09b-f12-errcheck"
     },
     {
-      "parameters": {},
+      "parameters": {
+        "events": "worklfow_call",
+        "inputSource": "passthrough"
+      },
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -366,230 +560,11 @@
       "id": "n-repair-p17-09b-exectrigger"
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "DB: Lern-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Lernagent Handel (Samstag 08:30)": {
-      "main": [
-        [
-          {
-            "node": "DB: Lern-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Lern-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "DB: OOS-Backtests laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: OOS-Backtests laden": {
-      "main": [
-        [
-          {
-            "node": "SQL: Gesamtkennzahlen (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Gesamtkennzahlen (Trades)": {
-      "main": [
-        [
-          {
-            "node": "SQL: Je Dimension (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Dimension (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Mindestfallzahlen klassifizieren (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mindestfallzahlen klassifizieren (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Baue Lernagent-Prompt (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Lernagent-Prompt (Trades)": {
-      "main": [
-        [
-          {
-            "node": "KI: Lernbericht interpretieren (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "KI: Lernbericht interpretieren (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege gegen Fallzahlen validieren (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege gegen Fallzahlen validieren (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege auffaechern (Trades)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Agentenlauf protokollieren (Trades, SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege auffaechern (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (SQL bauen, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlag speichern (SQL bauen, Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (ausfuehren, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (Trades, SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Agentenlauf protokollieren (Trades, ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (Trades, ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "Lernbericht aufbereiten (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lernbericht aufbereiten (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Lernbericht senden (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlag speichern (ausfuehren, Trades)": {
-      "main": [
-        [
-          {
-            "node": "Fehlerpruefung (Vorschlag speichern, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "DB: Lern-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
-  "staticData": null,
-  "meta": null,
-  "pinData": null,
-  "versionId": "42c884c0-fea9-4bd0-b780-04e57cfa180a",
-  "activeVersionId": null,
-  "versionCounter": 5,
-  "triggerCount": 0,
-  "shared": [
-    {
-      "updatedAt": "2026-08-01T00:36:15.248Z",
-      "createdAt": "2026-08-01T00:36:15.248Z",
-      "role": "workflow:owner",
-      "workflowId": "N91C38VeoNXUBWmB",
-      "projectId": "CrnegVcMvlcRU0OP",
-      "project": {
-        "updatedAt": "2026-05-23T11:38:39.411Z",
-        "createdAt": "2026-05-23T11:33:40.374Z",
-        "id": "CrnegVcMvlcRU0OP",
-        "name": "Oliver Lietz <oliver.lietz@golietz.de>",
-        "type": "personal",
-        "icon": null,
-        "description": null,
-        "creatorId": "66557ab1-dd68-4186-b616-ecaa8f1bea61"
-      }
-    }
-  ],
   "tags": [],
-  "activeVersion": null
+  "versionId": "1035972d-f752-4b09-be52-fec886163ae8"
 }

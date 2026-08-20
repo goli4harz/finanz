@@ -1,0 +1,1949 @@
+{
+  "active": true,
+  "connections": {
+    "Technische Analyse (RSI/MACD/BB)": {
+      "main": [
+        [
+          {
+            "node": "Signal: flach aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Watchlist laden (Kurse)": {
+      "main": [
+        [
+          {
+            "node": "Kurs abrufen (lokaler FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Starke Signale": {
+      "main": [
+        [
+          {
+            "node": "Matrix Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Kurse (18:00)": {
+      "main": [
+        [
+          {
+            "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal: flach aufbereiten": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld für Signal laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal: Routing": {
+      "main": [
+        [
+          {
+            "node": "IF: Signal vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Signal vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Signal aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Signal neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal aktualisieren": {
+      "main": [
+        [
+          {
+            "node": "Filter: Starke Signale",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Ergebnis 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal neu anlegen": {
+      "main": [
+        [
+          {
+            "node": "Filter: Starke Signale",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Ergebnis 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Signal: Marktumfeld ergänzen": {
+      "main": [
+        [
+          {
+            "node": "DB: Signal suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurs abrufen (lokaler FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Technische Analyse (RSI/MACD/BB)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signal + Marktkontext zusammenführen": {
+      "main": [
+        [
+          {
+            "node": "Signal: Marktumfeld ergänzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld für Signal laden": {
+      "main": [
+        [
+          {
+            "node": "Signal + Marktkontext zusammenführen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Signal suchen": {
+      "main": [
+        [
+          {
+            "node": "Signal: Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Watchlist laden (Kurse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Matrix Alert": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 2": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 3": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "vgT6IrPp3ATaJg8s",
+  "meta": null,
+  "name": "02 – Technische Signale täglich",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 18 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "6e632738-8636-478b-81d0-d5f77c92865e",
+      "name": "Trigger: Kurse (18:00)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1760,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const watchlist = [\n  { ticker: 'SAP.DE',  name: 'SAP SE',           sektor: 'Technologie',  keywords: ['SAP'] },\n  { ticker: 'SIE.DE',  name: 'Siemens AG',        sektor: 'Industrie',    keywords: ['Siemens'] },\n  { ticker: 'BASF.DE', name: 'BASF SE',           sektor: 'Chemie',       keywords: ['BASF'] },\n  { ticker: 'ALV.DE',  name: 'Allianz SE',        sektor: 'Versicherung', keywords: ['Allianz'] },\n  { ticker: 'MBG.DE',  name: 'Mercedes-Benz',     sektor: 'Auto',         keywords: ['Mercedes', 'Mercedes-Benz', 'Daimler'] },\n  { ticker: 'BMW.DE',  name: 'BMW AG',            sektor: 'Auto',         keywords: ['BMW'] },\n  { ticker: 'VOW3.DE', name: 'Volkswagen VZ',     sektor: 'Auto',         keywords: ['Volkswagen', 'VW'] },\n  { ticker: 'DBK.DE',  name: 'Deutsche Bank',     sektor: 'Banken',       keywords: ['Deutsche Bank'] },\n  { ticker: 'DTE.DE',  name: 'Deutsche Telekom',  sektor: 'Telekom',      keywords: ['Telekom', 'Deutsche Telekom'] },\n  { ticker: 'RWE.DE',  name: 'RWE AG',            sektor: 'Energie',      keywords: ['RWE'] },\n  { ticker: 'BAYN.DE', name: 'Bayer AG',          sektor: 'Pharma',       keywords: ['Bayer'] },\n  { ticker: 'EOAN.DE', name: 'E.ON SE',           sektor: 'Energie',      keywords: ['E.ON', 'EON'] },\n  { ticker: 'ADS.DE',  name: 'adidas AG',         sektor: 'Sport',        keywords: ['adidas', 'Adidas'] },\n  { ticker: 'HEN3.DE', name: 'Henkel VZ',         sektor: 'Konsumgüter',  keywords: ['Henkel'] },\n  { ticker: 'FRE.DE',  name: 'Fresenius SE',      sektor: 'Gesundheit',   keywords: ['Fresenius'] }\n];\nconst _startedAt = new Date().toISOString();\nreturn watchlist.map(s => ({ json: { ...s, _run_started_at: _startedAt } }));"
+      },
+      "id": "134fbfae-6827-4f0e-b253-e9aeecee42f3",
+      "name": "Watchlist laden (Kurse)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1536,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://172.16.1.14:8099/chart/{{ $json.ticker }}?period=3mo&interval=1d",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "1e9a133c-18c2-465b-bd41-8c0a818c1208",
+      "name": "Kurs abrufen (lokaler FastAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1312,
+        656
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// TECHNISCHE ANALYSE – Yahoo/Finnhub/Stooq-Chartformat\n// Modus im n8n Code Node: runOnceForEachItem\n// Erweitert:\n// - echte MACD-Signal-Linie\n// - echte MACD-Kreuzung\n// - praktische Handelsbewertung mit Gebührenpuffer, Ziel, Risiko, CRV\n// - Status: handelskandidat / beobachten / nur_info / ignorieren\n\nconst input = $input.item.json;\n// Robust: FastAPI-Antwort kann direkt in json oder unter json.body liegen\nconst inputData = (input.chart) ? input : (input.body || input);\n\n// Watchlist-Daten aus vorherigem Node holen.\n// Falls dein Kurs-Service ticker/name direkt mitgibt, werden diese bevorzugt.\nlet ticker = input.ticker || '';\nlet name = input.name || ticker;\nlet sektor = input.sektor || '';\n\ntry {\n  const wl = $('Watchlist laden (Kurse)').item.json;\n  ticker = input.ticker || wl.ticker || ticker;\n  name = input.name || wl.name || name;\n  sektor = input.sektor || wl.sektor || sektor;\n} catch (e) {\n  // Falls der Watchlist-Node nicht gefunden wird, bleiben input.ticker/input.name/input.sektor aktiv.\n}\n\ntry {\n  if (!inputData.chart || !inputData.chart.result || !inputData.chart.result[0]) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'Keine Chartdaten vorhanden',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  const chart = inputData.chart.result[0];\n  const meta = chart.meta || {};\n  const quote = chart.indicators?.quote?.[0];\n\n  if (!quote) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'Keine Quote-Daten vorhanden',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  const closes = (quote.close || []).filter(v => v != null && !isNaN(v));\n  const highs = (quote.high || []).filter(v => v != null && !isNaN(v));\n  const lows = (quote.low || []).filter(v => v != null && !isNaN(v));\n  const vols = (quote.volume || []).filter(v => v != null && !isNaN(v) && v > 0);\n\n  if (closes.length < 35) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'Zu wenige Datenpunkte (' + closes.length + ')',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  const aktuellerKurs = closes[closes.length - 1];\n  const vorherigerKurs = closes[closes.length - 2];\n\n  const veraenderungPctRaw = ((aktuellerKurs - vorherigerKurs) / vorherigerKurs) * 100;\n  const veraenderung = veraenderungPctRaw.toFixed(2) + '%';\n  const veraenderungPct = Math.abs(veraenderungPctRaw);\n\n  // ------------------------------------------------------------\n  // Hilfsfunktionen\n  // ------------------------------------------------------------\n\n  function ema(arr, p) {\n    if (!arr || arr.length < p) return null;\n\n    const k = 2 / (p + 1);\n    let e = arr.slice(0, p).reduce((a, b) => a + b, 0) / p;\n\n    for (let i = p; i < arr.length; i++) {\n      e = arr[i] * k + e * (1 - k);\n    }\n\n    return e;\n  }\n\n  function emaSeries(arr, p) {\n    if (!arr || arr.length < p) return [];\n\n    const k = 2 / (p + 1);\n    const result = [];\n\n    let e = arr.slice(0, p).reduce((a, b) => a + b, 0) / p;\n\n    for (let i = 0; i < arr.length; i++) {\n      if (i < p - 1) {\n        result.push(null);\n      } else if (i === p - 1) {\n        result.push(e);\n      } else {\n        e = arr[i] * k + e * (1 - k);\n        result.push(e);\n      }\n    }\n\n    return result;\n  }\n\n  function rsi(arr, p = 14) {\n    if (!arr || arr.length <= p) return null;\n\n    let gains = 0;\n    let losses = 0;\n\n    for (let i = arr.length - p; i < arr.length; i++) {\n      const diff = arr[i] - arr[i - 1];\n      if (diff > 0) {\n        gains += diff;\n      } else {\n        losses += Math.abs(diff);\n      }\n    }\n\n    const avgGain = gains / p;\n    const avgLoss = losses / p;\n\n    if (avgLoss === 0) return 100;\n\n    return 100 - (100 / (1 + avgGain / avgLoss));\n  }\n\n  function round(value, digits = 2) {\n    if (value == null || isNaN(value)) return null;\n    return parseFloat(value.toFixed(digits));\n  }\n\n  function pctMove(from, to) {\n    if (!from || !to || from <= 0 || to <= 0) return null;\n    return ((to - from) / from) * 100;\n  }\n\n  function absPctMove(from, to) {\n    const p = pctMove(from, to);\n    return p === null ? null : Math.abs(p);\n  }\n\n  // ------------------------------------------------------------\n  // RSI\n  // ------------------------------------------------------------\n\n  const rsiRaw = rsi(closes, 14);\n  const rsiVal = round(rsiRaw, 1);\n\n  if (rsiVal === null) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'RSI konnte nicht berechnet werden',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  let rsiSignal = 'Neutral';\n\n  if (rsiVal < 25) {\n    rsiSignal = 'STARK ÜBERVERKAUFT (Long-Chance)';\n  } else if (rsiVal < 35) {\n    rsiSignal = 'Überverkauft';\n  } else if (rsiVal > 75) {\n    rsiSignal = 'STARK ÜBERKAUFT (Short-Chance)';\n  } else if (rsiVal > 65) {\n    rsiSignal = 'Überkauft';\n  }\n\n  // ------------------------------------------------------------\n  // Echter MACD: MACD-Linie, Signal-Linie, Histogramm\n  // ------------------------------------------------------------\n\n  const ema12Series = emaSeries(closes, 12);\n  const ema26Series = emaSeries(closes, 26);\n\n  const macdFullSeries = closes.map((_, i) => {\n    if (ema12Series[i] == null || ema26Series[i] == null) return null;\n    return ema12Series[i] - ema26Series[i];\n  });\n\n  const macdSeries = macdFullSeries.filter(v => v != null);\n\n  if (macdSeries.length < 12) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'Zu wenige Datenpunkte für MACD',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  const macdSignalSeriesRaw = emaSeries(macdSeries, 9);\n  const macdSignalSeries = macdSignalSeriesRaw.filter(v => v != null);\n\n  if (macdSignalSeries.length < 2) {\n    return {\n      json: {\n        type: 'technical_signal',\n        ticker,\n        name,\n        sektor,\n        fehler: 'MACD-Signallinie konnte nicht berechnet werden',\n        zeitstempel: new Date().toISOString()\n      }\n    };\n  }\n\n  const macdValRaw = macdSeries[macdSeries.length - 1];\n  const macdPrevRaw = macdSeries[macdSeries.length - 2];\n\n  const macdSignalValRaw = macdSignalSeries[macdSignalSeries.length - 1];\n  const macdSignalPrevRaw = macdSignalSeries[macdSignalSeries.length - 2];\n\n  const macdHistogrammRaw = macdValRaw - macdSignalValRaw;\n  const macdHistogrammPrevRaw = macdPrevRaw - macdSignalPrevRaw;\n\n  const macdVal = round(macdValRaw, 2);\n  const macdSignalLinie = round(macdSignalValRaw, 2);\n  const macdHistogramm = round(macdHistogrammRaw, 2);\n\n  const macdKreuzungBullisch =\n    macdPrevRaw <= macdSignalPrevRaw && macdValRaw > macdSignalValRaw;\n\n  const macdKreuzungBaerisch =\n    macdPrevRaw >= macdSignalPrevRaw && macdValRaw < macdSignalValRaw;\n\n  const macdNullLinieBullisch =\n    macdPrevRaw < 0 && macdValRaw > 0;\n\n  const macdNullLinieBaerisch =\n    macdPrevRaw > 0 && macdValRaw < 0;\n\n  const macdHistogrammVerbessert =\n    macdHistogrammRaw > macdHistogrammPrevRaw;\n\n  const macdHistogrammVerschlechtert =\n    macdHistogrammRaw < macdHistogrammPrevRaw;\n\n  let macdSignal = 'Neutral';\n\n  if (macdKreuzungBullisch) {\n    macdSignal = 'Bullische Kreuzung';\n  } else if (macdKreuzungBaerisch) {\n    macdSignal = 'Bärische Kreuzung';\n  } else if (macdValRaw > macdSignalValRaw) {\n    macdSignal = 'Bullisch';\n  } else if (macdValRaw < macdSignalValRaw) {\n    macdSignal = 'Bärisch';\n  }\n\n  let macdKreuzung = 'keine';\n\n  if (macdKreuzungBullisch) {\n    macdKreuzung = 'Bullisch';\n  } else if (macdKreuzungBaerisch) {\n    macdKreuzung = 'Bärisch';\n  }\n\n  let macdNullLinie = 'keine';\n\n  if (macdNullLinieBullisch) {\n    macdNullLinie = 'Bullisch';\n  } else if (macdNullLinieBaerisch) {\n    macdNullLinie = 'Bärisch';\n  }\n\n  // ------------------------------------------------------------\n  // Trend / EMA20\n  // ------------------------------------------------------------\n\n  const ema20Raw = ema(closes, 20);\n  const ema20v = round(ema20Raw, 2);\n  const trendAufwaerts = aktuellerKurs > ema20Raw;\n\n  // ------------------------------------------------------------\n  // Bollinger-Bänder\n  // ------------------------------------------------------------\n\n  const bb20 = closes.slice(-20);\n  const bbAvg = bb20.reduce((a, b) => a + b, 0) / 20;\n  const bbStd = Math.sqrt(\n    bb20.map(p => Math.pow(p - bbAvg, 2)).reduce((a, b) => a + b, 0) / 20\n  );\n\n  const bbOben = bbAvg + 2 * bbStd;\n  const bbUnten = bbAvg - 2 * bbStd;\n\n  const kursBeiOben = aktuellerKurs >= bbOben * 0.995;\n  const kursBeiUnten = aktuellerKurs <= bbUnten * 1.005;\n\n  // ------------------------------------------------------------\n  // 52-Wochen-Werte / Ersatz über vorhandene Daten\n  // ------------------------------------------------------------\n\n  const hoch52wRaw =\n    meta.fiftyTwoWeekHigh?.raw ||\n    meta.fiftyTwoWeekHigh ||\n    (highs.length > 0 ? Math.max(...highs) : aktuellerKurs);\n\n  const tief52wRaw =\n    meta.fiftyTwoWeekLow?.raw ||\n    meta.fiftyTwoWeekLow ||\n    (lows.length > 0 ? Math.min(...lows) : aktuellerKurs);\n\n  const hoch52w = round(hoch52wRaw, 2);\n  const tief52w = round(tief52wRaw, 2);\n\n  // ------------------------------------------------------------\n  // Volumen\n  // ------------------------------------------------------------\n\n  const avgVol = vols.length > 0\n    ? vols.reduce((a, b) => a + b, 0) / vols.length\n    : 0;\n\n  const lastVol = vols.length > 0\n    ? vols[vols.length - 1]\n    : 0;\n\n  const volFaktorRaw =\n    avgVol > 0 && lastVol > 0\n      ? lastVol / avgVol\n      : null;\n\n  const volFaktor = volFaktorRaw !== null\n    ? round(volFaktorRaw, 1)\n    : null;\n\n  const volumenErhoeht = volFaktor !== null && volFaktor > 1.5;\n  const volumenOk = volFaktor !== null && volFaktor > 1.0;\n\n  // ------------------------------------------------------------\n  // Richtung bestimmen\n  // ------------------------------------------------------------\n  // \"long\" = mögliche Erholung / Aufwärtsbewegung\n  // \"short\" = mögliche Schwäche / Rücklauf\n  // \"neutral\" = keine klare Richtung\n\n  let richtung = 'neutral';\n\n  if (macdKreuzungBullisch && rsiVal < 60) {\n    richtung = 'long';\n  } else if (macdKreuzungBaerisch && rsiVal > 40) {\n    richtung = 'short';\n  } else if (rsiVal < 35 && kursBeiUnten) {\n    richtung = 'long';\n  } else if (rsiVal > 65 && kursBeiOben) {\n    richtung = 'short';\n  } else if (rsiVal < 35) {\n    richtung = 'long';\n  } else if (rsiVal > 65) {\n    richtung = 'short';\n  } else if (macdValRaw > macdSignalValRaw && macdHistogrammVerbessert) {\n    richtung = 'long';\n  } else if (macdValRaw < macdSignalValRaw && macdHistogrammVerschlechtert) {\n    richtung = 'short';\n  }\n\n  // ------------------------------------------------------------\n  // Technisches Punktesystem\n  // ------------------------------------------------------------\n\n  let punkte = 0;\n  const signalGruende = [];\n\n  // RSI\n  if (rsiVal < 25 || rsiVal > 75) {\n    punkte += 3;\n    signalGruende.push('RSI extrem');\n  } else if (rsiVal < 32 || rsiVal > 68) {\n    punkte += 2;\n    signalGruende.push('RSI stark');\n  } else if (rsiVal < 38 || rsiVal > 62) {\n    punkte += 1;\n    signalGruende.push('RSI erhöht');\n  }\n\n  // MACD\n  if (macdKreuzungBullisch) {\n    punkte += 3;\n    signalGruende.push('MACD bullische Kreuzung');\n  } else if (macdKreuzungBaerisch) {\n    punkte += 3;\n    signalGruende.push('MACD bärische Kreuzung');\n  } else if (macdNullLinieBullisch) {\n    punkte += 2;\n    signalGruende.push('MACD über Nulllinie');\n  } else if (macdNullLinieBaerisch) {\n    punkte += 2;\n    signalGruende.push('MACD unter Nulllinie');\n  } else if (macdHistogrammVerbessert && richtung === 'long') {\n    punkte += 1;\n    signalGruende.push('MACD verbessert sich');\n  } else if (macdHistogrammVerschlechtert && richtung === 'short') {\n    punkte += 1;\n    signalGruende.push('MACD verschlechtert sich');\n  } else {\n    punkte += 1;\n    signalGruende.push('MACD aktiv');\n  }\n\n  // Bollinger\n  if (kursBeiOben || kursBeiUnten) {\n    punkte += 2;\n    signalGruende.push('Bollinger-Grenze');\n  }\n\n  // Trend-Bestätigung\n  if (\n    (richtung === 'long' && trendAufwaerts) ||\n    (richtung === 'short' && !trendAufwaerts)\n  ) {\n    punkte += 1;\n    signalGruende.push('Trend bestätigt');\n  }\n\n  // Volumen\n  if (volumenErhoeht) {\n    punkte += 2;\n    signalGruende.push('Volumen erhöht');\n  } else if (volumenOk) {\n    punkte += 1;\n    signalGruende.push('Volumen normal');\n  }\n\n  // Starke Tagesbewegung\n  if (veraenderungPct > 2.5) {\n    punkte += 1;\n    signalGruende.push('Starke Bewegung');\n  }\n\n  // ------------------------------------------------------------\n  // Technische Signalstärke\n  // ------------------------------------------------------------\n\n  let signalStaerke;\n\n  if (punkte >= 6) {\n    signalStaerke = 'hoch';\n  } else if (punkte >= 3) {\n    signalStaerke = 'mittel';\n  } else {\n    signalStaerke = 'niedrig';\n  }\n\n  // ------------------------------------------------------------\n  // Praktische Handelsbewertung\n  // ------------------------------------------------------------\n  // Diese Bewertung berücksichtigt deine Realität:\n  // - du handelst selten\n  // - Gebühren/Spread sind relevant\n  // - kleine Bewegungen reichen nicht\n  // - ohne Bestätigung nur beobachten\n\n  const gebuehrenPufferPct = 2.0;\n  const minBruttoPotenzialPct = 3.0;\n  const gutesPotenzialPct = 4.5;\n  const minCrv = 1.8;\n\n  const macdBestaetigtLong =\n    richtung === 'long' &&\n    (\n      macdKreuzung === 'Bullisch' ||\n      (macdValRaw > macdSignalValRaw && macdHistogrammVerbessert)\n    );\n\n  const macdBestaetigtShort =\n    richtung === 'short' &&\n    (\n      macdKreuzung === 'Bärisch' ||\n      (macdValRaw < macdSignalValRaw && macdHistogrammVerschlechtert)\n    );\n\n  const macdBestaetigtRichtung =\n    macdBestaetigtLong || macdBestaetigtShort;\n\n  let zielKurs = null;\n  let stopKurs = null;\n  let zielLogik = '';\n  let stopLogik = '';\n\n  if (richtung === 'long') {\n    // Für Long: Ziel ist eine realistische Erholung Richtung EMA20/Bollinger-Mitte.\n    const zielKandidaten = [ema20Raw, bbAvg].filter(v => v && v > aktuellerKurs);\n    zielKurs = zielKandidaten.length > 0 ? Math.min(...zielKandidaten) : null;\n\n    // Falls beide unterhalb liegen, kein sinnvolles Long-Ziel.\n    stopKurs = lows.length > 0 ? Math.min(lows[lows.length - 1], bbUnten) : bbUnten;\n\n    zielLogik = 'Erholung Richtung EMA20/Bollinger-Mitte';\n    stopLogik = 'unter aktuellem Tief bzw. unterem Bollinger-Bereich';\n  }\n\n  if (richtung === 'short') {\n    // Für Short: Ziel ist ein Rücklauf Richtung EMA20/Bollinger-Mitte.\n    const zielKandidaten = [ema20Raw, bbAvg].filter(v => v && v < aktuellerKurs);\n    zielKurs = zielKandidaten.length > 0 ? Math.max(...zielKandidaten) : null;\n\n    // Falls beide oberhalb liegen, kein sinnvolles Short-Ziel.\n    stopKurs = highs.length > 0 ? Math.max(highs[highs.length - 1], bbOben) : bbOben;\n\n    zielLogik = 'Rücklauf Richtung EMA20/Bollinger-Mitte';\n    stopLogik = 'über aktuellem Hoch bzw. oberem Bollinger-Bereich';\n  }\n\n  const bruttoPotenzialPct =\n    richtung === 'long'\n      ? pctMove(aktuellerKurs, zielKurs)\n      : richtung === 'short'\n        ? pctMove(zielKurs, aktuellerKurs)\n        : null;\n\n  const risikoPct =\n    richtung === 'long'\n      ? absPctMove(aktuellerKurs, stopKurs)\n      : richtung === 'short'\n        ? absPctMove(aktuellerKurs, stopKurs)\n        : null;\n\n  const nettoPotenzialPct =\n    bruttoPotenzialPct !== null\n      ? bruttoPotenzialPct - gebuehrenPufferPct\n      : null;\n\n  const crv =\n    bruttoPotenzialPct !== null && risikoPct !== null && risikoPct > 0\n      ? bruttoPotenzialPct / risikoPct\n      : null;\n\n  const potenzialAusreichend =\n    bruttoPotenzialPct !== null && bruttoPotenzialPct >= minBruttoPotenzialPct;\n\n  const potenzialGut =\n    bruttoPotenzialPct !== null && bruttoPotenzialPct >= gutesPotenzialPct;\n\n  const crvOk =\n    crv !== null && crv >= minCrv;\n\n  const signalHoch = signalStaerke === 'hoch';\n  const signalMindestensMittel = signalStaerke === 'hoch' || signalStaerke === 'mittel';\n\n  let handelsStatus = 'nur_info';\n  let handelsStatusText = '⚪ Nur Info';\n  let entscheidungKurz = '';\n  let entscheidungLang = '';\n\n  if (richtung === 'neutral') {\n    handelsStatus = 'nur_info';\n    handelsStatusText = '⚪ Nur Info';\n    entscheidungKurz = 'Keine klare Richtung.';\n    entscheidungLang =\n      'Die Aktie ist technisch auffällig, aber die Richtung ist nicht klar genug. Für deine Handelsweise ist das kein sinnvoller Kandidat.';\n  } else if (!potenzialAusreichend) {\n    handelsStatus = 'ignorieren';\n    handelsStatusText = '🔴 Ignorieren';\n    entscheidungKurz = 'Zu wenig Spielraum.';\n    entscheidungLang =\n      'Das technische Signal ist vorhanden, aber der mögliche Spielraum ist zu klein. Nach Gebühren und Spread bleibt voraussichtlich zu wenig übrig.';\n  } else if (!macdBestaetigtRichtung) {\n    handelsStatus = 'beobachten';\n    handelsStatusText = '🟡 Beobachten';\n    entscheidungKurz = 'Interessant, aber noch nicht bestätigt.';\n    entscheidungLang =\n      richtung === 'long'\n        ? 'Die Aktie könnte sich erholen, aber der MACD bestätigt die Long-Richtung noch nicht. Besser erst auf Stabilisierung oder klarere Momentum-Drehung warten.'\n        : 'Die Aktie wirkt überhitzt, aber der MACD bestätigt die Short-Richtung noch nicht. Besser erst auf ein klares Schwächesignal warten.';\n  } else if (signalHoch && potenzialGut && crvOk) {\n    handelsStatus = 'handelskandidat';\n    handelsStatusText = '🟢 Handelskandidat';\n    entscheidungKurz = 'Technik, Bestätigung und Spielraum passen zusammen.';\n    entscheidungLang =\n      'Das Setup ist technisch bestätigt und hat genügend rechnerischen Spielraum über dem Gebührenpuffer. Trotzdem bleibt es ein Beobachtungssignal und keine Anlageberatung.';\n  } else if (signalMindestensMittel && macdBestaetigtRichtung && potenzialAusreichend) {\n    handelsStatus = 'beobachten';\n    handelsStatusText = '🟡 Beobachten';\n    entscheidungKurz = 'Bestätigt, aber noch nicht stark genug.';\n    entscheidungLang =\n      'Die Richtung ist technisch plausibel, aber Qualität oder Spielraum reichen noch nicht für einen klaren Handelskandidaten.';\n  } else {\n    handelsStatus = 'nur_info';\n    handelsStatusText = '⚪ Nur Info';\n    entscheidungKurz = 'Auffällig, aber nicht stark genug.';\n    entscheidungLang =\n      'Das Signal reicht für eine Notiz, aber nicht für eine ernsthafte Handelsbeobachtung.';\n  }\n\n  const handelsBewertung = {\n    status: handelsStatus,\n    statusText: handelsStatusText,\n    entscheidungKurz,\n    entscheidungLang,\n\n    gebuehrenPufferPct,\n    minBruttoPotenzialPct,\n    zielKurs: zielKurs !== null ? round(zielKurs, 2) : null,\n    stopKurs: stopKurs !== null ? round(stopKurs, 2) : null,\n    zielLogik,\n    stopLogik,\n\n    bruttoPotenzialPct: bruttoPotenzialPct !== null ? round(bruttoPotenzialPct, 2) : null,\n    nettoPotenzialPct: nettoPotenzialPct !== null ? round(nettoPotenzialPct, 2) : null,\n    risikoPct: risikoPct !== null ? round(risikoPct, 2) : null,\n    crv: crv !== null ? round(crv, 2) : null,\n\n    potenzialAusreichend,\n    potenzialGut,\n    crvOk,\n    macdBestaetigtRichtung\n  };\n\n  // ------------------------------------------------------------\n  // Ergebnisobjekt\n  // ------------------------------------------------------------\n\n  const signal = {\n    type: 'technical_signal',\n    ticker,\n    name,\n    sektor,\n\n    aktuellerKurs: round(aktuellerKurs, 2),\n    veraenderung,\n\n    rsi: rsiVal,\n    rsiSignal,\n\n    macd: macdVal,\n    macdSignalLinie,\n    macdHistogramm,\n    macdSignal,\n    macdKreuzung,\n    macdNullLinie,\n    macdHistogrammTrend: macdHistogrammVerbessert\n      ? 'verbessert'\n      : macdHistogrammVerschlechtert\n        ? 'verschlechtert'\n        : 'neutral',\n\n    trend: trendAufwaerts ? 'Aufwärts' : 'Abwärts',\n    ema20: ema20v,\n\n    bb_oben: round(bbOben, 2),\n    bb_mitte: round(bbAvg, 2),\n    bb_unten: round(bbUnten, 2),\n    kursBeiBollinger: kursBeiOben ? 'oben' : kursBeiUnten ? 'unten' : 'mitte',\n\n    hoch52w,\n    tief52w,\n    abstandVomTief: tief52wRaw\n      ? (((aktuellerKurs - tief52wRaw) / tief52wRaw) * 100).toFixed(1) + '%'\n      : 'n/a',\n\n    volumenFaktor: volFaktor !== null ? volFaktor + 'x' : 'n/a',\n\n    signalPunkte: punkte,\n    signalGruende: signalGruende.join(', '),\n    signalStaerke,\n    richtung,\n\n    handelsBewertung,\n\n    hinweis: 'Technisches Beobachtungssignal, keine Anlageberatung.',\n    zeitstempel: new Date().toISOString()\n  };\n\n  // ------------------------------------------------------------\n  // In Static Data speichern\n  // ------------------------------------------------------------\n\n  const sd = $getWorkflowStaticData('global');\n\n  if (!sd.technischeSignale) {\n    sd.technischeSignale = {};\n  }\n\n  sd.technischeSignale[ticker] = signal;\n\n  return {\n    json: signal\n  };\n\n} catch (e) {\n  return {\n    json: {\n      type: 'technical_signal',\n      ticker,\n      name,\n      fehler: e.message,\n      zeitstempel: new Date().toISOString()\n    }\n  };\n}"
+      },
+      "id": "e9450aba-234c-4654-a557-fd57dc3f75e1",
+      "name": "Technische Analyse (RSI/MACD/BB)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// TECHNISCHES SIGNAL FLACH AUFBEREITEN – snake_case\n// Modus: runOnceForEachItem\n// Gibt alle Felder in snake_case aus, passend zur stock_technical_signals DataTable.\n// Static Data wird weiterhin als Fallback befüllt.\n\nconst s = $input.item.json;\nconst hb = s.handelsBewertung || {};\n\nconst str  = (v) => (v == null ? '' : String(v));\nconst num  = (v) => {\n  const n = Number(v);\n  return (v == null || v === '' || isNaN(n)) ? null : n;\n};\nconst bool = (v) => (v === true || v === 'true' ? 'true' : 'false');\n\nconst flat = {\n  // Basis\n  ticker:                    str(s.ticker),\n  name:                      str(s.name),\n  sektor:                    str(s.sektor || ''),\n  datum:                     new Date().toISOString().substring(0, 10),\n  zeitstempel:               str(s.zeitstempel),\n  type:                      str(s.type || 'technical_signal'),\n\n  // Kurs\n  aktueller_kurs:            num(s.aktuellerKurs),\n  veraenderung:              str(s.veraenderung),\n\n  // RSI\n  rsi:                       num(s.rsi),\n  rsi_signal:                str(s.rsiSignal),\n\n  // MACD\n  macd:                      num(s.macd),\n  macd_signal_linie:         num(s.macdSignalLinie),\n  macd_histogramm:           num(s.macdHistogramm),\n  macd_signal:               str(s.macdSignal),\n  macd_kreuzung:             str(s.macdKreuzung),\n  macd_null_linie:           str(s.macdNullLinie),\n  macd_histogramm_trend:     str(s.macdHistogrammTrend),\n\n  // Trend\n  trend:                     str(s.trend),\n  ema20:                     num(s.ema20),\n  richtung:                  str(s.richtung),\n\n  // Bollinger\n  bb_oben:                   num(s.bb_oben),\n  bb_mitte:                  num(s.bb_mitte),\n  bb_unten:                  num(s.bb_unten),\n  kurs_bei_bollinger:        str(s.kursBeiBollinger),\n\n  // 52-Wochen\n  hoch_52w:                  num(s.hoch52w),\n  tief_52w:                  num(s.tief52w),\n  abstand_vom_tief:          str(s.abstandVomTief),\n\n  // Volumen\n  volumen_faktor:            str(s.volumenFaktor),\n\n  // Signal-Bewertung\n  signal_punkte:             num(s.signalPunkte),\n  signal_gruende:            str(s.signalGruende),\n  signal_staerke:            str(s.signalStaerke),\n\n  // handelsBewertung flach (snake_case)\n  handels_status:            str(hb.status),\n  handels_status_text:       str(hb.statusText),\n  entscheidung_kurz:         str(hb.entscheidungKurz),\n  entscheidung_lang:         str(hb.entscheidungLang),\n  ziel_kurs:                 num(hb.zielKurs),\n  stop_kurs:                 num(hb.stopKurs),\n  ziel_logik:                str(hb.zielLogik),\n  stop_logik:                str(hb.stopLogik),\n  gebuehren_puffer_pct:      num(hb.gebuehrenPufferPct),\n  min_brutto_potenzial_pct:  num(hb.minBruttoPotenzialPct),\n  brutto_potenzial_pct:      num(hb.bruttoPotenzialPct),\n  netto_potenzial_pct:       num(hb.nettoPotenzialPct),\n  risiko_pct:                num(hb.risikoPct),\n  crv:                       num(hb.crv),\n  potenzial_ausreichend:     bool(hb.potenzialAusreichend),\n  potenzial_gut:             bool(hb.potenzialGut),\n  crv_ok:                    bool(hb.crvOk),\n  macd_bestaetigt_richtung:  bool(hb.macdBestaetigtRichtung),\n\n  // Sonstige\n  hinweis:                   str(s.hinweis || 'Technisches Beobachtungssignal, keine Anlageberatung.'),\n  status:                    str(s.fehler ? 'fehler' : 'ok'),\n  fehler:                    str(s.fehler || '')\n};\n\n// Static Data Fallback weiterhin befüllen (für Kompatibilität)\nconst sd = $getWorkflowStaticData('global');\nif (!sd.technischeSignale) sd.technischeSignale = {};\nsd.technischeSignale[flat.ticker] = { ...flat, zeitstempel: flat.zeitstempel };\n\nreturn { json: flat };\n"
+      },
+      "id": "3214e3b9-384f-47d9-8683-92627e02dee5",
+      "name": "Signal: flach aufbereiten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
+        },
+        "returnAll": true
+      },
+      "id": "a20f1e99-6205-4466-ac4d-1dbb89469de5",
+      "name": "DB: Marktumfeld für Signal laden",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        656
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// SIGNAL + MARKTKONTEXT ZUSAMMENFÜHREN – Run Once for All Items\n// Input: Marktumfeld-Zeilen aus \"DB: Marktumfeld für Signal laden\"\n// Signale: aus \"Signal: flach aufbereiten\" (alle 15 frischen Signale)\n//\n// Gibt immer 15 technische Signale aus (type = technical_signal)\n// Marktumfeld-Daten werden nur als Kontext ergänzt, nicht als eigene Items\n\nconst marktItems = $input.all().map(i => i.json || {});\nconst signalItems = $('Signal: flach aufbereiten').all();\n\n// Nur echte Marktumfeld-Zeilen (mit symbol oder markt_status)\nconst marktRows = marktItems.filter(row =>\n  row && (row.symbol || row.markt_status) &&\n  row.type !== 'technical_signal'\n);\n\n// DAX als primären Referenzindex suchen\nfunction findeReferenzIndex(signalTicker) {\n  // Erster Versuch: DAX\n  let kandidat = marktRows.find(m =>\n    String(m.symbol || '') === '^GDAXI' ||\n    String(m.name || '').toLowerCase() === 'dax'\n  );\n  // Fallback: erster verfügbarer Markt\n  if (!kandidat && marktRows.length > 0) {\n    kandidat = marktRows[0];\n  }\n  return kandidat || null;\n}\n\nreturn signalItems.map(item => {\n  const signal = item.json || {};\n  const markt = findeReferenzIndex(signal.ticker);\n\n  if (!markt) {\n    return {\n      json: {\n        ...signal,\n        // Sicherstellen: type bleibt technical_signal\n        ticker: signal.ticker,\n        name: signal.name,\n        type: signal.type || 'technical_signal',\n        // Fallback-Marktfelder\n        referenz_index: '',\n        referenz_index_name: '',\n        index_veraenderung_pct: '',\n        index_trend: '',\n        index_markt_status: 'unbekannt',\n        relative_staerke_pct: '',\n        markt_bestaetigt_signal: 'false',\n        markt_hinweis: 'Kein Marktumfeld verfügbar – Signal ohne Marktfilter gespeichert.',\n        extra_kontext_hinweis: 'Marktumfeld-Daten fehlten beim Speichern.'\n      }\n    };\n  }\n\n  // Relative Stärke berechnen\n  const aktieVPct = parseFloat(String(signal.veraenderung || '').replace('%','')) || null;\n  const indexVPct = parseFloat(String(markt.veraenderung_pct || '')) || null;\n  const relStaerke = (aktieVPct !== null && indexVPct !== null)\n    ? parseFloat((aktieVPct - indexVPct).toFixed(2))\n    : null;\n\n  const marktStatus = markt.markt_status || '';\n  const richtung = signal.richtung || '';\n  const hs = signal.handels_status || '';\n\n  let markt_bestaetigt = 'false';\n  let markt_hinweis = 'Marktumfeld neutral oder uneinheitlich.';\n\n  if (marktStatus === 'risk_on' && (hs === 'handelskandidat' || hs === 'beobachten') && richtung === 'long') {\n    if (relStaerke !== null && relStaerke > 0) {\n      markt_bestaetigt = 'true';\n      markt_hinweis = 'Aktie stärker als Referenzmarkt; Marktumfeld bestätigt Long-Signal.';\n    }\n  } else if (marktStatus === 'risk_off' && richtung === 'short') {\n    if (relStaerke !== null && relStaerke < 0) {\n      markt_bestaetigt = 'true';\n      markt_hinweis = 'Aktie schwächer als Referenzmarkt; Marktumfeld bestätigt Short-Signal.';\n    } else {\n      markt_hinweis = 'Markt risk_off; Long-Signal vorsichtiger bewerten.';\n    }\n  }\n\n  return {\n    json: {\n      ...signal,\n      // Immer überschreiben: Signal bleibt Signal\n      ticker: signal.ticker,\n      name: signal.name,\n      type: signal.type || 'technical_signal',\n      // Marktkontext ergänzen\n      referenz_index: markt.symbol || '',\n      referenz_index_name: markt.name || '',\n      index_veraenderung_pct: indexVPct !== null ? indexVPct : '',\n      index_trend: markt.trend || '',\n      index_markt_status: marktStatus,\n      relative_staerke_pct: relStaerke !== null ? relStaerke : '',\n      markt_bestaetigt_signal: markt_bestaetigt,\n      markt_hinweis: markt_hinweis,\n      extra_kontext_hinweis: `Marktumfeld ergänzt aus ${markt.name || markt.symbol || 'unbekannt'}.`\n    }\n  };\n});\n"
+      },
+      "id": "80f2b6d1-c160-4a83-88ae-07df67fc269b",
+      "name": "Signal + Marktkontext zusammenführen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SIGNAL: MARKTUMFELD ERGÄNZEN – Run Once for All Items (Pass-through)\n// Alle 15 Signale werden unverändert weitergegeben.\n// Die Marktumfeld-Anreicherung wurde bereits in \"Signal + Marktkontext zusammenführen\" vorgenommen.\nreturn $input.all().map(item => ({ json: item.json }));\n"
+      },
+      "id": "23a13e8f-6319-4b1d-b68b-da2b5256ae5f",
+      "name": "Signal: Marktumfeld ergänzen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/GDMAKrvQovPcBItA"
+        },
+        "returnAll": true
+      },
+      "id": "11253f32-3b3d-4680-8fdf-06e7bb0c6357",
+      "name": "DB: Signal suchen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        32,
+        656
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// SIGNAL: ROUTING – Run Once for All Items\n// Input: DB-Zeilen aus \"DB: Signal suchen\" (alle vorhandenen Signale aus stock_technical_signals)\n// Signalquelle: frische 15 Signale aus \"Signal: Marktumfeld ergänzen\"\n//\n// Logik:\n// - Über frische Signale iterieren (NICHT über DB-Zeilen)\n// - DB-Zeilen nach ticker indexieren\n// - _rowExists = true → Update; _rowExists = false → Insert\n// - Bei leerer DB: alle 15 Signale als neu (Insert)\n\nconst dbRows = $input.all().map(i => i.json || {});\nconst signalItems = $('Signal: Marktumfeld ergänzen').all().map(i => i.json || {});\n\n// DB-Zeilen nach ticker indexieren (nur echte Zeilen mit id)\nconst foundByTicker = {};\nfor (const row of dbRows) {\n  const ticker = String(row.ticker || '').trim();\n  const hasId =\n    row.id !== undefined &&\n    row.id !== null &&\n    String(row.id).trim() !== '';\n  if (ticker && hasId) {\n    foundByTicker[ticker] = row;\n  }\n}\n\n// Über frische Signale laufen – Ticker-Bestand bleibt erhalten\nreturn signalItems.map(signal => {\n  const ticker = String(signal.ticker || '').trim();\n  const found = foundByTicker[ticker];\n\n  const rowExists =\n    found !== undefined &&\n    found.id !== undefined &&\n    found.id !== null &&\n    String(found.id).trim() !== '';\n\n  return {\n    json: {\n      ...signal,\n      _existing_id: rowExists ? String(found.id) : '',\n      _rowExists: Boolean(rowExists)\n    }\n  };\n});\n"
+      },
+      "id": "01af7b07-359f-4651-8313-8e1cb0e833ee",
+      "name": "Signal: Routing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "signal-row-exists",
+              "leftValue": "={{ $json._rowExists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "091c77b8-3eba-4012-b87b-e2bc8572919d",
+      "name": "IF: Signal vorhanden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/GDMAKrvQovPcBItA"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "ticker",
+              "keyValue": "={{ $json.ticker }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ $json.ticker }}",
+            "name": "={{ $json.name }}",
+            "sektor": "={{ $json.sektor }}",
+            "datum": "={{ $json.datum }}",
+            "zeitstempel": "={{ $json.zeitstempel }}",
+            "type": "={{ $json.type }}",
+            "aktueller_kurs": "={{ $json.aktueller_kurs }}",
+            "veraenderung": "={{ $json.veraenderung }}",
+            "rsi": "={{ $json.rsi }}",
+            "rsi_signal": "={{ $json.rsi_signal }}",
+            "macd": "={{ $json.macd }}",
+            "macd_signal_linie": "={{ $json.macd_signal_linie }}",
+            "macd_histogramm": "={{ $json.macd_histogramm }}",
+            "macd_signal": "={{ $json.macd_signal }}",
+            "macd_kreuzung": "={{ $json.macd_kreuzung }}",
+            "macd_null_linie": "={{ $json.macd_null_linie }}",
+            "macd_histogramm_trend": "={{ $json.macd_histogramm_trend }}",
+            "trend": "={{ $json.trend }}",
+            "ema20": "={{ $json.ema20 }}",
+            "richtung": "={{ $json.richtung }}",
+            "bb_oben": "={{ $json.bb_oben }}",
+            "bb_mitte": "={{ $json.bb_mitte }}",
+            "bb_unten": "={{ $json.bb_unten }}",
+            "kurs_bei_bollinger": "={{ $json.kurs_bei_bollinger }}",
+            "hoch_52w": "={{ $json.hoch_52w }}",
+            "tief_52w": "={{ $json.tief_52w }}",
+            "abstand_vom_tief": "={{ $json.abstand_vom_tief }}",
+            "volumen_faktor": "={{ $json.volumen_faktor }}",
+            "signal_punkte": "={{ $json.signal_punkte }}",
+            "signal_gruende": "={{ $json.signal_gruende }}",
+            "signal_staerke": "={{ $json.signal_staerke }}",
+            "handels_status": "={{ $json.handels_status }}",
+            "handels_status_text": "={{ $json.handels_status_text }}",
+            "entscheidung_kurz": "={{ $json.entscheidung_kurz }}",
+            "entscheidung_lang": "={{ $json.entscheidung_lang }}",
+            "ziel_kurs": "={{ $json.ziel_kurs }}",
+            "stop_kurs": "={{ $json.stop_kurs }}",
+            "ziel_logik": "={{ $json.ziel_logik }}",
+            "stop_logik": "={{ $json.stop_logik }}",
+            "gebuehren_puffer_pct": "={{ $json.gebuehren_puffer_pct }}",
+            "min_brutto_potenzial_pct": "={{ $json.min_brutto_potenzial_pct }}",
+            "brutto_potenzial_pct": "={{ $json.brutto_potenzial_pct }}",
+            "netto_potenzial_pct": "={{ $json.netto_potenzial_pct }}",
+            "risiko_pct": "={{ $json.risiko_pct }}",
+            "crv": "={{ $json.crv }}",
+            "potenzial_ausreichend": "={{ $json.potenzial_ausreichend }}",
+            "potenzial_gut": "={{ $json.potenzial_gut }}",
+            "crv_ok": "={{ $json.crv_ok }}",
+            "macd_bestaetigt_richtung": "={{ $json.macd_bestaetigt_richtung }}",
+            "hinweis": "={{ $json.hinweis }}",
+            "status": "={{ $json.status }}",
+            "fehler": "={{ $json.fehler }}",
+            "referenz_index": "={{ $json.referenz_index }}",
+            "referenz_index_name": "={{ $json.referenz_index_name }}",
+            "index_veraenderung_pct": "={{ $json.index_veraenderung_pct }}",
+            "index_trend": "={{ $json.index_trend }}",
+            "index_markt_status": "={{ $json.index_markt_status }}",
+            "relative_staerke_pct": "={{ $json.relative_staerke_pct }}",
+            "markt_bestaetigt_signal": "={{ $json.markt_bestaetigt_signal }}",
+            "markt_hinweis": "={{ $json.markt_hinweis }}",
+            "extra_kontext_hinweis": "={{ $json.extra_kontext_hinweis }}"
+          },
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sektor",
+              "displayName": "sektor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "zeitstempel",
+              "displayName": "zeitstempel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "aktueller_kurs",
+              "displayName": "aktueller_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung",
+              "displayName": "veraenderung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi",
+              "displayName": "rsi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi_signal",
+              "displayName": "rsi_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd",
+              "displayName": "macd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal_linie",
+              "displayName": "macd_signal_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm",
+              "displayName": "macd_histogramm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal",
+              "displayName": "macd_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_kreuzung",
+              "displayName": "macd_kreuzung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_null_linie",
+              "displayName": "macd_null_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm_trend",
+              "displayName": "macd_histogramm_trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "trend",
+              "displayName": "trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ema20",
+              "displayName": "ema20",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "richtung",
+              "displayName": "richtung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_oben",
+              "displayName": "bb_oben",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_mitte",
+              "displayName": "bb_mitte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_unten",
+              "displayName": "bb_unten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kurs_bei_bollinger",
+              "displayName": "kurs_bei_bollinger",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hoch_52w",
+              "displayName": "hoch_52w",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tief_52w",
+              "displayName": "tief_52w",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "abstand_vom_tief",
+              "displayName": "abstand_vom_tief",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen_faktor",
+              "displayName": "volumen_faktor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_punkte",
+              "displayName": "signal_punkte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_gruende",
+              "displayName": "signal_gruende",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_staerke",
+              "displayName": "signal_staerke",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handels_status",
+              "displayName": "handels_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handels_status_text",
+              "displayName": "handels_status_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "entscheidung_kurz",
+              "displayName": "entscheidung_kurz",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "entscheidung_lang",
+              "displayName": "entscheidung_lang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ziel_kurs",
+              "displayName": "ziel_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stop_kurs",
+              "displayName": "stop_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ziel_logik",
+              "displayName": "ziel_logik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stop_logik",
+              "displayName": "stop_logik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "gebuehren_puffer_pct",
+              "displayName": "gebuehren_puffer_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "min_brutto_potenzial_pct",
+              "displayName": "min_brutto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "brutto_potenzial_pct",
+              "displayName": "brutto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "netto_potenzial_pct",
+              "displayName": "netto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "risiko_pct",
+              "displayName": "risiko_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "crv",
+              "displayName": "crv",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "potenzial_ausreichend",
+              "displayName": "potenzial_ausreichend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "potenzial_gut",
+              "displayName": "potenzial_gut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "crv_ok",
+              "displayName": "crv_ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_bestaetigt_richtung",
+              "displayName": "macd_bestaetigt_richtung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hinweis",
+              "displayName": "hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fehler",
+              "displayName": "fehler",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_index",
+              "displayName": "referenz_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_index_name",
+              "displayName": "referenz_index_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_veraenderung_pct",
+              "displayName": "index_veraenderung_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_trend",
+              "displayName": "index_trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_markt_status",
+              "displayName": "index_markt_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "relative_staerke_pct",
+              "displayName": "relative_staerke_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_bestaetigt_signal",
+              "displayName": "markt_bestaetigt_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_hinweis",
+              "displayName": "markt_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "extra_kontext_hinweis",
+              "displayName": "extra_kontext_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6cf264f8-d843-4252-97da-a9268208d5ad",
+      "name": "DB: Signal aktualisieren",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        704,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "GDMAKrvQovPcBItA",
+          "mode": "list",
+          "cachedResultName": "stock_technical_signals",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/GDMAKrvQovPcBItA"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ $json.ticker }}",
+            "name": "={{ $json.name }}",
+            "sektor": "={{ $json.sektor }}",
+            "datum": "={{ $json.datum }}",
+            "zeitstempel": "={{ $json.zeitstempel }}",
+            "type": "={{ $json.type }}",
+            "aktueller_kurs": "={{ $json.aktueller_kurs }}",
+            "veraenderung": "={{ $json.veraenderung }}",
+            "rsi": "={{ $json.rsi }}",
+            "rsi_signal": "={{ $json.rsi_signal }}",
+            "macd": "={{ $json.macd }}",
+            "macd_signal_linie": "={{ $json.macd_signal_linie }}",
+            "macd_histogramm": "={{ $json.macd_histogramm }}",
+            "macd_signal": "={{ $json.macd_signal }}",
+            "macd_kreuzung": "={{ $json.macd_kreuzung }}",
+            "macd_null_linie": "={{ $json.macd_null_linie }}",
+            "macd_histogramm_trend": "={{ $json.macd_histogramm_trend }}",
+            "trend": "={{ $json.trend }}",
+            "ema20": "={{ $json.ema20 }}",
+            "richtung": "={{ $json.richtung }}",
+            "bb_oben": "={{ $json.bb_oben }}",
+            "bb_mitte": "={{ $json.bb_mitte }}",
+            "bb_unten": "={{ $json.bb_unten }}",
+            "kurs_bei_bollinger": "={{ $json.kurs_bei_bollinger }}",
+            "hoch_52w": "={{ $json.hoch_52w }}",
+            "tief_52w": "={{ $json.tief_52w }}",
+            "abstand_vom_tief": "={{ $json.abstand_vom_tief }}",
+            "volumen_faktor": "={{ $json.volumen_faktor }}",
+            "signal_punkte": "={{ $json.signal_punkte }}",
+            "signal_gruende": "={{ $json.signal_gruende }}",
+            "signal_staerke": "={{ $json.signal_staerke }}",
+            "handels_status": "={{ $json.handels_status }}",
+            "handels_status_text": "={{ $json.handels_status_text }}",
+            "entscheidung_kurz": "={{ $json.entscheidung_kurz }}",
+            "entscheidung_lang": "={{ $json.entscheidung_lang }}",
+            "ziel_kurs": "={{ $json.ziel_kurs }}",
+            "stop_kurs": "={{ $json.stop_kurs }}",
+            "ziel_logik": "={{ $json.ziel_logik }}",
+            "stop_logik": "={{ $json.stop_logik }}",
+            "gebuehren_puffer_pct": "={{ $json.gebuehren_puffer_pct }}",
+            "min_brutto_potenzial_pct": "={{ $json.min_brutto_potenzial_pct }}",
+            "brutto_potenzial_pct": "={{ $json.brutto_potenzial_pct }}",
+            "netto_potenzial_pct": "={{ $json.netto_potenzial_pct }}",
+            "risiko_pct": "={{ $json.risiko_pct }}",
+            "crv": "={{ $json.crv }}",
+            "potenzial_ausreichend": "={{ $json.potenzial_ausreichend }}",
+            "potenzial_gut": "={{ $json.potenzial_gut }}",
+            "crv_ok": "={{ $json.crv_ok }}",
+            "macd_bestaetigt_richtung": "={{ $json.macd_bestaetigt_richtung }}",
+            "hinweis": "={{ $json.hinweis }}",
+            "status": "={{ $json.status }}",
+            "fehler": "={{ $json.fehler }}",
+            "referenz_index": "={{ $json.referenz_index }}",
+            "referenz_index_name": "={{ $json.referenz_index_name }}",
+            "index_veraenderung_pct": "={{ $json.index_veraenderung_pct }}",
+            "index_trend": "={{ $json.index_trend }}",
+            "index_markt_status": "={{ $json.index_markt_status }}",
+            "relative_staerke_pct": "={{ $json.relative_staerke_pct }}",
+            "markt_bestaetigt_signal": "={{ $json.markt_bestaetigt_signal }}",
+            "markt_hinweis": "={{ $json.markt_hinweis }}",
+            "extra_kontext_hinweis": "={{ $json.extra_kontext_hinweis }}"
+          },
+          "schema": [
+            {
+              "id": "ticker",
+              "displayName": "ticker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "sektor",
+              "displayName": "sektor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "zeitstempel",
+              "displayName": "zeitstempel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "aktueller_kurs",
+              "displayName": "aktueller_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung",
+              "displayName": "veraenderung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi",
+              "displayName": "rsi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi_signal",
+              "displayName": "rsi_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd",
+              "displayName": "macd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal_linie",
+              "displayName": "macd_signal_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm",
+              "displayName": "macd_histogramm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal",
+              "displayName": "macd_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_kreuzung",
+              "displayName": "macd_kreuzung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_null_linie",
+              "displayName": "macd_null_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm_trend",
+              "displayName": "macd_histogramm_trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "trend",
+              "displayName": "trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ema20",
+              "displayName": "ema20",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "richtung",
+              "displayName": "richtung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_oben",
+              "displayName": "bb_oben",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_mitte",
+              "displayName": "bb_mitte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_unten",
+              "displayName": "bb_unten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kurs_bei_bollinger",
+              "displayName": "kurs_bei_bollinger",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hoch_52w",
+              "displayName": "hoch_52w",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "tief_52w",
+              "displayName": "tief_52w",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "abstand_vom_tief",
+              "displayName": "abstand_vom_tief",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen_faktor",
+              "displayName": "volumen_faktor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_punkte",
+              "displayName": "signal_punkte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_gruende",
+              "displayName": "signal_gruende",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_staerke",
+              "displayName": "signal_staerke",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handels_status",
+              "displayName": "handels_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "handels_status_text",
+              "displayName": "handels_status_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "entscheidung_kurz",
+              "displayName": "entscheidung_kurz",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "entscheidung_lang",
+              "displayName": "entscheidung_lang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ziel_kurs",
+              "displayName": "ziel_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stop_kurs",
+              "displayName": "stop_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ziel_logik",
+              "displayName": "ziel_logik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "stop_logik",
+              "displayName": "stop_logik",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "gebuehren_puffer_pct",
+              "displayName": "gebuehren_puffer_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "min_brutto_potenzial_pct",
+              "displayName": "min_brutto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "brutto_potenzial_pct",
+              "displayName": "brutto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "netto_potenzial_pct",
+              "displayName": "netto_potenzial_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "risiko_pct",
+              "displayName": "risiko_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "crv",
+              "displayName": "crv",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "potenzial_ausreichend",
+              "displayName": "potenzial_ausreichend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "potenzial_gut",
+              "displayName": "potenzial_gut",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "crv_ok",
+              "displayName": "crv_ok",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_bestaetigt_richtung",
+              "displayName": "macd_bestaetigt_richtung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "hinweis",
+              "displayName": "hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fehler",
+              "displayName": "fehler",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_index",
+              "displayName": "referenz_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_index_name",
+              "displayName": "referenz_index_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_veraenderung_pct",
+              "displayName": "index_veraenderung_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_trend",
+              "displayName": "index_trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "index_markt_status",
+              "displayName": "index_markt_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "relative_staerke_pct",
+              "displayName": "relative_staerke_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_bestaetigt_signal",
+              "displayName": "markt_bestaetigt_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_hinweis",
+              "displayName": "markt_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "extra_kontext_hinweis",
+              "displayName": "extra_kontext_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1ebeabc-8f3e-47b7-a47d-6119d712e558",
+      "name": "DB: Signal neu anlegen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        704,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.handels_status }}",
+              "rightValue": "handelskandidat",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "381f6ffa-94bc-4e24-a796-9e5dcd10cb6f"
+            },
+            {
+              "leftValue": "={{ $json.handels_status }}",
+              "rightValue": "beobachten",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "a73e9bf2-4b69-49ec-b98e-0c8cbadc7a21"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "39e0f56e-dc47-46a2-a2a2-f3f61d6001e3",
+      "name": "Filter: Starke Signale",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        928,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://matrix.org/_matrix/client/v3/rooms/!uDpcMuCWUvcwXMKJAP:matrix.org/send/m.room.message/{{ $execution.id }}-signal-{{ $itemIndex }}-{{ Date.now() }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "msgtype",
+              "value": "m.text"
+            },
+            {
+              "name": "format",
+              "value": "org.matrix.custom.html"
+            },
+            {
+              "name": "body",
+              "value": "={{ (() => {\n  const status  = $json.handels_status_text || $json.handels_status || '⚪ Nur Info';\n  const ticker  = $json.ticker || '';\n  const name    = $json.name   || '';\n  const kurs    = $json.aktueller_kurs != null ? $json.aktueller_kurs + ' EUR' : 'n/a';\n  const rsi     = $json.rsi    != null ? $json.rsi    : 'n/a';\n  const macd    = $json.macd   != null ? $json.macd   : 'n/a';\n  const staerke = $json.signal_staerke || 'n/a';\n  const richtg  = $json.richtung === 'long'\n    ? 'Long / mögliche Erholung'\n    : $json.richtung === 'short'\n      ? 'Short / möglicher Rücklauf'\n      : 'Neutral';\n  const eKurz   = $json.entscheidung_kurz  || '';\n  const eLang   = $json.entscheidung_lang  || '';\n  const potenz  = $json.brutto_potenzial_pct != null ? $json.brutto_potenzial_pct + '%' : 'n/a';\n  const netto   = $json.netto_potenzial_pct  != null ? $json.netto_potenzial_pct  + '%' : 'n/a';\n  const ziel    = $json.ziel_kurs  != null ? $json.ziel_kurs  + ' EUR' : 'n/a';\n  const stop    = $json.stop_kurs  != null ? $json.stop_kurs  + ' EUR' : 'n/a';\n  const risiko  = $json.risiko_pct != null ? $json.risiko_pct + '%'    : 'n/a';\n  const crv     = $json.crv        != null ? $json.crv                  : 'n/a';\n  const bestaet = $json.macd_bestaetigt_richtung === 'true'\n    ? 'MACD bestätigt die Richtung.'\n    : 'MACD bestätigt die Richtung noch nicht.';\n\n  return `${status} | ${name} (${ticker})\\n\\n`\n    + `Kurz gesagt:\\n${eKurz}\\n\\n`\n    + `Einordnung:\\n${eLang}\\n\\n`\n    + `Richtung: ${richtg}\\n`\n    + `MACD: ${bestaet}\\n\\n`\n    + `Spielraum:\\n`\n    + `  Zielbereich: ${ziel}\\n`\n    + `  Stopp:       ${stop}\\n`\n    + `  Brutto:      ${potenz}\\n`\n    + `  Netto:       ${netto}\\n`\n    + `  Risiko:      ${risiko}\\n`\n    + `  CRV:         ${crv}\\n\\n`\n    + `Technisch:\\n`\n    + `  Kurs:        ${kurs}\\n`\n    + `  RSI:         ${rsi}\\n`\n    + `  MACD:        ${macd}\\n`\n    + `  Stärke:      ${staerke}\\n\\n`\n    + `Hinweis: Kein Handelssignal. Nur Beobachtung.`;\n})() }}"
+            },
+            {
+              "name": "formatted_body",
+              "value": "={{ (() => {\n  function esc(v) {\n    return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')\n      .replace(/>/g,'&gt;').replace(/\"/g,'&quot;');\n  }\n  const status  = $json.handels_status_text || $json.handels_status || '⚪ Nur Info';\n  const ticker  = $json.ticker || '';\n  const name    = $json.name   || '';\n  const kurs    = $json.aktueller_kurs != null ? $json.aktueller_kurs + ' EUR' : 'n/a';\n  const rsi     = $json.rsi    != null ? $json.rsi    : 'n/a';\n  const macd    = $json.macd   != null ? $json.macd   : 'n/a';\n  const staerke = $json.signal_staerke || 'n/a';\n  const richtg  = $json.richtung === 'long'\n    ? 'Long / mögliche Erholung'\n    : $json.richtung === 'short'\n      ? 'Short / möglicher Rücklauf'\n      : 'Neutral';\n  const eKurz   = $json.entscheidung_kurz || '';\n  const eLang   = $json.entscheidung_lang || '';\n  const potenz  = $json.brutto_potenzial_pct != null ? $json.brutto_potenzial_pct + '%' : 'n/a';\n  const netto   = $json.netto_potenzial_pct  != null ? $json.netto_potenzial_pct  + '%' : 'n/a';\n  const ziel    = $json.ziel_kurs  != null ? $json.ziel_kurs  + ' EUR' : 'n/a';\n  const stop    = $json.stop_kurs  != null ? $json.stop_kurs  + ' EUR' : 'n/a';\n  const risiko  = $json.risiko_pct != null ? $json.risiko_pct + '%'    : 'n/a';\n  const crv     = $json.crv        != null ? $json.crv                  : 'n/a';\n  const bestaet = $json.macd_bestaetigt_richtung === 'true'\n    ? '✅ MACD bestätigt die Richtung.'\n    : '⚠️ MACD bestätigt die Richtung noch nicht.';\n\n  return `<b>${esc(status)} | ${esc(name)} (${esc(ticker)})</b><br><br>`\n    + `<b>Kurz gesagt:</b> ${esc(eKurz)}<br>`\n    + `<i>${esc(eLang)}</i><br><br>`\n    + `<b>Richtung:</b> ${esc(richtg)}<br>`\n    + `${esc(bestaet)}<br><br>`\n    + `<b>Spielraum:</b><br>`\n    + `&nbsp;&nbsp;Zielbereich: ${esc(ziel)}<br>`\n    + `&nbsp;&nbsp;Stopp: ${esc(stop)}<br>`\n    + `&nbsp;&nbsp;Brutto: ${esc(potenz)} | Netto: ${esc(netto)}<br>`\n    + `&nbsp;&nbsp;Risiko: ${esc(risiko)} | CRV: ${esc(crv)}<br><br>`\n    + `<b>Technisch:</b><br>`\n    + `&nbsp;&nbsp;Kurs: ${esc(kurs)} | RSI: ${esc(rsi)} | MACD: ${esc(macd)}<br>`\n    + `&nbsp;&nbsp;Signalstärke: ${esc(staerke)}<br><br>`\n    + `<i>Kein Handelssignal. Nur Beobachtung.</i>`;\n})() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1152,
+        656
+      ],
+      "id": "468fd93d-92e5-4708-ac3b-d0764851b866",
+      "name": "Matrix Alert",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "od1pN1F5wy2irSDs",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "context"
+            },
+            {
+              "name": "config"
+            },
+            {
+              "name": "payload"
+            }
+          ]
+        }
+      },
+      "id": "eeeeeeee-0000-4000-8000-000000000001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.stock_price_history\n  (symbol, trading_date, close, source)\n  VALUES (${pgStr(j.ticker)}, ${pgStr(j.datum)}, ${pgNum(j.aktueller_kurs)}, 'technische-signale-02')\n  ON CONFLICT (symbol, trading_date) DO UPDATE SET\n    close = EXCLUDED.close, source = EXCLUDED.source, fetched_at = now();`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "27583414-7421-4672-baf0-88eb1f699f2b",
+      "name": "Kurshistorie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        924,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "ef31ef5f-a809-4586-97a2-b51a32a38586",
+      "name": "Kurshistorie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1144,
+        740
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.ticker !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Watchlist laden (Kurse)').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02 \\u2013 Technische Signale t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.ticker, node: 'Kurs abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+      },
+      "id": "b7fe4dee-7c0d-4f1b-a8a6-0c670487e3e0",
+      "name": "Abschluss-Ergebnis bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        924,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bfc56c5c-6b70-48f5-8ddc-b12493702864",
+      "name": "Merge Ergebnis 1",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        400
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "29cfade1-832f-4098-abc0-80f739bcfa27",
+      "name": "Merge Ergebnis 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        500
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d2ce5b3f-1861-4f63-b642-1bce690f54df",
+      "name": "Merge Ergebnis 3",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        884,
+        600
+      ]
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+  },
+  "tags": [],
+  "versionId": "f5a7f21f-d4dd-43f8-9b4c-aacd96217f5c"
+}

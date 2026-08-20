@@ -1,0 +1,1446 @@
+﻿{
+    "updatedAt":  "2026-07-21T18:25:54.810Z",
+    "createdAt":  "2026-07-19T13:06:16.395Z",
+    "id":  "SUNb1rfSUTQGUTPN",
+    "name":  "03a – News-Recherche-Agent",
+    "description":  null,
+    "active":  true,
+    "isArchived":  false,
+    "nodes":  [
+                  {
+                      "parameters":  {
+                                         "rule":  {
+                                                      "interval":  [
+                                                                       {
+                                                                           "field":  "cronExpression",
+                                                                           "expression":  "0 20 */2 * * 1-5"
+                                                                       }
+                                                                   ]
+                                                  }
+                                     },
+                      "name":  "Trigger: Recherche-Agent (alle 2h, Werktage)",
+                      "type":  "n8n-nodes-base.scheduleTrigger",
+                      "typeVersion":  1.1,
+                      "position":  [
+                                       -2400,
+                                       0
+                                   ],
+                      "id":  "n-00000001-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=SELECT DISTINCT ON (ni.id) ni.id, ni.news_key, ni.title, ni.url, ni.source, ni.published_at, na.betroffene_ticker_json\nFROM trading.news_items ni\nJOIN trading.news_assessments na ON na.news_id = ni.id\nWHERE na.wirkungsebene = \u0027unklar\u0027\n  AND na.prompt_version \u003c\u003e \u0027news-recherche-agent-v1\u0027\n  AND ni.status = \u0027evaluated\u0027\nORDER BY ni.id, na.created_at DESC\nLIMIT 20;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "DB: Zweitpass-Kandidaten laden",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -2200,
+                                       0
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000002-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "SELECT ticker, name, sektor, aliases_json, exclude_patterns_json, benchmark_symbol FROM trading.stock_instruments WHERE aktiv = TRUE ORDER BY sortierung;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Werkzeug: Instrumententabelle lesen",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -2200,
+                                       200
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000003-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "return [{ json: { instruments: $input.all().map(i =\u003e i.json) } }];"
+                                     },
+                      "name":  "Instrumente buendeln",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -2000,
+                                       200
+                                   ],
+                      "id":  "n-00000004-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Kandidaten + Instrumente zusammenfuehren",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -1800,
+                                       100
+                                   ],
+                      "id":  "n-00000005-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "batchSize":  1,
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Loop: 1 News pro Durchlauf",
+                      "type":  "n8n-nodes-base.splitInBatches",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -1600,
+                                       100
+                                   ],
+                      "id":  "n-00000006-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "// Trennt in diesem Merge-Item entweder einen echten Kandidaten (hat news_key)\n// oder das einmalige Instrumente-Bündel (hat \u0027instruments\u0027). Nur Kandidaten\n// werden weiterverarbeitet, das Instrumente-Item wird separat per $(\u0027...\u0027)\n// referenziert, nicht durch die Loop-Kette geschleift.\nconst j = $json;\nif (j.news_key) return [{ json: j }];\nreturn [];"
+                                     },
+                      "name":  "Nur echte Kandidaten weiterreichen",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -1400,
+                                       40
+                                   ],
+                      "id":  "n-00000007-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "url":  "={{ $json.url }}",
+                                         "options":  {
+                                                         "response":  {
+                                                                          "response":  {
+                                                                                           "neverError":  true,
+                                                                                           "responseFormat":  "text"
+                                                                                       }
+                                                                      },
+                                                         "timeout":  15000
+                                                     }
+                                     },
+                      "name":  "Werkzeug: Vollstaendigen Artikel laden",
+                      "type":  "n8n-nodes-base.httpRequest",
+                      "typeVersion":  4.2,
+                      "position":  [
+                                       -1200,
+                                       -80
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000008-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=SELECT title FROM trading.news_items\nWHERE id \u003c\u003e {{ $(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json.id }}\n  AND created_at \u003e= now() - interval \u002714 days\u0027\nORDER BY created_at DESC LIMIT 40;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Werkzeug: Aehnliche News suchen",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -1200,
+                                       80
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000009-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "=SELECT ni.title, na.wirkungsrichtung, na.created_at\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.betroffene_ticker_json @\u003e \u0027{{ JSON.stringify($(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json.betroffene_ticker_json || []).replace(/\u0027/g, \"\u0027\u0027\") }}\u0027::jsonb\n  AND na.betroffene_ticker_json \u003c\u003e \u0027[]\u0027::jsonb\nORDER BY na.created_at DESC LIMIT 10;",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Werkzeug: Fruehere Meldungen zum Ticker lesen",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       -1200,
+                                       220
+                                   ],
+                      "onError":  "continueRegularOutput",
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "id":  "n-00000010-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Werkzeug-Ergebnisse buendeln",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -1000,
+                                       80
+                                   ],
+                      "id":  "n-00000011-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+
+                                     },
+                      "name":  "Werkzeug-Ergebnisse + Kandidat",
+                      "type":  "n8n-nodes-base.merge",
+                      "typeVersion":  3,
+                      "position":  [
+                                       -800,
+                                       80
+                                   ],
+                      "id":  "n-00000012-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "const cand = $(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json;\nconst article = $(\u0027Werkzeug: Vollstaendigen Artikel laden\u0027).item.json;\nconst similar = $(\u0027Werkzeug: Aehnliche News suchen\u0027).all().map(i =\u003e i.json.title);\nconst tickerHist = $(\u0027Werkzeug: Fruehere Meldungen zum Ticker lesen\u0027).all().map(i =\u003e i.json);\nconst instruments = $(\u0027Instrumente buendeln\u0027).first().json.instruments;\n\nconst articleText = typeof article === \u0027string\u0027 ? article : (article \u0026\u0026 article.data) || \u0027\u0027;\n\nconst systemPrompt = `Du bist ein sorgfaeltiger Recherche-Analyst fuer ein automatisiertes Aktien-Beobachtungssystem.\nEine bereits grob eingeordnete Nachricht konnte in der Ersteinordnung keiner klaren Wirkungsebene zugeordnet werden\n(wirkungsebene=\u0027unklar\u0027). Deine Aufgabe: mit den bereitgestellten Recherche-Informationen (Artikeltext, Instrumentenliste\nmit Aliasen/Ausschlussmustern, aehnliche juengere News, fruehere Meldungen zu moeglicherweise betroffenen Tickern)\neine fundiertere Einordnung treffen.\n\nRegeln:\n- Keine Anlageberatung, keine Kauf-/Verkaufsempfehlungen, keine erfundenen Fakten.\n- Nutze die Alias-/Ausschlussmuster der Instrumente, um Namensgleichheiten korrekt aufzuloesen\n  (z.B. \u0027RWE\u0027 im Fussballkontext ausschliessen, \u0027Bayer\u0027 vs \u0027Bayern\u0027 unterscheiden).\n- ist_wiederholung=true, wenn der Artikelinhalt inhaltlich bereits durch eine der \u0027aehnliche News\u0027-Titel abgedeckt ist.\n- news_kategorie: fachliche Kategorie des Nachrichteninhalts, genau einer von: quarterly_results, profit_warning, forecast_change, merger_acquisition, regulation, management_change, legal_dispute, product_news, macro, geopolitics, analyst_rating, other.\n- Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt exakt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"news_id\": ${cand.id},\n  \"relevant\": true,\n  \"status\": \"evaluated\",\n  \"wirkungsebene\": \"aktie\",\n  \"betroffene_ticker\": [],\n  \"betroffene_sektoren\": [],\n  \"wirkungsrichtung\": \"positiv\",\n  \"wirkung_staerke\": \"mittel\",\n  \"sentiment\": \"positiv\",\n  \"konfidenz\": 78,\n  \"news_kategorie\": \"product_news\",\n  \"ticker_begruendung\": \"\",\n  \"wirkungs_begruendung\": \"\",\n  \"ist_wiederholung\": false,\n  \"referenz_news_ids\": [],\n  \"unsicherheiten\": [],\n  \"modell_version\": \"\",\n  \"prompt_version\": \"news-recherche-agent-v1\"\n}\nwirkungsrichtung nur aus: positiv, negativ, neutral, unklar.\nwirkung_staerke nur aus: niedrig, mittel, hoch, unklar.`;\n\nconst userPrompt = `NACHRICHT:\nTitel: ${cand.title}\nQuelle: ${cand.source}\nURL: ${cand.url}\n\nARTIKELTEXT (best effort, kann leer/unvollstaendig sein):\n${String(articleText).substring(0, 4000)}\n\nINSTRUMENTENLISTE (Ticker, Name, Sektor, Aliase, Ausschlussmuster):\n${JSON.stringify(instruments)}\n\nAEHNLICHE JUENGERE NEWS (letzte 14 Tage, Titel):\n${JSON.stringify(similar)}\n\nFRUEHERE MELDUNGEN ZU MOEGLICHERWEISE BETROFFENEN TICKERN:\n${JSON.stringify(tickerHist)}`;\n\nreturn { json: { cand, systemPrompt, userPrompt } };\n"
+                                     },
+                      "name":  "Baue Recherche-Prompt",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -600,
+                                       80
+                                   ],
+                      "id":  "n-00000013-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "modelId":  {
+                                                         "__rl":  true,
+                                                         "value":  "gpt-5.4-mini",
+                                                         "mode":  "list",
+                                                         "cachedResultName":  "GPT-5.4-MINI"
+                                                     },
+                                         "responses":  {
+                                                           "values":  [
+                                                                          {
+                                                                              "role":  "system",
+                                                                              "content":  "={{ $json.systemPrompt }}"
+                                                                          },
+                                                                          {
+                                                                              "content":  "={{ $json.userPrompt }}"
+                                                                          }
+                                                                      ]
+                                                       },
+                                         "builtInTools":  {
+
+                                                          },
+                                         "options":  {
+                                                         "maxTokens":  1200
+                                                     }
+                                     },
+                      "name":  "KI: Recherche-Bewertung",
+                      "type":  "@n8n/n8n-nodes-langchain.openAi",
+                      "typeVersion":  2.3,
+                      "position":  [
+                                       -400,
+                                       80
+                                   ],
+                      "retryOnFail":  true,
+                      "waitBetweenTries":  5000,
+                      "credentials":  {
+                                          "openAiApi":  {
+                                                            "id":  "RiT1gwJpQWzSo6NO",
+                                                            "name":  "OpenAI account"
+                                                        }
+                                      },
+                      "id":  "n-00000014-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "jsCode":  "function getAiText(resp) {\n  if (typeof resp === \u0027string\u0027) return resp;\n  if (resp \u0026\u0026 Array.isArray(resp.output)) {\n    const msg = resp.output.find(o =\u003e o.type === \u0027message\u0027);\n    const part = msg \u0026\u0026 Array.isArray(msg.content) ? msg.content.find(c =\u003e c.type === \u0027output_text\u0027) : null;\n    if (part \u0026\u0026 part.text) return part.text;\n  }\n  if (resp \u0026\u0026 resp.choices \u0026\u0026 resp.choices[0] \u0026\u0026 resp.choices[0].message) return resp.choices[0].message.content || \u0027\u0027;\n  return JSON.stringify(resp || \u0027\u0027);\n}\nfunction parseObj(text) {\n  let t = String(text || \u0027\u0027).trim().replace(/^```json\\s*/i,\u0027\u0027).replace(/^```\\s*/i,\u0027\u0027).replace(/```\\s*$/i,\u0027\u0027).trim();\n  try { const p = JSON.parse(t); return (p \u0026\u0026 typeof p === \u0027object\u0027) ? p : null; } catch(e) {}\n  const s = t.indexOf(\u0027{\u0027); const e = t.lastIndexOf(\u0027}\u0027);\n  if (s \u003e= 0 \u0026\u0026 e \u003e s) { try { const p = JSON.parse(t.substring(s, e+1)); return (p \u0026\u0026 typeof p === \u0027object\u0027) ? p : null; } catch(err) {} }\n  return null;\n}\n\nconst cand = $(\u0027Baue Recherche-Prompt\u0027).item.json.cand;\nconst parsed = parseObj(getAiText($json));\n\nif (!parsed) {\n  return [{ json: { _action: \u0027retry\u0027, news_id: cand.id, _error: \u0027Recherche-Agent JSON nicht parsebar\u0027 } }];\n}\n\nconst enumOk = (v, allowed) =\u003e allowed.includes(v) ? v : \u0027unklar\u0027;\n\nreturn [{ json: {\n  _action: \u0027persist\u0027,\n  news_id: cand.id,\n  relevant: parsed.relevant !== false,\n  wirkungsebene: parsed.wirkungsebene || \u0027unklar\u0027,\n  betroffene_ticker: Array.isArray(parsed.betroffene_ticker) ? parsed.betroffene_ticker : [],\n  betroffene_sektoren: Array.isArray(parsed.betroffene_sektoren) ? parsed.betroffene_sektoren : [],\n  wirkungsrichtung: enumOk(parsed.wirkungsrichtung, [\u0027positiv\u0027,\u0027negativ\u0027,\u0027neutral\u0027,\u0027unklar\u0027]),\n  wirkung_staerke: enumOk(parsed.wirkung_staerke, [\u0027niedrig\u0027,\u0027mittel\u0027,\u0027hoch\u0027,\u0027unklar\u0027]),\n  sentiment: parsed.sentiment || \u0027unklar\u0027,\n  konfidenz: Number(parsed.konfidenz) || 0,\n  news_kategorie: [\u0027quarterly_results\u0027,\u0027profit_warning\u0027,\u0027forecast_change\u0027,\u0027merger_acquisition\u0027,\u0027regulation\u0027,\u0027management_change\u0027,\u0027legal_dispute\u0027,\u0027product_news\u0027,\u0027macro\u0027,\u0027geopolitics\u0027,\u0027analyst_rating\u0027,\u0027other\u0027].includes(parsed.news_kategorie) ? parsed.news_kategorie : \u0027other\u0027,\n  ticker_begruendung: parsed.ticker_begruendung || \u0027\u0027,\n  wirkungs_begruendung: parsed.wirkungs_begruendung || \u0027\u0027,\n  ist_wiederholung: !!parsed.ist_wiederholung,\n  referenz_news_ids: Array.isArray(parsed.referenz_news_ids) ? parsed.referenz_news_ids : [],\n  unsicherheiten: Array.isArray(parsed.unsicherheiten) ? parsed.unsicherheiten : []\n} }];\n"
+                                     },
+                      "name":  "Antwort validieren (Schema)",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       -200,
+                                       80
+                                   ],
+                      "id":  "n-00000015-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "function pgStr(v) { return v === null || v === undefined ? \u0027NULL\u0027 : `\u0027` + String(v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027`; }\nfunction pgNum(v) { return v === null || v === undefined || v === \u0027\u0027 || isNaN(Number(v)) ? \u0027NULL\u0027 : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? \u0027NULL\u0027 : (v ? \u0027TRUE\u0027 : \u0027FALSE\u0027); }\nfunction pgJson(v) { return `\u0027` + JSON.stringify(v === undefined ? null : v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027::jsonb`; }\nfunction pgArr(v) { return `\u0027{` + (Array.isArray(v) ? v : []).map(x =\u003e String(x).replace(/\"/g,\u0027\\\\\"\u0027)).join(\u0027,\u0027) + `}\u0027`; }\n\n\nconst j = $json;\nlet sql;\n\nif (j._action === \u0027persist\u0027) {\n  const status = j.ist_wiederholung ? \u0027discarded\u0027 : (j.relevant ? \u0027evaluated\u0027 : \u0027discarded\u0027);\n  sql = `INSERT INTO trading.news_assessments\n    (news_id, relevant, wirkungsebene, betroffene_ticker_json, betroffene_sektoren_json, wirkungsrichtung,\n     wirkung_staerke, sentiment, konfidenz, news_kategorie, ticker_begruendung, wirkungs_begruendung,\n     ist_wiederholung, referenz_news_ids_json, unsicherheiten_json, prompt_version)\n    VALUES (${pgNum(j.news_id)}, ${pgBool(j.relevant)}, ${pgStr(j.wirkungsebene)}, ${pgJson(j.betroffene_ticker)},\n            ${pgJson(j.betroffene_sektoren)}, ${pgStr(j.wirkungsrichtung)}, ${pgStr(j.wirkung_staerke)},\n            ${pgStr(j.sentiment)}, ${pgNum(j.konfidenz)}, ${pgStr(j.news_kategorie)}, ${pgStr(j.ticker_begruendung)},\n            ${pgStr(j.wirkungs_begruendung)}, ${pgBool(j.ist_wiederholung)}, ${pgJson(j.referenz_news_ids)},\n            ${pgJson(j.unsicherheiten)}, \u0027news-recherche-agent-v1\u0027);\n   UPDATE trading.news_items SET status = ${pgStr(status)}, updated_at = now() WHERE id = ${pgNum(j.news_id)};`;\n} else {\n  sql = `UPDATE trading.news_items SET\n    last_error = ${pgStr(j._error)}, last_attempt_at = now(), updated_at = now()\n   WHERE id = ${pgNum(j.news_id)};`;\n}\n\nreturn { json: { ...j, sql } };\n"
+                                     },
+                      "name":  "Recherche-Ergebnis persistieren (SQL bauen)",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       0,
+                                       80
+                                   ],
+                      "id":  "n-00000016-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "={{ $json.sql }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Recherche-Ergebnis persistieren (ausfuehren)",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       176,
+                                       80
+                                   ],
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000017-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error \u0026\u0026 j.error.message) || j.error));\n}\nreturn $input.item;\n"
+                                     },
+                      "name":  "Persistierung pruefen (sonst werfen)",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       352,
+                                       80
+                                   ],
+                      "id":  "p8-check-03a-recherche-persist"
+                  },
+                  {
+                      "parameters":  {
+                                         "mode":  "runOnceForEachItem",
+                                         "jsCode":  "function pgStr(v) { return v === null || v === undefined ? \u0027NULL\u0027 : `\u0027` + String(v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027`; }\nfunction pgNum(v) { return v === null || v === undefined || v === \u0027\u0027 || isNaN(Number(v)) ? \u0027NULL\u0027 : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? \u0027NULL\u0027 : (v ? \u0027TRUE\u0027 : \u0027FALSE\u0027); }\nfunction pgJson(v) { return `\u0027` + JSON.stringify(v === undefined ? null : v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027::jsonb`; }\nfunction pgArr(v) { return `\u0027{` + (Array.isArray(v) ? v : []).map(x =\u003e String(x).replace(/\"/g,\u0027\\\\\"\u0027)).join(\u0027,\u0027) + `}\u0027`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat(\u0027sv-SE\u0027, {\n    timeZone: \u0027Europe/Berlin\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027\n  }).format(date);\n}\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, started_at, finished_at)\n  VALUES (${pgStr(\u0027news-recherche-\u0027 + getBusinessDate() + \u0027-\u0027 + Date.now())}, \u0027news-recherche-agent\u0027, \u0027recherche\u0027,\n          \u0027gpt-5.4-mini\u0027, \u0027news-recherche-agent-v1\u0027, ${pgStr(\u0027news_id=\u0027 + j.news_id)}, ${pgStr(j._action)},\n          ${pgStr(j._action === \u0027persist\u0027 ? \u0027success\u0027 : \u0027failed\u0027)}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
+                                     },
+                      "name":  "Agentenlauf protokollieren (SQL bauen)",
+                      "type":  "n8n-nodes-base.code",
+                      "typeVersion":  2,
+                      "position":  [
+                                       200,
+                                       80
+                                   ],
+                      "id":  "n-00000018-0000-4000-8000-0000000000"
+                  },
+                  {
+                      "parameters":  {
+                                         "operation":  "executeQuery",
+                                         "query":  "={{ $json.sql }}",
+                                         "options":  {
+
+                                                     }
+                                     },
+                      "name":  "Agentenlauf protokollieren (ausfuehren)",
+                      "type":  "n8n-nodes-base.postgres",
+                      "typeVersion":  2.5,
+                      "position":  [
+                                       376,
+                                       80
+                                   ],
+                      "credentials":  {
+                                          "postgres":  {
+                                                           "id":  "NWckNyl8ZfwVVJCd",
+                                                           "name":  "Postgres account"
+                                                       }
+                                      },
+                      "onError":  "continueRegularOutput",
+                      "id":  "n-00000019-0000-4000-8000-0000000000"
+                  }
+              ],
+    "connections":  {
+                        "Trigger: Recherche-Agent (alle 2h, Werktage)":  {
+                                                                             "main":  [
+                                                                                          [
+                                                                                              {
+                                                                                                  "node":  "DB: Zweitpass-Kandidaten laden",
+                                                                                                  "type":  "main",
+                                                                                                  "index":  0
+                                                                                              },
+                                                                                              {
+                                                                                                  "node":  "Werkzeug: Instrumententabelle lesen",
+                                                                                                  "type":  "main",
+                                                                                                  "index":  0
+                                                                                              }
+                                                                                          ]
+                                                                                      ]
+                                                                         },
+                        "Werkzeug: Instrumententabelle lesen":  {
+                                                                    "main":  [
+                                                                                 [
+                                                                                     {
+                                                                                         "node":  "Instrumente buendeln",
+                                                                                         "type":  "main",
+                                                                                         "index":  0
+                                                                                     }
+                                                                                 ]
+                                                                             ]
+                                                                },
+                        "DB: Zweitpass-Kandidaten laden":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Kandidaten + Instrumente zusammenfuehren",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Instrumente buendeln":  {
+                                                     "main":  [
+                                                                  [
+                                                                      {
+                                                                          "node":  "Kandidaten + Instrumente zusammenfuehren",
+                                                                          "type":  "main",
+                                                                          "index":  1
+                                                                      }
+                                                                  ]
+                                                              ]
+                                                 },
+                        "Kandidaten + Instrumente zusammenfuehren":  {
+                                                                         "main":  [
+                                                                                      [
+                                                                                          {
+                                                                                              "node":  "Loop: 1 News pro Durchlauf",
+                                                                                              "type":  "main",
+                                                                                              "index":  0
+                                                                                          }
+                                                                                      ]
+                                                                                  ]
+                                                                     },
+                        "Loop: 1 News pro Durchlauf":  {
+                                                           "main":  [
+                                                                        [
+
+                                                                        ],
+                                                                        [
+                                                                            {
+                                                                                "node":  "Nur echte Kandidaten weiterreichen",
+                                                                                "type":  "main",
+                                                                                "index":  0
+                                                                            }
+                                                                        ]
+                                                                    ]
+                                                       },
+                        "Nur echte Kandidaten weiterreichen":  {
+                                                                   "main":  [
+                                                                                [
+                                                                                    {
+                                                                                        "node":  "Werkzeug: Vollstaendigen Artikel laden",
+                                                                                        "type":  "main",
+                                                                                        "index":  0
+                                                                                    },
+                                                                                    {
+                                                                                        "node":  "Werkzeug: Aehnliche News suchen",
+                                                                                        "type":  "main",
+                                                                                        "index":  0
+                                                                                    },
+                                                                                    {
+                                                                                        "node":  "Werkzeug: Fruehere Meldungen zum Ticker lesen",
+                                                                                        "type":  "main",
+                                                                                        "index":  0
+                                                                                    }
+                                                                                ]
+                                                                            ]
+                                                               },
+                        "Werkzeug: Vollstaendigen Artikel laden":  {
+                                                                       "main":  [
+                                                                                    [
+                                                                                        {
+                                                                                            "node":  "Werkzeug-Ergebnisse buendeln",
+                                                                                            "type":  "main",
+                                                                                            "index":  0
+                                                                                        }
+                                                                                    ]
+                                                                                ]
+                                                                   },
+                        "Werkzeug: Aehnliche News suchen":  {
+                                                                "main":  [
+                                                                             [
+                                                                                 {
+                                                                                     "node":  "Werkzeug-Ergebnisse buendeln",
+                                                                                     "type":  "main",
+                                                                                     "index":  1
+                                                                                 }
+                                                                             ]
+                                                                         ]
+                                                            },
+                        "Werkzeug-Ergebnisse buendeln":  {
+                                                             "main":  [
+                                                                          [
+                                                                              {
+                                                                                  "node":  "Werkzeug-Ergebnisse + Kandidat",
+                                                                                  "type":  "main",
+                                                                                  "index":  0
+                                                                              }
+                                                                          ]
+                                                                      ]
+                                                         },
+                        "Werkzeug: Fruehere Meldungen zum Ticker lesen":  {
+                                                                              "main":  [
+                                                                                           [
+                                                                                               {
+                                                                                                   "node":  "Werkzeug-Ergebnisse + Kandidat",
+                                                                                                   "type":  "main",
+                                                                                                   "index":  1
+                                                                                               }
+                                                                                           ]
+                                                                                       ]
+                                                                          },
+                        "Werkzeug-Ergebnisse + Kandidat":  {
+                                                               "main":  [
+                                                                            [
+                                                                                {
+                                                                                    "node":  "Baue Recherche-Prompt",
+                                                                                    "type":  "main",
+                                                                                    "index":  0
+                                                                                }
+                                                                            ]
+                                                                        ]
+                                                           },
+                        "Baue Recherche-Prompt":  {
+                                                      "main":  [
+                                                                   [
+                                                                       {
+                                                                           "node":  "KI: Recherche-Bewertung",
+                                                                           "type":  "main",
+                                                                           "index":  0
+                                                                       }
+                                                                   ]
+                                                               ]
+                                                  },
+                        "KI: Recherche-Bewertung":  {
+                                                        "main":  [
+                                                                     [
+                                                                         {
+                                                                             "node":  "Antwort validieren (Schema)",
+                                                                             "type":  "main",
+                                                                             "index":  0
+                                                                         }
+                                                                     ]
+                                                                 ]
+                                                    },
+                        "Recherche-Ergebnis persistieren (SQL bauen)":  {
+                                                                            "main":  [
+                                                                                         [
+                                                                                             {
+                                                                                                 "node":  "Recherche-Ergebnis persistieren (ausfuehren)",
+                                                                                                 "type":  "main",
+                                                                                                 "index":  0
+                                                                                             }
+                                                                                         ]
+                                                                                     ]
+                                                                        },
+                        "Antwort validieren (Schema)":  {
+                                                            "main":  [
+                                                                         [
+                                                                             {
+                                                                                 "node":  "Recherche-Ergebnis persistieren (SQL bauen)",
+                                                                                 "type":  "main",
+                                                                                 "index":  0
+                                                                             }
+                                                                         ]
+                                                                     ]
+                                                        },
+                        "Agentenlauf protokollieren (SQL bauen)":  {
+                                                                       "main":  [
+                                                                                    [
+                                                                                        {
+                                                                                            "node":  "Agentenlauf protokollieren (ausfuehren)",
+                                                                                            "type":  "main",
+                                                                                            "index":  0
+                                                                                        }
+                                                                                    ]
+                                                                                ]
+                                                                   },
+                        "Recherche-Ergebnis persistieren (ausfuehren)":  {
+                                                                             "main":  [
+                                                                                          [
+                                                                                              {
+                                                                                                  "node":  "Persistierung pruefen (sonst werfen)",
+                                                                                                  "type":  "main",
+                                                                                                  "index":  0
+                                                                                              }
+                                                                                          ]
+                                                                                      ]
+                                                                         },
+                        "Persistierung pruefen (sonst werfen)":  {
+                                                                     "main":  [
+                                                                                  [
+                                                                                      {
+                                                                                          "node":  "Agentenlauf protokollieren (SQL bauen)",
+                                                                                          "type":  "main",
+                                                                                          "index":  0
+                                                                                      }
+                                                                                  ]
+                                                                              ]
+                                                                 },
+                        "Agentenlauf protokollieren (ausfuehren)":  {
+                                                                        "main":  [
+                                                                                     [
+                                                                                         {
+                                                                                             "node":  "Loop: 1 News pro Durchlauf",
+                                                                                             "type":  "main",
+                                                                                             "index":  0
+                                                                                         }
+                                                                                     ]
+                                                                                 ]
+                                                                    }
+                    },
+    "settings":  {
+                     "executionOrder":  "v1",
+                     "errorWorkflow":  "VTBfUuzQfMZNGYDM"
+                 },
+    "staticData":  {
+                       "node:Trigger: Recherche-Agent (alle 2h, Werktage)":  {
+                                                                                 "recurrenceRules":  [
+
+                                                                                                     ]
+                                                                             }
+                   },
+    "meta":  null,
+    "pinData":  null,
+    "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+    "activeVersionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+    "versionCounter":  84,
+    "triggerCount":  1,
+    "shared":  [
+                   {
+                       "updatedAt":  "2026-07-19T13:06:16.395Z",
+                       "createdAt":  "2026-07-19T13:06:16.395Z",
+                       "role":  "workflow:owner",
+                       "workflowId":  "SUNb1rfSUTQGUTPN",
+                       "projectId":  "CrnegVcMvlcRU0OP",
+                       "project":  {
+                                       "updatedAt":  "2026-05-23T11:38:39.411Z",
+                                       "createdAt":  "2026-05-23T11:33:40.374Z",
+                                       "id":  "CrnegVcMvlcRU0OP",
+                                       "name":  "Oliver Lietz \u003coliver.lietz@golietz.de\u003e",
+                                       "type":  "personal",
+                                       "icon":  null,
+                                       "description":  null,
+                                       "creatorId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                   }
+                   }
+               ],
+    "tags":  [
+
+             ],
+    "activeVersion":  {
+                          "updatedAt":  "2026-07-21T14:45:36.966Z",
+                          "createdAt":  "2026-07-21T14:45:36.966Z",
+                          "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                          "workflowId":  "SUNb1rfSUTQGUTPN",
+                          "nodes":  [
+                                        {
+                                            "parameters":  {
+                                                               "rule":  {
+                                                                            "interval":  [
+                                                                                             {
+                                                                                                 "field":  "cronExpression",
+                                                                                                 "expression":  "0 20 */2 * * 1-5"
+                                                                                             }
+                                                                                         ]
+                                                                        }
+                                                           },
+                                            "name":  "Trigger: Recherche-Agent (alle 2h, Werktage)",
+                                            "type":  "n8n-nodes-base.scheduleTrigger",
+                                            "typeVersion":  1.1,
+                                            "position":  [
+                                                             -2400,
+                                                             0
+                                                         ],
+                                            "id":  "n-00000001-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "=SELECT DISTINCT ON (ni.id) ni.id, ni.news_key, ni.title, ni.url, ni.source, ni.published_at, na.betroffene_ticker_json\nFROM trading.news_items ni\nJOIN trading.news_assessments na ON na.news_id = ni.id\nWHERE na.wirkungsebene = \u0027unklar\u0027\n  AND na.prompt_version \u003c\u003e \u0027news-recherche-agent-v1\u0027\n  AND ni.status = \u0027evaluated\u0027\nORDER BY ni.id, na.created_at DESC\nLIMIT 20;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "DB: Zweitpass-Kandidaten laden",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -2200,
+                                                             0
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000002-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "SELECT ticker, name, sektor, aliases_json, exclude_patterns_json, benchmark_symbol FROM trading.stock_instruments WHERE aktiv = TRUE ORDER BY sortierung;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Werkzeug: Instrumententabelle lesen",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -2200,
+                                                             200
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000003-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "return [{ json: { instruments: $input.all().map(i =\u003e i.json) } }];"
+                                                           },
+                                            "name":  "Instrumente buendeln",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -2000,
+                                                             200
+                                                         ],
+                                            "id":  "n-00000004-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Kandidaten + Instrumente zusammenfuehren",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -1800,
+                                                             100
+                                                         ],
+                                            "id":  "n-00000005-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "batchSize":  1,
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Loop: 1 News pro Durchlauf",
+                                            "type":  "n8n-nodes-base.splitInBatches",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -1600,
+                                                             100
+                                                         ],
+                                            "id":  "n-00000006-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "// Trennt in diesem Merge-Item entweder einen echten Kandidaten (hat news_key)\n// oder das einmalige Instrumente-Bündel (hat \u0027instruments\u0027). Nur Kandidaten\n// werden weiterverarbeitet, das Instrumente-Item wird separat per $(\u0027...\u0027)\n// referenziert, nicht durch die Loop-Kette geschleift.\nconst j = $json;\nif (j.news_key) return [{ json: j }];\nreturn [];"
+                                                           },
+                                            "name":  "Nur echte Kandidaten weiterreichen",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -1400,
+                                                             40
+                                                         ],
+                                            "id":  "n-00000007-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "url":  "={{ $json.url }}",
+                                                               "options":  {
+                                                                               "response":  {
+                                                                                                "response":  {
+                                                                                                                 "neverError":  true,
+                                                                                                                 "responseFormat":  "text"
+                                                                                                             }
+                                                                                            },
+                                                                               "timeout":  15000
+                                                                           }
+                                                           },
+                                            "name":  "Werkzeug: Vollstaendigen Artikel laden",
+                                            "type":  "n8n-nodes-base.httpRequest",
+                                            "typeVersion":  4.2,
+                                            "position":  [
+                                                             -1200,
+                                                             -80
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000008-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "=SELECT title FROM trading.news_items\nWHERE id \u003c\u003e {{ $(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json.id }}\n  AND created_at \u003e= now() - interval \u002714 days\u0027\nORDER BY created_at DESC LIMIT 40;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Werkzeug: Aehnliche News suchen",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -1200,
+                                                             80
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000009-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "=SELECT ni.title, na.wirkungsrichtung, na.created_at\nFROM trading.news_assessments na\nJOIN trading.news_items ni ON ni.id = na.news_id\nWHERE na.betroffene_ticker_json @\u003e \u0027{{ JSON.stringify($(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json.betroffene_ticker_json || []).replace(/\u0027/g, \"\u0027\u0027\") }}\u0027::jsonb\n  AND na.betroffene_ticker_json \u003c\u003e \u0027[]\u0027::jsonb\nORDER BY na.created_at DESC LIMIT 10;",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Werkzeug: Fruehere Meldungen zum Ticker lesen",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             -1200,
+                                                             220
+                                                         ],
+                                            "onError":  "continueRegularOutput",
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "id":  "n-00000010-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Werkzeug-Ergebnisse buendeln",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -1000,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000011-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+
+                                                           },
+                                            "name":  "Werkzeug-Ergebnisse + Kandidat",
+                                            "type":  "n8n-nodes-base.merge",
+                                            "typeVersion":  3,
+                                            "position":  [
+                                                             -800,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000012-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "const cand = $(\u0027Nur echte Kandidaten weiterreichen\u0027).item.json;\nconst article = $(\u0027Werkzeug: Vollstaendigen Artikel laden\u0027).item.json;\nconst similar = $(\u0027Werkzeug: Aehnliche News suchen\u0027).all().map(i =\u003e i.json.title);\nconst tickerHist = $(\u0027Werkzeug: Fruehere Meldungen zum Ticker lesen\u0027).all().map(i =\u003e i.json);\nconst instruments = $(\u0027Instrumente buendeln\u0027).first().json.instruments;\n\nconst articleText = typeof article === \u0027string\u0027 ? article : (article \u0026\u0026 article.data) || \u0027\u0027;\n\nconst systemPrompt = `Du bist ein sorgfaeltiger Recherche-Analyst fuer ein automatisiertes Aktien-Beobachtungssystem.\nEine bereits grob eingeordnete Nachricht konnte in der Ersteinordnung keiner klaren Wirkungsebene zugeordnet werden\n(wirkungsebene=\u0027unklar\u0027). Deine Aufgabe: mit den bereitgestellten Recherche-Informationen (Artikeltext, Instrumentenliste\nmit Aliasen/Ausschlussmustern, aehnliche juengere News, fruehere Meldungen zu moeglicherweise betroffenen Tickern)\neine fundiertere Einordnung treffen.\n\nRegeln:\n- Keine Anlageberatung, keine Kauf-/Verkaufsempfehlungen, keine erfundenen Fakten.\n- Nutze die Alias-/Ausschlussmuster der Instrumente, um Namensgleichheiten korrekt aufzuloesen\n  (z.B. \u0027RWE\u0027 im Fussballkontext ausschliessen, \u0027Bayer\u0027 vs \u0027Bayern\u0027 unterscheiden).\n- ist_wiederholung=true, wenn der Artikelinhalt inhaltlich bereits durch eine der \u0027aehnliche News\u0027-Titel abgedeckt ist.\n- news_kategorie: fachliche Kategorie des Nachrichteninhalts, genau einer von: quarterly_results, profit_warning, forecast_change, merger_acquisition, regulation, management_change, legal_dispute, product_news, macro, geopolitics, analyst_rating, other.\n- Antworte AUSSCHLIESSLICH mit einem validen JSON-Objekt exakt in diesem Schema, kein Markdown, kein Text davor/danach:\n{\n  \"news_id\": ${cand.id},\n  \"relevant\": true,\n  \"status\": \"evaluated\",\n  \"wirkungsebene\": \"aktie\",\n  \"betroffene_ticker\": [],\n  \"betroffene_sektoren\": [],\n  \"wirkungsrichtung\": \"positiv\",\n  \"wirkung_staerke\": \"mittel\",\n  \"sentiment\": \"positiv\",\n  \"konfidenz\": 78,\n  \"news_kategorie\": \"product_news\",\n  \"ticker_begruendung\": \"\",\n  \"wirkungs_begruendung\": \"\",\n  \"ist_wiederholung\": false,\n  \"referenz_news_ids\": [],\n  \"unsicherheiten\": [],\n  \"modell_version\": \"\",\n  \"prompt_version\": \"news-recherche-agent-v1\"\n}\nwirkungsrichtung nur aus: positiv, negativ, neutral, unklar.\nwirkung_staerke nur aus: niedrig, mittel, hoch, unklar.`;\n\nconst userPrompt = `NACHRICHT:\nTitel: ${cand.title}\nQuelle: ${cand.source}\nURL: ${cand.url}\n\nARTIKELTEXT (best effort, kann leer/unvollstaendig sein):\n${String(articleText).substring(0, 4000)}\n\nINSTRUMENTENLISTE (Ticker, Name, Sektor, Aliase, Ausschlussmuster):\n${JSON.stringify(instruments)}\n\nAEHNLICHE JUENGERE NEWS (letzte 14 Tage, Titel):\n${JSON.stringify(similar)}\n\nFRUEHERE MELDUNGEN ZU MOEGLICHERWEISE BETROFFENEN TICKERN:\n${JSON.stringify(tickerHist)}`;\n\nreturn { json: { cand, systemPrompt, userPrompt } };\n"
+                                                           },
+                                            "name":  "Baue Recherche-Prompt",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -600,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000013-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "modelId":  {
+                                                                               "__rl":  true,
+                                                                               "value":  "gpt-5.4-mini",
+                                                                               "mode":  "list",
+                                                                               "cachedResultName":  "GPT-5.4-MINI"
+                                                                           },
+                                                               "responses":  {
+                                                                                 "values":  [
+                                                                                                {
+                                                                                                    "role":  "system",
+                                                                                                    "content":  "={{ $json.systemPrompt }}"
+                                                                                                },
+                                                                                                {
+                                                                                                    "content":  "={{ $json.userPrompt }}"
+                                                                                                }
+                                                                                            ]
+                                                                             },
+                                                               "builtInTools":  {
+
+                                                                                },
+                                                               "options":  {
+                                                                               "maxTokens":  1200
+                                                                           }
+                                                           },
+                                            "name":  "KI: Recherche-Bewertung",
+                                            "type":  "@n8n/n8n-nodes-langchain.openAi",
+                                            "typeVersion":  2.3,
+                                            "position":  [
+                                                             -400,
+                                                             80
+                                                         ],
+                                            "retryOnFail":  true,
+                                            "waitBetweenTries":  5000,
+                                            "credentials":  {
+                                                                "openAiApi":  {
+                                                                                  "id":  "RiT1gwJpQWzSo6NO",
+                                                                                  "name":  "OpenAI account"
+                                                                              }
+                                                            },
+                                            "id":  "n-00000014-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "jsCode":  "function getAiText(resp) {\n  if (typeof resp === \u0027string\u0027) return resp;\n  if (resp \u0026\u0026 Array.isArray(resp.output)) {\n    const msg = resp.output.find(o =\u003e o.type === \u0027message\u0027);\n    const part = msg \u0026\u0026 Array.isArray(msg.content) ? msg.content.find(c =\u003e c.type === \u0027output_text\u0027) : null;\n    if (part \u0026\u0026 part.text) return part.text;\n  }\n  if (resp \u0026\u0026 resp.choices \u0026\u0026 resp.choices[0] \u0026\u0026 resp.choices[0].message) return resp.choices[0].message.content || \u0027\u0027;\n  return JSON.stringify(resp || \u0027\u0027);\n}\nfunction parseObj(text) {\n  let t = String(text || \u0027\u0027).trim().replace(/^```json\\s*/i,\u0027\u0027).replace(/^```\\s*/i,\u0027\u0027).replace(/```\\s*$/i,\u0027\u0027).trim();\n  try { const p = JSON.parse(t); return (p \u0026\u0026 typeof p === \u0027object\u0027) ? p : null; } catch(e) {}\n  const s = t.indexOf(\u0027{\u0027); const e = t.lastIndexOf(\u0027}\u0027);\n  if (s \u003e= 0 \u0026\u0026 e \u003e s) { try { const p = JSON.parse(t.substring(s, e+1)); return (p \u0026\u0026 typeof p === \u0027object\u0027) ? p : null; } catch(err) {} }\n  return null;\n}\n\nconst cand = $(\u0027Baue Recherche-Prompt\u0027).item.json.cand;\nconst parsed = parseObj(getAiText($json));\n\nif (!parsed) {\n  return [{ json: { _action: \u0027retry\u0027, news_id: cand.id, _error: \u0027Recherche-Agent JSON nicht parsebar\u0027 } }];\n}\n\nconst enumOk = (v, allowed) =\u003e allowed.includes(v) ? v : \u0027unklar\u0027;\n\nreturn [{ json: {\n  _action: \u0027persist\u0027,\n  news_id: cand.id,\n  relevant: parsed.relevant !== false,\n  wirkungsebene: parsed.wirkungsebene || \u0027unklar\u0027,\n  betroffene_ticker: Array.isArray(parsed.betroffene_ticker) ? parsed.betroffene_ticker : [],\n  betroffene_sektoren: Array.isArray(parsed.betroffene_sektoren) ? parsed.betroffene_sektoren : [],\n  wirkungsrichtung: enumOk(parsed.wirkungsrichtung, [\u0027positiv\u0027,\u0027negativ\u0027,\u0027neutral\u0027,\u0027unklar\u0027]),\n  wirkung_staerke: enumOk(parsed.wirkung_staerke, [\u0027niedrig\u0027,\u0027mittel\u0027,\u0027hoch\u0027,\u0027unklar\u0027]),\n  sentiment: parsed.sentiment || \u0027unklar\u0027,\n  konfidenz: Number(parsed.konfidenz) || 0,\n  news_kategorie: [\u0027quarterly_results\u0027,\u0027profit_warning\u0027,\u0027forecast_change\u0027,\u0027merger_acquisition\u0027,\u0027regulation\u0027,\u0027management_change\u0027,\u0027legal_dispute\u0027,\u0027product_news\u0027,\u0027macro\u0027,\u0027geopolitics\u0027,\u0027analyst_rating\u0027,\u0027other\u0027].includes(parsed.news_kategorie) ? parsed.news_kategorie : \u0027other\u0027,\n  ticker_begruendung: parsed.ticker_begruendung || \u0027\u0027,\n  wirkungs_begruendung: parsed.wirkungs_begruendung || \u0027\u0027,\n  ist_wiederholung: !!parsed.ist_wiederholung,\n  referenz_news_ids: Array.isArray(parsed.referenz_news_ids) ? parsed.referenz_news_ids : [],\n  unsicherheiten: Array.isArray(parsed.unsicherheiten) ? parsed.unsicherheiten : []\n} }];\n"
+                                                           },
+                                            "name":  "Antwort validieren (Schema)",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             -200,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000015-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "mode":  "runOnceForEachItem",
+                                                               "jsCode":  "function pgStr(v) { return v === null || v === undefined ? \u0027NULL\u0027 : `\u0027` + String(v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027`; }\nfunction pgNum(v) { return v === null || v === undefined || v === \u0027\u0027 || isNaN(Number(v)) ? \u0027NULL\u0027 : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? \u0027NULL\u0027 : (v ? \u0027TRUE\u0027 : \u0027FALSE\u0027); }\nfunction pgJson(v) { return `\u0027` + JSON.stringify(v === undefined ? null : v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027::jsonb`; }\nfunction pgArr(v) { return `\u0027{` + (Array.isArray(v) ? v : []).map(x =\u003e String(x).replace(/\"/g,\u0027\\\\\"\u0027)).join(\u0027,\u0027) + `}\u0027`; }\n\n\nconst j = $json;\nlet sql;\n\nif (j._action === \u0027persist\u0027) {\n  const status = j.ist_wiederholung ? \u0027discarded\u0027 : (j.relevant ? \u0027evaluated\u0027 : \u0027discarded\u0027);\n  sql = `INSERT INTO trading.news_assessments\n    (news_id, relevant, wirkungsebene, betroffene_ticker_json, betroffene_sektoren_json, wirkungsrichtung,\n     wirkung_staerke, sentiment, konfidenz, news_kategorie, ticker_begruendung, wirkungs_begruendung,\n     ist_wiederholung, referenz_news_ids_json, unsicherheiten_json, prompt_version)\n    VALUES (${pgNum(j.news_id)}, ${pgBool(j.relevant)}, ${pgStr(j.wirkungsebene)}, ${pgJson(j.betroffene_ticker)},\n            ${pgJson(j.betroffene_sektoren)}, ${pgStr(j.wirkungsrichtung)}, ${pgStr(j.wirkung_staerke)},\n            ${pgStr(j.sentiment)}, ${pgNum(j.konfidenz)}, ${pgStr(j.news_kategorie)}, ${pgStr(j.ticker_begruendung)},\n            ${pgStr(j.wirkungs_begruendung)}, ${pgBool(j.ist_wiederholung)}, ${pgJson(j.referenz_news_ids)},\n            ${pgJson(j.unsicherheiten)}, \u0027news-recherche-agent-v1\u0027);\n   UPDATE trading.news_items SET status = ${pgStr(status)}, updated_at = now() WHERE id = ${pgNum(j.news_id)};`;\n} else {\n  sql = `UPDATE trading.news_items SET\n    last_error = ${pgStr(j._error)}, last_attempt_at = now(), updated_at = now()\n   WHERE id = ${pgNum(j.news_id)};`;\n}\n\nreturn { json: { ...j, sql } };\n"
+                                                           },
+                                            "name":  "Recherche-Ergebnis persistieren (SQL bauen)",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             0,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000016-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "={{ $json.sql }}",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Recherche-Ergebnis persistieren (ausfuehren)",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             176,
+                                                             80
+                                                         ],
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000017-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "mode":  "runOnceForEachItem",
+                                                               "jsCode":  "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error \u0026\u0026 j.error.message) || j.error));\n}\nreturn $input.item;\n"
+                                                           },
+                                            "name":  "Persistierung pruefen (sonst werfen)",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             352,
+                                                             80
+                                                         ],
+                                            "id":  "p8-check-03a-recherche-persist"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "mode":  "runOnceForEachItem",
+                                                               "jsCode":  "function pgStr(v) { return v === null || v === undefined ? \u0027NULL\u0027 : `\u0027` + String(v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027`; }\nfunction pgNum(v) { return v === null || v === undefined || v === \u0027\u0027 || isNaN(Number(v)) ? \u0027NULL\u0027 : Number(v); }\nfunction pgBool(v) { return v === null || v === undefined ? \u0027NULL\u0027 : (v ? \u0027TRUE\u0027 : \u0027FALSE\u0027); }\nfunction pgJson(v) { return `\u0027` + JSON.stringify(v === undefined ? null : v).replace(/\u0027/g, `\u0027\u0027`) + `\u0027::jsonb`; }\nfunction pgArr(v) { return `\u0027{` + (Array.isArray(v) ? v : []).map(x =\u003e String(x).replace(/\"/g,\u0027\\\\\"\u0027)).join(\u0027,\u0027) + `}\u0027`; }\n\nfunction getBusinessDate(date = new Date()) {\n  return new Intl.DateTimeFormat(\u0027sv-SE\u0027, {\n    timeZone: \u0027Europe/Berlin\u0027,\n    year: \u0027numeric\u0027,\n    month: \u00272-digit\u0027,\n    day: \u00272-digit\u0027\n  }).format(date);\n}\n\nconst j = $json;\nconst sql = `INSERT INTO trading.agent_runs\n  (run_id, agent_name, agent_role, model_name, prompt_version, input_reference, output_reference, status, started_at, finished_at)\n  VALUES (${pgStr(\u0027news-recherche-\u0027 + getBusinessDate() + \u0027-\u0027 + Date.now())}, \u0027news-recherche-agent\u0027, \u0027recherche\u0027,\n          \u0027gpt-5.4-mini\u0027, \u0027news-recherche-agent-v1\u0027, ${pgStr(\u0027news_id=\u0027 + j.news_id)}, ${pgStr(j._action)},\n          ${pgStr(j._action === \u0027persist\u0027 ? \u0027success\u0027 : \u0027failed\u0027)}, now(), now());`;\nreturn { json: { ...j, sql } };\n"
+                                                           },
+                                            "name":  "Agentenlauf protokollieren (SQL bauen)",
+                                            "type":  "n8n-nodes-base.code",
+                                            "typeVersion":  2,
+                                            "position":  [
+                                                             200,
+                                                             80
+                                                         ],
+                                            "id":  "n-00000018-0000-4000-8000-0000000000"
+                                        },
+                                        {
+                                            "parameters":  {
+                                                               "operation":  "executeQuery",
+                                                               "query":  "={{ $json.sql }}",
+                                                               "options":  {
+
+                                                                           }
+                                                           },
+                                            "name":  "Agentenlauf protokollieren (ausfuehren)",
+                                            "type":  "n8n-nodes-base.postgres",
+                                            "typeVersion":  2.5,
+                                            "position":  [
+                                                             376,
+                                                             80
+                                                         ],
+                                            "credentials":  {
+                                                                "postgres":  {
+                                                                                 "id":  "NWckNyl8ZfwVVJCd",
+                                                                                 "name":  "Postgres account"
+                                                                             }
+                                                            },
+                                            "onError":  "continueRegularOutput",
+                                            "id":  "n-00000019-0000-4000-8000-0000000000"
+                                        }
+                                    ],
+                          "connections":  {
+                                              "Trigger: Recherche-Agent (alle 2h, Werktage)":  {
+                                                                                                   "main":  [
+                                                                                                                [
+                                                                                                                    {
+                                                                                                                        "node":  "DB: Zweitpass-Kandidaten laden",
+                                                                                                                        "type":  "main",
+                                                                                                                        "index":  0
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                        "node":  "Werkzeug: Instrumententabelle lesen",
+                                                                                                                        "type":  "main",
+                                                                                                                        "index":  0
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            ]
+                                                                                               },
+                                              "Werkzeug: Instrumententabelle lesen":  {
+                                                                                          "main":  [
+                                                                                                       [
+                                                                                                           {
+                                                                                                               "node":  "Instrumente buendeln",
+                                                                                                               "type":  "main",
+                                                                                                               "index":  0
+                                                                                                           }
+                                                                                                       ]
+                                                                                                   ]
+                                                                                      },
+                                              "DB: Zweitpass-Kandidaten laden":  {
+                                                                                     "main":  [
+                                                                                                  [
+                                                                                                      {
+                                                                                                          "node":  "Kandidaten + Instrumente zusammenfuehren",
+                                                                                                          "type":  "main",
+                                                                                                          "index":  0
+                                                                                                      }
+                                                                                                  ]
+                                                                                              ]
+                                                                                 },
+                                              "Instrumente buendeln":  {
+                                                                           "main":  [
+                                                                                        [
+                                                                                            {
+                                                                                                "node":  "Kandidaten + Instrumente zusammenfuehren",
+                                                                                                "type":  "main",
+                                                                                                "index":  1
+                                                                                            }
+                                                                                        ]
+                                                                                    ]
+                                                                       },
+                                              "Kandidaten + Instrumente zusammenfuehren":  {
+                                                                                               "main":  [
+                                                                                                            [
+                                                                                                                {
+                                                                                                                    "node":  "Loop: 1 News pro Durchlauf",
+                                                                                                                    "type":  "main",
+                                                                                                                    "index":  0
+                                                                                                                }
+                                                                                                            ]
+                                                                                                        ]
+                                                                                           },
+                                              "Loop: 1 News pro Durchlauf":  {
+                                                                                 "main":  [
+                                                                                              [
+
+                                                                                              ],
+                                                                                              [
+                                                                                                  {
+                                                                                                      "node":  "Nur echte Kandidaten weiterreichen",
+                                                                                                      "type":  "main",
+                                                                                                      "index":  0
+                                                                                                  }
+                                                                                              ]
+                                                                                          ]
+                                                                             },
+                                              "Nur echte Kandidaten weiterreichen":  {
+                                                                                         "main":  [
+                                                                                                      [
+                                                                                                          {
+                                                                                                              "node":  "Werkzeug: Vollstaendigen Artikel laden",
+                                                                                                              "type":  "main",
+                                                                                                              "index":  0
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "node":  "Werkzeug: Aehnliche News suchen",
+                                                                                                              "type":  "main",
+                                                                                                              "index":  0
+                                                                                                          },
+                                                                                                          {
+                                                                                                              "node":  "Werkzeug: Fruehere Meldungen zum Ticker lesen",
+                                                                                                              "type":  "main",
+                                                                                                              "index":  0
+                                                                                                          }
+                                                                                                      ]
+                                                                                                  ]
+                                                                                     },
+                                              "Werkzeug: Vollstaendigen Artikel laden":  {
+                                                                                             "main":  [
+                                                                                                          [
+                                                                                                              {
+                                                                                                                  "node":  "Werkzeug-Ergebnisse buendeln",
+                                                                                                                  "type":  "main",
+                                                                                                                  "index":  0
+                                                                                                              }
+                                                                                                          ]
+                                                                                                      ]
+                                                                                         },
+                                              "Werkzeug: Aehnliche News suchen":  {
+                                                                                      "main":  [
+                                                                                                   [
+                                                                                                       {
+                                                                                                           "node":  "Werkzeug-Ergebnisse buendeln",
+                                                                                                           "type":  "main",
+                                                                                                           "index":  1
+                                                                                                       }
+                                                                                                   ]
+                                                                                               ]
+                                                                                  },
+                                              "Werkzeug-Ergebnisse buendeln":  {
+                                                                                   "main":  [
+                                                                                                [
+                                                                                                    {
+                                                                                                        "node":  "Werkzeug-Ergebnisse + Kandidat",
+                                                                                                        "type":  "main",
+                                                                                                        "index":  0
+                                                                                                    }
+                                                                                                ]
+                                                                                            ]
+                                                                               },
+                                              "Werkzeug: Fruehere Meldungen zum Ticker lesen":  {
+                                                                                                    "main":  [
+                                                                                                                 [
+                                                                                                                     {
+                                                                                                                         "node":  "Werkzeug-Ergebnisse + Kandidat",
+                                                                                                                         "type":  "main",
+                                                                                                                         "index":  1
+                                                                                                                     }
+                                                                                                                 ]
+                                                                                                             ]
+                                                                                                },
+                                              "Werkzeug-Ergebnisse + Kandidat":  {
+                                                                                     "main":  [
+                                                                                                  [
+                                                                                                      {
+                                                                                                          "node":  "Baue Recherche-Prompt",
+                                                                                                          "type":  "main",
+                                                                                                          "index":  0
+                                                                                                      }
+                                                                                                  ]
+                                                                                              ]
+                                                                                 },
+                                              "Baue Recherche-Prompt":  {
+                                                                            "main":  [
+                                                                                         [
+                                                                                             {
+                                                                                                 "node":  "KI: Recherche-Bewertung",
+                                                                                                 "type":  "main",
+                                                                                                 "index":  0
+                                                                                             }
+                                                                                         ]
+                                                                                     ]
+                                                                        },
+                                              "KI: Recherche-Bewertung":  {
+                                                                              "main":  [
+                                                                                           [
+                                                                                               {
+                                                                                                   "node":  "Antwort validieren (Schema)",
+                                                                                                   "type":  "main",
+                                                                                                   "index":  0
+                                                                                               }
+                                                                                           ]
+                                                                                       ]
+                                                                          },
+                                              "Recherche-Ergebnis persistieren (SQL bauen)":  {
+                                                                                                  "main":  [
+                                                                                                               [
+                                                                                                                   {
+                                                                                                                       "node":  "Recherche-Ergebnis persistieren (ausfuehren)",
+                                                                                                                       "type":  "main",
+                                                                                                                       "index":  0
+                                                                                                                   }
+                                                                                                               ]
+                                                                                                           ]
+                                                                                              },
+                                              "Antwort validieren (Schema)":  {
+                                                                                  "main":  [
+                                                                                               [
+                                                                                                   {
+                                                                                                       "node":  "Recherche-Ergebnis persistieren (SQL bauen)",
+                                                                                                       "type":  "main",
+                                                                                                       "index":  0
+                                                                                                   }
+                                                                                               ]
+                                                                                           ]
+                                                                              },
+                                              "Agentenlauf protokollieren (SQL bauen)":  {
+                                                                                             "main":  [
+                                                                                                          [
+                                                                                                              {
+                                                                                                                  "node":  "Agentenlauf protokollieren (ausfuehren)",
+                                                                                                                  "type":  "main",
+                                                                                                                  "index":  0
+                                                                                                              }
+                                                                                                          ]
+                                                                                                      ]
+                                                                                         },
+                                              "Recherche-Ergebnis persistieren (ausfuehren)":  {
+                                                                                                   "main":  [
+                                                                                                                [
+                                                                                                                    {
+                                                                                                                        "node":  "Persistierung pruefen (sonst werfen)",
+                                                                                                                        "type":  "main",
+                                                                                                                        "index":  0
+                                                                                                                    }
+                                                                                                                ]
+                                                                                                            ]
+                                                                                               },
+                                              "Persistierung pruefen (sonst werfen)":  {
+                                                                                           "main":  [
+                                                                                                        [
+                                                                                                            {
+                                                                                                                "node":  "Agentenlauf protokollieren (SQL bauen)",
+                                                                                                                "type":  "main",
+                                                                                                                "index":  0
+                                                                                                            }
+                                                                                                        ]
+                                                                                                    ]
+                                                                                       },
+                                              "Agentenlauf protokollieren (ausfuehren)":  {
+                                                                                              "main":  [
+                                                                                                           [
+                                                                                                               {
+                                                                                                                   "node":  "Loop: 1 News pro Durchlauf",
+                                                                                                                   "type":  "main",
+                                                                                                                   "index":  0
+                                                                                                               }
+                                                                                                           ]
+                                                                                                       ]
+                                                                                          }
+                                          },
+                          "authors":  "Oliver Lietz",
+                          "name":  null,
+                          "description":  null,
+                          "autosaved":  false,
+                          "workflowPublishHistory":  [
+                                                         {
+                                                             "createdAt":  "2026-07-21T14:45:37.094Z",
+                                                             "id":  892,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T14:45:37.158Z",
+                                                             "id":  893,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T14:45:48.276Z",
+                                                             "id":  904,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T14:45:48.337Z",
+                                                             "id":  905,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:06:33.410Z",
+                                                             "id":  936,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:06:33.465Z",
+                                                             "id":  937,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:08:10.895Z",
+                                                             "id":  962,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:08:10.950Z",
+                                                             "id":  963,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:10:16.713Z",
+                                                             "id":  988,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:10:16.768Z",
+                                                             "id":  989,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:18:38.073Z",
+                                                             "id":  1024,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:18:38.130Z",
+                                                             "id":  1025,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:32:02.081Z",
+                                                             "id":  1050,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T15:32:02.141Z",
+                                                             "id":  1051,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:23:18.257Z",
+                                                             "id":  1080,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:23:18.314Z",
+                                                             "id":  1081,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:25:54.927Z",
+                                                             "id":  1106,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "deactivated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         },
+                                                         {
+                                                             "createdAt":  "2026-07-21T18:25:54.992Z",
+                                                             "id":  1107,
+                                                             "workflowId":  "SUNb1rfSUTQGUTPN",
+                                                             "versionId":  "32eae88a-7168-42e9-a38f-b71995455437",
+                                                             "event":  "activated",
+                                                             "userId":  "66557ab1-dd68-4186-b616-ecaa8f1bea61"
+                                                         }
+                                                     ]
+                      }
+}

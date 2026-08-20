@@ -1,0 +1,1144 @@
+{
+  "active": true,
+  "connections": {
+    "Markt-Watchlist laden": {
+      "main": [
+        [
+          {
+            "node": "Markt-Kursdaten abrufen (lokaler FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktanalyse berechnen": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld suchen": {
+      "main": [
+        [
+          {
+            "node": "Markt: Routing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markt: Routing": {
+      "main": [
+        [
+          {
+            "node": "IF: Marktwert vorhanden?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Marktwert vorhanden?": {
+      "main": [
+        [
+          {
+            "node": "DB: Marktumfeld aktualisieren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Marktumfeld neu anlegen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Marktumfeld (17:55)": {
+      "main": [
+        [
+          {
+            "node": "Markt-Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markt-Kursdaten abrufen (lokaler FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Marktanalyse berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Markt-Watchlist laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld aktualisieren": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Ergebnis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktumfeld neu anlegen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge Ergebnis",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Kurshistorie: upserten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kurshistorie: upserten": {
+      "main": [
+        [
+          {
+            "node": "Merge Ergebnis 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Ergebnis 2": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "9zO3uZeZeakTnLnX",
+  "meta": null,
+  "name": "02b – Marktumfeld täglich",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 55 17 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "e55868b3-74b1-4e7b-99bb-01641ca7000c",
+      "name": "Trigger: Marktumfeld (17:55)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        96
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// MARKT-WATCHLIST LADEN\n// Gibt Marktindizes, Währungen und Rohstoffe als Items aus.\nconst watchlist = [\n  { symbol: '^GDAXI',   name: 'DAX',             markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'SAP.DE,SIE.DE,BASF.DE,ALV.DE,MBG.DE,BMW.DE,VOW3.DE,DBK.DE,DTE.DE,RWE.DE,BAYN.DE,EOAN.DE,ADS.DE,HEN3.DE,FRE.DE' },\n  { symbol: '^MDAXI',   name: 'MDAX',            markt_typ: 'index',    region: 'Deutschland', waehrung: 'EUR',     referenz_fuer: 'deutsche_nebenwerte' },\n  { symbol: '^STOXX50E',name: 'Euro Stoxx 50',   markt_typ: 'index',    region: 'Europa',      waehrung: 'EUR',     referenz_fuer: 'europa' },\n  { symbol: '^IXIC',    name: 'Nasdaq Composite',markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'technologie' },\n  { symbol: '^GSPC',    name: 'S&P 500',         markt_typ: 'index',    region: 'USA',         waehrung: 'USD',     referenz_fuer: 'global' },\n  { symbol: 'EURUSD=X', name: 'EUR/USD',         markt_typ: 'waehrung', region: 'FX',          waehrung: 'EUR/USD', referenz_fuer: 'export_import' },\n  { symbol: 'CL=F',     name: 'WTI Öl',          markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'energie_inflation' },\n  { symbol: 'GC=F',     name: 'Gold',            markt_typ: 'rohstoff', region: 'global',      waehrung: 'USD',     referenz_fuer: 'risk_off' }\n];\nconst _startedAt = new Date().toISOString();\nreturn watchlist.map(s => ({ json: { ...s, _run_started_at: _startedAt } }));\n"
+      },
+      "id": "52bcfc0e-5306-4f2d-b9e8-1ee00aa6d8f3",
+      "name": "Markt-Watchlist laden",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://172.16.1.14:8099/chart/{{ $json.symbol }}?period=3mo&interval=1d",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "c8f8ac29-2d17-4cd9-a12f-a8f7915b5471",
+      "name": "Markt-Kursdaten abrufen (lokaler FastAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -1120,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// MARKTANALYSE BERECHNEN\n// Modus: runOnceForEachItem\n// Gleiche Logik wie Technische Analyse, aber ohne Handelsbewertung.\n// Ziel: Markt­status (risk_on / risk_off / neutral) für Kontextualisierung.\n\nconst input  = $input.item.json;\nconst meta_w = $('Markt-Watchlist laden').item.json;\n\nconst symbol       = meta_w.symbol       || input.symbol       || '';\nconst name         = meta_w.name         || '';\nconst markt_typ    = meta_w.markt_typ    || '';\nconst region       = meta_w.region       || '';\nconst waehrung     = meta_w.waehrung     || '';\nconst referenz_fuer = meta_w.referenz_fuer || '';\n\nconst heute      = new Date().toISOString().substring(0, 10);\nconst zeitstempel = new Date().toISOString();\n\nconst fehlObj = (msg) => ({ json: {\n  symbol, name, markt_typ, region, waehrung, referenz_fuer,\n  datum: heute, zeitstempel, type: 'market_context',\n  aktueller_kurs: null, veraenderung_abs: null, veraenderung_pct: null,\n  rsi: null, rsi_signal: '', macd: null, macd_signal_linie: null,\n  macd_histogramm: null, macd_signal: '', trend: '', ema20: null,\n  bb_oben: null, bb_mitte: null, bb_unten: null, kurs_bei_bollinger: '',\n  signal_punkte: 0, signal_gruende: '', signal_staerke: '',\n  markt_status: 'unbekannt', risk_level: 'unbekannt', markt_hinweis: msg,\n  quelle: 'Yahoo Finance', status: 'fehler', fehler: msg\n}});\n\ntry {\n  if (!input.chart?.result?.[0]) return fehlObj('Keine Chartdaten');\n  const chart = input.chart.result[0];\n  const meta  = chart.meta || {};\n  const quote = chart.indicators?.quote?.[0];\n  if (!quote) return fehlObj('Keine Quote-Daten');\n\n  const closes = (quote.close  || []).filter(v => v != null && !isNaN(v));\n  if (closes.length < 26) return fehlObj(`Zu wenige Datenpunkte (${closes.length})`);\n\n  const aktKurs  = closes[closes.length - 1];\n  const vorKurs  = closes[closes.length - 2];\n  const veraAbs  = parseFloat((aktKurs - vorKurs).toFixed(4));\n  const veraPct  = parseFloat(((aktKurs - vorKurs) / vorKurs * 100).toFixed(2));\n\n  // EMA-Hilfsfunktionen\n  function ema(arr, p) {\n    if (arr.length < p) return null;\n    const k = 2 / (p + 1);\n    let e = arr.slice(0, p).reduce((a, b) => a + b, 0) / p;\n    for (let i = p; i < arr.length; i++) e = arr[i] * k + e * (1 - k);\n    return e;\n  }\n  function emaSeries(arr, p) {\n    if (arr.length < p) return [];\n    const k = 2 / (p + 1);\n    const res = [];\n    let e = arr.slice(0, p).reduce((a, b) => a + b, 0) / p;\n    for (let i = 0; i < arr.length; i++) {\n      if (i < p - 1) res.push(null);\n      else if (i === p - 1) res.push(e);\n      else { e = arr[i] * k + e * (1 - k); res.push(e); }\n    }\n    return res;\n  }\n  function rsi14(arr) {\n    if (arr.length <= 14) return null;\n    let g = 0, l = 0;\n    for (let i = arr.length - 14; i < arr.length; i++) {\n      const d = arr[i] - arr[i - 1];\n      if (d > 0) g += d; else l += Math.abs(d);\n    }\n    const ag = g / 14, al = l / 14;\n    return al === 0 ? 100 : 100 - (100 / (1 + ag / al));\n  }\n  const r = (v, d = 2) => v == null || isNaN(v) ? null : parseFloat(v.toFixed(d));\n\n  // RSI\n  const rsiVal    = r(rsi14(closes), 1);\n  const rsiSignal = rsiVal == null ? '' :\n    rsiVal < 25 ? 'STARK ÜBERVERKAUFT' : rsiVal < 35 ? 'Überverkauft' :\n    rsiVal > 75 ? 'STARK ÜBERKAUFT'    : rsiVal > 65 ? 'Überkauft' : 'Neutral';\n\n  // MACD\n  const ema12S = emaSeries(closes, 12);\n  const ema26S = emaSeries(closes, 26);\n  const macdFull = closes.map((_, i) =>\n    ema12S[i] != null && ema26S[i] != null ? ema12S[i] - ema26S[i] : null\n  ).filter(v => v != null);\n\n  if (macdFull.length < 9) return fehlObj('MACD-Datenbasis zu gering');\n\n  const sigS    = emaSeries(macdFull, 9).filter(v => v != null);\n  const macdV   = macdFull[macdFull.length - 1];\n  const macdSig = sigS[sigS.length - 1];\n  const macdHist = r(macdV - macdSig);\n\n  let macdSignal = 'Neutral';\n  const macdPrev = macdFull[macdFull.length - 2];\n  const sigPrev  = sigS[sigS.length - 2];\n  if (macdPrev <= sigPrev && macdV > macdSig) macdSignal = 'Bullische Kreuzung';\n  else if (macdPrev >= sigPrev && macdV < macdSig) macdSignal = 'Bärische Kreuzung';\n  else if (macdV > macdSig) macdSignal = 'Bullisch';\n  else if (macdV < macdSig) macdSignal = 'Bärisch';\n\n  // EMA20 / Trend\n  const ema20V  = r(ema(closes, 20));\n  const aufwaerts = aktKurs > ema20V;\n\n  // Bollinger\n  const bb20  = closes.slice(-20);\n  const bbAvg = bb20.reduce((a, b) => a + b, 0) / 20;\n  const bbStd = Math.sqrt(bb20.map(p => (p - bbAvg) ** 2).reduce((a, b) => a + b, 0) / 20);\n  const bbO   = r(bbAvg + 2 * bbStd);\n  const bbU   = r(bbAvg - 2 * bbStd);\n  const bbPos = aktKurs >= bbO * 0.995 ? 'oben' : aktKurs <= bbU * 1.005 ? 'unten' : 'mitte';\n\n  // Signal-Punkte (vereinfacht)\n  let punkte = 0;\n  const gruende = [];\n  if (rsiVal != null) {\n    if (rsiVal < 25 || rsiVal > 75) { punkte += 3; gruende.push('RSI extrem'); }\n    else if (rsiVal < 35 || rsiVal > 65) { punkte += 2; gruende.push('RSI stark'); }\n  }\n  if (macdSignal.includes('Kreuzung')) { punkte += 3; gruende.push(`MACD ${macdSignal}`); }\n  else if (macdSignal !== 'Neutral') { punkte += 1; gruende.push(`MACD ${macdSignal}`); }\n  if (bbPos !== 'mitte') { punkte += 2; gruende.push(`Bollinger ${bbPos}`); }\n\n  const signalStaerke = punkte >= 6 ? 'hoch' : punkte >= 3 ? 'mittel' : 'niedrig';\n\n  // markt_status\n  const macdBullisch = macdSignal === 'Bullisch' || macdSignal === 'Bullische Kreuzung';\n  const macdBaerisch = macdSignal === 'Bärisch'  || macdSignal === 'Bärische Kreuzung';\n\n  let markt_status, risk_level, markt_hinweis;\n\n  if (aufwaerts && macdBullisch && veraPct >= -0.5) {\n    markt_status = 'risk_on';\n    risk_level   = veraPct >= 0.5 ? 'niedrig' : 'mittel';\n    markt_hinweis = `${name} über EMA20, MACD bullisch. Tagesveränderung ${veraPct}%.`;\n  } else if (!aufwaerts && macdBaerisch && veraPct <= -1.0) {\n    markt_status = 'risk_off';\n    risk_level   = veraPct <= -2.0 ? 'hoch' : 'mittel';\n    markt_hinweis = `${name} unter EMA20, MACD bärisch. Tagesveränderung ${veraPct}%.`;\n  } else if (!aufwaerts && veraPct <= -1.0) {\n    markt_status = 'risk_off';\n    risk_level   = 'mittel';\n    markt_hinweis = `${name} unter EMA20 mit negativer Tagesperformance (${veraPct}%).`;\n  } else if (aufwaerts && veraPct >= 0.5) {\n    markt_status = 'risk_on';\n    risk_level   = 'niedrig';\n    markt_hinweis = `${name} über EMA20, positive Performance (${veraPct}%).`;\n  } else {\n    markt_status = 'neutral';\n    risk_level   = 'niedrig';\n    markt_hinweis = `${name} zeigt keine klare Richtung. Tagesveränderung ${veraPct}%.`;\n  }\n\n  return { json: {\n    symbol, name, markt_typ, region, waehrung, referenz_fuer,\n    datum: heute, zeitstempel, type: 'market_context',\n    aktueller_kurs:    r(aktKurs, 4),\n    veraenderung_abs:  veraAbs,\n    veraenderung_pct:  veraPct,\n    rsi:               rsiVal,\n    rsi_signal:        rsiSignal,\n    macd:              r(macdV),\n    macd_signal_linie: r(macdSig),\n    macd_histogramm:   macdHist,\n    macd_signal:       macdSignal,\n    trend:             aufwaerts ? 'Aufwärts' : 'Abwärts',\n    ema20:             ema20V,\n    bb_oben:           bbO,\n    bb_mitte:          r(bbAvg),\n    bb_unten:          bbU,\n    kurs_bei_bollinger: bbPos,\n    signal_punkte:     punkte,\n    signal_gruende:    gruende.join(', '),\n    signal_staerke:    signalStaerke,\n    markt_status,\n    risk_level,\n    markt_hinweis,\n    quelle: 'Yahoo Finance',\n    status: 'ok',\n    fehler: ''\n  }};\n} catch(e) {\n  return fehlObj(e.message);\n}\n"
+      },
+      "id": "d8566c85-5ede-4fa5-96fe-791db844469b",
+      "name": "Marktanalyse berechnen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
+        },
+        "returnAll": true
+      },
+      "id": "d969f149-bdbd-4efc-96c7-16ded06b1ff8",
+      "name": "DB: Marktumfeld suchen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const dbRows = $input.all().map(i => i.json || {});\nconst marktItems = $('Marktanalyse berechnen').all().map(i => i.json || {});\n\nconst foundBySymbol = {};\nfor (const row of dbRows) {\n  const symbol = String(row.symbol || '').trim();\n  const hasId = row.id !== undefined && row.id !== null && String(row.id).trim() !== '';\n  if (symbol && hasId) foundBySymbol[symbol] = row;\n}\n\nreturn marktItems.map(markt => {\n  const symbol = String(markt.symbol || '').trim();\n  const found = foundBySymbol[symbol];\n  const rowExists = found !== undefined && found.id !== undefined && found.id !== null && String(found.id).trim() !== '';\n  return {\n    json: {\n      ...markt,\n      _existing_id: rowExists ? String(found.id) : '',\n      _rowExists: Boolean(rowExists)\n    }\n  };\n});"
+      },
+      "id": "b91acc04-8aec-424c-ac14-c2462a5ff134",
+      "name": "Markt: Routing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "markt-exists",
+              "leftValue": "={{ $json._rowExists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "87915f66-925b-4338-bc0e-0824b45072f2",
+      "name": "IF: Marktwert vorhanden?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "symbol",
+              "keyValue": "={{ $json.symbol }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "symbol": "={{ $json.symbol }}",
+            "name": "={{ $json.name }}",
+            "markt_typ": "={{ $json.markt_typ }}",
+            "region": "={{ $json.region }}",
+            "waehrung": "={{ $json.waehrung }}",
+            "referenz_fuer": "={{ $json.referenz_fuer }}",
+            "datum": "={{ $json.datum }}",
+            "zeitstempel": "={{ $json.zeitstempel }}",
+            "type": "={{ $json.type }}",
+            "aktueller_kurs": "={{ $json.aktueller_kurs }}",
+            "veraenderung_abs": "={{ $json.veraenderung_abs }}",
+            "veraenderung_pct": "={{ $json.veraenderung_pct }}",
+            "rsi": "={{ $json.rsi }}",
+            "rsi_signal": "={{ $json.rsi_signal }}",
+            "macd": "={{ $json.macd }}",
+            "macd_signal_linie": "={{ $json.macd_signal_linie }}",
+            "macd_histogramm": "={{ $json.macd_histogramm }}",
+            "macd_signal": "={{ $json.macd_signal }}",
+            "trend": "={{ $json.trend }}",
+            "ema20": "={{ $json.ema20 }}",
+            "bb_oben": "={{ $json.bb_oben }}",
+            "bb_mitte": "={{ $json.bb_mitte }}",
+            "bb_unten": "={{ $json.bb_unten }}",
+            "kurs_bei_bollinger": "={{ $json.kurs_bei_bollinger }}",
+            "signal_punkte": "={{ $json.signal_punkte }}",
+            "signal_gruende": "={{ $json.signal_gruende }}",
+            "signal_staerke": "={{ $json.signal_staerke }}",
+            "markt_status": "={{ $json.markt_status }}",
+            "risk_level": "={{ $json.risk_level }}",
+            "markt_hinweis": "={{ $json.markt_hinweis }}",
+            "quelle": "={{ $json.quelle }}",
+            "status": "={{ $json.status }}",
+            "fehler": "={{ $json.fehler }}"
+          },
+          "schema": [
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_typ",
+              "displayName": "markt_typ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "region",
+              "displayName": "region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "waehrung",
+              "displayName": "waehrung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_fuer",
+              "displayName": "referenz_fuer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "zeitstempel",
+              "displayName": "zeitstempel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "aktueller_kurs",
+              "displayName": "aktueller_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung_abs",
+              "displayName": "veraenderung_abs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung_pct",
+              "displayName": "veraenderung_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi",
+              "displayName": "rsi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi_signal",
+              "displayName": "rsi_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd",
+              "displayName": "macd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal_linie",
+              "displayName": "macd_signal_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm",
+              "displayName": "macd_histogramm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal",
+              "displayName": "macd_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "trend",
+              "displayName": "trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ema20",
+              "displayName": "ema20",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_oben",
+              "displayName": "bb_oben",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_mitte",
+              "displayName": "bb_mitte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_unten",
+              "displayName": "bb_unten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kurs_bei_bollinger",
+              "displayName": "kurs_bei_bollinger",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_punkte",
+              "displayName": "signal_punkte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_gruende",
+              "displayName": "signal_gruende",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_staerke",
+              "displayName": "signal_staerke",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_status",
+              "displayName": "markt_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "risk_level",
+              "displayName": "risk_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_hinweis",
+              "displayName": "markt_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "quelle",
+              "displayName": "quelle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fehler",
+              "displayName": "fehler",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "196c9e79-8e75-4889-8773-547329dfcbea",
+      "name": "DB: Marktumfeld aktualisieren",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "dzUOoGnfASjaaVhn",
+          "mode": "list",
+          "cachedResultName": "stock_market_context",
+          "cachedResultUrl": "/projects/CrnegVcMvlcRU0OP/datatables/dzUOoGnfASjaaVhn"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "symbol": "={{ $json.symbol }}",
+            "name": "={{ $json.name }}",
+            "markt_typ": "={{ $json.markt_typ }}",
+            "region": "={{ $json.region }}",
+            "waehrung": "={{ $json.waehrung }}",
+            "referenz_fuer": "={{ $json.referenz_fuer }}",
+            "datum": "={{ $json.datum }}",
+            "zeitstempel": "={{ $json.zeitstempel }}",
+            "type": "={{ $json.type }}",
+            "aktueller_kurs": "={{ $json.aktueller_kurs }}",
+            "veraenderung_abs": "={{ $json.veraenderung_abs }}",
+            "veraenderung_pct": "={{ $json.veraenderung_pct }}",
+            "rsi": "={{ $json.rsi }}",
+            "rsi_signal": "={{ $json.rsi_signal }}",
+            "macd": "={{ $json.macd }}",
+            "macd_signal_linie": "={{ $json.macd_signal_linie }}",
+            "macd_histogramm": "={{ $json.macd_histogramm }}",
+            "macd_signal": "={{ $json.macd_signal }}",
+            "trend": "={{ $json.trend }}",
+            "ema20": "={{ $json.ema20 }}",
+            "bb_oben": "={{ $json.bb_oben }}",
+            "bb_mitte": "={{ $json.bb_mitte }}",
+            "bb_unten": "={{ $json.bb_unten }}",
+            "kurs_bei_bollinger": "={{ $json.kurs_bei_bollinger }}",
+            "signal_punkte": "={{ $json.signal_punkte }}",
+            "signal_gruende": "={{ $json.signal_gruende }}",
+            "signal_staerke": "={{ $json.signal_staerke }}",
+            "markt_status": "={{ $json.markt_status }}",
+            "risk_level": "={{ $json.risk_level }}",
+            "markt_hinweis": "={{ $json.markt_hinweis }}",
+            "quelle": "={{ $json.quelle }}",
+            "status": "={{ $json.status }}",
+            "fehler": "={{ $json.fehler }}"
+          },
+          "schema": [
+            {
+              "id": "symbol",
+              "displayName": "symbol",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_typ",
+              "displayName": "markt_typ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "region",
+              "displayName": "region",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "waehrung",
+              "displayName": "waehrung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "referenz_fuer",
+              "displayName": "referenz_fuer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "datum",
+              "displayName": "datum",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "zeitstempel",
+              "displayName": "zeitstempel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "type",
+              "displayName": "type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "aktueller_kurs",
+              "displayName": "aktueller_kurs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung_abs",
+              "displayName": "veraenderung_abs",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "veraenderung_pct",
+              "displayName": "veraenderung_pct",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi",
+              "displayName": "rsi",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "rsi_signal",
+              "displayName": "rsi_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd",
+              "displayName": "macd",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal_linie",
+              "displayName": "macd_signal_linie",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_histogramm",
+              "displayName": "macd_histogramm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "macd_signal",
+              "displayName": "macd_signal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "trend",
+              "displayName": "trend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "ema20",
+              "displayName": "ema20",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_oben",
+              "displayName": "bb_oben",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_mitte",
+              "displayName": "bb_mitte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "bb_unten",
+              "displayName": "bb_unten",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "kurs_bei_bollinger",
+              "displayName": "kurs_bei_bollinger",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_punkte",
+              "displayName": "signal_punkte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_gruende",
+              "displayName": "signal_gruende",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "signal_staerke",
+              "displayName": "signal_staerke",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_status",
+              "displayName": "markt_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "risk_level",
+              "displayName": "risk_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "markt_hinweis",
+              "displayName": "markt_hinweis",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "quelle",
+              "displayName": "quelle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "fehler",
+              "displayName": "fehler",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b737980d-3840-4031-a07c-2cfe0f9b4616",
+      "name": "DB: Marktumfeld neu anlegen",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "context"
+            },
+            {
+              "name": "config"
+            },
+            {
+              "name": "payload"
+            }
+          ]
+        }
+      },
+      "id": "eeeeeeee-0000-4000-8000-000000000001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1568,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\nconst j = $json;\nconst sql = `INSERT INTO trading.stock_price_history\n  (symbol, trading_date, close, currency, source)\n  VALUES (${pgStr(j.symbol)}, ${pgStr(j.datum)}, ${pgNum(j.aktueller_kurs)}, ${pgStr(j.waehrung)}, 'marktumfeld-02b')\n  ON CONFLICT (symbol, trading_date) DO UPDATE SET\n    close = EXCLUDED.close, currency = EXCLUDED.currency, source = EXCLUDED.source, fetched_at = now();`;\nreturn { json: { ...j, sql } };"
+      },
+      "id": "60fea350-12a8-46fc-abda-d26d63bdd5ac",
+      "name": "Kurshistorie: SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "id": "96888aff-b6c5-4af9-a7b9-034b6d2cd0da",
+      "name": "Kurshistorie: upserten",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        180
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {},
+      "id": "f8183dc0-e367-42e1-8fb1-fe87f392bcc8",
+      "name": "Merge Ergebnis",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        220,
+        -150
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all().map(i => i.json).filter(i => i.symbol !== undefined);\nconst total = items.length;\nconst errorItems = items.filter(i => i.status === 'fehler' || i.fehler);\nconst successful = total - errorItems.length;\nconst failed = errorItems.length;\n\nlet status;\nif (total === 0) status = 'skipped';\nelse if (failed === 0) status = 'success';\nelse if (successful === 0) status = 'failed';\nelse status = 'partial_failure';\n\nlet startedAt = null;\ntry { startedAt = $('Markt-Watchlist laden').all()[0].json._run_started_at; } catch (e) {}\nlet runId = null;\ntry { runId = $('Execute Workflow Trigger').all()[0].json.context.run_id; } catch (e) {}\n\nreturn [{ json: {\n  ok: failed === 0,\n  workflow: '02b \\u2013 Marktumfeld t\\u00e4glich',\n  run_id: runId,\n  processed: total,\n  successful,\n  failed,\n  warnings: [],\n  errors: errorItems.map(i => ({ ticker: i.symbol, node: 'Markt-Kursdaten abrufen (lokaler FastAPI)', message: i.fehler || 'Unbekannter Fehler' })),\n  started_at: startedAt,\n  finished_at: new Date().toISOString(),\n  status\n} }];"
+      },
+      "id": "20ba3c3d-90c2-44e9-9613-d3b0728f4eee",
+      "name": "Abschluss-Ergebnis bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -150
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "2c73f574-1cfc-47fd-8ada-7d936003d7e4",
+      "name": "Merge Ergebnis 2",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        440,
+        -50
+      ]
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
+  },
+  "tags": [],
+  "versionId": "48ff8a64-3f1a-41dd-b062-9406972f977d"
+}

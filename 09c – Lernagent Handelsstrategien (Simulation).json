@@ -1,4 +1,259 @@
 {
+  "active": true,
+  "connections": {
+    "Webhook GET (Ausloesen)": {
+      "main": [
+        [
+          {
+            "node": "Validiere simulation_run_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validiere simulation_run_id": {
+      "main": [
+        [
+          {
+            "node": "DB: Quell-Lauf laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Quell-Lauf laden": {
+      "main": [
+        [
+          {
+            "node": "Pruefe Quell-Lauf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe Quell-Lauf": {
+      "main": [
+        [
+          {
+            "node": "IF: Quell-Lauf ungueltig?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Quell-Lauf ungueltig?": {
+      "main": [
+        [
+          {
+            "node": "Baue Fehler-Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DB: Lern-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Fehler-Antwort (JSON)": {
+      "main": [
+        [
+          {
+            "node": "Fehler-Antwort senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Lern-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "DB: OOS-Backtests laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: OOS-Backtests laden": {
+      "main": [
+        [
+          {
+            "node": "SQL: Gesamtkennzahlen (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Gesamtkennzahlen (Trades)": {
+      "main": [
+        [
+          {
+            "node": "SQL: Je Dimension (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Je Dimension (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Mindestfallzahlen klassifizieren (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mindestfallzahlen klassifizieren (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Baue Lernagent-Prompt (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege gegen Fallzahlen validieren (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege auffaechern (Trades)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Agentenlauf protokollieren (Trades, SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlaege auffaechern (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (SQL bauen, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlag speichern (SQL bauen, Trades)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlag speichern (ausfuehren, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vorschlag speichern (ausfuehren, Trades)": {
+      "main": [
+        [
+          {
+            "node": "Fehlerpruefung (Vorschlag speichern, Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (Trades, SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Agentenlauf protokollieren (Trades, ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agentenlauf protokollieren (Trades, ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Lernbericht aufbereiten (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lernbericht aufbereiten (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Lernbericht senden (Trades)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Baue Antwort (JSON)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Antwort (JSON)": {
+      "main": [
+        [
+          {
+            "node": "Antwort senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege gegen Fallzahlen validieren (Trades)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Lernagent-Prompt (Trades)": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "NzoDOJyeBTtc6NM0",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
   "name": "09c – Lernagent Handelsstrategien (Simulation)",
   "nodes": [
     {
@@ -123,7 +378,7 @@
       "typeVersion": 2,
       "position": [
         -2048,
-        320
+        352
       ]
     },
     {
@@ -448,8 +703,8 @@
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
       "position": [
-        -1424,
-        432
+        -1232,
+        480
       ],
       "id": "0772389d-27b3-4851-bc19-b58bae79f62f",
       "name": "Message a model",
@@ -468,264 +723,17 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1400,
-        320
+        -1472,
+        480
       ],
       "id": "n-welle3-09b-008"
     }
   ],
-  "connections": {
-    "Webhook GET (Ausloesen)": {
-      "main": [
-        [
-          {
-            "node": "Validiere simulation_run_id",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validiere simulation_run_id": {
-      "main": [
-        [
-          {
-            "node": "DB: Quell-Lauf laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Quell-Lauf laden": {
-      "main": [
-        [
-          {
-            "node": "Pruefe Quell-Lauf",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pruefe Quell-Lauf": {
-      "main": [
-        [
-          {
-            "node": "IF: Quell-Lauf ungueltig?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Quell-Lauf ungueltig?": {
-      "main": [
-        [
-          {
-            "node": "Baue Fehler-Antwort (JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "DB: Lern-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Fehler-Antwort (JSON)": {
-      "main": [
-        [
-          {
-            "node": "Fehler-Antwort senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Lern-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "DB: OOS-Backtests laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: OOS-Backtests laden": {
-      "main": [
-        [
-          {
-            "node": "SQL: Gesamtkennzahlen (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Gesamtkennzahlen (Trades)": {
-      "main": [
-        [
-          {
-            "node": "SQL: Je Dimension (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL: Je Dimension (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Mindestfallzahlen klassifizieren (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mindestfallzahlen klassifizieren (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Baue Lernagent-Prompt (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege gegen Fallzahlen validieren (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege auffaechern (Trades)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Agentenlauf protokollieren (Trades, SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlaege auffaechern (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (SQL bauen, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlag speichern (SQL bauen, Trades)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlag speichern (ausfuehren, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vorschlag speichern (ausfuehren, Trades)": {
-      "main": [
-        [
-          {
-            "node": "Fehlerpruefung (Vorschlag speichern, Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (Trades, SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Agentenlauf protokollieren (Trades, ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Agentenlauf protokollieren (Trades, ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "Lernbericht aufbereiten (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lernbericht aufbereiten (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Lernbericht senden (Trades)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Baue Antwort (JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Antwort (JSON)": {
-      "main": [
-        [
-          {
-            "node": "Antwort senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Message a model": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege gegen Fallzahlen validieren (Trades)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Lernagent-Prompt (Trades)": {
-      "main": [
-        [
-          {
-            "node": "Message a model",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
   "pinData": {},
   "settings": {
-    "executionOrder": "v1"
-  }
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all"
+  },
+  "tags": [],
+  "versionId": "8d2db1d3-db98-4595-8c76-c1c94a5826ca"
 }
