@@ -1,0 +1,189 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "jyI2Kfzz0yxvEZpP",
+  "meta": null,
+  "name": "Lernen-und-Feedback",
+  "nodes": [
+    {
+      "id": "lf-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "lernen-feedback",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "lf-get-webhook-id"
+    },
+    {
+      "id": "lf-nav",
+      "name": "Nav laden",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'lernen-feedback' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "lf-baue-query",
+      "name": "Baue Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Reiner Aggregations-Hub, nur GET, keine Schreiblogik (siehe HUMAN_IN_THE_LOOP_ARCHITECTURE.md\n// Abschnitt 2: \"Aggregations-Hub offener Entscheidungen, rein lesend + Verlinkung\"). Ein SELECT\n// mit einer count/items-JSON-Spalte je Kategorie - gleicher Trick wie Paper-Trading-Review und\n// News-Pruefen.\nconst sql = `SELECT\n    (SELECT count(*) FROM trading.recommendations r\n       LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n       WHERE r.status = 'offen' AND (rd.id IS NULL OR rd.entscheidung IN ('beobachten', 'spaeter'))) AS trade_entscheidungen_anzahl,\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT r.id, r.ticker, r.richtung, r.opportunity_score\n       FROM trading.recommendations r\n       LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n       WHERE r.status = 'offen' AND (rd.id IS NULL OR rd.entscheidung IN ('beobachten', 'spaeter'))\n       ORDER BY r.opportunity_score DESC NULLS LAST LIMIT 5\n     ) x) AS trade_entscheidungen,\n\n    (SELECT count(*) FROM trading.paper_trades pt\n       LEFT JOIN trading.trade_reviews tr ON tr.trade_id = pt.trade_id\n       WHERE pt.status = 'closed' AND tr.id IS NULL) AS trade_reviews_anzahl,\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT pt.trade_id, pt.ticker, pt.net_pnl, pt.exit_time\n       FROM trading.paper_trades pt\n       LEFT JOIN trading.trade_reviews tr ON tr.trade_id = pt.trade_id\n       WHERE pt.status = 'closed' AND tr.id IS NULL\n       ORDER BY pt.exit_time DESC LIMIT 5\n     ) x) AS trade_reviews,\n\n    (SELECT count(*) FROM trading.news_items ni\n       JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n       LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n       WHERE vla.confirmation_status = 'unconfirmed' AND nrn.id IS NULL) AS news_reviews_anzahl,\n\n    (SELECT count(*) FROM trading.news_false_negative_flags\n       WHERE status IN ('possible_false_negative', 'filter_revision_required')) AS false_negatives_anzahl,\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT nff.id AS flag_id, nff.news_id, ni.title, nff.status, nff.created_at\n       FROM trading.news_false_negative_flags nff\n       JOIN trading.news_items ni ON ni.id = nff.news_id\n       WHERE nff.status IN ('possible_false_negative', 'filter_revision_required')\n       ORDER BY nff.created_at DESC LIMIT 5\n     ) x) AS false_negatives,\n\n    (SELECT count(*) FROM trading.learning_rule_proposals WHERE status = 'proposed') AS lernvorschlaege_anzahl,\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT id, proposal_type, target_type, target_value, sample_size, confidence_level, created_at\n       FROM trading.learning_rule_proposals\n       WHERE status = 'proposed'\n       ORDER BY created_at DESC LIMIT 5\n     ) x) AS lernvorschlaege;`;\n\nreturn [{ json: { sql } }];\n"
+      }
+    },
+    {
+      "id": "lf-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "lf-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nlet nav = {};\ntry { nav = $('Nav laden').first().json; } catch (e) { nav = {}; }\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nconst RICHTUNG_LABEL = { kauf: 'LONG', verkauf: 'SHORT' };\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:1000px;margin:0 auto;}'\n  + 'h1{font-size:22px;color:#fff;margin-bottom:4px;} h2{font-size:15px;color:#fff;margin-top:0;margin-bottom:8px;display:flex;align-items:center;gap:8px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:20px;} .hint{color:#9aa0a6;font-size:12px;}'\n  + '.section{background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px 20px;margin-bottom:14px;}'\n  + '.section a.mehr{color:#8ab4f8;text-decoration:none;font-size:12px;margin-left:auto;}'\n  + '.row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #22242a;font-size:13px;}'\n  + '.row:last-child{border-bottom:none;} .row a{color:#e6e6e6;text-decoration:none;} .row a:hover{color:#8ab4f8;}'\n  + '.count{display:inline-block;background:#5b8def;color:#0f1115;font-weight:700;border-radius:999px;padding:1px 9px;font-size:12px;}'\n  + '.count.zero{background:#22242a;color:#7a7d84;}'\n  + '.section-empty{color:#7a7d84;font-size:12px;font-style:italic;}'\n  + '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#3a2c1c;color:#e0a854;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nfunction section(titel, anzahl, link, linkLabel, items, renderer, emptyText) {\n  const countKlass = anzahl > 0 ? 'count' : 'count zero';\n  return '<div class=\"section\">'\n    + '<h2>' + esc(titel) + ' <span class=\"' + countKlass + '\">' + anzahl + '</span>'\n    + '<a class=\"mehr\" href=\"' + link + '\">' + esc(linkLabel) + ' &rarr;</a></h2>'\n    + (!items || items.length === 0\n      ? '<div class=\"section-empty\">' + esc(emptyText) + '</div>'\n      : items.map(renderer).join(''));\n}\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n\nconst tradeEntscheidungenHtml = section(\n  'Offene Trade-Entscheidungen', row.trade_entscheidungen_anzahl || 0, '/webhook/heute-handeln', 'Zu Heute Handeln',\n  row.trade_entscheidungen, r =>\n    '<div class=\"row\"><a href=\"/webhook/heute-handeln?id=' + esc(r.id) + '\">' + esc(r.ticker) + ' - ' + (RICHTUNG_LABEL[r.richtung] || esc(r.richtung)) + '</a><span class=\"hint\">Score: ' + esc(r.opportunity_score ?? '-') + '</span></div>',\n  'Keine offenen Trade-Ideen.'\n);\n\nconst tradeReviewsHtml = section(\n  'Offene Trade-Reviews', row.trade_reviews_anzahl || 0, '/webhook/trade-review', 'Zu Paper-Trading-Review',\n  row.trade_reviews, t =>\n    '<div class=\"row\"><a href=\"/webhook/trade-review?id=' + esc(t.trade_id) + '\">' + esc(t.ticker) + '</a><span class=\"hint\">PnL: ' + esc(t.net_pnl ?? '-') + ' &middot; ' + fmtDate(t.exit_time) + '</span></div>',\n  'Keine offenen Reviews.'\n);\n\nconst newsReviewsHtml = section(\n  'Offene News-Reviews', row.news_reviews_anzahl || 0, '/webhook/news-pruefen', 'Zu News Prüfen',\n  null, null,\n  (row.news_reviews_anzahl || 0) > 0 ? '' : 'Keine offenen News-Bewertungen.'\n);\n\nconst falseNegativesHtml = section(\n  'Gemeldete mögliche False Negatives', row.false_negatives_anzahl || 0, '/webhook/news-pruefen', 'Zu News Prüfen',\n  row.false_negatives, f =>\n    '<div class=\"row\"><a href=\"/webhook/news-pruefen?id=' + esc(f.news_id) + '\">' + esc(f.title) + '</a><span class=\"badge\">' + esc(f.status) + '</span></div>',\n  'Keine offenen Meldungen.'\n);\n\nconst lernvorschlaegeHtml = section(\n  'Offene Lernvorschläge', row.lernvorschlaege_anzahl || 0, '/webhook/lernvorschlaege', 'Zu Lernvorschläge',\n  row.lernvorschlaege, l =>\n    '<div class=\"row\"><span>' + esc(l.target_type) + ': ' + esc(l.target_value) + '</span><span class=\"hint\">Fallzahl: ' + esc(l.sample_size) + ' &middot; Konfidenz: ' + esc(l.confidence_level || '-') + '</span></div>',\n  'Keine offenen Lernvorschläge.'\n);\n\nconst html = pageWrap('Lernen & Feedback', ''\n  + '<h1>Lernen &amp; Feedback</h1>'\n  + '<div class=\"meta\">Stand: ' + now + ' &middot; Aggregations-Übersicht offener Entscheidungen über alle Bereiche - rein lesend, keine Aktion ändert hier direkt etwas.</div>'\n  + tradeEntscheidungenHtml + tradeReviewsHtml + newsReviewsHtml + falseNegativesHtml + lernvorschlaegeHtml\n  + '<div class=\"hint\">Einzelnes Feedback wird nie automatisch zu einer Regeländerung. Erst Aggregation über mehrere Fälle, dann ein Lernvorschlag, dann Simulation/OOS, dann manuelle Freigabe - siehe HUMAN_IN_THE_LOOP_ARCHITECTURE.md Abschnitt 6.</div>'\n);\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "lf-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "e8ecbc1c-318c-47b8-bc50-f560080de086"
+}
