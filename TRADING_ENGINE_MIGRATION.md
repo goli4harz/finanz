@@ -167,24 +167,33 @@ Retry-/On-Error-Verhalten greift wie bei jedem anderen Node in diesem Workflow.
    **Wichtig für Schritt 5**: der Server (`/opt/trading-data-service`) hat die neuen
    Order/Trade/SizingResult-Felder noch NICHT — braucht vor dem Vergleichslauf ein manuelles
    Update (siehe Ende dieses Dokuments).
-5. **Verifikation (im Gange)**: erster Testlauf (`test22`, id 11) lief noch vor dem Umschalten
-   über den alten Pfad (Flag war zu dem Zeitpunkt `FALSE`) — bestätigt per `entry_grund`-Text
-   ("RSI=100.0; Bollinger-Beruehrung", altes Format), 0 gefüllte Trades (zu kurz/inaktiv für einen
-   echten Trade-Vergleich). **2026-08-20 ~15:25 UTC: Flag auf `TRUE` gesetzt** (Nutzerauftrag) —
-   ab jetzt läuft JEDER Worker-Tick für JEDEN aktiven `news_enabled=false`-Lauf über den neuen
-   Engine-Node, nicht nur künftige Testläufe. Nächster Schritt: neuen Vergleichslauf anlegen
-   (mehr Ticker/längerer Zeitraum als `test22`, damit tatsächlich Trades entstehen), Ergebnis
-   gegen `test22`/einen anderen abgeschlossenen Referenzlauf mit gleichen Parametern prüfen
-   (`simulation_trades`/`simulation_daily_portfolio`/`entry_grund`-Format als Signal, welcher Pfad
-   lief).
-6. Nach Bestätigung des Vergleichs: Flag bewusst auf `TRUE` lassen (aktueller Stand) oder bei
-   Auffälligkeiten sofort auf `FALSE` zurücksetzen (`UPDATE trading.pipeline_config SET
-   value_bool=FALSE WHERE config_key='TRADING_ENGINE_STEP_ENABLED'`, wirkt ab dem nächsten Tick).
+5. **Verifikation — KRITISCHEN BUG GEFUNDEN, Flag wieder `FALSE`.** Testlauf `test22` (id 11) lief
+   noch über den alten Pfad (Flag `FALSE`, bestätigt per `entry_grund`-Format). Danach Flag auf
+   `TRUE` gesetzt, zweiter Testlauf `test23` (id 12, `mean_reversion`, 2026-01-01 bis 2026-01-10)
+   lief über den neuen Engine-Pfad (bestätigt: `entry_grund` = "mean_reversion Signal (Engine)
+   [gekappt: SINGLE_POSITION_LIMIT]"). **Ergebnis zeigte 0 gefüllte Trades, aber +23,94% "Rendite"**
+   — eindeutig falsch. Root Cause gefunden und gefixt (siehe Commit `a6d9868`): `step()`s
+   Kandidaten-Schleife zählte neu erzeugte, noch NICHT gefüllte Order-Kandidaten fälschlich in die
+   Tages-Equity/`positions_value` mit (fehlende Trennung zwischen "für nachfolgende Kandidaten
+   desselben Tages als Risiko mitzählen" [richtig] und "in die Tages-Equity eingehen" [falsch] —
+   WF17s eigener Live-Code filtert dafür explizit `_pending_only`-Einträge heraus, das fehlte in
+   der Engine-Übersetzung). **Flag umgehend auf `FALSE` zurückgesetzt**, sobald der Fund bestätigt
+   war. `simulation_metrics` für Lauf 12 wurde NICHT bereinigt (nur ein Testlauf-Report, keine
+   Auswirkung auf Paper-Trading/echte Entscheidungen). Golden-Run-Referenzwerte aktualisiert (die
+   alten waren durch denselben Bug verfälscht: `max_drawdown_pct` 52.37%→21.93% korrekt,
+   `total_return_pct` +17.60%→-21.93% korrekt — Trade-Anzahl/PnL pro Trade blieben unverändert,
+   der Bug betraf ausschließlich die Tages-Equity-Momentaufnahme).
+   **Nächster Schritt**: Server-Update (siehe unten, backtest.py hat sich seit dem letzten
+   Server-Sync erneut geändert), dann EIN WEITERER Vergleichslauf mit dem jetzt gefixten Code,
+   bevor das Flag erneut auf `TRUE` gesetzt wird.
+6. Nach bestätigt sauberem Vergleichslauf: Flag auf `TRUE` setzen (`UPDATE trading.pipeline_config
+   SET value_bool=TRUE WHERE config_key='TRADING_ENGINE_STEP_ENABLED'`, wirkt ab dem nächsten Tick,
+   genauso einfach wieder auf `FALSE` zurückzusetzen bei Auffälligkeiten).
 7. **Separat, später**: Workflow 14 migrieren — bringt eigene, echte fachliche Änderungen mit
    (Umstellung auf Mini-Future-Kostenmodell, erstmals Trailing-Stop für Live-Paper-Trading, siehe
    `TRADING_ENGINE_ARCHITECTURE.md` Architekturfragen 2+3), nicht Teil dieser Migration.
 
-## Vor Schritt 5 noetig: Server-Update
+## Vor dem naechsten Vergleichslauf noetig: erneutes Server-Update
 
 `/opt/trading-data-service` laeuft noch mit dem Engine-Stand von vor der Audit-Feld-Erweiterung
 (1.1/Schritt 4). Fuer den Vergleichslauf muss der Nutzer manuell aktualisieren (kein SSH-Zugriff
