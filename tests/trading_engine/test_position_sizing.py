@@ -120,6 +120,32 @@ def test_clamp_mode_uneconomical_after_costs_blocked():
     assert result.reason in ("UNECONOMICAL_AFTER_COSTS", "QUANTITY_TOO_SMALL")
 
 
+def test_clamp_mode_uneconomical_after_costs_blocked_for_mini_future():
+    # FIX 2026-08-20: WF17 nutzt kind="mini_future", prueft den Veto im Live-Code aber trotzdem
+    # ueber die generischen fee_bps/slippage_bps-Werte (Schwellenwert-Heuristik, unabhaengig vom
+    # tatsaechlichen Abrechnungsmodell). Vorher wurde dieser Zweig nur bei kind="fee_bps" geprueft
+    # - beim Abgleich gegen den Live-Code als echte Luecke gefunden, bevor WF17 migriert wird.
+    signal = make_signal(stop_price=99, target_price=120)
+    risk_cfg = make_risk_cfg(max_risk_per_trade_pct=0.01)
+    fee_model = FeeModel(kind="mini_future", fee_bps=500, slippage_bps=500, mini_future_leverage=5,
+                          mini_future_spread_pct=0.5, mini_future_financing_pct_pa=3.0)
+    result = size_position(signal, 100, risk_cfg, [], "Tech", "US", sizing_mode="clamp", fee_model=fee_model)
+    assert result.blocked is True
+    assert result.reason in ("UNECONOMICAL_AFTER_COSTS", "QUANTITY_TOO_SMALL")
+
+
+def test_clamp_mode_mini_future_without_bps_fields_skips_veto():
+    # Gegenprobe: ein mini_future-fee_model OHNE fee_bps/slippage_bps (beide None, wie es vor der
+    # Migration bei jedem anderen mini_future-Aufrufer der Fall waere) darf den Veto weiterhin
+    # nicht versehentlich ueber einen impliziten 0-Schwellenwert ausloesen.
+    signal = make_signal(stop_price=99, target_price=120)
+    risk_cfg = make_risk_cfg(max_risk_per_trade_pct=0.01)
+    fee_model = FeeModel(kind="mini_future", mini_future_leverage=5, mini_future_spread_pct=0.5,
+                          mini_future_financing_pct_pa=3.0)
+    result = size_position(signal, 100, risk_cfg, [], "Tech", "US", sizing_mode="clamp", fee_model=fee_model)
+    assert result.reason != "UNECONOMICAL_AFTER_COSTS"
+
+
 def test_clamp_mode_stop_target_invalid_blocked():
     signal = make_signal(stop_price=95, target_price=120)
     risk_cfg = make_risk_cfg(max_risk_per_trade_pct=0.001)  # Risikobudget so klein, dass quantity=0

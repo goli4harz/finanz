@@ -126,7 +126,15 @@ def _size_position_clamp(
     position_value = final_quantity * entry_price_estimate
     actual_risk_amount = final_quantity * unit_risk
 
-    if fee_model is not None and fee_model.kind == "fee_bps":
+    # FIX 2026-08-20 (Phase-8-Migrationsvorbereitung): der Live-Code in WF17 (mini_future-
+    # Kostenmodell) prueft diesen Veto ebenfalls IMMER, ueber die generischen feesBps/slippageBps-
+    # Config-Werte als Schwellenwert-Heuristik - unabhaengig vom tatsaechlichen
+    # Abrechnungsmodell (siehe cfg.feesBps/cfg.slippageBps in "Verarbeite Tage-Paket", getrennt von
+    # miniFutureSpreadPct/miniFutureFinancingPctPa). Die urspruengliche `kind == "fee_bps"`-Gate
+    # haette diesen Veto nach einer Migration auf mini_future stillschweigend abgeschaltet - ein
+    # echter Bug, gefunden beim Abgleich gegen den Live-Code, nicht in Phase 2 vorgesehen. Greift
+    # jetzt immer dann, wenn fee_bps/slippage_bps im fee_model gesetzt sind, unabhaengig von kind.
+    if fee_model is not None and (fee_model.fee_bps is not None or fee_model.slippage_bps is not None):
         estimated_fees = position_value * ((fee_model.fee_bps or 0) / 10000)
         estimated_slippage = position_value * ((fee_model.slippage_bps or 0) / 10000)
         if (estimated_fees + estimated_slippage) * 2 > actual_risk_amount:
