@@ -183,12 +183,16 @@ Retry-/On-Error-Verhalten greift wie bei jedem anderen Node in diesem Workflow.
    alten waren durch denselben Bug verfälscht: `max_drawdown_pct` 52.37%→21.93% korrekt,
    `total_return_pct` +17.60%→-21.93% korrekt — Trade-Anzahl/PnL pro Trade blieben unverändert,
    der Bug betraf ausschließlich die Tages-Equity-Momentaufnahme).
-   **Nächster Schritt**: Server-Update (siehe unten, backtest.py hat sich seit dem letzten
-   Server-Sync erneut geändert), dann EIN WEITERER Vergleichslauf mit dem jetzt gefixten Code,
-   bevor das Flag erneut auf `TRUE` gesetzt wird.
-6. Nach bestätigt sauberem Vergleichslauf: Flag auf `TRUE` setzen (`UPDATE trading.pipeline_config
-   SET value_bool=TRUE WHERE config_key='TRADING_ENGINE_STEP_ENABLED'`, wirkt ab dem nächsten Tick,
-   genauso einfach wieder auf `FALSE` zurückzusetzen bei Auffälligkeiten).
+   **Server aktualisiert, zweiter Vergleichslauf sauber:** `test24` (alter Pfad) vs. `test25`
+   (Engine-Pfad, id 14), identischer Zeitraum 2026-01-01 bis 2026-01-10. Beide: 11 Empfehlungen,
+   0,00% Rendite, 0 "Phantom-Equity"-Tage (`positions_value > 0 AND open_positions_count = 0`,
+   der Sanity-Check für genau diese Bug-Klasse) — `entry_grund`-Format bestätigt je Lauf eindeutig
+   den genutzten Pfad. **Schritt 5 damit erfolgreich abgeschlossen.**
+6. ✅ Flag steht auf `TRUE` (Stand 2026-08-20 Abend) — Engine-Pfad ist für alle aktiven
+   `news_enabled=false`-Läufe live. Rollback jederzeit über `UPDATE trading.pipeline_config SET
+   value_bool=FALSE WHERE config_key='TRADING_ENGINE_STEP_ENABLED'` (wirkt ab dem nächsten Tick).
+   Empfehlung: einige Tage/mehrere reale Läufe beobachten, insbesondere den Phantom-Equity-Sanity-
+   Check gelegentlich wiederholen, bevor der alte Node als endgültig abgeloest betrachtet wird.
 7. **Separat, später**: Workflow 14 migrieren — bringt eigene, echte fachliche Änderungen mit
    (Umstellung auf Mini-Future-Kostenmodell, erstmals Trailing-Stop für Live-Paper-Trading, siehe
    `TRADING_ENGINE_ARCHITECTURE.md` Architekturfragen 2+3), nicht Teil dieser Migration.
