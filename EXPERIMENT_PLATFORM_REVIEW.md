@@ -32,7 +32,15 @@ Workflow 17.
   `import_job_items` mit status=pending über alle aktuell aktiven Läufe/Jobs). Live per GET
   getestet (echte Werte: 0 Sim-Worker, 22 Import-Worker). WF07 bewusst ausgelassen — 63-Node-
   Dashboard nicht auf diese Metrik zugeschnitten, geringerer Nutzen für höheres Risiko.
-- [ ] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren)
+- [x] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren) — 2026-08-20: als veraltet
+  markiert (Banner am Dateianfang + Nachtrag am Ende) mit Verweis auf
+  `HISTORISCHE_SIMULATION_KONZEPT.md`/`_UMSETZUNGSBERICHT.md`, `TRADING_ENGINE_ARCHITECTURE.md`
+  und diesen Bericht — nicht komplett neu geschrieben (Risiko, den Stand erneut falsch
+  darzustellen, statt nur auf die bereits verifizierten aktuellen Dokumente zu verweisen).
+
+**Damit sind alle 7 Punkte aus dieser Bestandsaufnahme umgesetzt.** Offen bleibt nur noch die
+eigentliche Phase-8-Engine-Migration (WF17 schrittweise auf `trading_engine` umstellen) — das ist
+ein separater, größerer Auftrag, kein Punkt dieser Liste.
 
 ---
 

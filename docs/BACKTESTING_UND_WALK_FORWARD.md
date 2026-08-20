@@ -1,5 +1,22 @@
 # Backtesting und Walk-Forward (Welle 3, AP7)
 
+> **⚠️ VERALTET (Stand dieses Dokuments: 2026-08-01).** Der unten beschriebene "dormant"-Zustand
+> ist seit `sql/057`/Workflow 17 (2026-08-03/04) überholt: die Backtest-**Ausführung** ist gebaut,
+> live und wird aktiv genutzt (Web-Steuerzentrale, Worker-Zyklus, Lernvorschläge aus
+> Simulationsläufen). Für den aktuellen Stand siehe stattdessen:
+> - `docs/HISTORISCHE_SIMULATION_KONZEPT.md` und `docs/HISTORISCHE_SIMULATION_UMSETZUNGSBERICHT.md`
+>   — das tatsächlich gebaute Konzept/System (Workflow 17, `sql/057`ff.).
+> - `TRADING_ENGINE_ARCHITECTURE.md` — die Python-`trading_engine`-Neuimplementierung (2026-08-19/20),
+>   die WF17/WF14s Logik testbar/versioniert nachbildet (noch nicht produktiv angebunden, siehe
+>   Phase-8-Migration in `EXPERIMENT_PLATFORM_REVIEW.md`).
+> - `EXPERIMENT_PLATFORM_REVIEW.md` — Bestandsaufnahme + Erweiterungen der Experimentierplattform
+>   (Config-Snapshots, Point-in-Time, Champion/Challenger, Experiment-Register, Monitoring),
+>   Stand 2026-08-20.
+>
+> Der Rest dieser Datei ist als historisches Dokument stehengelassen (zeigt die ursprüngliche
+> Design-Absicht und die explizite Look-ahead-Bias-Vermeidung, die im späteren System eingehalten
+> wurde), beschreibt aber nicht mehr den aktuellen Zustand.
+
 Stand: 2026-08-01. Schema (`trading.backtest_runs`/`backtest_trades`, `sql/037`) vollständig funktionsfähig, aber **bewusst dormant** — siehe Begründung unten.
 
 ## Warum dormant, nicht Platzhalter
@@ -24,7 +41,10 @@ Der Auftrag verbietet ausdrücklich, den aktuellen `06`/`14`-Workflow einfach r�
 
 Kein neuer Workflow für die Backtest-**Ausführung** wurde in Welle 3 gebaut (bewusste Priorisierung: das Paper-Trading-Ledger selbst — die Datengrundlage jedes künftigen Backtests — hatte Vorrang). Sobald genug Historie vorliegt, ist der nächste Schritt ein Workflow, der `trading.strategy_signals`/`trading.market_regime`/`trading.fundamentals_history` mit ihren `valid_to`-Zeitstempeln reproduzierbar durchläuft und `backtest_runs`/`backtest_trades` befüllt.
 
-## Status
+## Status (zum Zeitpunkt 2026-08-01 — siehe Veraltet-Hinweis oben für den aktuellen Stand)
 
 - 🟡 Schema vollständig, Mechanismus/Workflow für die eigentliche Ausführung noch nicht gebaut (siehe oben — bewusste Priorisierung, kein Versehen).
 - 🔴 Keine Testdaten, keine Läufe — erwartungsgemäß bei einem 2 Wochen alten System.
+
+**Nachtrag 2026-08-20:** beides überholt — Ausführung ist seit `sql/057`/Workflow 17 gebaut und
+live, es existieren reale Läufe. Siehe Verweise im Veraltet-Hinweis am Dateianfang.
