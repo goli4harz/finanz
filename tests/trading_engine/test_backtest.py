@@ -52,6 +52,30 @@ def test_pending_order_fills_and_becomes_open_trade():
     assert result.still_pending_orders == []
 
 
+def test_order_fill_carries_theoretical_audit_fields_to_trade():
+    # FIX 2026-08-20 (Phase-8-Migration): theoretical_quantity/theoretical_risk_amount/
+    # clamp_reason muessen vom Order beim Fill 1:1 auf den entstehenden Trade durchgereicht
+    # werden - sonst geht der Kappungs-Audit-Trail beim Umstieg von WF17s eigenem Code auf die
+    # Engine stillschweigend verloren (newTradeRows braucht diese Felder).
+    order = Order(
+        ticker="AAA", direction="long", entry_zone_low=99, entry_zone_high=101, stop_price=95,
+        target_price=110, quantity=10, intended_execution_date=date(2026, 8, 19),
+        strategy="trend_following", sektor="Tech", region="US", risk_amount=50,
+        theoretical_quantity=25, theoretical_risk_amount=125, clamp_reason="SECTOR_LIMIT",
+    )
+    bar = make_bar("AAA", close=100, open_=100, high=101, low=99)
+    result = step(
+        as_of=date(2026, 8, 19), next_trading_day=date(2026, 8, 20), tickers_today=["AAA"],
+        bars_today={"AAA": bar}, bars_history={"AAA": [bar]}, pending_orders=[order], open_trades=[],
+        cash=100000, previous_peak_equity=100000, risk_cfg=make_risk_cfg(), fee_model=MINI_FUTURE,
+        rule_version="test-v1", ticker_sektor={"AAA": "Tech"}, ticker_region={"AAA": "US"}, ticker_currency={"AAA": "EUR"},
+    )
+    trade = result.new_trades[0]
+    assert trade.theoretical_quantity == 25
+    assert trade.theoretical_risk_amount == 125
+    assert trade.clamp_reason == "SECTOR_LIMIT"
+
+
 def test_hard_stop_cap_applied_on_fill():
     # Order-Stop liegt weiter als 10% vom Fuellpreis entfernt -> muss auf die harte 10%-Grenze gekappt werden.
     order = Order(

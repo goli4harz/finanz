@@ -54,6 +54,15 @@ class Order(BaseModel):
     region: str = "global"
     risk_amount: float = 0.0
     time_stop_at: date | None = None
+    # FIX 2026-08-20 (Phase-8-Migration, WF17-Persistenz): "Baue SQL fuer Paket-Ergebnisse"
+    # braucht theoretical_quantity/theoretical_risk_amount/clamp_reason als eigene Audit-Spalten
+    # auf simulation_orders/simulation_trades (WF17s eigenes Order-Objekt traegt exakt dieselben
+    # Felder). SizingResult (position_sizing.py) berechnet risk_based_quantity/
+    # theoretical_risk_amount bereits intern, gab sie aber nicht nach aussen - ohne diese Felder
+    # wuerde der Audit-Trail beim Umstieg auf die Engine stillschweigend verloren gehen.
+    theoretical_quantity: int = 0
+    theoretical_risk_amount: float = 0.0
+    clamp_reason: str | None = None
 
 
 class Trade(BaseModel):
@@ -79,6 +88,12 @@ class Trade(BaseModel):
     sektor: str = "unbekannt"
     region: str = "global"
     risk_amount: float = 0.0
+    # FIX 2026-08-20 (Phase-8-Migration): siehe identischer Kommentar auf Order oben - beim
+    # Order-Fill (backtest.step()) muessen diese Felder vom Order auf den entstehenden Trade
+    # durchgereicht werden, sonst sind sie fuer newTradeRows nicht mehr verfuegbar.
+    theoretical_quantity: int = 0
+    theoretical_risk_amount: float = 0.0
+    clamp_reason: str | None = None
 
 
 class Position(BaseModel):
@@ -187,6 +202,14 @@ class SizingResult(BaseModel):
     clamped: bool
     blocked: bool
     reason: str | None = None
+    # FIX 2026-08-20 (Phase-8-Migration): WF17s sizePosition() gibt bei Erfolg zusaetzlich die
+    # UNGEKAPPTE (theoretische) Stueckzahl/Risikosumme zurueck - Audit-Trail, um sichtbar zu
+    # machen, WIE STARK ein Trade tatsaechlich gekappt wurde. _size_position_clamp() berechnet
+    # risk_based_quantity/theoretical_risk_amount bereits intern, gab sie bisher aber nicht nach
+    # aussen. Nur auf dem Erfolgspfad sinnvoll befuellt (0 bei blocked=True, wie im Live-Code -
+    # dort entsteht bei einem Veto ohnehin keine Order).
+    theoretical_quantity: int = 0
+    theoretical_risk_amount: float = 0.0
 
 
 class Blocker(BaseModel):

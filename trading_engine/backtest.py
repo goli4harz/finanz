@@ -132,6 +132,8 @@ def step(
             quantity=order.quantity, extreme_price_since_entry=fill.price, trail_distance=abs(fill.price - capped_stop_price),
             entry_day=as_of, time_stop_at=order.time_stop_at, strategy=order.strategy, sektor=order.sektor,
             region=order.region, risk_amount=order.risk_amount,
+            theoretical_quantity=order.theoretical_quantity, theoretical_risk_amount=order.theoretical_risk_amount,
+            clamp_reason=order.clamp_reason,
         )
         new_trades.append(trade)
         open_positions_view.append(_trade_to_position(trade, ticker_currency.get(order.ticker, "EUR")))
@@ -197,6 +199,8 @@ def step(
             stop_price=best.stop_price, target_price=best.target_price, quantity=sizing.quantity,
             intended_execution_date=next_trading_day, strategy=best.strategy, sektor=sektor, region=region,
             risk_amount=sizing.risk_amount, time_stop_at=as_of + timedelta(days=best.expected_horizon_days),
+            theoretical_quantity=sizing.theoretical_quantity, theoretical_risk_amount=sizing.theoretical_risk_amount,
+            clamp_reason=sizing.reason if sizing.clamped else None,
         )
         new_orders.append(order)
         open_positions_view.append(Position(ticker=ticker, direction=best.direction, quantity=sizing.quantity, position_value=sizing.position_value, sektor=sektor, region=region, currency=ticker_currency.get(ticker, "EUR"), risk_amount=sizing.risk_amount))

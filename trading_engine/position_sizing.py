@@ -151,4 +151,6 @@ def _size_position_clamp(
         clamped=final_quantity < risk_based_quantity,
         blocked=False,
         reason=binding_reason if final_quantity < risk_based_quantity else None,
+        theoretical_quantity=risk_based_quantity,
+        theoretical_risk_amount=theoretical_risk_amount,
     )
