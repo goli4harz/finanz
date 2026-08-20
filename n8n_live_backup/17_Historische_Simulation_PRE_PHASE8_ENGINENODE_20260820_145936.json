@@ -351,7 +351,7 @@
       "main": [
         [
           {
-            "node": "DB: Engine-Flag laden",
+            "node": "Verarbeite Tage-Paket",
             "type": "main",
             "index": 0
           }
@@ -429,46 +429,6 @@
         [
           {
             "node": "Persistierung pruefen (Metriken, sonst werfen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Engine-Flag laden": {
-      "main": [
-        [
-          {
-            "node": "IF: Engine-Pfad nutzen?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Engine-Pfad nutzen?": {
-      "main": [
-        [
-          {
-            "node": "Verarbeite Tage-Paket (Engine)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Verarbeite Tage-Paket",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Verarbeite Tage-Paket (Engine)": {
-      "main": [
-        [
-          {
-            "node": "Baue SQL fuer Paket-Ergebnisse",
             "type": "main",
             "index": 0
           }
@@ -979,7 +939,7 @@
         560
       ],
       "parameters": {
-        "jsCode": "// Traegt Lauf-Daten und Konfigurationswerte zusammen. Fehlende Config-Werte bekommen\n// dieselben Standardwerte wie in 06/14 dokumentiert.\n//\n// FIX 2026-08-20 (EXPERIMENT_PLATFORM_REVIEW.md, Config-Snapshot-Fix): cfgByKey kam bisher aus\n// einer bei JEDEM Worker-Tick frisch ausgefuehrten Live-Query gegen trading.pipeline_config\n// (\"DB: Simulations-Konfiguration laden\" - jetzt aus dem Ausfuehrungspfad entfernt, Node bleibt\n// zur Nachvollziehbarkeit stehen, ist aber nicht mehr verbunden). Dadurch konnte sich die\n// Konfiguration WAEHREND eines laufenden mehrtaegigen Simulationslaufs aendern (z.B. durch eine\n// Lernvorschlag-Freigabe ueber Workflow 12) - spaetere Tage desselben Laufs haetten dann mit\n// anderen Werten gerechnet als fruehere Tage, unbemerkt. run.config_snapshot_json wird jetzt\n// EINMALIG bei Run-Erstellung eingefroren (siehe \"POST: Formular normalisieren + SQL bauen\")\n// und hier fuer die GESAMTE Laufzeit des Laufs unveraendert wiederverwendet. Fuer vor diesem Fix\n// erstellte, noch laufende Runs ist config_snapshot_json NULL - cfgByKey bleibt dann leer und\n// jedes num()-Fallback greift, identisch zum bisherigen Verhalten (kein Bruch fuer Runs in Flug).\nconst run = $('Pruefe Run-Zustand').all()[0].json;\nconst snapshot = run.config_snapshot_json || {};\nconst cfgByKey = {};\nfor (const [key, entry] of Object.entries(snapshot.pipeline_config || {})) {\n  const v = entry && entry.value_numeric !== null && entry.value_numeric !== undefined ? Number(entry.value_numeric) : null;\n  if (v !== null && !isNaN(v)) cfgByKey[key] = v;\n}\n\nfunction num(key, fallback) {\n  const v = cfgByKey[key];\n  return (v !== undefined && v !== null && !isNaN(v)) ? v : fallback;\n}\n\nreturn [{ json: {\n  ...run,\n  _package_size: num('SIMULATION_DEFAULT_PACKAGE_SIZE', 20),\n  _model_portfolio_value: run.initial_capital || num('MODEL_PORTFOLIO_VALUE', 100000),\n  _max_risk_per_trade_pct: num('MAX_RISK_PER_TRADE_PCT', 1.0),\n  _min_reward_risk_ratio: num('MIN_REWARD_RISK_RATIO', 1.5),\n  _fees_bps: num('DEFAULT_FEES_BPS', 15),\n  _slippage_bps: num('DEFAULT_SLIPPAGE_BPS', 10),\n  _ambiguous_bar_policy_code: num('AMBIGUOUS_BAR_POLICY_CODE', 1),\n  _max_total_open_risk_pct: num('MAX_TOTAL_OPEN_RISK_PCT', 6.0),\n  _max_sector_exposure_pct: num('MAX_SECTOR_EXPOSURE_PCT', 15.0),\n  _max_single_position_pct: num('MAX_SINGLE_POSITION_PCT', 8.0),\n  _max_open_positions: num('MAX_OPEN_POSITIONS', 10),\n  _max_directional_exposure_pct: num('MAX_DIRECTIONAL_EXPOSURE_PCT', 40.0),\n  _max_region_exposure_pct: num('MAX_REGION_EXPOSURE_PCT', 60.0),\n  _mini_future_leverage: num('MINI_FUTURE_LEVERAGE', 4),\n  _mini_future_spread_pct: num('MINI_FUTURE_SPREAD_PCT', 0.4),\n  _mini_future_financing_pct_pa: num('MINI_FUTURE_FINANCING_PCT_PA', 2.5),\n  // PHASE 8 (TRADING_ENGINE_MIGRATION.md): zusaetzliche RiskConfig-Felder, die WF17s eigener\n  // Code bisher nicht braucht (checkHardLimits() prueft nur MAX_OPEN_POSITIONS/\n  // DIRECTIONAL_LIMIT), die die Engine-seitige check_portfolio_limits() (alle 9 Job-A-Limits)\n  // aber zwingend erwartet. Defaults 1:1 aus Workflow 14 Job A / Workflow 06 uebernommen, nicht\n  // neu erfunden. Rein additiv - aendert nichts am bestehenden JS-Pfad.\n  _max_portfolio_drawdown_pct: num('MAX_PORTFOLIO_DRAWDOWN_PCT', 15.0),\n  _max_pairwise_correlation: num('MAX_PAIRWISE_CORRELATION', 0.75),\n  _max_non_eur_exposure_pct: num('MAX_NON_EUR_EXPOSURE_PCT', 30.0),\n  _stress_risk_reduction_factor: num('STRESS_RISK_REDUCTION_FACTOR', 0.5),\n  _max_position_value_pct: num('MAX_POSITION_VALUE_PCT', 20.0)\n} }];\n"
+        "jsCode": "// Traegt Lauf-Daten und Konfigurationswerte zusammen. Fehlende Config-Werte bekommen\n// dieselben Standardwerte wie in 06/14 dokumentiert.\n//\n// FIX 2026-08-20 (EXPERIMENT_PLATFORM_REVIEW.md, Config-Snapshot-Fix): cfgByKey kam bisher aus\n// einer bei JEDEM Worker-Tick frisch ausgefuehrten Live-Query gegen trading.pipeline_config\n// (\"DB: Simulations-Konfiguration laden\" - jetzt aus dem Ausfuehrungspfad entfernt, Node bleibt\n// zur Nachvollziehbarkeit stehen, ist aber nicht mehr verbunden). Dadurch konnte sich die\n// Konfiguration WAEHREND eines laufenden mehrtaegigen Simulationslaufs aendern (z.B. durch eine\n// Lernvorschlag-Freigabe ueber Workflow 12) - spaetere Tage desselben Laufs haetten dann mit\n// anderen Werten gerechnet als fruehere Tage, unbemerkt. run.config_snapshot_json wird jetzt\n// EINMALIG bei Run-Erstellung eingefroren (siehe \"POST: Formular normalisieren + SQL bauen\")\n// und hier fuer die GESAMTE Laufzeit des Laufs unveraendert wiederverwendet. Fuer vor diesem Fix\n// erstellte, noch laufende Runs ist config_snapshot_json NULL - cfgByKey bleibt dann leer und\n// jedes num()-Fallback greift, identisch zum bisherigen Verhalten (kein Bruch fuer Runs in Flug).\nconst run = $('Pruefe Run-Zustand').all()[0].json;\nconst snapshot = run.config_snapshot_json || {};\nconst cfgByKey = {};\nfor (const [key, entry] of Object.entries(snapshot.pipeline_config || {})) {\n  const v = entry && entry.value_numeric !== null && entry.value_numeric !== undefined ? Number(entry.value_numeric) : null;\n  if (v !== null && !isNaN(v)) cfgByKey[key] = v;\n}\n\nfunction num(key, fallback) {\n  const v = cfgByKey[key];\n  return (v !== undefined && v !== null && !isNaN(v)) ? v : fallback;\n}\n\nreturn [{ json: {\n  ...run,\n  _package_size: num('SIMULATION_DEFAULT_PACKAGE_SIZE', 20),\n  _model_portfolio_value: run.initial_capital || num('MODEL_PORTFOLIO_VALUE', 100000),\n  _max_risk_per_trade_pct: num('MAX_RISK_PER_TRADE_PCT', 1.0),\n  _min_reward_risk_ratio: num('MIN_REWARD_RISK_RATIO', 1.5),\n  _fees_bps: num('DEFAULT_FEES_BPS', 15),\n  _slippage_bps: num('DEFAULT_SLIPPAGE_BPS', 10),\n  _ambiguous_bar_policy_code: num('AMBIGUOUS_BAR_POLICY_CODE', 1),\n  _max_total_open_risk_pct: num('MAX_TOTAL_OPEN_RISK_PCT', 6.0),\n  _max_sector_exposure_pct: num('MAX_SECTOR_EXPOSURE_PCT', 15.0),\n  _max_single_position_pct: num('MAX_SINGLE_POSITION_PCT', 8.0),\n  _max_open_positions: num('MAX_OPEN_POSITIONS', 10),\n  _max_directional_exposure_pct: num('MAX_DIRECTIONAL_EXPOSURE_PCT', 40.0),\n  _max_region_exposure_pct: num('MAX_REGION_EXPOSURE_PCT', 60.0),\n  _mini_future_leverage: num('MINI_FUTURE_LEVERAGE', 4),\n  _mini_future_spread_pct: num('MINI_FUTURE_SPREAD_PCT', 0.4),\n  _mini_future_financing_pct_pa: num('MINI_FUTURE_FINANCING_PCT_PA', 2.5)\n} }];"
       }
     },
     {
@@ -1349,74 +1309,6 @@
         "mode": "runOnceForEachItem",
         "jsCode": "const j = $input.item.json;\nif (j.error) {\n  throw new Error(String((j.error && j.error.message) || j.error));\n}\nreturn $input.item;\n"
       }
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT value_bool FROM trading.pipeline_config WHERE config_key = 'TRADING_ENGINE_STEP_ENABLED';",
-        "options": {}
-      },
-      "id": "sim17-db-engine-flag",
-      "name": "DB: Engine-Flag laden",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        -1560,
-        420
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      },
-      "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "conditions": [
-            {
-              "id": "engine-pfad",
-              "leftValue": "={{ $json.value_bool === true && $('Baue Run-Kontext').all()[0].json.news_enabled !== true }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "equals"
-              }
-            }
-          ],
-          "combinator": "and",
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          }
-        },
-        "options": {}
-      },
-      "id": "sim17-if-engine-pfad",
-      "name": "IF: Engine-Pfad nutzen?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        -1520,
-        420
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "// PHASE 8 (TRADING_ENGINE_MIGRATION.md): Ersetzt \"Verarbeite Tage-Paket\" fuer\n// news_enabled=false-Laeufe durch Aufrufe der getesteten trading_engine (POST\n// /engine/simulation/step, ein Aufruf je Simulationstag). Nur erreichbar, wenn die IF-Weiche\n// (pipeline_config.TRADING_ENGINE_STEP_ENABLED=true UND runCtx.news_enabled=false) TRUE ergibt.\n// Der alte Node bleibt unveraendert bestehen (Fallback fuer news_enabled=true-Laeufe).\n//\n// Rueckgabeform ist BYTE-IDENTISCH zum alten Node (orderUpdates/newOrderRows/newTradeRows/\n// tradeUpdates/openTradeUpdates/newRecRows/recCloseUpdates/positionRows/portfolioRows/\n// stepCompletions/lastDay) - \"Baue SQL fuer Paket-Ergebnisse\" bleibt dadurch unveraendert.\n//\n// WICHTIGE ABWEICHUNG von der Nutzung in tests/trading_engine/test_golden_run.py: dort wird\n// `pending_orders = result.still_pending_orders + result.new_orders` gebildet. Das waere hier\n// FALSCH - der echte Live-Code haengt einen neu erzeugten Order-Kandidaten NIE in denselben\n// Tages-Paket-Durchlauf ein (siehe altes \"Verarbeite Tage-Paket\": newOrderRows.push(...) fuegt\n// NICHTS zu pendingOrders hinzu). Ein neuer Order-Kandidat wird erst mit dem NAECHSTEN\n// Worker-Tick/Paket ausfuehrbar, nachdem er persistiert und ueber \"DB: Ausstehende Orders laden\"\n// neu geladen wurde. Deshalb hier bewusst NUR still_pending_orders fuer den naechsten Tag.\n//\n// entry_grund fuer newRecRows ist ein generischer Ersatztext statt der detaillierten\n// evidence-Liste aus WF17s eigenem computeSignals() - die Engine hat kein evidence-Feld\n// (Nutzerentscheidung 2026-08-20, siehe TRADING_ENGINE_MIGRATION.md Abschnitt 1.5). Rein\n// kosmetisch, keine Rechenlogik betroffen.\n//\n// Entry-Fee/Slippage fuer orderUpdates/newTradeRows werden LOKAL nach derselben, stabilen\n// Mini-Future-Halb-Spread-Formel berechnet, die die Engine intern verwendet (Trade/DayStepResult\n// geben die Entry-Fee nicht einzeln zurueck, nur ueber die cash-Gesamtbilanz) - siehe\n// TRADING_ENGINE_MIGRATION.md fuer die vollstaendige Feld-Luecken-Analyse.\n\nconst ENGINE_BASE_URL = 'http://172.16.1.14:8099';\n\nfunction nextWeekday(dateStr) {\n  let d = new Date(dateStr + 'T00:00:00Z');\n  d = new Date(d.getTime() + 24 * 3600 * 1000);\n  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = new Date(d.getTime() + 24 * 3600 * 1000);\n  return d.toISOString().slice(0, 10);\n}\nfunction isoOrNull(v) {\n  return v ? String(v).slice(0, 10) : null;\n}\n\nconst runCtx = $('Baue Run-Kontext').all()[0].json;\nconst pktCtx = $('Baue Paket-Kontext').all()[0].json;\nconst priceRows = $('DB: Preisdaten-Fenster laden').all().map(i => i.json);\nconst instrumentMetaRows = $('DB: Instrument-Metadaten laden').all().map(i => i.json).filter(j => j && j.ticker);\nconst openTradesRaw = $('DB: Offene Trades laden').all().map(i => i.json).filter(j => j && j.id);\nconst pendingOrdersRaw = $('DB: Ausstehende Orders laden').all().map(i => i.json).filter(j => j && j.id);\nconst lastPortfolioRows = $('DB: Letzte Portfolio-Zeile laden').all().map(i => i.json).filter(j => j && j.total_equity !== undefined && j.total_equity !== null);\n\nconst runId = runCtx.id;\n\nconst cfg = {\n  modelPortfolioValue: runCtx._model_portfolio_value, maxRiskPerTradePct: runCtx._max_risk_per_trade_pct,\n  minRewardRiskRatio: runCtx._min_reward_risk_ratio, feesBps: runCtx._fees_bps, slippageBps: runCtx._slippage_bps,\n  maxTotalOpenRiskPct: runCtx._max_total_open_risk_pct, maxSectorExposurePct: runCtx._max_sector_exposure_pct,\n  maxSinglePositionPct: runCtx._max_single_position_pct, maxOpenPositions: runCtx._max_open_positions,\n  maxDirectionalExposurePct: runCtx._max_directional_exposure_pct, maxRegionExposurePct: runCtx._max_region_exposure_pct,\n  miniFutureLeverage: runCtx._mini_future_leverage, miniFutureSpreadPct: runCtx._mini_future_spread_pct,\n  miniFutureFinancingPctPa: runCtx._mini_future_financing_pct_pa,\n  maxPortfolioDrawdownPct: runCtx._max_portfolio_drawdown_pct, maxPairwiseCorrelation: runCtx._max_pairwise_correlation,\n  maxNonEurExposurePct: runCtx._max_non_eur_exposure_pct, stressRiskReductionFactor: runCtx._stress_risk_reduction_factor,\n  maxPositionValuePct: runCtx._max_position_value_pct\n};\n\nconst riskCfgApi = {\n  model_portfolio_value: cfg.modelPortfolioValue, max_risk_per_trade_pct: cfg.maxRiskPerTradePct,\n  max_total_open_risk_pct: cfg.maxTotalOpenRiskPct, max_sector_exposure_pct: cfg.maxSectorExposurePct,\n  max_single_position_pct: cfg.maxSinglePositionPct, max_open_positions: cfg.maxOpenPositions,\n  max_directional_exposure_pct: cfg.maxDirectionalExposurePct, max_portfolio_drawdown_pct: cfg.maxPortfolioDrawdownPct,\n  max_pairwise_correlation: cfg.maxPairwiseCorrelation, max_region_exposure_pct: cfg.maxRegionExposurePct,\n  max_non_eur_exposure_pct: cfg.maxNonEurExposurePct, stress_risk_reduction_factor: cfg.stressRiskReductionFactor,\n  max_position_value_pct: cfg.maxPositionValuePct, min_reward_risk_ratio: cfg.minRewardRiskRatio\n};\nconst feeModelApi = {\n  kind: 'mini_future', mini_future_leverage: cfg.miniFutureLeverage, mini_future_spread_pct: cfg.miniFutureSpreadPct,\n  mini_future_financing_pct_pa: cfg.miniFutureFinancingPctPa, fee_bps: cfg.feesBps, slippage_bps: cfg.slippageBps\n};\nfunction entryFee(positionValue) { return positionValue * (cfg.miniFutureSpreadPct / 100 / 2); }\n\nconst tickerToSektor = {};\nconst tickerToRegion = {};\nconst tickerToCurrency = {};\nfunction deriveRegion(exchange) {\n  const ex = String(exchange || '').toUpperCase();\n  if (ex.includes('XETRA') || ex.includes('FRA') || ex.includes('GER')) return 'Europa';\n  if (ex.includes('NASDAQ') || ex.includes('NYSE')) return 'USA';\n  return 'global';\n}\nfor (const r of instrumentMetaRows) {\n  tickerToSektor[r.ticker] = r.sektor || 'unbekannt';\n  tickerToRegion[r.ticker] = deriveRegion(r.exchange);\n  tickerToCurrency[r.ticker] = r.currency || 'EUR';\n}\n\nconst barsByTicker = {};\nfor (const r of priceRows) {\n  const t = r.ticker;\n  if (!barsByTicker[t]) barsByTicker[t] = [];\n  barsByTicker[t].push({ date: String(r.trading_date).slice(0, 10), open: Number(r.open), high: Number(r.high), low: Number(r.low), close: Number(r.close), volume: Number(r.volume) });\n}\nfor (const t in barsByTicker) barsByTicker[t].sort((a, b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));\n\nfunction barsUpTo(ticker, dateStr) {\n  const all = barsByTicker[ticker] || [];\n  const idx = all.findIndex(b => b.date > dateStr);\n  return idx === -1 ? all : all.slice(0, idx);\n}\nfunction barOn(ticker, dateStr) {\n  const all = barsByTicker[ticker] || [];\n  return all.find(b => b.date === dateStr) || null;\n}\nfunction toApiBar(ticker, b) {\n  return { ticker, trading_date: b.date, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume };\n}\n\nlet cash = lastPortfolioRows.length ? Number(lastPortfolioRows[0].cash) : Number(runCtx.initial_capital);\nlet peakEquity = lastPortfolioRows.length ? Number(lastPortfolioRows[0].peak_equity || lastPortfolioRows[0].total_equity) : Number(runCtx.initial_capital);\n\nlet openTradesApi = openTradesRaw.map(t => ({\n  trade_id: t.trade_id, ticker: t.ticker, direction: t.direction,\n  entry_price: Number(t.simulated_entry_price),\n  stop_price_current: Number(t.stop_price_current || t.stop_price_initial),\n  target_price: Number(t.target_price_initial),\n  quantity: Number(t.actual_quantity || t.theoretical_quantity),\n  extreme_price_since_entry: Number(t.extreme_price_since_entry || t.simulated_entry_price),\n  trail_distance: Math.abs(Number(t.simulated_entry_price) - Number(t.stop_price_initial)),\n  entry_day: String(t.simulated_entry_time).slice(0, 10),\n  time_stop_at: isoOrNull(t.time_stop_at),\n  strategy: t.strategy || '', sektor: t.sektor || tickerToSektor[t.ticker] || 'unbekannt',\n  region: t.region || tickerToRegion[t.ticker] || 'global', risk_amount: Number(t.risk_amount),\n  theoretical_quantity: Number(t.theoretical_quantity || t.actual_quantity || 0),\n  theoretical_risk_amount: Number(t.theoretical_risk_amount || t.risk_amount || 0),\n  clamp_reason: t.clamp_reason || null\n}));\n\nconst orderMetaByTicker = {};\nlet pendingOrdersApi = pendingOrdersRaw.map(o => {\n  orderMetaByTicker[o.ticker] = { db_id: o.id, entry_zone_low: Number(o.entry_zone_low), entry_zone_high: Number(o.entry_zone_high) };\n  return {\n    ticker: o.ticker, direction: o.direction, entry_zone_low: Number(o.entry_zone_low), entry_zone_high: Number(o.entry_zone_high),\n    stop_price: Number(o.stop_price), target_price: Number(o.target_price), quantity: Number(o.quantity),\n    intended_execution_date: String(o.intended_execution_date).slice(0, 10),\n    strategy: o.strategy || '', sektor: o.sektor || tickerToSektor[o.ticker] || 'unbekannt',\n    region: o.region || tickerToRegion[o.ticker] || 'global', risk_amount: Number(o.risk_amount),\n    time_stop_at: isoOrNull(o.time_stop_at),\n    theoretical_quantity: Number(o.theoretical_quantity || 0), theoretical_risk_amount: Number(o.theoretical_risk_amount || 0),\n    clamp_reason: o.clamp_reason || null\n  };\n});\n\nconst steps = [...pktCtx.steps].sort((a, b) => a.sequence_number - b.sequence_number);\n\nconst orderUpdates = [];\nconst newOrderRows = [];\nconst newTradeRows = [];\nconst tradeUpdates = [];\nconst openTradeUpdates = [];\nconst newRecRows = [];\nconst recCloseUpdates = [];\nconst positionRows = [];\nconst portfolioRows = [];\nconst stepCompletions = [];\n\nfor (const step of steps) {\n  const day = String(step.simulated_date).slice(0, 10);\n  const tickersToday = Object.keys(barsByTicker).filter(t => barOn(t, day) !== null);\n\n  const barsToday = {};\n  const barsHistory = {};\n  for (const t of tickersToday) {\n    barsToday[t] = toApiBar(t, barOn(t, day));\n    barsHistory[t] = barsUpTo(t, day).map(b => toApiBar(t, b));\n  }\n\n  const payload = {\n    as_of: day, next_trading_day: nextWeekday(day), tickers_today: tickersToday,\n    bars_today: barsToday, bars_history: barsHistory,\n    pending_orders: pendingOrdersApi, open_trades: openTradesApi,\n    cash, previous_peak_equity: peakEquity,\n    risk_cfg: riskCfgApi, fee_model: feeModelApi, rule_version: 'historische-simulation-v1',\n    ticker_sektor: tickerToSektor, ticker_region: tickerToRegion, ticker_currency: tickerToCurrency,\n    sizing_mode: 'clamp', strategy_filter: runCtx.strategy_filter || null,\n    is_stress_regime: false, correlation_data: null\n  };\n\n  const result = await this.helpers.httpRequest({\n    method: 'POST', url: ENGINE_BASE_URL + '/engine/simulation/step',\n    body: payload, json: true, timeout: 30000\n  });\n\n  const filledTickers = new Set(result.new_trades.map(t => t.ticker));\n  const stillPendingTickers = new Set(result.still_pending_orders.map(o => o.ticker));\n\n  for (const order of pendingOrdersApi) {\n    if (filledTickers.has(order.ticker) || stillPendingTickers.has(order.ticker)) continue;\n    const meta = orderMetaByTicker[order.ticker];\n    orderUpdates.push({ id: meta ? meta.db_id : null, status: 'not_filled_price', actual_execution_date: day, executed_price: null, commission: 0, slippage_val: 0 });\n    delete orderMetaByTicker[order.ticker];\n  }\n\n  for (const trade of result.new_trades) {\n    const meta = orderMetaByTicker[trade.ticker];\n    const positionValue = trade.entry_price * trade.quantity;\n    const fee = entryFee(positionValue);\n    orderUpdates.push({ id: meta ? meta.db_id : null, status: 'filled', actual_execution_date: day, executed_price: trade.entry_price, commission: fee, slippage_val: 0 });\n    newTradeRows.push({\n      trade_id: trade.trade_id, order_id: meta ? meta.db_id : null, ticker: trade.ticker, strategy: trade.strategy, direction: trade.direction,\n      as_of_date: day, entry_zone_low: meta ? meta.entry_zone_low : null, entry_zone_high: meta ? meta.entry_zone_high : null,\n      entry_price: trade.entry_price, stop_price: trade.stop_price_current, target_price: trade.target_price,\n      time_stop_at: trade.time_stop_at, quantity: trade.quantity, risk_amount: trade.risk_amount,\n      theoretical_quantity: trade.theoretical_quantity, theoretical_risk_amount: trade.theoretical_risk_amount,\n      clamp_reason: trade.clamp_reason, sektor: trade.sektor, region: trade.region,\n      position_value: positionValue, fee, slippage: 0\n    });\n    delete orderMetaByTicker[trade.ticker];\n  }\n\n  for (const ex of result.exited_trades) {\n    const t = ex.trade, er = ex.exit_result, pnl = ex.pnl;\n    tradeUpdates.push({\n      trade_id: t.trade_id, exit_time: day, exit_price: er.price, exit_reason: er.reason,\n      gross_pnl: pnl.gross_pnl, net_pnl: pnl.net_pnl, r_multiple: t.risk_amount > 0 ? pnl.net_pnl / t.risk_amount : null,\n      commission_total: pnl.entry_fee + pnl.exit_fee, slippage_total: pnl.financing_cost\n    });\n    recCloseUpdates.push({ ticker: t.ticker, run_id: runId, exit_day: day });\n  }\n\n  for (const trade of result.still_open_trades) {\n    openTradeUpdates.push({ trade_id: trade.trade_id, stop_price_current: trade.stop_price_current, extreme_price_since_entry: trade.extreme_price_since_entry });\n    const bar = barOn(trade.ticker, day);\n    const markPrice = bar ? bar.close : trade.entry_price;\n    const unrealizedPnl = (trade.direction === 'long' ? (markPrice - trade.entry_price) : (trade.entry_price - markPrice)) * trade.quantity;\n    positionRows.push({ ticker: trade.ticker, day, quantity: trade.quantity, cost_basis: trade.entry_price, mark_price: markPrice, unrealized_pnl: unrealizedPnl });\n  }\n\n  for (const order of result.new_orders) {\n    const bar = barOn(order.ticker, day);\n    newOrderRows.push({\n      run_id: runId, ticker: order.ticker, signal_date: day, intended_execution_date: order.intended_execution_date,\n      direction: order.direction, strategy: order.strategy, sektor: order.sektor, region: order.region,\n      entry_zone_low: order.entry_zone_low, entry_zone_high: order.entry_zone_high, stop_price: order.stop_price, target_price: order.target_price,\n      time_stop_at: order.time_stop_at, risk_amount: order.risk_amount, theoretical_risk_amount: order.theoretical_risk_amount,\n      quantity: order.quantity, theoretical_quantity: order.theoretical_quantity, clamp_reason: order.clamp_reason,\n      limit_price: bar ? bar.close : null\n    });\n    const grundSuffix = order.clamp_reason ? ` [gekappt: ${order.clamp_reason}]` : '';\n    newRecRows.push({ run_id: runId, as_of_date: day, ticker: order.ticker, direction: order.direction, strategy: order.strategy,\n      entry_grund: `${order.strategy} Signal (Engine)${grundSuffix}` });\n  }\n\n  portfolioRows.push({\n    day, cash: result.cash, positions_value: result.portfolio.positions_value, total_equity: result.portfolio.total_equity,\n    drawdown_pct: result.portfolio.drawdown_pct, open_positions_count: result.still_open_trades.length\n  });\n\n  stepCompletions.push(step.id);\n\n  // Naechster Tag: NUR still_* uebernehmen, NICHT new_orders in pendingOrdersApi einhaengen\n  // (siehe Modul-Kommentar oben - matcht das echte Live-Verhalten, nicht test_golden_run.py).\n  cash = result.cash;\n  peakEquity = result.portfolio.peak_equity;\n  openTradesApi = result.still_open_trades;\n  pendingOrdersApi = result.still_pending_orders;\n}\n\nreturn [{ json: {\n  run_id: runId, orderUpdates, newOrderRows, newTradeRows, tradeUpdates, openTradeUpdates, newRecRows, recCloseUpdates,\n  positionRows, portfolioRows, stepCompletions, lastDay: steps.length ? String(steps[steps.length - 1].simulated_date).slice(0, 10) : null\n} }];\n"
-      },
-      "id": "sim17-verarbeite-tage-paket-engine",
-      "name": "Verarbeite Tage-Paket (Engine)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1450,
-        340
-      ]
     }
   ],
   "pinData": null,
@@ -1426,5 +1318,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "418aabe0-8c22-4fca-979f-dc345f2260d2"
+  "versionId": "15287677-c9c2-42b3-85a0-898e7bda5811"
 }

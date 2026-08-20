@@ -68,6 +68,17 @@ dass `news_enabled=false` der Haupt-Anwendungsfall ist. Lösung: der bestehende 
 `news_enabled=true`-Läufe unverändert die Berechnungsgrundlage — kein Funktionsverlust für den
 selteneren Fall, siehe Routing unten.
 
+### 1.5 `entry_grund`-Begründungstext wird generischer (akzeptiert, dokumentiert)
+
+WF17s eigener `computeSignals()` liefert je Signal ein `evidence`-Array (z. B. `['RSI=28.4',
+'Bollinger-Beruehrung']`), das zu `entry_grund` in `simulation_recommendations` zusammengesetzt
+wird (UI-Anzeige). Die Engine (`trading_engine/signals.py::calculate_signals()`/`Signal`-Modell)
+hat kein äquivalentes Feld — würde ohne Anpassung zu leerem/fehlendem `entry_grund` führen.
+**Entscheidung (Nutzer, 2026-08-20):** kein Engine-Umbau für dieses reine Anzeige-Feld. Der neue
+Node baut stattdessen einen generischen Ersatztext (`"<strategy> Signal (Engine), raw_score=X.XX"`
++ `" [gekappt: <clamp_reason>]"` falls gekappt). Funktional unverändert (beeinflusst keine
+Berechnung), nur die Detailtiefe der UI-Begründung sinkt für Engine-generierte Empfehlungen.
+
 ### 1.4 Downstream-Vertrag bleibt unverändert
 
 Der Folge-Node "Baue SQL fuer Paket-Ergebnisse" baut SQL rein aus der Feldstruktur, die "Verarbeite
@@ -138,14 +149,27 @@ Retry-/On-Error-Verhalten greift wie bei jedem anderen Node in diesem Workflow.
 
 ## 3. Reihenfolge
 
-1. ✅ Engine-Fix (1.1) + Tests — erledigt, siehe Commit.
+1. ✅ Engine-Fix (1.1) + Tests — erledigt.
 2. ✅ Dieses Dokument.
-3. SQL-Migration `sql/070`: `TRADING_ENGINE_STEP_ENABLED` in `pipeline_config`, Default `FALSE`.
-4. Neuer Node + IF-Weiche in Workflow 17 bauen, per API deployen (Backup vorher). Flag bleibt
-   `FALSE` bis Schritt 5 abgeschlossen ist. "Baue SQL fuer Paket-Ergebnisse" bleibt unangetastet.
-5. **Verifikation vor dem Umschalten**: neuen Node im n8n-Editor mit gepinnten echten Daten eines
-   bereits abgeschlossenen Pakets manuell ausführen, Ergebnis Zeile für Zeile gegen das, was der
-   alte Node für dasselbe Paket tatsächlich in `trading.simulation_trades`/
+3. ✅ SQL-Migration `sql/070`: `TRADING_ENGINE_STEP_ENABLED` in `pipeline_config`, Default `FALSE` — live.
+4. ✅ Neuer Node "Verarbeite Tage-Paket (Engine)" + "IF: Engine-Pfad nutzen?" + "DB: Engine-Flag
+   laden" in Workflow 17 gebaut und per API deployt (Backup: `n8n_live_backup/
+   17_Historische_Simulation_PRE_PHASE8_ENGINENODE_*.json`). Flag ist `FALSE` — Produktivbetrieb
+   unverändert, nach dem Deploy per Live-Execution (57178, 2026-08-20 15:00 UTC) bestätigt. Alter
+   Node + "Baue SQL fuer Paket-Ergebnisse" unangetastet. Zusätzlich bei der Umsetzung gefunden und
+   mitgefixt: `theoretical_quantity`/`theoretical_risk_amount`/`clamp_reason` fehlten auf
+   `Order`/`Trade`/`SizingResult` (Engine gab den Kappungs-Audit-Trail nicht nach außen) — ergänzt,
+   eigener Test, siehe Commit. Offene DB-IDs (Order-PK) und Entry-Zone-Grenzen für gefüllte Trades
+   werden lokal im neuen Node ticker-schlüsselig mitgeführt (kein Engine-Feld dafür, gehört nicht
+   in die Domäne der Engine). Entry-Fee/-Slippage für `orderUpdates`/`newTradeRows` werden lokal
+   nach derselben stabilen Mini-Future-Halb-Spread-Formel berechnet, die die Engine intern nutzt
+   (DayStepResult gibt sie nicht einzeln zurück, nur über die Cash-Gesamtbilanz).
+   **Wichtig für Schritt 5**: der Server (`/opt/trading-data-service`) hat die neuen
+   Order/Trade/SizingResult-Felder noch NICHT — braucht vor dem Vergleichslauf ein manuelles
+   Update (siehe Ende dieses Dokuments).
+5. **Verifikation vor dem Umschalten (noch offen)**: neuen Node im n8n-Editor mit gepinnten echten
+   Daten eines bereits abgeschlossenen Pakets manuell ausführen, Ergebnis Zeile für Zeile gegen
+   das, was der alte Node für dasselbe Paket tatsächlich in `trading.simulation_trades`/
    `simulation_daily_portfolio` geschrieben hat, vergleichen. Bei Abweichung: Ursache klären, bevor
    weitergemacht wird.
 6. Flag umschalten (`TRADING_ENGINE_STEP_ENABLED=TRUE`) — erst nach ausdrücklicher Zustimmung zum
@@ -153,6 +177,17 @@ Retry-/On-Error-Verhalten greift wie bei jedem anderen Node in diesem Workflow.
 7. **Separat, später**: Workflow 14 migrieren — bringt eigene, echte fachliche Änderungen mit
    (Umstellung auf Mini-Future-Kostenmodell, erstmals Trailing-Stop für Live-Paper-Trading, siehe
    `TRADING_ENGINE_ARCHITECTURE.md` Architekturfragen 2+3), nicht Teil dieser Migration.
+
+## Vor Schritt 5 noetig: Server-Update
+
+`/opt/trading-data-service` laeuft noch mit dem Engine-Stand von vor der Audit-Feld-Erweiterung
+(1.1/Schritt 4). Fuer den Vergleichslauf muss der Nutzer manuell aktualisieren (kein SSH-Zugriff
+fuer Claude, siehe [[finanz-trading-data-service-infra]]):
+1. `~/Documents/finanz/trading_engine/` (kanonisch, bereits synchron mit `~/Downloads/trading_engine/`)
+   auf den Server nach `/opt/trading-data-service/trading_engine/` hochladen (ersetzt den kompletten Ordner).
+2. `systemctl restart trading-data-service`.
+3. Kurzer Sanity-Check: `POST /engine/simulation/step` mit einem minimalen Testpaket aufrufen und
+   pruefen, dass die Antwort `theoretical_quantity`/`clamp_reason` auf `new_orders`/`new_trades` enthaelt.
 
 ## Nicht in dieser Runde
 
