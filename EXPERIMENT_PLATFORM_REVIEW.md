@@ -17,7 +17,10 @@ Workflow 17.
   dektiviert bei `regime_restriction`-Freigabe die alte Zeile und fügt eine neu versionierte
   ein statt in-place zu überschreiben; Workflow 06 und der Config-Snapshot in Workflow 17 lesen
   jetzt `WHERE active = TRUE` statt des festen Strings.
-- [ ] Punkt 4 (`market_context_history` Point-in-Time)
+- [x] Punkt 4 (`market_context_history` Point-in-Time) — 2026-08-20 live umgesetzt: `sql/068`
+  (gleiches Muster wie `sql/022`/`sql/041`). Workflow 02b (Writer) schliesst jetzt die aktuelle
+  Revision und legt eine neue an statt in-place zu überschreiben; Workflow 06/07/10 (Reader)
+  lesen `AND valid_to IS NULL`.
 - [ ] Punkt 5 (Experiment-Register als View)
 - [ ] Punkt 6 (Monitoring: Queue-Länge)
 - [ ] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren)

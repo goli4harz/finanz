@@ -1383,7 +1383,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 AND valid_to IS NULL ORDER BY symbol, snapshot_date;",
+        "query": "SELECT symbol, snapshot_date, aktueller_kurs, veraenderung_pct, trend, markt_status FROM trading.market_context_history WHERE snapshot_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 5 ORDER BY symbol, snapshot_date;",
         "options": {}
       },
       "id": "80d97d94-4d05-4511-b059-8377b555c021",
@@ -1941,5 +1941,5 @@
     "availableInMCP": false
   },
   "tags": [],
-  "versionId": "3c9e6a2e-b64f-4b27-af79-a3f034e8015a"
+  "versionId": "afb37bd2-7a00-49c6-8013-4a78056bfdc5"
 }

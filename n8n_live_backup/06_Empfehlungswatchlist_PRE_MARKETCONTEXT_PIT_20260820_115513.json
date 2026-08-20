@@ -1377,7 +1377,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT COUNT(*) AS anzahl FROM trading.market_context_history WHERE snapshot_date = (now() AT TIME ZONE 'Europe/Berlin')::date AND valid_to IS NULL;",
+        "query": "SELECT COUNT(*) AS anzahl FROM trading.market_context_history WHERE snapshot_date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: Marktkontext heute (Empf.)",
@@ -1962,5 +1962,5 @@
     "availableInMCP": false
   },
   "tags": [],
-  "versionId": "5ad13c0d-31b7-4b51-8cd3-b73c84817e50"
+  "versionId": "da789dcb-57ff-47e6-b5a0-0fa0287865ee"
 }
