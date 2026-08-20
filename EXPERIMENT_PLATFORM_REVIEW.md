@@ -27,7 +27,11 @@ Workflow 17.
   `learning_rule_proposals.hypothesis` (TEXT, noch von keinem Workflow befüllt — Prompt-
   Erweiterung der Lernagenten 09b/09c wäre ein separater, späterer Schritt). Kein Workflow
   musste geändert werden (reine Lese-View über bestehende Daten).
-- [ ] Punkt 6 (Monitoring: Queue-Länge)
+- [x] Punkt 6 (Monitoring: Queue-Länge) — 2026-08-20 live umgesetzt in Simulation-Steuerzentrale
+  (neuer Node "DB: Warteschlange" + 2 KPI-Kacheln: offene `simulation_run_steps`/
+  `import_job_items` mit status=pending über alle aktuell aktiven Läufe/Jobs). Live per GET
+  getestet (echte Werte: 0 Sim-Worker, 22 Import-Worker). WF07 bewusst ausgelassen — 63-Node-
+  Dashboard nicht auf diese Metrik zugeschnitten, geringerer Nutzen für höheres Risiko.
 - [ ] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren)
 
 ---
