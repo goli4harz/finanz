@@ -5,7 +5,7 @@
       "main": [
         [
           {
-            "node": "DB: Watchlist laden",
+            "node": "Nav laden (aktien-watchlist-WebhookGETAnsicht)",
             "type": "main",
             "index": 0
           }
@@ -17,6 +17,11 @@
         [
           {
             "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Nav laden (aktien-watchlist-WebhookPOSTAenderung)",
             "type": "main",
             "index": 0
           }
@@ -61,6 +66,17 @@
         [
           {
             "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (aktien-watchlist-WebhookGETAnsicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Watchlist laden",
             "type": "main",
             "index": 0
           }
@@ -169,7 +185,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// FIX 2026-07-25: gleicher n8n-Plattform-Bug wie in 12 - Lernvorschlag-Freigabe gefunden -\n// 0 Ergebniszeilen liessen den nachfolgenden Node gar nicht erst ausfuehren (leere, fehlerlose\n// Webhook-Antwort). Bisher hier nie ausgeloest, da die Watchlist nie leer war, aber latent\n// vorhanden. alwaysOutputData:true auf dem DB-Node + Platzhalter-Item hier rausfiltern.\nconst _rawInput = $input.all().map(i => i.json);\nconst _loadError = _rawInput.find(r => r && r.error);\nconst rows = _rawInput.filter(r => r && r.ticker !== undefined);\n\n// REPARATUR P1.8: strukturierter Fehlerhinweis statt stillschweigend leerer Liste bei einem\n// DB-Ausfall - keine Credentials/SQL-Verbindungsdaten/Stacktrace in der Antwort, nur eine\n// technische Fehler-ID zur Korrelation mit den Server-Logs.\nlet dbErrorBanner = '';\nif (_loadError) {\n  const errorId = 'ERR-' + Date.now().toString(36).toUpperCase();\n  dbErrorBanner = '  <div class=\"meta\" style=\"background:#3a1c1c;color:#ff8a8a;padding:8px 14px;border-radius:6px;margin-bottom:12px;\">\\u26a0 Daten konnten nicht geladen werden (Fehler-ID: ' + errorId + ').</div>';\n}\n\nfunction esc(s) {\n  return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction arrToText(arr) {\n  return (Array.isArray(arr) ? arr : []).join(', ');\n}\n\nconst rowsHtml = rows.map(r => {\n  // formId/toggleId are attribute values (id=/form=) too - must be escaped just like\n  // the value=\"\" attributes, otherwise a ticker containing &/\"/< would break the\n  // markup or the id<->form linkage (caught by testing with a deliberately odd ticker).\n  const formId = esc('f-' + r.ticker);\n  const toggleId = esc('ft-' + r.ticker);\n  const deleteId = esc('fd-' + r.ticker);\n  const badge = r.active ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge warn\">inaktiv</span>';\n  const toggleLabel = r.active ? 'Deaktivieren' : 'Aktivieren';\n  return `<tr>\n    <td>${esc(r.ticker)}</td>\n    <td><input form=\"${formId}\" name=\"name\" value=\"${esc(r.name)}\"></td>\n    <td><input form=\"${formId}\" name=\"sektor\" value=\"${esc(r.sektor)}\"></td>\n    <td><input form=\"${formId}\" name=\"keywords\" value=\"${esc(arrToText(r.keywords))}\"></td>\n    <td><input form=\"${formId}\" name=\"exclude_keywords\" value=\"${esc(arrToText(r.exclude_keywords))}\"></td>\n    <td>${badge}</td>\n    <td>\n      <button form=\"${formId}\" type=\"submit\">Speichern</button>\n      <button form=\"${toggleId}\" type=\"submit\">${toggleLabel}</button>\n      <button class=\"danger\" form=\"${deleteId}\" type=\"submit\" onclick=\"return confirm('Ticker wirklich loeschen?')\">Loeschen</button>\n    </td>\n  </tr>\n  <form id=\"${formId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"edit\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${toggleId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"toggle_active\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${deleteId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"delete\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>`;\n}).join('\\n');\n\n// FIX 2026-08-01 (Fehleranalyse A4): Validierungsfehler aus dem POST-Normalisierungsschritt\n// sichtbar machen statt stillschweigend eine normale Erfolgsseite zu zeigen. Bei einem GET-\n// Aufruf hat dieser Node nie ausgefuehrt - try/catch faengt das ab, validationError bleibt leer.\nlet validationError = '';\ntry {\n  const normalizeItem = $('POST: Formular normalisieren + SQL bauen').first();\n  if (normalizeItem && normalizeItem.json && normalizeItem.json.validation_error) {\n    validationError = String(normalizeItem.json.validation_error);\n  }\n} catch (e) { /* GET-Aufruf, Node existiert in diesem Ausfuehrungspfad nicht */ }\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst activeCount = rows.filter(r => r.active).length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Watchlist verwalten</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  h2 { font-size:15px; margin-top:32px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; vertical-align:middle; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; width:100%; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px; white-space:nowrap; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .add-form { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end; }' +\n'  .add-form label { display:block; font-size:11px; color:#9aa0a6; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'  .banner-error { background:#3a1c1c; border:1px solid #e0665a; color:#f2a89e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-news-lernkandidaten\" style=\"color:#8ab4f8;text-decoration:none;\">News-Lernkandidaten</a><a href=\"/webhook/historische-news-ausschluesse\" style=\"color:#8ab4f8;text-decoration:none;\">Ausschlussregeln</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-lauf\" style=\"color:#8ab4f8;text-decoration:none;\">Simulation starten</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>' +\n'  ' + dbErrorBanner +\n'  <h1>Aktien-Watchlist verwalten</h1>' +\n'  ' + (validationError ? '<div class=\"banner-error\">' + esc(validationError) + '</div>' : '') +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Ticker insgesamt (' + activeCount + ' aktiv)</div>' +\n'  <div class=\"hint\">Aenderungen wirken direkt auf 01 (Fundamentaldaten), 02 (Technische Signale) und 03 (News-Ingestion) - Keywords/Ausschluss-Begriffe kommagetrennt eingeben.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Keywords</th><th>Ausschluss-Begriffe</th><th>Status</th><th>Aktionen</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Neuen Ticker hinzufuegen</h2>' +\n'  <form class=\"add-form\" method=\"POST\" action=\"/webhook/aktien-watchlist\">' +\n'    <input type=\"hidden\" name=\"action\" value=\"add\">' +\n'    <div><label>Ticker (z.B. XYZ.DE)</label><input name=\"ticker\" required></div>' +\n'    <div><label>Name</label><input name=\"name\" required></div>' +\n'    <div><label>Sektor</label><input name=\"sektor\"></div>' +\n'    <div><label>Keywords</label><input name=\"keywords\" placeholder=\"z.B. Beispiel AG, Beispiel\"></div>' +\n'    <div><label>Ausschluss-Begriffe</label><input name=\"exclude_keywords\"></div>' +\n'    <div><button type=\"submit\">Hinzufuegen</button></div>' +\n'  </form>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
+        "jsCode": "let __navHtml = null;\ntry { __navHtml = $('Nav laden (aktien-watchlist-WebhookGETAnsicht)').first().json.navHtml || $('Nav laden (aktien-watchlist-WebhookPOSTAenderung)').first().json.navHtml || null; } catch (e) { __navHtml = null; }\n\n// FIX 2026-07-25: gleicher n8n-Plattform-Bug wie in 12 - Lernvorschlag-Freigabe gefunden -\n// 0 Ergebniszeilen liessen den nachfolgenden Node gar nicht erst ausfuehren (leere, fehlerlose\n// Webhook-Antwort). Bisher hier nie ausgeloest, da die Watchlist nie leer war, aber latent\n// vorhanden. alwaysOutputData:true auf dem DB-Node + Platzhalter-Item hier rausfiltern.\nconst _rawInput = $input.all().map(i => i.json);\nconst _loadError = _rawInput.find(r => r && r.error);\nconst rows = _rawInput.filter(r => r && r.ticker !== undefined);\n\n// REPARATUR P1.8: strukturierter Fehlerhinweis statt stillschweigend leerer Liste bei einem\n// DB-Ausfall - keine Credentials/SQL-Verbindungsdaten/Stacktrace in der Antwort, nur eine\n// technische Fehler-ID zur Korrelation mit den Server-Logs.\nlet dbErrorBanner = '';\nif (_loadError) {\n  const errorId = 'ERR-' + Date.now().toString(36).toUpperCase();\n  dbErrorBanner = '  <div class=\"meta\" style=\"background:#3a1c1c;color:#ff8a8a;padding:8px 14px;border-radius:6px;margin-bottom:12px;\">\\u26a0 Daten konnten nicht geladen werden (Fehler-ID: ' + errorId + ').</div>';\n}\n\nfunction esc(s) {\n  return String(s === null || s === undefined ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction arrToText(arr) {\n  return (Array.isArray(arr) ? arr : []).join(', ');\n}\n\nconst rowsHtml = rows.map(r => {\n  // formId/toggleId are attribute values (id=/form=) too - must be escaped just like\n  // the value=\"\" attributes, otherwise a ticker containing &/\"/< would break the\n  // markup or the id<->form linkage (caught by testing with a deliberately odd ticker).\n  const formId = esc('f-' + r.ticker);\n  const toggleId = esc('ft-' + r.ticker);\n  const deleteId = esc('fd-' + r.ticker);\n  const badge = r.active ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge warn\">inaktiv</span>';\n  const toggleLabel = r.active ? 'Deaktivieren' : 'Aktivieren';\n  return `<tr>\n    <td>${esc(r.ticker)}</td>\n    <td><input form=\"${formId}\" name=\"name\" value=\"${esc(r.name)}\"></td>\n    <td><input form=\"${formId}\" name=\"sektor\" value=\"${esc(r.sektor)}\"></td>\n    <td><input form=\"${formId}\" name=\"keywords\" value=\"${esc(arrToText(r.keywords))}\"></td>\n    <td><input form=\"${formId}\" name=\"exclude_keywords\" value=\"${esc(arrToText(r.exclude_keywords))}\"></td>\n    <td>${badge}</td>\n    <td>\n      <button form=\"${formId}\" type=\"submit\">Speichern</button>\n      <button form=\"${toggleId}\" type=\"submit\">${toggleLabel}</button>\n      <button class=\"danger\" form=\"${deleteId}\" type=\"submit\" onclick=\"return confirm('Ticker wirklich loeschen?')\">Loeschen</button>\n    </td>\n  </tr>\n  <form id=\"${formId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"edit\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${toggleId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"toggle_active\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>\n  <form id=\"${deleteId}\" method=\"POST\" action=\"/webhook/aktien-watchlist\">\n    <input type=\"hidden\" name=\"action\" value=\"delete\">\n    <input type=\"hidden\" name=\"ticker\" value=\"${esc(r.ticker)}\">\n  </form>`;\n}).join('\\n');\n\n// FIX 2026-08-01 (Fehleranalyse A4): Validierungsfehler aus dem POST-Normalisierungsschritt\n// sichtbar machen statt stillschweigend eine normale Erfolgsseite zu zeigen. Bei einem GET-\n// Aufruf hat dieser Node nie ausgefuehrt - try/catch faengt das ab, validationError bleibt leer.\nlet validationError = '';\ntry {\n  const normalizeItem = $('POST: Formular normalisieren + SQL bauen').first();\n  if (normalizeItem && normalizeItem.json && normalizeItem.json.validation_error) {\n    validationError = String(normalizeItem.json.validation_error);\n  }\n} catch (e) { /* GET-Aufruf, Node existiert in diesem Ausfuehrungspfad nicht */ }\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst activeCount = rows.filter(r => r.active).length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Aktien-Watchlist verwalten</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  h2 { font-size:15px; margin-top:32px; margin-bottom:8px; color:#e6e6e6; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:14px; vertical-align:middle; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; width:100%; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px; white-space:nowrap; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .add-form { background:#181b21; border:1px solid #2a2d34; border-radius:8px; padding:16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; align-items:end; }' +\n'  .add-form label { display:block; font-size:11px; color:#9aa0a6; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:4px; }' +\n'  .banner-error { background:#3a1c1c; border:1px solid #e0665a; color:#f2a89e; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n(__navHtml || '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-news-lernkandidaten\" style=\"color:#8ab4f8;text-decoration:none;\">News-Lernkandidaten</a><a href=\"/webhook/historische-news-ausschluesse\" style=\"color:#8ab4f8;text-decoration:none;\">Ausschlussregeln</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-lauf\" style=\"color:#8ab4f8;text-decoration:none;\">Simulation starten</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>') +\n'  ' + dbErrorBanner +\n'  <h1>Aktien-Watchlist verwalten</h1>' +\n'  ' + (validationError ? '<div class=\"banner-error\">' + esc(validationError) + '</div>' : '') +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Ticker insgesamt (' + activeCount + ' aktiv)</div>' +\n'  <div class=\"hint\">Aenderungen wirken direkt auf 01 (Fundamentaldaten), 02 (Technische Signale) und 03 (News-Ingestion) - Keywords/Ausschluss-Begriffe kommagetrennt eingeben.</div>' +\n'  <table>' +\n'    <thead><tr><th>Ticker</th><th>Name</th><th>Sektor</th><th>Keywords</th><th>Ausschluss-Begriffe</th><th>Status</th><th>Aktionen</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'  <h2>Neuen Ticker hinzufuegen</h2>' +\n'  <form class=\"add-form\" method=\"POST\" action=\"/webhook/aktien-watchlist\">' +\n'    <input type=\"hidden\" name=\"action\" value=\"add\">' +\n'    <div><label>Ticker (z.B. XYZ.DE)</label><input name=\"ticker\" required></div>' +\n'    <div><label>Name</label><input name=\"name\" required></div>' +\n'    <div><label>Sektor</label><input name=\"sektor\"></div>' +\n'    <div><label>Keywords</label><input name=\"keywords\" placeholder=\"z.B. Beispiel AG, Beispiel\"></div>' +\n'    <div><label>Ausschluss-Begriffe</label><input name=\"exclude_keywords\"></div>' +\n'    <div><button type=\"submit\">Hinzufuegen</button></div>' +\n'  </form>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
       },
       "id": "wm-build-html",
       "name": "Baue HTML",
@@ -203,6 +219,62 @@
         -128,
         0
       ]
+    },
+    {
+      "id": "navfix-1",
+      "name": "Nav laden (aktien-watchlist-WebhookGETAnsicht)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        820
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'aktien-watchlist' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "navfix-2",
+      "name": "Nav laden (aktien-watchlist-WebhookPOSTAenderung)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        940
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'aktien-watchlist' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
     }
   ],
   "pinData": null,
@@ -213,5 +285,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "425d970f-94f1-4e9f-b676-7df59500a409"
+  "versionId": "989bde94-68b7-4990-9ea6-0d04439e7fae"
 }

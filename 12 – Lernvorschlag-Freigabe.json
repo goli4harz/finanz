@@ -5,7 +5,7 @@
       "main": [
         [
           {
-            "node": "DB: Vorschlaege laden",
+            "node": "Nav laden (lernvorschlaege-WebhookGETAnsicht)",
             "type": "main",
             "index": 0
           }
@@ -17,6 +17,11 @@
         [
           {
             "node": "POST: Baue Load-Query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Nav laden (lernvorschlaege-WebhookPOSTAenderung)",
             "type": "main",
             "index": 0
           }
@@ -83,6 +88,17 @@
         [
           {
             "node": "POST: Formular normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (lernvorschlaege-WebhookGETAnsicht)": {
+      "main": [
+        [
+          {
+            "node": "DB: Vorschlaege laden",
             "type": "main",
             "index": 0
           }
@@ -190,7 +206,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// FIX 2026-07-25: n8n-Plattform-Bug entdeckt - wenn eine Postgres-Abfrage 0 Zeilen liefert,\n// wird der nachfolgende Node standardmaessig gar nicht ausgefuehrt, was die Webhook-Antwort\n// crashen liess (leere Antwort, kein Fehler-Log, kein Execution-Eintrag - nur ueber Server-\n// Logs als 'Task rejected by Runner: Offer expired' + interner n8n-TypeError sichtbar).\n// Live reproduziert mit einer GARANTIERT leeren Abfrage auf einer bekannt funktionierenden\n// Tabelle (trading.watchlist) - also kein Bug in dieser Tabelle/diesem Workflow, sondern ein\n// generelles n8n-Verhalten. Fix: alwaysOutputData:true auf dem vorgelagerten Postgres-Node\n// erzwingt ein (leeres) Platzhalter-Item, das hier herausgefiltert werden muss.\nconst rows = $input.all().map(i => i.json).filter(r => r && r.id !== undefined);\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction fmtDate(v) {\n  if (!v) return '';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction fmtNum(v) {\n  return (v === null || v === undefined) ? '' : String(v);\n}\n\nconst STATUS_LABEL = {\n  proposed: 'wartet auf Pruefung',\n  approved: 'genehmigt, wartet auf Aktivierung',\n  activated: 'aktiviert',\n  rejected: 'abgelehnt',\n  expired: 'abgelaufen'\n};\nconst STATUS_CLASS = {\n  proposed: 'warn',\n  approved: 'warn',\n  activated: 'ok',\n  rejected: 'danger',\n  expired: 'muted'\n};\n\nconst rowsHtml = rows.map(r => {\n  const target = esc(r.target_type) + ': ' + esc(r.target_value) + (r.time_horizon ? ' @ ' + esc(r.time_horizon) : '');\n  const change = fmtNum(r.current_value) + ' → <strong>' + fmtNum(r.proposed_value) + '</strong>';\n  const metric = r.metric_name ? esc(r.metric_name) + ': ' + fmtNum(r.metric_value) : '';\n  const badgeClass = STATUS_CLASS[r.status] || 'muted';\n  const badgeLabel = STATUS_LABEL[r.status] || esc(r.status);\n  const badge = '<span class=\"badge ' + badgeClass + '\">' + esc(badgeLabel) + '</span>';\n\n  // CHAMPION/CHALLENGER 2026-08-20: proposed -> approved -> activated statt direkt\n  // proposed -> activated. \"Genehmigen\" schreibt noch nichts in eine Zieltabelle\n  // (siehe \"POST: Formular normalisieren + SQL bauen\"), erst \"Aktivieren\" macht den\n  // Vorschlag produktiv wirksam. \"Ablehnen\" bleibt aus beiden Stufen moeglich.\n  let actionCell;\n  if (r.status === 'proposed' || r.status === 'approved') {\n    const rejectId = 'fr-' + r.id;\n    const rejectForm = '<form id=\"' + rejectId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n      '<input type=\"hidden\" name=\"action\" value=\"reject\">' +\n      '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n      // FIX 2026-08-02 (Fehleranalyse A10): version wird jetzt mitgeschickt,\n      // damit der Server erkennen kann, ob sich der Vorschlag seit dem Laden\n      // dieser Seite bereits geaendert hat (Optimistic Locking) - reines\n      // Konkurrenz-Token, kein vertrauenswuerdiger Inhaltswert (die\n      // eigentlichen Felder werden weiterhin serverseitig aus der DB\n      // nachgeladen, siehe A5).\n      '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n      '<input type=\"hidden\" name=\"reviewer\" value=\"\">' +\n      '</form>';\n\n    if (r.status === 'proposed') {\n      const approveId = 'fa-' + r.id;\n      actionCell = '<button form=\"' + approveId + '\" type=\"submit\">Genehmigen</button>' +\n        '<button class=\"danger\" form=\"' + rejectId + '\" type=\"submit\">Ablehnen</button>' +\n        '<form id=\"' + approveId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n        '<input type=\"hidden\" name=\"action\" value=\"approve\">' +\n        '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n        '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n        '</form>' +\n        rejectForm;\n    } else {\n      const activateId = 'fx-' + r.id;\n      actionCell = '<button form=\"' + activateId + '\" type=\"submit\">Aktivieren</button>' +\n        '<button class=\"danger\" form=\"' + rejectId + '\" type=\"submit\">Ablehnen</button>' +\n        '<div class=\"hint-inline\">genehmigt von ' + esc(r.reviewed_by || '') + (r.reviewed_at ? ' &middot; ' + fmtDate(r.reviewed_at) : '') + '</div>' +\n        '<form id=\"' + activateId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n        '<input type=\"hidden\" name=\"action\" value=\"activate\">' +\n        '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n        '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n        '</form>' +\n        rejectForm;\n    }\n  } else {\n    actionCell = esc(r.reviewed_by || '') + (r.activated_at ? ' · ' + fmtDate(r.activated_at) : (r.reviewed_at ? ' · ' + fmtDate(r.reviewed_at) : ''));\n  }\n\n  return '<tr>' +\n    '<td>' + esc(r.id) + '</td>' +\n    '<td>' + target + '</td>' +\n    '<td>' + change + '</td>' +\n    '<td>' + esc(r.sample_size) + '</td>' +\n    '<td>' + esc(r.confidence_level) + '<br><span class=\"hint-inline\">' + metric + '</span></td>' +\n    '<td class=\"reason\">' + esc(String(r.reason || '').slice(0, 220)) + '</td>' +\n    '<td>' + badge + '<br><span class=\"hint-inline\">' + fmtDate(r.created_at) + '</span></td>' +\n    '<td>' + actionCell + '</td>' +\n    '</tr>';\n}).join('\\n');\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst pendingCount = rows.filter(r => r.status === 'proposed').length;\nconst approvedCount = rows.filter(r => r.status === 'approved').length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Lernvorschlaege freigeben</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  .hint-inline { color:#9aa0a6; font-size:11px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:13px; vertical-align:top; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  td.reason { max-width:280px; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px 0; white-space:nowrap; display:block; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .badge.danger { background:#3a1c1f; color:#e07a7a; }' +\n'  .badge.muted { background:#22242a; color:#7a7d84; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n'<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-news-lernkandidaten\" style=\"color:#8ab4f8;text-decoration:none;\">News-Lernkandidaten</a><a href=\"/webhook/historische-news-ausschluesse\" style=\"color:#8ab4f8;text-decoration:none;\">Ausschlussregeln</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-lauf\" style=\"color:#8ab4f8;text-decoration:none;\">Simulation starten</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>' +\n'  <h1>Lernvorschlaege freigeben</h1>' +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Vorschlaege (' + pendingCount + ' wartend, ' + approvedCount + ' genehmigt)</div>' +\n'  <div class=\"hint\">Vorschlaege aus 09 (Lernagent Newswirkung, Samstag 08:00). Zweistufige Freigabe: \"Genehmigen\" markiert einen Vorschlag nur als geprueft, ohne eine Zieltabelle zu aendern. Erst \"Aktivieren\" schreibt den neuen Wert produktiv (z.B. nach trading.scoring_weights, vorherige aktive Version wird deaktiviert, nicht geloescht) und markiert den Vorschlag als aktiviert.</div>' +\n'  <table>' +\n'    <thead><tr><th>ID</th><th>Ziel</th><th>Aktuell → Vorschlag</th><th>Fallzahl</th><th>Konfidenz</th><th>Begruendung</th><th>Status</th><th>Aktion</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
+        "jsCode": "let __navHtml = null;\ntry { __navHtml = $('Nav laden (lernvorschlaege-WebhookGETAnsicht)').first().json.navHtml || $('Nav laden (lernvorschlaege-WebhookPOSTAenderung)').first().json.navHtml || null; } catch (e) { __navHtml = null; }\n\n// FIX 2026-07-25: n8n-Plattform-Bug entdeckt - wenn eine Postgres-Abfrage 0 Zeilen liefert,\n// wird der nachfolgende Node standardmaessig gar nicht ausgefuehrt, was die Webhook-Antwort\n// crashen liess (leere Antwort, kein Fehler-Log, kein Execution-Eintrag - nur ueber Server-\n// Logs als 'Task rejected by Runner: Offer expired' + interner n8n-TypeError sichtbar).\n// Live reproduziert mit einer GARANTIERT leeren Abfrage auf einer bekannt funktionierenden\n// Tabelle (trading.watchlist) - also kein Bug in dieser Tabelle/diesem Workflow, sondern ein\n// generelles n8n-Verhalten. Fix: alwaysOutputData:true auf dem vorgelagerten Postgres-Node\n// erzwingt ein (leeres) Platzhalter-Item, das hier herausgefiltert werden muss.\nconst rows = $input.all().map(i => i.json).filter(r => r && r.id !== undefined);\n\nfunction esc(s) {\n  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');\n}\nfunction fmtDate(v) {\n  if (!v) return '';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction fmtNum(v) {\n  return (v === null || v === undefined) ? '' : String(v);\n}\n\nconst STATUS_LABEL = {\n  proposed: 'wartet auf Pruefung',\n  approved: 'genehmigt, wartet auf Aktivierung',\n  activated: 'aktiviert',\n  rejected: 'abgelehnt',\n  expired: 'abgelaufen'\n};\nconst STATUS_CLASS = {\n  proposed: 'warn',\n  approved: 'warn',\n  activated: 'ok',\n  rejected: 'danger',\n  expired: 'muted'\n};\n\nconst rowsHtml = rows.map(r => {\n  const target = esc(r.target_type) + ': ' + esc(r.target_value) + (r.time_horizon ? ' @ ' + esc(r.time_horizon) : '');\n  const change = fmtNum(r.current_value) + ' → <strong>' + fmtNum(r.proposed_value) + '</strong>';\n  const metric = r.metric_name ? esc(r.metric_name) + ': ' + fmtNum(r.metric_value) : '';\n  const badgeClass = STATUS_CLASS[r.status] || 'muted';\n  const badgeLabel = STATUS_LABEL[r.status] || esc(r.status);\n  const badge = '<span class=\"badge ' + badgeClass + '\">' + esc(badgeLabel) + '</span>';\n\n  // CHAMPION/CHALLENGER 2026-08-20: proposed -> approved -> activated statt direkt\n  // proposed -> activated. \"Genehmigen\" schreibt noch nichts in eine Zieltabelle\n  // (siehe \"POST: Formular normalisieren + SQL bauen\"), erst \"Aktivieren\" macht den\n  // Vorschlag produktiv wirksam. \"Ablehnen\" bleibt aus beiden Stufen moeglich.\n  let actionCell;\n  if (r.status === 'proposed' || r.status === 'approved') {\n    const rejectId = 'fr-' + r.id;\n    const rejectForm = '<form id=\"' + rejectId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n      '<input type=\"hidden\" name=\"action\" value=\"reject\">' +\n      '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n      // FIX 2026-08-02 (Fehleranalyse A10): version wird jetzt mitgeschickt,\n      // damit der Server erkennen kann, ob sich der Vorschlag seit dem Laden\n      // dieser Seite bereits geaendert hat (Optimistic Locking) - reines\n      // Konkurrenz-Token, kein vertrauenswuerdiger Inhaltswert (die\n      // eigentlichen Felder werden weiterhin serverseitig aus der DB\n      // nachgeladen, siehe A5).\n      '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n      '<input type=\"hidden\" name=\"reviewer\" value=\"\">' +\n      '</form>';\n\n    if (r.status === 'proposed') {\n      const approveId = 'fa-' + r.id;\n      actionCell = '<button form=\"' + approveId + '\" type=\"submit\">Genehmigen</button>' +\n        '<button class=\"danger\" form=\"' + rejectId + '\" type=\"submit\">Ablehnen</button>' +\n        '<form id=\"' + approveId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n        '<input type=\"hidden\" name=\"action\" value=\"approve\">' +\n        '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n        '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n        '</form>' +\n        rejectForm;\n    } else {\n      const activateId = 'fx-' + r.id;\n      actionCell = '<button form=\"' + activateId + '\" type=\"submit\">Aktivieren</button>' +\n        '<button class=\"danger\" form=\"' + rejectId + '\" type=\"submit\">Ablehnen</button>' +\n        '<div class=\"hint-inline\">genehmigt von ' + esc(r.reviewed_by || '') + (r.reviewed_at ? ' &middot; ' + fmtDate(r.reviewed_at) : '') + '</div>' +\n        '<form id=\"' + activateId + '\" method=\"POST\" action=\"/webhook/lernvorschlaege\">' +\n        '<input type=\"hidden\" name=\"action\" value=\"activate\">' +\n        '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">' +\n        '<input type=\"hidden\" name=\"version\" value=\"' + esc(r.version) + '\">' +\n        '</form>' +\n        rejectForm;\n    }\n  } else {\n    actionCell = esc(r.reviewed_by || '') + (r.activated_at ? ' · ' + fmtDate(r.activated_at) : (r.reviewed_at ? ' · ' + fmtDate(r.reviewed_at) : ''));\n  }\n\n  return '<tr>' +\n    '<td>' + esc(r.id) + '</td>' +\n    '<td>' + target + '</td>' +\n    '<td>' + change + '</td>' +\n    '<td>' + esc(r.sample_size) + '</td>' +\n    '<td>' + esc(r.confidence_level) + '<br><span class=\"hint-inline\">' + metric + '</span></td>' +\n    '<td class=\"reason\">' + esc(String(r.reason || '').slice(0, 220)) + '</td>' +\n    '<td>' + badge + '<br><span class=\"hint-inline\">' + fmtDate(r.created_at) + '</span></td>' +\n    '<td>' + actionCell + '</td>' +\n    '</tr>';\n}).join('\\n');\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst pendingCount = rows.filter(r => r.status === 'proposed').length;\nconst approvedCount = rows.filter(r => r.status === 'approved').length;\n\nconst html = '<!DOCTYPE html>' +\n'<html lang=\"de\">' +\n'<head>' +\n'<meta charset=\"utf-8\">' +\n'<title>Lernvorschlaege freigeben</title>' +\n'<style>' +\n'  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; background:#0f1115; color:#e6e6e6; margin:0; padding:32px; }' +\n'  h1 { font-size:20px; margin-bottom:4px; }' +\n'  .meta { color:#9aa0a6; font-size:13px; margin-bottom:8px; }' +\n'  .hint { color:#9aa0a6; font-size:12px; margin-bottom:24px; }' +\n'  .hint-inline { color:#9aa0a6; font-size:11px; }' +\n'  table { border-collapse: collapse; width:100%; margin-bottom:16px; }' +\n'  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid #2a2d34; font-size:13px; vertical-align:top; }' +\n'  th { color:#9aa0a6; font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; }' +\n'  td.reason { max-width:280px; }' +\n'  input { background:#181b21; border:1px solid #2a2d34; color:#e6e6e6; border-radius:6px; padding:6px 8px; font-size:13px; box-sizing:border-box; }' +\n'  input:focus { outline:1px solid #5b8def; }' +\n'  button { background:#5b8def; border:none; color:#0f1115; font-weight:600; border-radius:6px; padding:6px 12px; font-size:12px; cursor:pointer; margin:2px 0; white-space:nowrap; display:block; }' +\n'  button:hover { background:#7ba3f2; }' +\n'  button.danger { background:#e0665a; color:#fff; }' +\n'  button.danger:hover { background:#ef8177; }' +\n'  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; }' +\n'  .badge.ok { background:#1c3a2a; color:#6bcf8e; }' +\n'  .badge.warn { background:#3a2c1c; color:#e0a854; }' +\n'  .badge.danger { background:#3a1c1f; color:#e07a7a; }' +\n'  .badge.muted { background:#22242a; color:#7a7d84; }' +\n'</style>' +\n'</head>' +\n'<body>' +\n(__navHtml || '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a><a href=\"/webhook/aktien-watchlist\" style=\"color:#8ab4f8;text-decoration:none;\">Watchlist</a><a href=\"/webhook/rss-quellen\" style=\"color:#8ab4f8;text-decoration:none;\">RSS-Quellen</a><a href=\"/webhook/lernvorschlaege\" style=\"color:#8ab4f8;text-decoration:none;\">Lernvorschlaege</a><a href=\"/webhook/historische-marktdaten\" style=\"color:#8ab4f8;text-decoration:none;\">Marktdaten-Import</a><a href=\"/webhook/historische-nachrichten\" style=\"color:#8ab4f8;text-decoration:none;\">Nachrichten-Import</a><a href=\"/webhook/historische-news-lernkandidaten\" style=\"color:#8ab4f8;text-decoration:none;\">News-Lernkandidaten</a><a href=\"/webhook/historische-news-ausschluesse\" style=\"color:#8ab4f8;text-decoration:none;\">Ausschlussregeln</a><a href=\"/webhook/historische-simulation\" style=\"color:#8ab4f8;text-decoration:none;\">Simulationslaeufe</a><a href=\"/webhook/simulation-lauf\" style=\"color:#8ab4f8;text-decoration:none;\">Simulation starten</a><a href=\"/webhook/simulation-uebersicht\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Uebersicht</a><a href=\"/webhook/simulation-vergleich\" style=\"color:#8ab4f8;text-decoration:none;\">Sim-Vergleich</a></div>') +\n'  <h1>Lernvorschlaege freigeben</h1>' +\n'  <div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Vorschlaege (' + pendingCount + ' wartend, ' + approvedCount + ' genehmigt)</div>' +\n'  <div class=\"hint\">Vorschlaege aus 09 (Lernagent Newswirkung, Samstag 08:00). Zweistufige Freigabe: \"Genehmigen\" markiert einen Vorschlag nur als geprueft, ohne eine Zieltabelle zu aendern. Erst \"Aktivieren\" schreibt den neuen Wert produktiv (z.B. nach trading.scoring_weights, vorherige aktive Version wird deaktiviert, nicht geloescht) und markiert den Vorschlag als aktiviert.</div>' +\n'  <table>' +\n'    <thead><tr><th>ID</th><th>Ziel</th><th>Aktuell → Vorschlag</th><th>Fallzahl</th><th>Konfidenz</th><th>Begruendung</th><th>Status</th><th>Aktion</th></tr></thead>' +\n'    <tbody>' + rowsHtml + '</tbody>' +\n'  </table>' +\n'</body>' +\n'</html>';\n\nreturn [{ json: { html } }];\n"
       },
       "id": "lv-build-html",
       "name": "Baue HTML",
@@ -260,6 +276,62 @@
         }
       },
       "alwaysOutputData": true
+    },
+    {
+      "id": "navfix-1",
+      "name": "Nav laden (lernvorschlaege-WebhookGETAnsicht)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        820
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'lernvorschlaege' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "navfix-2",
+      "name": "Nav laden (lernvorschlaege-WebhookPOSTAenderung)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        940
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'lernvorschlaege' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
     }
   ],
   "pinData": null,
@@ -270,5 +342,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "4337006f-6e08-4c27-b49d-feda2744da81"
+  "versionId": "932ea472-7357-41a8-8833-473700dd8627"
 }
