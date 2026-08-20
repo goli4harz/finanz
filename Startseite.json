@@ -1,0 +1,189 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "Z8wOig6JO8KW5qZp",
+  "meta": null,
+  "name": "Startseite",
+  "nodes": [
+    {
+      "id": "st-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "heute",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "st-get-webhook-id"
+    },
+    {
+      "id": "st-nav",
+      "name": "Nav laden",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'heute' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "st-baue-query",
+      "name": "Baue Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Startseite (Modul 7): \"Aggregierte Kennzahlen-Kacheln, verlinkt in alle anderen Seiten\"\n// (HUMAN_IN_THE_LOOP_ARCHITECTURE.md Abschnitt 2) - bewusst nur Zaehlwerte, keine Listen (die\n// liefert bereits Lernen-und-Feedback). Systemstatus-Kachel liest erstmals\n// trading.workflow_errors (Abschnitt 9, Phase-1-Fund 8: bisher schreibend, nie lesend genutzt).\nconst sql = `SELECT\n    (SELECT count(*) FROM trading.recommendations r\n       LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n       WHERE r.status = 'offen' AND (rd.id IS NULL OR rd.entscheidung IN ('beobachten', 'spaeter'))) AS trade_ideen_anzahl,\n\n    (SELECT count(*) FROM trading.paper_trades WHERE status = 'open') AS offene_positionen_anzahl,\n\n    (SELECT count(*) FROM trading.paper_trades pt\n       LEFT JOIN trading.trade_reviews tr ON tr.trade_id = pt.trade_id\n       WHERE pt.status = 'closed' AND tr.id IS NULL) AS trade_reviews_anzahl,\n\n    (SELECT count(*) FROM trading.news_items ni\n       JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n       LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n       WHERE vla.confirmation_status = 'unconfirmed' AND nrn.id IS NULL) AS news_reviews_anzahl,\n\n    (SELECT count(*) FROM trading.news_false_negative_flags\n       WHERE status IN ('possible_false_negative', 'filter_revision_required')) AS auffaellige_regeln_anzahl,\n\n    (SELECT count(*) FROM trading.learning_rule_proposals WHERE status = 'proposed') AS lernvorschlaege_anzahl,\n\n    (SELECT count(*) FROM trading.workflow_errors WHERE occurred_at > now() - interval '24 hours') AS systemfehler_24h,\n    (SELECT max(occurred_at) FROM trading.workflow_errors) AS letzter_systemfehler;`;\n\nreturn [{ json: { sql } }];\n"
+      }
+    },
+    {
+      "id": "st-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "st-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nlet nav = {};\ntry { nav = $('Nav laden').first().json; } catch (e) { nav = {}; }\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:900px;margin:0 auto;}'\n  + 'h1{font-size:26px;color:#fff;margin-bottom:4px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:28px;}'\n  + '.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}'\n  + '.tile{background:#181b21;border:1px solid #2a2d34;border-radius:10px;padding:20px;text-decoration:none;color:#e6e6e6;display:block;transition:border-color .1s;}'\n  + '.tile:hover{border-color:#5b8def;}'\n  + '.tile .zahl{font-size:32px;font-weight:700;color:#fff;} .tile .zahl.zero{color:#6bcf8e;}'\n  + '.tile .zahl.warn{color:#e0a854;} .tile .zahl.danger{color:#e0665a;}'\n  + '.tile .label{font-size:13px;color:#9aa0a6;margin-top:4px;}'\n  + '.tile.status{grid-column:1/-1;}'\n  + '.hint{color:#9aa0a6;font-size:12px;margin-top:28px;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nfunction tile(link, anzahl, label, warnAbAnzahl) {\n  const klass = anzahl === 0 ? 'zero' : (warnAbAnzahl && anzahl >= warnAbAnzahl ? 'danger' : '');\n  return '<a class=\"tile\" href=\"' + link + '\"><div class=\"zahl ' + klass + '\">' + anzahl + '</div><div class=\"label\">' + esc(label) + '</div></a>';\n}\n\nconst systemfehler = row.systemfehler_24h || 0;\nconst systemKlass = systemfehler === 0 ? 'zero' : (systemfehler >= 5 ? 'danger' : 'warn');\nconst systemLabel = systemfehler === 0\n  ? 'Systemstatus: OK - keine Fehler in den letzten 24h'\n  : 'Systemstatus: ' + systemfehler + ' Fehler in den letzten 24h (letzter: ' + fmtDate(row.letzter_systemfehler) + ')';\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst stunde = Number(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin', hour: '2-digit', hour12: false }));\nconst gruss = stunde >= 5 && stunde < 11 ? 'Guten Morgen' : (stunde >= 11 && stunde < 18 ? 'Guten Tag' : 'Guten Abend');\n\nconst html = pageWrap('Heute', ''\n  + '<h1>' + esc(gruss) + '</h1>'\n  + '<div class=\"meta\">Stand: ' + now + '</div>'\n  + '<div class=\"tiles\">'\n  + tile('/webhook/heute-handeln', row.trade_ideen_anzahl || 0, 'Trade-Ideen heute')\n  + tile('/webhook/trade-review', row.offene_positionen_anzahl || 0, 'Offene Positionen')\n  + tile('/webhook/trade-review', row.trade_reviews_anzahl || 0, 'Trade-Reviews zu erledigen')\n  + tile('/webhook/news-pruefen', row.news_reviews_anzahl || 0, 'News zu prüfen')\n  + tile('/webhook/news-pruefen', row.auffaellige_regeln_anzahl || 0, 'Auffällige Filterregeln')\n  + tile('/webhook/lernvorschlaege', row.lernvorschlaege_anzahl || 0, 'Offene Lernvorschläge')\n  + '<a class=\"tile status\" href=\"/webhook/aktien-status\"><div class=\"zahl ' + systemKlass + '\">' + (systemfehler === 0 ? 'OK' : systemfehler) + '</div><div class=\"label\">' + esc(systemLabel) + '</div></a>'\n  + '</div>'\n  + '<div class=\"hint\">Detailübersicht mit Listen: <a href=\"/webhook/lernen-feedback\" style=\"color:#8ab4f8;\">Lernen &amp; Feedback</a>. Kein Kachel-Wert löst automatisch etwas aus - jede Zahl ist ein Sprungpunkt zur passenden Seite.</div>'\n);\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "st-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "eecc6293-015d-488b-80a6-b55d038be152"
+}
