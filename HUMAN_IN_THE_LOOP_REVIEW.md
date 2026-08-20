@@ -370,18 +370,14 @@ Optik nötig, wie vom Auftrag gefordert ("Bestehendes wiederverwenden").
 
 ---
 
-## Offene Fragen für Phase 2 (Architektur)
+## Entscheidungen für Phase 2 (2026-08-20, mit dem Nutzer geklärt)
 
-1. Sollen neue Seiten als Webhook-Paare in **neuen** Workflows entstehen (sauberer, aber mehr
-   Workflows) oder in **bestehenden** Workflows ergänzt werden (weniger neue Dateien, aber größere
-   Workflows, z. B. Erweiterung von 06/14 direkt)?
-2. Soll die Nav-Leisten-Duplikation (Fund 7) in Phase 2 mitgelöst werden (gemeinsamer Sub-Workflow),
-   oder bewusst im bestehenden Duplikationsmuster bleiben?
-3. Soll `probability_estimates` (Fund 2) um `simulation_trades` als Datenquelle erweitert werden,
-   um die historischen Vergleichsfälle schon mit den vorhandenen Simulationsdaten befüllen zu
-   können, statt auf echte Paper-Trades zu warten?
-4. Umfang der News-Vorfilter-Persistenz (Punkt 5 in Abschnitt 7) — vollständige Persistenz aller
-   verworfenen Artikel (teurer, aber lückenlos) oder eine Stichprobe (günstiger, analog zum
-   bestehenden historischen KI-Stichproben-Modell)?
-
-Diese vier Punkte würde ich vor Phase 2 kurz mit dir klären, statt sie hier vorwegzunehmen.
+1. **Neue Seiten als eigene, neue Workflows** — analog Workflow 12/16c/16d. Bestehende
+   Live-Pipelines (06/14) bleiben unangetastet, geringeres Risiko für den produktiven Kernbetrieb.
+2. **Nav-Leiste wird jetzt zentralisiert** — gemeinsamer Sub-Workflow für die Navigation, analog
+   dem ALLRIS-Projekt. Einmaliger Umbau aller bestehenden Webhook-Seiten, danach pflegeleicht bei
+   jeder neuen Seite.
+3. **`probability_estimates` wird auf `simulation_trades` als zusätzliche Datenquelle erweitert**
+   — mehr Datenbasis sofort nutzbar statt weiter auf echte Paper-Trades zu warten.
+4. **News-Vorfilter-Verwerfungen werden vollständig persistiert** (nicht nur stichprobenartig) —
+   lückenlose Basis für die künftige False-Negative-Prüfung.
