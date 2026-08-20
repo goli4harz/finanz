@@ -1,0 +1,189 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden": {
+      "main": [
+        [
+          {
+            "node": "Baue Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "s5JW8R178DUD8NAN",
+  "meta": null,
+  "name": "Regelnuebersicht",
+  "nodes": [
+    {
+      "id": "rg-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "regeln",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "rg-get-webhook-id"
+    },
+    {
+      "id": "rg-nav",
+      "name": "Nav laden",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'regeln' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "rg-baue-query",
+      "name": "Baue Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Reine Regelnuebersicht, nur GET, rein lesend (HUMAN_IN_THE_LOOP_ARCHITECTURE.md Abschnitt 2:\n// \"Regeluebersicht ueber alle drei Versionierungsstile, rein lesend\"). Ein SELECT mit einer\n// JSON-Spalte je Kategorie - gleicher Trick wie die anderen Human-in-the-Loop-Seiten.\nconst sql = `SELECT\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT weight_key, weight_value, version, activated_at, activated_by, source_proposal_id\n       FROM trading.scoring_weights WHERE active = TRUE\n       ORDER BY weight_key\n     ) x) AS scoring_weights,\n\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT strategy, combined_regime, fit_multiplier, blocked, rule_version, notes\n       FROM trading.strategy_regime_matrix WHERE active = TRUE\n       ORDER BY strategy, combined_regime\n     ) x) AS regime_matrix,\n\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT strategy, parameter_key, parameter_value, version, updated_at\n       FROM trading.strategy_parameters\n       ORDER BY strategy, parameter_key\n     ) x) AS strategy_parameters,\n\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT strategy, aktiv, deactivated_at, deactivated_reason\n       FROM trading.strategy_status\n       ORDER BY strategy\n     ) x) AS strategy_status,\n\n    (SELECT json_agg(row_to_json(x)) FROM (\n       SELECT id, ticker, pattern, pattern_type, match_scope, reason, hit_count, last_hit_at, aktiv, created_at\n       FROM trading.news_match_exclusions\n       ORDER BY aktiv DESC, hit_count DESC NULLS LAST\n       LIMIT 40\n     ) x) AS news_ausschluesse;`;\n\nreturn [{ json: { sql } }];\n"
+      }
+    },
+    {
+      "id": "rg-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "rg-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nlet nav = {};\ntry { nav = $('Nav laden').first().json; } catch (e) { nav = {}; }\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:1100px;margin:0 auto;}'\n  + 'h1{font-size:22px;color:#fff;margin-bottom:4px;} h2{font-size:15px;color:#fff;margin-top:0;margin-bottom:8px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:20px;} .hint{color:#9aa0a6;font-size:12px;margin-top:8px;}'\n  + '.section{background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px 20px;margin-bottom:14px;overflow-x:auto;}'\n  + 'table{width:100%;border-collapse:collapse;font-size:12px;}'\n  + 'th{text-align:left;color:#9aa0a6;font-weight:600;font-size:10px;text-transform:uppercase;padding:4px 10px 6px 0;border-bottom:1px solid #2a2d34;}'\n  + 'td{padding:6px 10px 6px 0;border-bottom:1px solid #22242a;white-space:nowrap;}'\n  + 'tr:last-child td{border-bottom:none;}'\n  + '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}'\n  + '.badge.ok{background:#1c3a2a;color:#6bcf8e;} .badge.warn{background:#3a2c1c;color:#e0a854;}'\n  + '.badge.danger{background:#3a1c1c;color:#e0665a;} .badge.muted{background:#22242a;color:#7a7d84;}'\n  + '.section-empty{color:#7a7d84;font-size:12px;font-style:italic;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nfunction table(titel, hinweis, items, headers, rowFn) {\n  if (!items || items.length === 0) {\n    return '<div class=\"section\"><h2>' + esc(titel) + '</h2><div class=\"section-empty\">Keine Eintraege.</div></div>';\n  }\n  return '<div class=\"section\"><h2>' + esc(titel) + ' (' + items.length + ')</h2>'\n    + '<table><thead><tr>' + headers.map(h => '<th>' + esc(h) + '</th>').join('') + '</tr></thead>'\n    + '<tbody>' + items.map(rowFn).join('') + '</tbody></table>'\n    + (hinweis ? '<div class=\"hint\">' + hinweis + '</div>' : '')\n    + '</div>';\n}\n\n// News-Ausschlussregeln haben KEIN gespeichertes ACTIVE/REVIEW_REQUIRED/DISABLED-Statusmodell\n// (bestaetigt in HUMAN_IN_THE_LOOP_REVIEW.md, Fund 9/125) - hier nur ein rein clientseitig\n// abgeleitetes Label aus aktiv/hit_count/last_hit_at, keine gespeicherte Groesse.\nfunction abgeleiteterStatus(r) {\n  if (!r.aktiv) return { label: 'deaktiviert', klass: 'muted' };\n  if (!r.hit_count || r.hit_count === 0) return { label: 'ungenutzt', klass: 'warn' };\n  return { label: 'aktiv genutzt', klass: 'ok' };\n}\n\nconst scoringHtml = table('Scoring-Gewichte (aktiv)',\n  'Versionierung: trading.scoring_weights.active (genau eine aktive Zeile je weight_key). Freigabe ausschliesslich ueber Lernvorschlag-Freigabe (Workflow 12).',\n  row.scoring_weights, ['Key', 'Wert', 'Version', 'Aktiviert am', 'Von'],\n  w => '<tr><td>' + esc(w.weight_key) + '</td><td>' + esc(w.weight_value) + '</td><td>' + esc(w.version) + '</td><td>' + fmtDate(w.activated_at) + '</td><td>' + esc(w.activated_by || '-') + '</td></tr>'\n);\n\nconst regimeHtml = table('Strategie-Regime-Matrix (aktiv)',\n  'Versionierung: trading.strategy_regime_matrix.active (sql/067). fit_multiplier skaliert die Eignung (1=voll geeignet, 0=blockiert).',\n  row.regime_matrix, ['Strategie', 'Regime', 'Eignung', 'Blockiert', 'Version', 'Notiz'],\n  r => '<tr><td>' + esc(r.strategy) + '</td><td>' + esc(r.combined_regime) + '</td><td>' + esc(r.fit_multiplier) + '</td>'\n    + '<td>' + (r.blocked ? '<span class=\"badge danger\">ja</span>' : '<span class=\"badge ok\">nein</span>') + '</td>'\n    + '<td>' + esc(r.rule_version) + '</td><td>' + esc(r.notes || '-') + '</td></tr>'\n);\n\nconst paramsHtml = table('Strategie-Parameter',\n  'Ueberschreibbar in-place (kein Versions-Verlauf), version-Spalte wird bei Freigabe erhoeht. Quelle: Lernvorschlagstyp time_stop_change/Multiplikator-Anpassung ueber Workflow 12.',\n  row.strategy_parameters, ['Strategie', 'Parameter', 'Wert', 'Version', 'Geaendert am'],\n  p => '<tr><td>' + esc(p.strategy) + '</td><td>' + esc(p.parameter_key) + '</td><td>' + esc(p.parameter_value) + '</td><td>' + esc(p.version) + '</td><td>' + fmtDate(p.updated_at) + '</td></tr>'\n);\n\nconst statusHtml = table('Strategie-Status',\n  'Einzige Stelle, um eine ganze Strategiefamilie global zu deaktivieren (Lernvorschlagstyp strategy_deactivation).',\n  row.strategy_status, ['Strategie', 'Aktiv', 'Deaktiviert am', 'Grund'],\n  s => '<tr><td>' + esc(s.strategy) + '</td><td>' + (s.aktiv ? '<span class=\"badge ok\">aktiv</span>' : '<span class=\"badge danger\">deaktiviert</span>') + '</td>'\n    + '<td>' + fmtDate(s.deactivated_at) + '</td><td>' + esc(s.deactivated_reason || '-') + '</td></tr>'\n);\n\nconst newsHtml = table('News-Ausschlussregeln (False-Positive-Filter, Top 40)',\n  'Status-Spalte ist ABGELEITET (aus aktiv/hit_count), nicht gespeichert - es gibt noch kein ACTIVE/REVIEW_REQUIRED/DISABLED-Feld in der Datenbank. Aenderungen ueber Workflow 16c/16d, nie automatisch.',\n  row.news_ausschluesse, ['Ticker', 'Pattern', 'Typ', 'Treffer', 'Letzter Treffer', 'Status'],\n  r => {\n    const s = abgeleiteterStatus(r);\n    return '<tr><td>' + esc(r.ticker) + '</td><td>' + esc(r.pattern) + '</td><td>' + esc(r.pattern_type) + '</td>'\n      + '<td>' + esc(r.hit_count ?? 0) + '</td><td>' + fmtDate(r.last_hit_at) + '</td>'\n      + '<td><span class=\"badge ' + s.klass + '\">' + s.label + '</span></td></tr>';\n  }\n);\n\nconst now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\nconst html = pageWrap('Regeln', ''\n  + '<h1>Regeln</h1>'\n  + '<div class=\"meta\">Stand: ' + now + ' &middot; Regeluebersicht ueber alle Versionierungsstile - rein lesend, jede Aenderung laeuft weiterhin ueber Vorschlag &rarr; Pruefen &rarr; Simulieren &rarr; OOS &rarr; Freigeben &rarr; Aktiv (Workflow 12), nie hier direkt.</div>'\n  + scoringHtml + regimeHtml + paramsHtml + statusHtml + newsHtml\n);\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "rg-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "d6fc820b-812b-4cf3-9ef1-c56fa82ade65"
+}
