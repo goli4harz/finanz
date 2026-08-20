@@ -1,0 +1,371 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (GET)": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Entscheidung)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (POST)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (POST)": {
+      "main": [
+        [
+          {
+            "node": "POST: Baue Load-Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query (Liste/Detail)": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Baue Load-Query": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung laden (fuer Entscheidung)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlung laden (fuer Entscheidung)": {
+      "main": [
+        [
+          {
+            "node": "POST: Entscheidung normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Entscheidung normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "xaq19lBeeWnjuvKW",
+  "meta": null,
+  "name": "Trading-Entscheidungszentrale",
+  "nodes": [
+    {
+      "id": "hh-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "heute-handeln",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "hh-get-webhook-id"
+    },
+    {
+      "id": "hh-webhook-post",
+      "name": "Webhook POST (Entscheidung)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        300
+      ],
+      "parameters": {
+        "path": "trade-entscheidung",
+        "httpMethod": "POST",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "hh-post-webhook-id"
+    },
+    {
+      "id": "hh-nav-get",
+      "name": "Nav laden (GET)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'heute-handeln' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "hh-nav-post",
+      "name": "Nav laden (POST)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'heute-handeln' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "hh-baue-query",
+      "name": "Baue Query (Liste/Detail)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Ermittelt Modus (Liste/Detail) und baut die passende Ladequery. Wird sowohl direkt nach dem\n// GET-Webhook als auch nach dem POST-Entscheidungs-Schreibvorgang durchlaufen (POST faellt in\n// denselben Anzeige-Pfad wie GET, identisches Muster zu Workflow 12).\n// $json ist hier \"Nav laden (GET)\" bzw. \"Nav laden (POST-Fallthrough)\" (Nav-Call jetzt INLINE\n// vor diesem Node, nicht mehr parallel - vermeidet eine n8n-Ausfuehrungsreihenfolge-Race, bei\n// der \"Baue HTML\" den parallelen Nav-Zweig manchmal vor dessen Abschluss per Namens-Lookup\n// erreichte). Trigger-Daten deshalb explizit per Namens-Lookup statt aus $json.\n// WICHTIG: \"POST: SQL ausfuehren\" (Postgres-Node) selbst NICHT referenzieren - der ersetzt\n// $json durch das rohe Query-Ergebnis (z.B. {\"?column?\":1} bei einem SELECT 1-Fallback) und\n// wuerde mode/recommendation_id klammheimlich verlieren. Der Code-Node DAVOR haelt sie noch.\nlet fromPost = null;\ntry { fromPost = $('POST: Entscheidung normalisieren + SQL bauen').first().json; } catch (e) { fromPost = null; }\nconst isFromPost = fromPost && fromPost.mode === 'detail_nach_post' && fromPost.recommendation_id !== undefined;\n\nlet id;\nif (isFromPost) {\n  id = fromPost.recommendation_id !== null && fromPost.recommendation_id !== undefined ? Number(fromPost.recommendation_id) : null;\n} else {\n  const trigger = $('Webhook GET (Ansicht)').first().json;\n  id = (trigger.query && trigger.query.id) ? Number(trigger.query.id) : null;\n}\n\nlet sql;\nif (id) {\n  sql = `SELECT r.id, r.ticker, r.name, r.sektor, r.richtung, r.strategy, r.status,\n      r.entry_kurs, r.entry_zone_low, r.entry_zone_high, r.entry_grund, r.trade_thesis,\n      r.stop_price, r.target_price, r.reward_risk_ratio,\n      r.risk_amount, r.theoretical_quantity, r.position_value, r.position_value_pct,\n      r.max_planned_loss, r.estimated_fees, r.estimated_slippage,\n      r.expected_holding_days, r.thesis_expires_at,\n      r.opportunity_score, r.risk_score, r.evidence_confidence,\n      r.market_regime, r.combined_regime, r.market_regime_region,\n      r.decision_blockers, r.news_catalyst_json, r.fundamental_quality, r.fundamental_momentum,\n      r.valuation_context, r.fundamental_data_quality,\n      r.hebelprodukt_typ, r.hebel_spanne, r.basispreis_hebel_3, r.basispreis_hebel_4,\n      r.portfolio_risk_before, r.portfolio_risk_after, r.portfolio_blocked_reason,\n      r.configuration_snapshot_json, r.risk_model_version, r.thesis_rule_version,\n      r.created_at,\n      rd.id AS decision_id, rd.entscheidung AS aktuelle_entscheidung, rd.freitext AS aktuelle_freitext,\n      rd.ablehnungsgruende_json AS aktuelle_gruende, rd.meine_werte_json AS aktuelle_werte,\n      rd.version AS decision_version, rd.entschieden_am,\n      pt.trade_id AS paper_trade_id, pt.status AS paper_trade_status,\n      pt.simulated_entry_price, pt.exit_price, pt.net_pnl, pt.realized_r_multiple,\n      pe.sample_size AS vergleich_sample_size, pe.p_win AS vergleich_p_win,\n      pe.expected_value_r AS vergleich_expected_value_r, pe.probability_status AS vergleich_status,\n      pe.data_source AS vergleich_quelle\n    FROM trading.recommendations r\n    LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n    LEFT JOIN trading.paper_trades pt ON pt.recommendation_id = r.id\n    LEFT JOIN trading.probability_estimates pe\n      ON pe.segment_strategy = r.strategy\n      AND pe.segment_direction = r.richtung\n      AND pe.segment_market_regime = COALESCE(r.combined_regime, r.market_regime)\n      AND pe.segment_risk_bucket = (CASE WHEN r.risk_score < 0.33 THEN 'niedrig' WHEN r.risk_score < 0.67 THEN 'mittel' ELSE 'hoch' END)\n      AND pe.segment_evidence_bucket = (CASE WHEN r.evidence_confidence < 0.33 THEN 'niedrig' WHEN r.evidence_confidence < 0.67 THEN 'mittel' ELSE 'hoch' END)\n      AND pe.probability_status = 'estimated'\n    WHERE r.id = ${id};`;\n} else {\n  // Liste: nur offene Empfehlungen ohne finale Entscheidung (kein 'angenommen'/'abgelehnt'),\n  // sortiert nach Opportunity-Score, hart auf 5 begrenzt (Auftragsvorgabe \"0 bis 5 qualitativ\n  // gute Kandidaten\", keine 30-Aktien-Liste).\n  sql = `SELECT r.id, r.ticker, r.name, r.richtung, r.strategy,\n      r.opportunity_score, r.risk_score, r.evidence_confidence, r.reward_risk_ratio,\n      r.entry_kurs, r.stop_price, r.target_price, r.max_planned_loss,\n      rd.entscheidung AS aktuelle_entscheidung\n    FROM trading.recommendations r\n    LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n    WHERE r.status = 'offen'\n      AND (rd.id IS NULL OR rd.entscheidung IN ('beobachten', 'spaeter'))\n    ORDER BY r.opportunity_score DESC NULLS LAST\n    LIMIT 5;`;\n}\n\nreturn [{ json: { sql, mode: id ? 'detail' : 'liste', id } }];\n"
+      }
+    },
+    {
+      "id": "hh-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "hh-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(r => r && r.id !== undefined);\nconst ctx = $('Baue Query (Liste/Detail)').first().json;\nlet nav = {};\ntry { nav = $('Nav laden (GET)').first().json; } catch (e1) {\n  try { nav = $('Nav laden (POST)').first().json; } catch (e2) { nav = {}; }\n}\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtNum(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits); }\nfunction fmtPct(v, digits) { return (v === null || v === undefined) ? '-' : Number(v).toFixed(digits === undefined ? 2 : digits) + '%'; }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction konfidenzklasse(v) {\n  if (v === null || v === undefined) return { label: 'unbekannt', klass: 'muted' };\n  const n = Number(v);\n  if (n >= 0.67) return { label: 'hoch', klass: 'ok' };\n  if (n >= 0.33) return { label: 'mittel', klass: 'warn' };\n  return { label: 'niedrig', klass: 'danger' };\n}\nconst RICHTUNG_LABEL = { kauf: 'LONG', verkauf: 'SHORT' };\nconst ENTSCHEIDUNG_LABEL = {\n  angenommen: 'Angenommen (Paper Trade)', abgelehnt: 'Abgelehnt', beobachten: 'Beobachten', spaeter: 'Später entscheiden',\n};\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:1000px;margin:0 auto;}'\n  + 'h1{font-size:22px;color:#fff;margin-bottom:4px;} h2{font-size:15px;color:#fff;margin-top:24px;margin-bottom:8px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:16px;} .hint{color:#9aa0a6;font-size:12px;}'\n  + '.card{background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:16px 20px;margin-bottom:14px;}'\n  + '.card h3{margin:0 0 6px 0;font-size:16px;color:#fff;} .card a{color:#8ab4f8;text-decoration:none;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;}'\n  + '.kpi{background:#1a1c20;padding:10px 16px;border-radius:6px;min-width:110px;}'\n  + '.kpi .label{font-size:10px;color:#999;text-transform:uppercase;} .kpi .value{font-size:18px;color:#fff;margin-top:2px;}'\n  + '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}'\n  + '.badge.ok{background:#1c3a2a;color:#6bcf8e;} .badge.warn{background:#3a2c1c;color:#e0a854;}'\n  + '.badge.danger{background:#3a1c1c;color:#e0665a;} .badge.muted{background:#22242a;color:#7a7d84;}'\n  + 'button{background:#5b8def;border:none;color:#0f1115;font-weight:600;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;margin:4px 6px 4px 0;}'\n  + 'button:hover{background:#7ba3f2;} button.danger{background:#e0665a;color:#fff;} button.danger:hover{background:#ef8177;}'\n  + 'button.secondary{background:#2a2d34;color:#e6e6e6;} button.secondary:hover{background:#3a3d44;}'\n  + 'textarea,input{background:#0f1115;border:1px solid #2a2d34;color:#e6e6e6;border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box;}'\n  + 'textarea{width:100%;min-height:60px;margin-top:6px;} label.checkbox{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#9aa0a6;margin-right:12px;margin-bottom:4px;}'\n  + '.werte-anpassen{background:#1a1c20;border:1px solid #2a2d34;border-radius:6px;padding:12px;margin-top:10px;}'\n  + '.werte-anpassen .feld{display:inline-block;margin-right:14px;margin-bottom:8px;} .werte-anpassen label{display:block;font-size:11px;color:#9aa0a6;margin-bottom:2px;}'\n  + '.pro{color:#6bcf8e;} .contra{color:#e0665a;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nlet html;\n\nif (ctx.mode === 'liste') {\n  const now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n  if (rows.length === 0) {\n    html = pageWrap('Heute Handeln', ''\n      + '<h1>Heute Handeln</h1>'\n      + '<div class=\"meta\">Stand: ' + now + '</div>'\n      + '<div class=\"card\" style=\"text-align:center;padding:40px 20px;\">'\n      + '<h3 style=\"font-size:24px;\">HEUTE KEIN TRADE</h3>'\n      + '<div class=\"hint\">Kein Kandidat erfüllt aktuell die Qualitätsschwelle. Das ist ein legitimes Ergebnis, kein Fehler.</div>'\n      + '</div>');\n  } else {\n    const cards = rows.map(r => {\n      const konf = konfidenzklasse(r.evidence_confidence);\n      const richtungLabel = RICHTUNG_LABEL[r.richtung] || esc(r.richtung);\n      return '<div class=\"card\">'\n        + '<h3><a href=\"/webhook/heute-handeln?id=' + esc(r.id) + '\">' + esc(r.ticker) + ' - ' + richtungLabel + '</a></h3>'\n        + '<div class=\"hint\">' + esc(r.strategy || '') + (r.aktuelle_entscheidung ? ' &middot; bisher: ' + esc(ENTSCHEIDUNG_LABEL[r.aktuelle_entscheidung] || r.aktuelle_entscheidung) : '') + '</div>'\n        + '<div class=\"kpi-row\">'\n        + '<div class=\"kpi\"><div class=\"label\">Entry</div><div class=\"value\">' + fmtNum(r.entry_kurs) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Stop</div><div class=\"value\">' + fmtNum(r.stop_price) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Target</div><div class=\"value\">' + fmtNum(r.target_price) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">CRV</div><div class=\"value\">' + fmtNum(r.reward_risk_ratio) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Max. Verlust</div><div class=\"value\">' + fmtNum(r.max_planned_loss) + ' EUR</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Konfidenz</div><div class=\"value\"><span class=\"badge ' + konf.klass + '\">' + konf.label + '</span></div></div>'\n        + '</div>'\n        + '<a href=\"/webhook/heute-handeln?id=' + esc(r.id) + '\">Vollständiges Entscheidungssheet ansehen &rarr;</a>'\n        + '</div>';\n    }).join('');\n    html = pageWrap('Heute Handeln', ''\n      + '<h1>Heute Handeln</h1>'\n      + '<div class=\"meta\">Stand: ' + now + ' &middot; ' + rows.length + ' Kandidat(en)</div>'\n      + cards);\n  }\n} else {\n  const r = rows[0];\n  if (!r) {\n    html = pageWrap('Heute Handeln', '<h1>Heute Handeln</h1><div class=\"card\">Empfehlung nicht gefunden. <a href=\"/webhook/heute-handeln\">Zurück zur Liste</a></div>');\n  } else {\n    const richtungLabel = RICHTUNG_LABEL[r.richtung] || esc(r.richtung);\n    const opp = konfidenzklasse(r.opportunity_score);\n    const risk = konfidenzklasse(r.risk_score);\n    const evid = konfidenzklasse(r.evidence_confidence);\n\n    // Gegenargumente aus decision_blockers (strukturierte Hinweise, siehe docs/HARTE_VETOS.md-Format)\n    let blockers = [];\n    try { blockers = Array.isArray(r.decision_blockers) ? r.decision_blockers : JSON.parse(r.decision_blockers || '[]'); } catch (e) { blockers = []; }\n    const gegenargumenteHtml = blockers.length\n      ? '<ul>' + blockers.map(b => '<li class=\"contra\">' + esc(b.message || b.code || JSON.stringify(b)) + '</li>').join('') + '</ul>'\n      : '<div class=\"hint\">Keine strukturierten Gegenargumente hinterlegt.</div>';\n\n    // Historische Vergleichsfaelle - ehrlich \"keine Stichprobe\" statt Scheingenauigkeit\n    let vergleichHtml;\n    if (r.vergleich_status === 'estimated' && r.vergleich_sample_size) {\n      vergleichHtml = '<div class=\"kpi-row\">'\n        + '<div class=\"kpi\"><div class=\"label\">Fallzahl</div><div class=\"value\">' + esc(r.vergleich_sample_size) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Trefferquote</div><div class=\"value\">' + fmtPct((r.vergleich_p_win || 0) * 100) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Erwartungswert (R)</div><div class=\"value\">' + fmtNum(r.vergleich_expected_value_r) + '</div></div>'\n        + '</div><div class=\"hint\">Basis: ' + (r.vergleich_quelle === 'simulation_trades' ? 'Simulationslaeufe' : 'echte Paper Trades') + '.</div>';\n    } else {\n      vergleichHtml = '<div class=\"hint\">Noch keine ausreichende historische Stichprobe fuer dieses Segment (Strategie/Richtung/Regime/Risiko/Evidenz-Klasse). Keine Schaetzung statt einer erfundenen Zahl.</div>';\n    }\n\n    // Portfolio-Auswirkung\n    const portfolioHtml = r.portfolio_risk_before !== null\n      ? '<div class=\"hint\">Gesamtrisiko vorher: ' + fmtPct(r.portfolio_risk_before) + ' &rarr; nachher: ' + fmtPct(r.portfolio_risk_after) + '</div>'\n        + (r.portfolio_blocked_reason ? '<div class=\"contra\">Hinweis: ' + esc(r.portfolio_blocked_reason) + '</div>' : '')\n      : '<div class=\"hint\">Noch keine Portfolio-Pruefung durchlaufen.</div>';\n\n    const bereitsEntschieden = r.aktuelle_entscheidung\n      ? '<div class=\"card\" style=\"border-color:#5b8def;\"><strong>Deine bisherige Entscheidung:</strong> ' + esc(ENTSCHEIDUNG_LABEL[r.aktuelle_entscheidung] || r.aktuelle_entscheidung)\n        + (r.entschieden_am ? ' am ' + fmtDate(r.entschieden_am) : '')\n        + (r.aktuelle_freitext ? '<div class=\"hint\">\"' + esc(r.aktuelle_freitext) + '\"</div>' : '')\n        + '</div>'\n      : '';\n\n    const hebelHtml = r.hebelprodukt_typ\n      ? '<div class=\"kpi-row\">'\n        + '<div class=\"kpi\"><div class=\"label\">Produktidee</div><div class=\"value\" style=\"font-size:13px;\">' + esc(r.hebelprodukt_typ) + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Zielhebel</div><div class=\"value\">' + esc(r.hebel_spanne || '-') + '</div></div>'\n        + '</div>'\n      : '<div class=\"hint\">Keine Hebelprodukt-Empfehlung hinterlegt.</div>';\n\n    const version = r.decision_version !== null && r.decision_version !== undefined ? r.decision_version : '';\n    const ABLEHNUNGSGRUENDE = [\n      ['risiko_zu_hoch', 'Risiko zu hoch'], ['stop_unlogisch', 'Stop unlogisch'], ['einstieg_gefaellt_nicht', 'Einstieg gefällt nicht'],\n      ['news_nicht_ueberzeugend', 'News nicht überzeugend'], ['technik_nicht_ueberzeugend', 'Technik nicht überzeugend'],\n      ['portfolio_exponiert', 'Portfolio bereits zu stark exponiert'], ['hebel_zu_hoch', 'Hebel zu hoch'],\n      ['ereignisrisiko', 'Ereignisrisiko zu hoch'], ['andere_einschaetzung', 'Ich sehe die Situation anders'], ['sonstiges', 'Sonstiger Grund'],\n    ];\n\n    function actionForm(formId, action, buttonLabel, buttonClass, extraFields) {\n      return '<form id=\"' + formId + '\" method=\"POST\" action=\"/webhook/trade-entscheidung\">'\n        + '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">'\n        + '<input type=\"hidden\" name=\"action\" value=\"' + action + '\">'\n        + '<input type=\"hidden\" name=\"version\" value=\"' + esc(version) + '\">'\n        + (extraFields || '')\n        + '</form>'\n        + '<button type=\"submit\" form=\"' + formId + '\" class=\"' + (buttonClass || '') + '\">' + buttonLabel + '</button>';\n    }\n\n    const ablehnenGruendeHtml = ABLEHNUNGSGRUENDE.map(([code, label]) =>\n      '<label class=\"checkbox\"><input type=\"checkbox\" name=\"ablehnungsgruende\" value=\"' + code + '\" form=\"form-abgelehnt\"> ' + esc(label) + '</label>'\n    ).join('');\n\n    html = pageWrap(r.ticker + ' - Entscheidungssheet', ''\n      + '<a href=\"/webhook/heute-handeln\" class=\"hint\">&larr; Zurück zur Liste</a>'\n      + '<h1>' + esc(r.ticker) + ' - ' + richtungLabel + '</h1>'\n      + '<div class=\"meta\">' + esc(r.name || '') + ' &middot; Strategie: ' + esc(r.strategy || '-') + ' &middot; erzeugt: ' + fmtDate(r.created_at) + '</div>'\n      + bereitsEntschieden\n\n      + '<h2>Setup</h2>'\n      + '<div class=\"kpi-row\">'\n      + '<div class=\"kpi\"><div class=\"label\">Einstiegszone</div><div class=\"value\">' + fmtNum(r.entry_zone_low) + ' - ' + fmtNum(r.entry_zone_high) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Stop</div><div class=\"value\">' + fmtNum(r.stop_price) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Target</div><div class=\"value\">' + fmtNum(r.target_price) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">CRV</div><div class=\"value\">' + fmtNum(r.reward_risk_ratio) + '</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Erwartete Haltedauer</div><div class=\"value\">' + (r.expected_holding_days ? r.expected_holding_days + ' Tage' : '-') + '</div></div>'\n      + '</div>'\n      + (r.trade_thesis ? '<div class=\"hint\">These: ' + esc(r.trade_thesis) + '</div>' : '')\n      + (r.entry_grund ? '<div class=\"hint\">Entry-Begründung: ' + esc(r.entry_grund) + '</div>' : '')\n\n      + '<h2>Produktidee</h2>' + hebelHtml\n\n      + '<h2>Position &amp; Risiko</h2>'\n      + '<div class=\"kpi-row\">'\n      + '<div class=\"kpi\"><div class=\"label\">Positionsvorschlag</div><div class=\"value\">' + fmtNum(r.theoretical_quantity, 0) + ' Stück</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Positionswert</div><div class=\"value\">' + fmtNum(r.position_value) + ' EUR</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Max. Verlust</div><div class=\"value\">' + fmtNum(r.max_planned_loss) + ' EUR</div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Portfolioanteil</div><div class=\"value\">' + fmtPct(r.position_value_pct) + '</div></div>'\n      + '</div>'\n\n      + '<h2>Portfolio-Auswirkung</h2>' + portfolioHtml\n\n      + '<h2>Warum? (Konfidenzklassen statt Scheingenauigkeit)</h2>'\n      + '<div class=\"kpi-row\">'\n      + '<div class=\"kpi\"><div class=\"label\">Opportunity</div><div class=\"value\"><span class=\"badge ' + opp.klass + '\">' + opp.label + '</span></div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Risiko</div><div class=\"value\"><span class=\"badge ' + risk.klass + '\">' + risk.label + '</span></div></div>'\n      + '<div class=\"kpi\"><div class=\"label\">Evidenz-Konfidenz</div><div class=\"value\"><span class=\"badge ' + evid.klass + '\">' + evid.label + '</span></div></div>'\n      + '</div>'\n      + '<div class=\"hint\">Marktregime: ' + esc(r.combined_regime || r.market_regime || 'unbekannt') + '</div>'\n\n      + '<h2>Gegenargumente</h2>' + gegenargumenteHtml\n\n      + '<h2>Historische Vergleichsfälle</h2>' + vergleichHtml\n\n      + '<h2>Entscheidung</h2>'\n      + actionForm('form-angenommen', 'angenommen', 'PAPER TRADE', '')\n      + actionForm('form-beobachten', 'beobachten', 'BEOBACHTEN', 'secondary')\n      + actionForm('form-spaeter', 'spaeter', 'SPÄTER ENTSCHEIDEN', 'secondary')\n      + '<button type=\"submit\" form=\"form-abgelehnt\" class=\"danger\">ABLEHNEN</button>'\n\n      + '<form id=\"form-abgelehnt\" method=\"POST\" action=\"/webhook/trade-entscheidung\">'\n      + '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">'\n      + '<input type=\"hidden\" name=\"action\" value=\"abgelehnt\">'\n      + '<input type=\"hidden\" name=\"version\" value=\"' + esc(version) + '\">'\n      + '<div class=\"werte-anpassen\"><div class=\"hint\">Ablehnungsgründe (optional, Mehrfachauswahl):</div>' + ablehnenGruendeHtml\n      + '<textarea name=\"freitext\" placeholder=\"Freitext (optional)\" form=\"form-abgelehnt\"></textarea></div>'\n      + '</form>'\n\n      + '<h2>Werte anpassen</h2>'\n      + '<div class=\"werte-anpassen\">'\n      + '<form id=\"form-werte\" method=\"POST\" action=\"/webhook/trade-entscheidung\">'\n      + '<input type=\"hidden\" name=\"id\" value=\"' + esc(r.id) + '\">'\n      + '<input type=\"hidden\" name=\"action\" value=\"angenommen\">'\n      + '<input type=\"hidden\" name=\"version\" value=\"' + esc(version) + '\">'\n      + '<div class=\"feld\"><label>Entry-Zone von</label><input name=\"neu_entry_low\" placeholder=\"' + fmtNum(r.entry_zone_low) + '\" form=\"form-werte\"></div>'\n      + '<div class=\"feld\"><label>Entry-Zone bis</label><input name=\"neu_entry_high\" placeholder=\"' + fmtNum(r.entry_zone_high) + '\" form=\"form-werte\"></div>'\n      + '<div class=\"feld\"><label>Stop</label><input name=\"neu_stop\" placeholder=\"' + fmtNum(r.stop_price) + '\" form=\"form-werte\"></div>'\n      + '<div class=\"feld\"><label>Target</label><input name=\"neu_target\" placeholder=\"' + fmtNum(r.target_price) + '\" form=\"form-werte\"></div>'\n      + '<div class=\"feld\"><label>Hebel</label><input name=\"neu_hebel\" placeholder=\"-\" form=\"form-werte\"></div>'\n      + '<div class=\"feld\"><label>Stückzahl</label><input name=\"neu_quantity\" placeholder=\"' + fmtNum(r.theoretical_quantity, 0) + '\" form=\"form-werte\"></div>'\n      + '<textarea name=\"freitext\" placeholder=\"Begründung der Änderung (optional)\" form=\"form-werte\"></textarea>'\n      + '<div style=\"margin-top:8px;\"><button type=\"submit\" form=\"form-werte\">Angepasst als Paper Trade annehmen</button></div>'\n      + '</form>'\n      + '<div class=\"hint\">Leere Felder = Systemvorschlag unverändert übernommen. Der ursprüngliche Vorschlag bleibt in jedem Fall unverändert gespeichert.</div>'\n      + '</div>'\n    );\n  }\n}\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "hh-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "hh-post-buildload",
+      "name": "POST: Baue Load-Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }\n\n// FIX-Muster wie Workflow 12 (Fehleranalyse A5): ab hier vertraut der Workflow dem Browser nur\n// fuer id/action/freitext/ablehnungsgruende/meine_werte/version - alle inhaltlichen\n// Empfehlungsfelder (entry/stop/target/...) werden im naechsten Schritt frisch aus der DB\n// geladen, nie aus dem POST-Body uebernommen.\n// $json ist hier \"Nav laden (POST)\" (Nav-Call jetzt INLINE vor diesem Node statt parallel -\n// vermeidet eine n8n-Ausfuehrungsreihenfolge-Race, siehe \"Baue Query\"-Kommentar) - Trigger-Daten\n// deshalb per Namens-Lookup statt aus $json.\nconst trigger = $('Webhook POST (Entscheidung)').first().json;\nconst j = trigger.body || trigger;\nconst action = String(j.action || '').trim();\nconst id = pgNum(j.id);\nconst freitext = String(j.freitext || '').trim();\nconst ablehnungsgruende = Array.isArray(j.ablehnungsgruende)\n  ? j.ablehnungsgruende\n  : (j.ablehnungsgruende ? [j.ablehnungsgruende] : []);\nconst submittedVersion = pgNum(j.version);\n\n// Werte-Anpassung (Modul 2 \"meine Aenderung\") - nur uebernehmen, wenn tatsaechlich vom Nutzer\n// befuellt (leere Felder = unveraendert). Bleibt separat von system_werte_json, siehe naechster\n// Node.\nconst meineWerteRaw = {\n  entry_zone_low: pgNum(j.neu_entry_low),\n  entry_zone_high: pgNum(j.neu_entry_high),\n  stop_price: pgNum(j.neu_stop),\n  target_price: pgNum(j.neu_target),\n  hebel: pgNum(j.neu_hebel),\n  quantity: pgNum(j.neu_quantity),\n};\nconst meineWerte = {};\nfor (const [k, v] of Object.entries(meineWerteRaw)) if (v !== null) meineWerte[k] = v;\n\nreturn {\n  json: {\n    action, id, freitext, ablehnungsgruende, meine_werte: meineWerte, submittedVersion,\n    load_sql: id !== null\n      ? `SELECT r.id, r.status, r.entry_kurs, r.entry_zone_low, r.entry_zone_high, r.stop_price,\n           r.target_price, r.reward_risk_ratio, r.theoretical_quantity, r.risk_amount, r.hebel_spanne,\n           rd.version AS decision_version\n         FROM trading.recommendations r\n         LEFT JOIN trading.recommendation_decisions rd ON rd.recommendation_id = r.id AND rd.status = 'aktuell'\n         WHERE r.id = ${id};`\n      : `SELECT NULL::bigint AS id WHERE FALSE;`\n  }\n};\n"
+      }
+    },
+    {
+      "id": "hh-db-empfehlung-laden",
+      "name": "DB: Empfehlung laden (fuer Entscheidung)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.load_sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "hh-post-normalize",
+      "name": "POST: Entscheidung normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgJsonb(v) { return (v === null || v === undefined) ? \"'{}'::jsonb\" : `'` + JSON.stringify(v).replace(/'/g, `''`) + `'::jsonb`; }\n\n// Analog Workflow 12: loaded = frisch aus der DB (voriger Node \"DB: Empfehlung laden fuer\n// Entscheidung\"), ctx = die aus dem Body vertrauten Steuerfelder (action/freitext/gruende/\n// meine_werte/version). Inhaltliche Werte kommen AUSSCHLIESSLICH aus loaded.\nconst loaded = $json;\nconst ctx = $('POST: Baue Load-Query').item.json;\nconst action = ctx.action;\nconst id = (loaded && loaded.id !== undefined && loaded.id !== null) ? Number(loaded.id) : null;\n\nconst VALID_ACTIONS = new Set(['angenommen', 'abgelehnt', 'beobachten', 'spaeter']);\n\n// Optimistisches Locking (wie Workflow 12, Fehleranalyse A10): submittedVersion ist ein reines\n// Konkurrenz-Token gegen die aktuelle Entscheidungsversion (NULL, falls noch keine Entscheidung\n// existiert) - kein Inhaltswert.\nconst currentVersion = loaded && loaded.decision_version !== undefined ? loaded.decision_version : null;\nconst versionMismatch = ctx.submittedVersion !== null && ctx.submittedVersion !== undefined\n  && Number(ctx.submittedVersion) !== (currentVersion === null ? 0 : Number(currentVersion));\n\nlet sql;\nif (id === null || !VALID_ACTIONS.has(action) || !loaded || loaded.status !== 'offen' || versionMismatch) {\n  // Kein passende offene Empfehlung gefunden, ungueltige Aktion, oder zwischenzeitlich bereits\n  // anders entschieden (versionMismatch) - egal was der Body behauptet.\n  sql = 'SELECT 1;';\n} else {\n  // EINGEFRORENER Snapshot des Systemvorschlags zum Entscheidungszeitpunkt - wird nach diesem\n  // INSERT nie wieder angefasst (siehe HUMAN_IN_THE_LOOP_ARCHITECTURE.md Abschnitt 3.1/7).\n  const systemWerte = {\n    entry_kurs: loaded.entry_kurs, entry_zone_low: loaded.entry_zone_low, entry_zone_high: loaded.entry_zone_high,\n    stop_price: loaded.stop_price, target_price: loaded.target_price, reward_risk_ratio: loaded.reward_risk_ratio,\n    theoretical_quantity: loaded.theoretical_quantity, risk_amount: loaded.risk_amount, hebel_spanne: loaded.hebel_spanne,\n  };\n  const meineWerteJson = ctx.meine_werte && Object.keys(ctx.meine_werte).length > 0 ? ctx.meine_werte : null;\n\n  // Wie trading.strategy_regime_matrix (sql/067): alte \"aktuelle\" Zeile wird nie ueberschrieben,\n  // sondern auf 'ueberholt' gesetzt, neue Zeile eingefuegt - volle Entscheidungshistorie bleibt\n  // erhalten, auch wenn der Nutzer seine Meinung mehrfach aendert.\n  sql = `BEGIN;\n    UPDATE trading.recommendation_decisions SET status = 'ueberholt'\n      WHERE recommendation_id = ${id} AND status = 'aktuell';\n    INSERT INTO trading.recommendation_decisions\n      (recommendation_id, entscheidung, ablehnungsgruende_json, freitext, system_werte_json, meine_werte_json, entschieden_von)\n      VALUES (${id}, ${pgStr(action)}, ${pgJsonb(ctx.ablehnungsgruende)}, ${pgStr(ctx.freitext || null)}, ${pgJsonb(systemWerte)}, ${meineWerteJson ? pgJsonb(meineWerteJson) : 'NULL'}, 'nutzer');\n    COMMIT;`;\n}\n\nreturn [{ json: { sql, mode: 'detail_nach_post', recommendation_id: id } }];\n"
+      }
+    },
+    {
+      "id": "hh-post-exec",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -700,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "4648d861-6afb-44a1-a427-92cd5cd44f10"
+}
