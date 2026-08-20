@@ -31,3 +31,7 @@ COMMENT ON COLUMN trading.strategy_regime_matrix.active IS
   'Ersetzt rule_version als "aktuelle Version"-Kriterium fuer Live-Lesezugriffe (WF06, WF17-Snapshot); '
   'rule_version bleibt als Audit-Label pro Zeile erhalten, wird bei jeder Freigabe ueber Workflow 12 '
   '(regime_restriction) auf einen neuen, eindeutigen Wert gesetzt statt in-place ueberschrieben.';
+
+INSERT INTO trading.schema_migrations (version, description)
+VALUES ('067', 'strategy_regime_matrix: active-Spalte ersetzt rule_version als Kriterium fuer die aktuell gueltige Zeile (Experimentierplattform Punkt 2)')
+ON CONFLICT (version) DO NOTHING;

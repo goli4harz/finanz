@@ -56,3 +56,7 @@ COMMENT ON COLUMN trading.market_context_history.revision_number IS 'Fortlaufend
 -- MUESSEN "AND valid_to IS NULL" ergaenzen, um weiterhin genau eine (die
 -- aktuelle) Zeile je Tag zu erhalten - im selben Zug bereits in allen drei
 -- lesenden Workflows nachgezogen (siehe Commit dieser Migration).
+
+INSERT INTO trading.schema_migrations (version, description)
+VALUES ('068', 'market_context_history: Point-in-Time-Revisionierung analog fundamentals_history/technical_signals_history (Experimentierplattform Punkt 4)')
+ON CONFLICT (version) DO NOTHING;

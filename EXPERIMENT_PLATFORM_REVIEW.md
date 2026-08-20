@@ -21,7 +21,12 @@ Workflow 17.
   (gleiches Muster wie `sql/022`/`sql/041`). Workflow 02b (Writer) schliesst jetzt die aktuelle
   Revision und legt eine neue an statt in-place zu überschreiben; Workflow 06/07/10 (Reader)
   lesen `AND valid_to IS NULL`.
-- [ ] Punkt 5 (Experiment-Register als View)
+- [x] Punkt 5 (Experiment-Register als View) — 2026-08-20 live umgesetzt: `sql/069` fügt
+  `trading.v_experiment_register` hinzu (ein `backtest_run` = eine Zeile, Lernvorschläge
+  0..n je Lauf als JSON-Array aggregiert, letztes `simulation_events`-Ereignis). Zusätzlich
+  `learning_rule_proposals.hypothesis` (TEXT, noch von keinem Workflow befüllt — Prompt-
+  Erweiterung der Lernagenten 09b/09c wäre ein separater, späterer Schritt). Kein Workflow
+  musste geändert werden (reine Lese-View über bestehende Daten).
 - [ ] Punkt 6 (Monitoring: Queue-Länge)
 - [ ] Punkt 7 (`BACKTESTING_UND_WALK_FORWARD.md` aktualisieren)
 
