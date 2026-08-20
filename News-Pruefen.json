@@ -1,0 +1,371 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook GET (Ansicht)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (GET)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (GET)": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Review)": {
+      "main": [
+        [
+          {
+            "node": "Nav laden (POST)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Nav laden (POST)": {
+      "main": [
+        [
+          {
+            "node": "POST: Baue Load-Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Query (Liste/Detail)": {
+      "main": [
+        [
+          {
+            "node": "DB: Ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue HTML": {
+      "main": [
+        [
+          {
+            "node": "Antwort mit HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Baue Load-Query": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden (fuer Review)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden (fuer Review)": {
+      "main": [
+        [
+          {
+            "node": "POST: Review normalisieren + SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: Review normalisieren + SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "POST: SQL ausfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST: SQL ausfuehren": {
+      "main": [
+        [
+          {
+            "node": "Baue Query (Liste/Detail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "WTTLt8aLvc6bfyyH",
+  "meta": null,
+  "name": "News-Pruefen",
+  "nodes": [
+    {
+      "id": "np-webhook-get",
+      "name": "Webhook GET (Ansicht)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        -100
+      ],
+      "parameters": {
+        "path": "news-pruefen",
+        "httpMethod": "GET",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "np-get-webhook-id"
+    },
+    {
+      "id": "np-webhook-post",
+      "name": "Webhook POST (Review)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1700,
+        300
+      ],
+      "parameters": {
+        "path": "news-review-abgeben",
+        "httpMethod": "POST",
+        "authentication": "none",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "np-post-webhook-id"
+    },
+    {
+      "id": "np-nav-get",
+      "name": "Nav laden (GET)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        -100
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'news-pruefen' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "np-nav-post",
+      "name": "Nav laden (POST)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -1500,
+        300
+      ],
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "gJfZXvTp8Wv9aApp",
+          "mode": "list",
+          "cachedResultName": "Finanz_Web_NavBar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "currentPage": "={{ 'news-pruefen' }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "np-baue-query",
+      "name": "Baue Query (Liste/Detail)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "// Gleiches Muster wie Paper-Trading-Review/Trading-Entscheidungszentrale: Nav-Aufruf INLINE vor\n// diesem Node, Trigger-Daten per Namens-Lookup, POST-Fallthrough referenziert den Code-Node VOR\n// dem Postgres-Node (nie den Postgres-Node selbst).\nlet fromPost = null;\ntry { fromPost = $('POST: Review normalisieren + SQL bauen').first().json; } catch (e) { fromPost = null; }\nconst isFromPost = fromPost && fromPost.mode === 'detail_nach_post' && fromPost.news_id !== undefined;\n\nlet newsId;\nif (isFromPost) {\n  newsId = fromPost.news_id;\n} else {\n  const trigger = $('Webhook GET (Ansicht)').first().json;\n  newsId = (trigger.query && trigger.query.id) ? Number(trigger.query.id) : null;\n}\n\nlet sql;\nif (newsId) {\n  sql = `SELECT ni.id, ni.title, ni.url, ni.source, ni.published_at, ni.status, ni.discarded_reason,\n      ni.article_text, ni.raw_content,\n      na.id AS assessment_id, na.relevant, na.wirkungsrichtung, na.wirkung_staerke, na.konfidenz,\n      na.relevance_confidence, na.betroffene_ticker_json, na.betroffene_sektoren_json,\n      na.ticker_begruendung, na.wirkungs_begruendung, na.news_kategorie, na.confirmation_status,\n      nrn.urteil AS bisheriges_urteil, nrn.kommentar AS bisheriger_kommentar, nrn.reviewed_at AS notiz_reviewed_at,\n      nff.id AS false_negative_flag_id, nff.status AS false_negative_status, nff.grund AS false_negative_grund\n    FROM trading.news_items ni\n    LEFT JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n    LEFT JOIN trading.news_assessments na ON na.id = vla.assessment_id\n    LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n    LEFT JOIN trading.news_false_negative_flags nff ON nff.news_id = ni.id\n    WHERE ni.id = ${newsId};`;\n} else {\n  // Liste-Modus: EIN SELECT mit fuenf JSON-Spalten (eine je Kategorie) - gleicher Trick wie\n  // Paper-Trading-Review, vermeidet Mehrfach-Statements in einem Postgres-Node.\n  sql = `SELECT\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT ni.id AS news_id, ni.title, ni.source, ni.published_at,\n                na.betroffene_ticker_json, na.wirkungsrichtung, na.konfidenz, na.relevance_confidence\n         FROM trading.news_items ni\n         JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n         JOIN trading.news_assessments na ON na.id = vla.assessment_id\n         LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n         WHERE vla.relevance = true AND vla.confirmation_status = 'unconfirmed' AND nrn.id IS NULL\n           AND (na.relevance_confidence IS NULL OR na.relevance_confidence >= 50)\n         ORDER BY na.created_at DESC LIMIT 15\n       ) t) AS zu_bestaetigen,\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT ni.id AS news_id, ni.title, ni.source, ni.published_at,\n                na.betroffene_ticker_json, na.wirkungsrichtung, na.konfidenz, na.relevance_confidence\n         FROM trading.news_items ni\n         JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n         JOIN trading.news_assessments na ON na.id = vla.assessment_id\n         LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n         WHERE vla.confirmation_status = 'unconfirmed' AND nrn.id IS NULL\n           AND na.relevance_confidence IS NOT NULL AND na.relevance_confidence < 50\n         ORDER BY na.created_at DESC LIMIT 15\n       ) t) AS unsicher,\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT ni.id AS news_id, ni.title, ni.source, ni.published_at, na.wirkungs_begruendung\n         FROM trading.news_items ni\n         JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n         JOIN trading.news_assessments na ON na.id = vla.assessment_id\n         LEFT JOIN trading.news_review_notes nrn ON nrn.news_id = ni.id\n         LEFT JOIN trading.news_false_negative_flags nff ON nff.news_id = ni.id\n         WHERE vla.relevance = false AND vla.confirmation_status = 'unconfirmed'\n           AND nrn.id IS NULL AND nff.id IS NULL\n         ORDER BY na.created_at DESC LIMIT 10\n       ) t) AS ki_verworfen,\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT ni.id AS news_id, ni.title, ni.source, ni.published_at, ni.discarded_reason\n         FROM trading.news_items ni\n         WHERE ni.status = 'filtered'\n         ORDER BY ni.fetched_at DESC LIMIT 10\n       ) t) AS vorfilter_verworfen,\n      (SELECT json_agg(row_to_json(t)) FROM (\n         SELECT nff.id AS flag_id, nff.news_id, ni.title, nff.status, nff.grund, nff.created_at\n         FROM trading.news_false_negative_flags nff\n         JOIN trading.news_items ni ON ni.id = nff.news_id\n         WHERE nff.status IN ('possible_false_negative', 'filter_revision_required')\n         ORDER BY nff.created_at DESC LIMIT 10\n       ) t) AS gemeldete_false_negatives;`;\n}\n\nreturn [{ json: { sql, mode: newsId ? 'detail' : 'liste', news_id: newsId } }];\n"
+      }
+    },
+    {
+      "id": "np-db-ausfuehren",
+      "name": "DB: Ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        -100
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "np-baue-html",
+      "name": "Baue HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json);\nconst ctx = $('Baue Query (Liste/Detail)').first().json;\nlet nav = {};\ntry { nav = $('Nav laden (GET)').first().json; } catch (e1) {\n  try { nav = $('Nav laden (POST)').first().json; } catch (e2) { nav = {}; }\n}\n\nfunction esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nfunction fmtDate(v) {\n  if (!v) return '-';\n  return new Date(v).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n}\nfunction tickerListe(json) {\n  try {\n    const arr = Array.isArray(json) ? json : JSON.parse(json || '[]');\n    return arr.length ? arr.map(t => esc(typeof t === 'string' ? t : (t.ticker || JSON.stringify(t)))).join(', ') : '-';\n  } catch (e) { return '-'; }\n}\n\nconst CSS = 'body{font-family:sans-serif;background:#0f1115;color:#e6e6e6;margin:0;padding:32px;max-width:1000px;margin:0 auto;}'\n  + 'h1{font-size:22px;color:#fff;margin-bottom:4px;} h2{font-size:15px;color:#fff;margin-top:24px;margin-bottom:8px;}'\n  + '.meta{color:#9aa0a6;font-size:13px;margin-bottom:16px;} .hint{color:#9aa0a6;font-size:12px;}'\n  + '.card{background:#181b21;border:1px solid #2a2d34;border-radius:8px;padding:14px 18px;margin-bottom:10px;}'\n  + '.card h3{margin:0 0 4px 0;font-size:14px;color:#fff;font-weight:600;} .card a{color:#8ab4f8;text-decoration:none;}'\n  + '.kpi-row{display:flex;gap:16px;flex-wrap:wrap;margin:12px 0;}'\n  + '.kpi{background:#1a1c20;padding:10px 16px;border-radius:6px;min-width:110px;}'\n  + '.kpi .label{font-size:10px;color:#999;text-transform:uppercase;} .kpi .value{font-size:16px;color:#fff;margin-top:2px;}'\n  + '.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}'\n  + '.badge.ok{background:#1c3a2a;color:#6bcf8e;} .badge.warn{background:#3a2c1c;color:#e0a854;}'\n  + '.badge.danger{background:#3a1c1c;color:#e0665a;} .badge.muted{background:#22242a;color:#7a7d84;}'\n  + 'button{background:#5b8def;border:none;color:#0f1115;font-weight:600;border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;margin:4px 6px 4px 0;}'\n  + 'button:hover{background:#7ba3f2;} button.danger{background:#e0665a;color:#fff;} button.danger:hover{background:#ef8177;}'\n  + 'button.secondary{background:#2a2d34;color:#e6e6e6;} button.secondary:hover{background:#3a3d44;}'\n  + 'textarea{background:#0f1115;border:1px solid #2a2d34;color:#e6e6e6;border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box;width:100%;min-height:60px;margin-top:6px;}'\n  + '.section-empty{color:#7a7d84;font-size:12px;font-style:italic;margin-bottom:10px;}'\n  + '.urteil-form{background:#1a1c20;border:1px solid #2a2d34;border-radius:6px;padding:14px;margin-top:10px;}';\n\nconst NAVBAR_LINKS = '<div style=\"background:#232323;border:1px solid #444;border-radius:6px;padding:8px 14px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;\"><a href=\"/webhook/aktien-status\" style=\"color:#8ab4f8;text-decoration:none;\">Status</a></div>';\n\nfunction pageWrap(title, body) {\n  return '<!DOCTYPE html><html lang=\"de\"><head><meta charset=\"utf-8\"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>'\n    + (nav && nav.navHtml ? nav.navHtml : NAVBAR_LINKS)\n    + body\n    + '</body></html>';\n}\n\nlet html;\n\nif (ctx.mode === 'liste') {\n  const row = rows[0] || {};\n  const zuBestaetigen = row.zu_bestaetigen || [];\n  const unsicher = row.unsicher || [];\n  const kiVerworfen = row.ki_verworfen || [];\n  const vorfilterVerworfen = row.vorfilter_verworfen || [];\n  const gemeldeteFalseNeg = row.gemeldete_false_negatives || [];\n  const now = new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' });\n\n  function newsCard(n, extra) {\n    return '<div class=\"card\">'\n      + '<h3><a href=\"/webhook/news-pruefen?id=' + esc(n.news_id) + '\">' + esc(n.title) + '</a></h3>'\n      + '<div class=\"hint\">' + esc(n.source || '-') + ' &middot; ' + fmtDate(n.published_at) + '</div>'\n      + (extra || '')\n      + '</div>';\n  }\n\n  function section(titel, items, emptyText, renderer) {\n    return '<h2>' + esc(titel) + ' (' + items.length + ')</h2>'\n      + (items.length === 0\n        ? '<div class=\"section-empty\">' + esc(emptyText) + '</div>'\n        : items.map(renderer).join(''));\n  }\n\n  const zuBestaetigenHtml = section('Zu bestätigen', zuBestaetigen, 'Nichts Offenes.', n =>\n    newsCard(n, '<div class=\"hint\">Ticker: ' + tickerListe(n.betroffene_ticker_json) + ' &middot; Wirkung: ' + esc(n.wirkungsrichtung || '-') + ' &middot; Konfidenz: ' + esc(n.relevance_confidence ?? n.konfidenz ?? '-') + '</div>')\n  );\n  const unsicherHtml = section('Unsicher / niedrige Konfidenz', unsicher, 'Nichts Offenes.', n =>\n    newsCard(n, '<div class=\"hint\">Ticker: ' + tickerListe(n.betroffene_ticker_json) + ' &middot; Konfidenz: ' + esc(n.relevance_confidence ?? '-') + '</div>')\n  );\n  const kiVerworfenHtml = section('KI hat verworfen (Kandidaten für False Negative)', kiVerworfen, 'Nichts Offenes.', n =>\n    newsCard(n, n.wirkungs_begruendung ? '<div class=\"hint\">' + esc(n.wirkungs_begruendung) + '</div>' : '')\n  );\n  const vorfilterHtml = section('Vom Regex-Vorfilter verworfen', vorfilterVerworfen, 'Keine (Vorfilter persistiert noch keine Artikel - siehe HUMAN_IN_THE_LOOP_ARCHITECTURE.md).', n =>\n    newsCard(n, n.discarded_reason ? '<div class=\"hint\">Grund: ' + esc(n.discarded_reason) + '</div>' : '')\n  );\n  const gemeldeteHtml = section('Bereits gemeldete mögliche False Negatives', gemeldeteFalseNeg, 'Keine offenen Meldungen.', f =>\n    '<div class=\"card\"><h3><a href=\"/webhook/news-pruefen?id=' + esc(f.news_id) + '\">' + esc(f.title) + '</a></h3>'\n    + '<div class=\"hint\">Status: <span class=\"badge warn\">' + esc(f.status) + '</span> &middot; gemeldet: ' + fmtDate(f.created_at) + '</div>'\n    + (f.grund ? '<div class=\"hint\">\"' + esc(f.grund) + '\"</div>' : '')\n    + '</div>'\n  );\n\n  html = pageWrap('News Prüfen', ''\n    + '<h1>News Prüfen</h1>'\n    + '<div class=\"meta\">Stand: ' + now + '</div>'\n    + zuBestaetigenHtml + unsicherHtml + kiVerworfenHtml + vorfilterHtml + gemeldeteHtml);\n} else {\n  const n = rows[0];\n  if (!n || !n.id) {\n    html = pageWrap('News Prüfen', '<h1>News Prüfen</h1><div class=\"card\">News nicht gefunden. <a href=\"/webhook/news-pruefen\">Zurück zur Liste</a></div>');\n  } else {\n    const relevantBadge = n.relevant === true ? '<span class=\"badge ok\">relevant</span>'\n      : n.relevant === false ? '<span class=\"badge danger\">irrelevant</span>'\n      : '<span class=\"badge muted\">nicht bewertet</span>';\n\n    const bisherigeNotiz = n.bisheriges_urteil\n      ? '<div class=\"card\" style=\"border-color:#5b8def;\"><strong>Bisherige Notiz:</strong> ' + esc(n.bisheriges_urteil)\n        + (n.notiz_reviewed_at ? ' am ' + fmtDate(n.notiz_reviewed_at) : '')\n        + (n.bisheriger_kommentar ? '<div class=\"hint\">\"' + esc(n.bisheriger_kommentar) + '\"</div>' : '')\n        + '</div>'\n      : '';\n\n    const bisherigeMeldung = n.false_negative_flag_id\n      ? '<div class=\"card\" style=\"border-color:#e0a854;\"><strong>Bereits als möglicher False Negative gemeldet</strong> &middot; Status: <span class=\"badge warn\">' + esc(n.false_negative_status) + '</span>'\n        + (n.false_negative_grund ? '<div class=\"hint\">\"' + esc(n.false_negative_grund) + '\"</div>' : '')\n        + '</div>'\n      : '';\n\n    const assessmentHtml = n.assessment_id\n      ? '<div class=\"kpi-row\">'\n        + '<div class=\"kpi\"><div class=\"label\">Relevanz</div><div class=\"value\">' + relevantBadge + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Wirkungsrichtung</div><div class=\"value\">' + esc(n.wirkungsrichtung || '-') + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Wirkung Stärke</div><div class=\"value\">' + esc(n.wirkung_staerke || '-') + '</div></div>'\n        + '<div class=\"kpi\"><div class=\"label\">Konfidenz</div><div class=\"value\">' + esc(n.relevance_confidence ?? n.konfidenz ?? '-') + '</div></div>'\n        + '</div>'\n        + '<div class=\"hint\">Ticker: ' + tickerListe(n.betroffene_ticker_json) + '</div>'\n        + (n.ticker_begruendung ? '<div class=\"hint\">Ticker-Begründung: ' + esc(n.ticker_begruendung) + '</div>' : '')\n        + (n.wirkungs_begruendung ? '<div class=\"hint\">Wirkungs-Begründung: ' + esc(n.wirkungs_begruendung) + '</div>' : '')\n        + '<div class=\"hint\">Bisheriger Bestätigungsstatus: ' + esc(n.confirmation_status || 'unconfirmed') + '</div>'\n      : '<div class=\"hint\">Noch keine KI-Bewertung vorhanden' + (n.status === 'filtered' ? ' - vom Regex-Vorfilter verworfen, bevor eine Bewertung stattfand.' : '.') + '</div>';\n\n    html = pageWrap('News prüfen', ''\n      + '<a href=\"/webhook/news-pruefen\" class=\"hint\">&larr; Zurück zur Liste</a>'\n      + '<h1>' + esc(n.title) + '</h1>'\n      + '<div class=\"meta\">' + esc(n.source || '-') + ' &middot; ' + fmtDate(n.published_at) + ' &middot; Status: ' + esc(n.status) + (n.url ? ' &middot; <a href=\"' + esc(n.url) + '\" target=\"_blank\">Original</a>' : '') + '</div>'\n      + bisherigeNotiz + bisherigeMeldung\n\n      + '<h2>Bewertung</h2>' + assessmentHtml\n\n      + (n.article_text ? '<h2>Artikeltext</h2><div class=\"hint\" style=\"white-space:pre-wrap;\">' + esc(n.article_text.slice(0, 2000)) + (n.article_text.length > 2000 ? ' [...]' : '') + '</div>' : '')\n\n      + '<h2>Urteil</h2>'\n      + '<div class=\"urteil-form\">'\n      + '<form id=\"form-urteil\" method=\"POST\" action=\"/webhook/news-review-abgeben\">'\n      + '<input type=\"hidden\" name=\"news_id\" value=\"' + esc(n.id) + '\">'\n      + '<textarea name=\"kommentar\" placeholder=\"Kommentar / Begründung (optional)\"></textarea>'\n      + '<div style=\"margin-top:8px;\">'\n      + '<button type=\"submit\" name=\"action\" value=\"relevant\">RELEVANT</button>'\n      + '<button type=\"submit\" name=\"action\" value=\"irrelevant\" class=\"secondary\">IRRELEVANT</button>'\n      + '<button type=\"submit\" name=\"action\" value=\"unsicher\" class=\"secondary\">UNSICHER</button>'\n      + '<button type=\"submit\" name=\"action\" value=\"falsch_bewertet\" class=\"secondary\">FALSCH BEWERTET</button>'\n      + '<button type=\"submit\" name=\"action\" value=\"filter_falsch\" class=\"danger\">FILTER HAT FALSCH ENTSCHIEDEN</button>'\n      + '</div>'\n      + '</form>'\n      + '<div class=\"hint\">RELEVANT/IRRELEVANT bestätigen die KI-Einschätzung. UNSICHER/FALSCH BEWERTET halten eine abweichende Einschätzung fest, ändern aber nichts automatisch. FILTER HAT FALSCH ENTSCHIEDEN meldet einen möglichen False Negative zur späteren Regelprüfung - keine Aktion ändert sofort eine Regel.</div>'\n      + '</div>'\n    );\n  }\n}\n\nreturn [{ json: { html } }];\n"
+      }
+    },
+    {
+      "id": "np-antwort",
+      "name": "Antwort mit HTML",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -700,
+        -100
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "np-post-buildload",
+      "name": "POST: Baue Load-Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1300,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// $json ist hier \"Nav laden (POST)\" (Nav-Call INLINE vor diesem Node) - Trigger-Daten deshalb\n// per Namens-Lookup statt aus $json, gleiches Muster wie die anderen Human-in-the-Loop-Seiten.\nconst trigger = $('Webhook POST (Review)').first().json;\nconst j = trigger.body || trigger;\n\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v); }\n\nconst newsId = pgNum(j.news_id);\nconst VALID_ACTIONS = new Set(['relevant', 'irrelevant', 'unsicher', 'falsch_bewertet', 'filter_falsch']);\nconst action = VALID_ACTIONS.has(String(j.action || '').trim()) ? String(j.action).trim() : null;\nconst kommentar = String(j.kommentar || '').trim();\n\nreturn {\n  json: {\n    news_id: newsId,\n    action,\n    kommentar,\n    // Nur assessment_id/status frisch laden - inhaltliche Werte kommen nie aus dem Body.\n    load_sql: newsId\n      ? `SELECT ni.id, ni.status, vla.assessment_id\n           FROM trading.news_items ni\n           LEFT JOIN trading.v_news_latest_assessment vla ON vla.news_id = ni.id\n           WHERE ni.id = ${newsId};`\n      : `SELECT NULL::bigint AS id WHERE FALSE;`\n  }\n};\n"
+      }
+    },
+    {
+      "id": "np-db-news-laden",
+      "name": "DB: News laden (fuer Review)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.load_sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "np-post-normalize",
+      "name": "POST: Review normalisieren + SQL bauen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -900,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// $json ist hier das Ergebnis von \"DB: News laden (fuer Review)\" (frisch geladen: id/status/\n// assessment_id). ctx = die aus dem Body vertrauten Steuerfelder (news_id/action/kommentar).\nfunction pgStr(v) { return v === null || v === undefined || v === '' ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\n\nconst loaded = $json;\nconst ctx = $('POST: Baue Load-Query').first().json;\nconst { news_id, action, kommentar } = ctx;\n\nlet sql;\n\nif (!news_id || !action || !loaded || !loaded.id) {\n  sql = 'SELECT 1;';\n} else if (action === 'filter_falsch') {\n  // Eigene Tabelle, kein UPSERT: jede Meldung ist ein eigenes Ereignis (sql/071, Modul 4).\n  sql = `INSERT INTO trading.news_false_negative_flags (news_id, grund)\n    VALUES (${news_id}, ${pgStr(kommentar || null)});`;\n} else if (action === 'relevant' || action === 'irrelevant') {\n  const confirmationStatus = action === 'relevant' ? 'manually_confirmed' : 'manually_rejected';\n  // Bestehenden Hook (sql/012) nur setzen, wenn es ueberhaupt eine Bewertung gibt - bei\n  // status='filtered' (Vorfilter-Fund, nie von der KI bewertet) existiert keine.\n  const confirmationUpdate = loaded.assessment_id\n    ? `UPDATE trading.news_assessments SET confirmation_status = ${pgStr(confirmationStatus)} WHERE id = ${loaded.assessment_id};`\n    : '';\n  sql = `BEGIN;\n    ${confirmationUpdate}\n    INSERT INTO trading.news_review_notes (news_id, urteil, kommentar, reviewed_von)\n      VALUES (${news_id}, ${pgStr(action)}, ${pgStr(kommentar || null)}, 'nutzer')\n      ON CONFLICT (news_id) DO UPDATE SET\n        urteil = EXCLUDED.urteil, kommentar = EXCLUDED.kommentar,\n        reviewed_von = EXCLUDED.reviewed_von, reviewed_at = now();\n    COMMIT;`;\n} else {\n  // unsicher / falsch_bewertet: nur Notiz, kein confirmation_status-Wechsel (siehe sql/072-Kommentar).\n  sql = `INSERT INTO trading.news_review_notes (news_id, urteil, kommentar, reviewed_von)\n    VALUES (${news_id}, ${pgStr(action)}, ${pgStr(kommentar || null)}, 'nutzer')\n    ON CONFLICT (news_id) DO UPDATE SET\n      urteil = EXCLUDED.urteil, kommentar = EXCLUDED.kommentar,\n      reviewed_von = EXCLUDED.reviewed_von, reviewed_at = now();`;\n}\n\nreturn [{ json: { sql, mode: 'detail_nach_post', news_id } }];\n"
+      }
+    },
+    {
+      "id": "np-post-exec",
+      "name": "POST: SQL ausfuehren",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -700,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "65d45966-314f-437b-98c5-180c8ca7d2ac"
+}
