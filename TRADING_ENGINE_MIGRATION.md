@@ -167,13 +167,19 @@ Retry-/On-Error-Verhalten greift wie bei jedem anderen Node in diesem Workflow.
    **Wichtig für Schritt 5**: der Server (`/opt/trading-data-service`) hat die neuen
    Order/Trade/SizingResult-Felder noch NICHT — braucht vor dem Vergleichslauf ein manuelles
    Update (siehe Ende dieses Dokuments).
-5. **Verifikation vor dem Umschalten (noch offen)**: neuen Node im n8n-Editor mit gepinnten echten
-   Daten eines bereits abgeschlossenen Pakets manuell ausführen, Ergebnis Zeile für Zeile gegen
-   das, was der alte Node für dasselbe Paket tatsächlich in `trading.simulation_trades`/
-   `simulation_daily_portfolio` geschrieben hat, vergleichen. Bei Abweichung: Ursache klären, bevor
-   weitergemacht wird.
-6. Flag umschalten (`TRADING_ENGINE_STEP_ENABLED=TRUE`) — erst nach ausdrücklicher Zustimmung zum
-   Vergleichsergebnis aus Schritt 5. Beobachtungsphase über mehrere Worker-Ticks.
+5. **Verifikation (im Gange)**: erster Testlauf (`test22`, id 11) lief noch vor dem Umschalten
+   über den alten Pfad (Flag war zu dem Zeitpunkt `FALSE`) — bestätigt per `entry_grund`-Text
+   ("RSI=100.0; Bollinger-Beruehrung", altes Format), 0 gefüllte Trades (zu kurz/inaktiv für einen
+   echten Trade-Vergleich). **2026-08-20 ~15:25 UTC: Flag auf `TRUE` gesetzt** (Nutzerauftrag) —
+   ab jetzt läuft JEDER Worker-Tick für JEDEN aktiven `news_enabled=false`-Lauf über den neuen
+   Engine-Node, nicht nur künftige Testläufe. Nächster Schritt: neuen Vergleichslauf anlegen
+   (mehr Ticker/längerer Zeitraum als `test22`, damit tatsächlich Trades entstehen), Ergebnis
+   gegen `test22`/einen anderen abgeschlossenen Referenzlauf mit gleichen Parametern prüfen
+   (`simulation_trades`/`simulation_daily_portfolio`/`entry_grund`-Format als Signal, welcher Pfad
+   lief).
+6. Nach Bestätigung des Vergleichs: Flag bewusst auf `TRUE` lassen (aktueller Stand) oder bei
+   Auffälligkeiten sofort auf `FALSE` zurücksetzen (`UPDATE trading.pipeline_config SET
+   value_bool=FALSE WHERE config_key='TRADING_ENGINE_STEP_ENABLED'`, wirkt ab dem nächsten Tick).
 7. **Separat, später**: Workflow 14 migrieren — bringt eigene, echte fachliche Änderungen mit
    (Umstellung auf Mini-Future-Kostenmodell, erstmals Trailing-Stop für Live-Paper-Trading, siehe
    `TRADING_ENGINE_ARCHITECTURE.md` Architekturfragen 2+3), nicht Teil dieser Migration.
