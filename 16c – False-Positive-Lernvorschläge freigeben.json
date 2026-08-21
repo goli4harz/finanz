@@ -414,7 +414,8 @@
   "settings": {
     "executionOrder": "v1",
     "executionTimeout": 30,
-    "saveDataSuccessExecution": "all"
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "c58e8b11-f4de-43b4-bec3-0ad00350cbed"

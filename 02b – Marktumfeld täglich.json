@@ -211,6 +211,11 @@
             "node": "Merge Ergebnis 4",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Marktregime berechnen",
+            "type": "main",
+            "index": 0
           }
         ]
       ]

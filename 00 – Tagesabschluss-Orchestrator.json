@@ -655,7 +655,7 @@
       "main": [
         [
           {
-            "node": "Ausfuehren: Empfehlungswatchlist (06)",
+            "node": "Ausfuehren: Markt-Screener (13)",
             "type": "main",
             "index": 0
           }
@@ -673,11 +673,33 @@
       "main": [
         [
           {
-            "node": "Ausfuehren: Report- und Pruefagent (10)",
+            "node": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
             "type": "main",
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Ausfuehren: Report- und Pruefagent (10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Markt-Screener (13)": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Empfehlungswatchlist (06)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)": {
+      "main": [
         [
           {
             "node": "Ausfuehren: Report- und Pruefagent (10)",
@@ -1770,6 +1792,68 @@
         -320
       ],
       "id": "n-p14-gate-portfolio_risiko"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "43lG9aZVHwzIp0jq",
+          "mode": "list",
+          "cachedResultName": "13 – Markt-Screener täglich"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "eb4c8b25-f350-41de-92d9-20e19ac50855",
+      "name": "Ausfuehren: Markt-Screener (13)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        -440
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "H0iZrWQy1HQi6iro",
+          "mode": "list",
+          "cachedResultName": "14 – Portfolio-Risiko und Paper-Trading"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "context": "={{ { run_id: $('Kontext zusammenfuehren').all()[0].json.run_id } }}",
+            "config": "={{ {} }}",
+            "payload": "={{ {} }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "a0eec5f5-f665-4569-87a6-4dca1be17410",
+      "name": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1160,
+        -440
+      ],
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": null,

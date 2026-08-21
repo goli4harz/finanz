@@ -364,7 +364,8 @@
   ],
   "pinData": null,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "e61c1ac1-74e8-48ec-af08-e1a22414c214"

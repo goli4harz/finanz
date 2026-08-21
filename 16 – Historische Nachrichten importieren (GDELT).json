@@ -1337,7 +1337,8 @@
     "saveDataSuccessExecution": "none",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false,
-    "saveExecutionProgress": false
+    "saveExecutionProgress": false,
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
   "versionId": "e9d418ed-d30c-4048-8234-eafdaa8df30c"

@@ -11,39 +11,6 @@
           }
         ]
       ]
-    },
-    "Webhook Diagnose (POST)": {
-      "main": [
-        [
-          {
-            "node": "Baue Query aus Body",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Query aus Body": {
-      "main": [
-        [
-          {
-            "node": "Query ausfuehren (dynamisch)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Query ausfuehren (dynamisch)": {
-      "main": [
-        [
-          {
-            "node": "Antwort JSON",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "id": "NInmI0f9TfdndwI1",
@@ -81,74 +48,6 @@
           "name": "Postgres account"
         }
       }
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "diagnose-sql",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "id": "30000000-0000-4000-8000-000000000003",
-      "name": "Webhook Diagnose (POST)",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -400,
-        200
-      ],
-      "webhookId": "f265549e-e894-445b-9132-f72d0326023d",
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "jsCode": "const sqlText = String(($json.body || {}).sql || '').trim();\nif (!sqlText) return [{ json: { _error: 'Feld sql fehlt im POST-Body.' } }];\nreturn [{ json: { sqlText } }];"
-      },
-      "id": "30000000-0000-4000-8000-000000000004",
-      "name": "Baue Query aus Body",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -176,
-        200
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sqlText }}",
-        "options": {}
-      },
-      "id": "30000000-0000-4000-8000-000000000005",
-      "name": "Query ausfuehren (dynamisch)",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        48,
-        200
-      ],
-      "alwaysOutputData": true,
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "postgres": {
-          "id": "NWckNyl8ZfwVVJCd",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respondWith": "allIncomingItems",
-        "options": {}
-      },
-      "id": "30000000-0000-4000-8000-000000000006",
-      "name": "Antwort JSON",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        272,
-        200
-      ]
     }
   ],
   "pinData": null,

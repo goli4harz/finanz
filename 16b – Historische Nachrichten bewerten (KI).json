@@ -325,6 +325,7 @@
   "settings": {
     "executionOrder": "v1",
     "executionTimeout": 480,
-    "saveDataSuccessExecution": "all"
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM"
   }
 }

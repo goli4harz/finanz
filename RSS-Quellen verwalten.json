@@ -315,7 +315,12 @@
               "responseFormat": "text"
             }
           },
-          "timeout": 15000
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": false
+            }
+          }
         }
       },
       "id": "rss-http-fetch",
