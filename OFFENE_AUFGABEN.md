@@ -1,6 +1,6 @@
 # Offene Aufgaben
 
-Stand: 2026-08-02 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1+2-Fixes umgesetzt, siehe Abschnitte unten)
+Stand: 2026-08-23 (zusätzlich zum Original-Auftrag jetzt Welle 1, Welle 2, Welle 3 UND der Härtungsauftrag/Priorität-1+2-Fixes umgesetzt, siehe Abschnitte unten; A2 und F9 als letzte offene Härtungsauftrag-Funde am 2026-08-22/23 nachgezogen)
 
 **✅ Gelöst (Reparaturauftrag P1.6, 2026-08-03): `06`s `portfolio_pending`-Sonderfall ist aufgehoben.** `06` lädt `ENABLE_PAPER_TRADING` jetzt selbst aus `trading.pipeline_config` (sicherer Default `FALSE`) und schreibt bei deaktiviertem Flag weiterhin direkt `status='offen'` (kein Zwischenstatus möglich) — erst bei aktivem Flag wird `portfolio_pending` verwendet. `06` ist damit unabhängig vom Aktivierungszustand von `14` sicher live-pushbar und wurde entsprechend live gepusht (Flag zum Zeitpunkt des Pushs bestätigt `FALSE`). Der bisherige "nicht live pushen"-Sonderfall entfällt.
 
@@ -35,17 +35,16 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   trotz Gesamterfolg im Orchestrator sichtbar gemacht), A8 (zentrale Wertebereichs-Regeltabelle
   in `12`, loest gleichzeitig A7 vollstaendig ab und F11). Details je Fix: `AENDERUNGSPROTOKOLL.md`,
   Testfaelle: `TESTPLAN.md`.
-- 🟡 **A2 (hoch) bewusst zurueckgestellt** (Nutzerentscheidung 2026-08-02): "Feste Stored
-  Procedures pro Aktion mit typisierten Parametern statt String-Interpolation" fuer
-  `Watchlist verwalten`/`RSS-Quellen verwalten`/`12` - ein voller Architekturumbau, kein
-  punktueller Fix. Die akute Injection-/Validierungsluecke selbst ist bereits geschlossen
-  (A1/A3/A4/A9/A11 kritisch, A8 hoch); A2 ist eine strukturelle Verteidigungstiefe-Verbesserung
-  fuer kuenftige Aenderungen. **Eigenstaendiges Vorhaben fuer eine kuenftige Sitzung**, wenn
-  gewuenscht: SQL-Funktionen je Schreibaktion entwerfen (Watchlist anlegen/aendern/loeschen,
-  RSS-Quelle testen/anlegen, alle 5 Lernvorschlags-Aktivierungspfade aus `12`), dann
-  Postgres-Nodes auf `n8n`s native Query-Parameter statt `executeQuery`+String-Interpolation
-  umstellen, vollstaendiger Retest aller 3 Workflows inkl. der Live-Webhook-Tests aus
-  `TESTPLAN.md` (SEC-1 bis SEC-16).
+- ✅ **A2 erledigt** (2026-08-22/23, nachdem am 2026-08-02 zurueckgestellt): statt des
+  urspruenglich erwogenen vollen Stored-Procedure-Umbaus wurden `Watchlist verwalten`
+  (`a14af4d`), `RSS-Quellen verwalten` (`3a6140c`) und `12 - Lernvorschlag-Freigabe`
+  (`06e3c67`) auf `n8n`s native Query-Parameter (`$1..$7` + `sqlParams`/`options.
+  queryReplacement`, inkl. text[]/jsonb-Bindung) statt `pgStr()`/`pgArr()`/`pgJson()`-
+  String-Interpolation umgestellt - schliesst dieselbe strukturelle Verteidigungstiefe-
+  Luecke leichtgewichtiger als der urspruenglich skizzierte Stored-Procedure-Ansatz.
+  Alle 3 Workflows live end-to-end mit echten Injection-Payloads getestet (Semikolon+DROP
+  TABLE, `SELECT pg_sleep`, Apostroph in Array-/Reviewer-Feldern) - durchgehend als inerter
+  Text gespeichert, keine Tabelle beruehrt.
 - ✅ **`sql/040`+`sql/041` (COMMENT-Korrektur C6 + Point-in-Time-Umstellung B8) sind live
   ausgefuehrt** (bestaetigt 2026-08-02, Nutzer-Retry zeigte "already exists" auf den
   Constraint-Schritt).
@@ -79,10 +78,16 @@ vollständige Liste mit Ursache/Auswirkung/Korrektur in `FEHLERANALYSE.md`.
   Zusammenfassungszeile in diesem Dokument korrigiert). Details je Fund in `FEHLERANALYSE.md`.
 - ✅ **`sql/045`+`sql/046`** ausgefuehrt, bestaetigt 2026-08-02 (Diagnose-Query gegen
   `activation_failed`-Constraint/Spalten/Index live verifiziert - siehe oben).
-- 🟡 **F9** (Stabilitaet ueber Zeit/Drawdown je Strategie/Anteil blockierter Signale)
-  bewusst zurueckgestellt 2026-08-02 - braucht neue Aggregationslogik (Zeitraum-Teilung,
-  Verknuepfung mit `recommendation_veto_log`) statt eines einfachen Schwellenwerts wie
-  F6/F7. Eigenstaendiges Vorhaben fuer eine kuenftige Sitzung, siehe `FEHLERANALYSE.md`.
+- ✅ **F9 erledigt** (2026-08-23, `e921acd`, nachdem am 2026-08-02 zurueckgestellt):
+  Rolling-Drawdown je Strategie (kumulierte `realized_r_multiple` ueber geschlossene Paper
+  Trades, Peak-zu-Tiefpunkt in R) als zusaetzliches hartes Gate in `09b` (analog F6/F7),
+  Schwellenwerte per `sql/074` (`F9_DRAWDOWN_WINDOW_DAYS=180`, `F9_MAX_DRAWDOWN_R=6.0`) in
+  `pipeline_config` tunbar. Bewusst **nicht** umgesetzt: die Veto-Rate-Komponente aus dem
+  Original-Auftrag - `trading.recommendation_veto_log` hat keine Strategie-Spalte, das waere
+  ein eigener Schema-Fund/eigenes Vorhaben. Live per WF97-Sandbox query-isoliert getestet
+  (kein voller kostenpflichtiger Workflow-Lauf mit KI-Aufruf ausgeloest); Gate ist aktuell
+  dormant, da eine OOS-Bestaetigung (abgeschlossener out_of_sample-Backtest) strukturell noch
+  fehlt.
 - 🟡 **~80 unversionierte `n8n_live_backup/*.json`-Dateien (2026-07-21 bis 2026-07-27)**
   im Arbeitsverzeichnis entdeckt (2026-08-02, im Zuge von G4) - lokal vorhanden, nie
   committet. Gleiche Nachweisdisziplin-Luecke wie G4, nur historisch und groesser im
@@ -99,10 +104,9 @@ Sektor-Stressszenario jetzt sektorspezifisch, AP10-Versionierungsfelder auf `str
 `learning_rule_proposals` (`sql/050`), 3 neue Pruefagent-Ablehnungsregeln in `10`.
 - 🟡 **`sql/048`+`sql/049`+`sql/050`** stehen noch zur manuellen Ausfuehrung in Workflow `97`
   bereit.
-- **Noch offen (naechste Prioritaet laut Auftrag-Reihenfolge):** Von allen Funden aus
-  `FEHLERANALYSE.md` (21 kritisch, 19 hoch, 22 mittel, 7 niedrig/niedrig-mittel) sind nur
-  noch **A2** und **F9** offen - beide bewusst zurueckgestellt, siehe oben. Alle uebrigen
-  sind behoben. Danach: automatisierte
+- ✅ **Alle Funde aus `FEHLERANALYSE.md`** (21 kritisch, 19 hoch, 22 mittel, 7 niedrig/
+  niedrig-mittel) **sind jetzt behoben** - **A2** (2026-08-22/23) und **F9** (2026-08-23) als
+  letzte beide zurueckgestellte Punkte, siehe oben. **Noch offen:** automatisierte
   Pruefabfragen/Tests fuer die verbleibenden Bereiche, `PRODUKTIONSFREIGABE.md` mit dem neuen
   Stand neu bewerten.
 
