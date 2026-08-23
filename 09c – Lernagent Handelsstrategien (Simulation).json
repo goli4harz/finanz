@@ -732,6 +732,7 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
+    "binaryMode": "separate",
     "saveDataSuccessExecution": "all"
   },
   "tags": [],

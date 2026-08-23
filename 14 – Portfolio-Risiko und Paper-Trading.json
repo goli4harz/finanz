@@ -1588,6 +1588,7 @@
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "binaryMode": "separate",
     "saveDataSuccessExecution": "all"
   },
   "tags": [],

@@ -1120,6 +1120,7 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
+    "binaryMode": "separate",
     "timeSavedMode": "fixed",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
     "callerPolicy": "workflowsFromSameOwner",
