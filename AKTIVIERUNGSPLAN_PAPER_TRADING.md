@@ -114,3 +114,42 @@ Jede Stufe ist über das jeweilige Feature-Flag (`value_bool=FALSE` in
 Orchestrator bypassed die betroffene Stufe beim nächsten Lauf automatisch (Phase 14). Ein
 Rollback löscht **keine** historischen Daten (Sicherheitsregel) — `paper_trades`/`recommendations`
 bleiben unverändert stehen, nur künftige neue Läufe der Stufe finden nicht mehr statt.
+
+## Nachtrag 2026-08-24 — Live-Zustand weicht vom geplanten Ablauf ab (bestätigt, nicht zurückgerollt)
+
+Im Rahmen des Audits für den Konzeptbericht "Persönlicher KI-Trading-Analyst" per Live-Query
+gegen `trading.pipeline_config` festgestellt:
+
+| Flag | Live-Wert | zuletzt geändert |
+|---|---|---|
+| `DRY_RUN` | `false` | 2026-07-20 |
+| `ENABLE_MARKET_SCANNER` | `false` | 2026-08-02 |
+| `ENABLE_PAPER_TRADING` | `true` | 2026-08-02 |
+| `ENABLE_TRADE_LEARNING` | `false` | 2026-08-02 |
+
+Workflows `13` und `14` sind live beide `active:true`.
+
+**Das bedeutet strukturell: Stufe 3 ist erreicht** (`DRY_RUN=false` — `14` kann echte, weiterhin
+rein theoretische Paper-Trades im Ledger öffnen/schließen) — **ohne dass für Stufe 2 (DRY_RUN
+erzwungen `TRUE`, mindestens 5 Handelstage Beobachtung) ein dokumentierter Beobachtungszeitraum
+vorliegt.** Die Zeitstempel (`DRY_RUN` → `false` am 2026-07-20, `ENABLE_PAPER_TRADING` → `true`
+erst am 2026-08-02) legen nahe, dass Stufe 2 faktisch übersprungen statt durchlaufen wurde,
+entgegen der oben als zwingend beschriebenen Reihenfolge.
+
+**Auf Rückfrage am 2026-08-24 bestätigt: dieser Zustand ist beabsichtigt und wird nicht
+zurückgerollt.** Realer Effekt bislang gering — 4 Empfehlungen, alle `portfolio_blocked`/
+`portfolio_pending`; 4 `paper_trades`, alle `blocked` (Quelle: Live-Audit 2026-08-24).
+
+`ENABLE_MARKET_SCANNER=false` heißt: Stufe 1 ist trotz `13`s `active:true` weiterhin **nicht**
+scharf — der Orchestrator überspringt `13` unverändert vollständig. Das `active:true` von
+`13`/`14` selbst ist reine n8n-Infrastrukturvoraussetzung (Execute-Workflow-Aufrufbarkeit),
+keine funktionale Aktivierung.
+
+Zusätzlich gefunden und auf Rückfrage korrigiert: `REQUIRE_CONFIRMATION` (Migrations-Default
+`TRUE`, "Erfordert eine Bestätigung vor dem Öffnen oder Schließen von Empfehlungen") stand seit
+2026-07-20 undokumentiert auf `false`. Nicht beabsichtigt — am 2026-08-24 zurück auf `true`
+gesetzt.
+
+**Für alles, was noch nicht gesetzt ist** (`ENABLE_MARKET_SCANNER`, `ENABLE_TRADE_LEARNING`,
+Stufe 4/5), bleibt die oben beschriebene Stufenfolge weiterhin verbindlich — nur der bereits
+vollzogene Sprung zu Stufe 3 für `14` wird nicht nachträglich zurückgedreht.

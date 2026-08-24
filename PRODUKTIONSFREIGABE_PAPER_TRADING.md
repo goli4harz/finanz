@@ -19,7 +19,7 @@ dokumentierten Einschränkungen · 🔴 nicht freigegeben / nicht umgesetzt.
 | Report-Merge-Sicherheit (`10`, Phase 12) | 🟡 | Live gepusht, aber ungetestet (kein sicherer isolierter Trigger ohne reale Seiteneffekte verfügbar). |
 | Zweigsicherheit Tagesreport (`05`, Phase 13) | 🟢 | Vollständig code-/graphgeprüft, alle 5 Auftrags-Prüfpunkte bestätigt korrekt. |
 | Orchestrator-Verdrahtung (`00`, Phase 14) | 🟡 | Vollständig fertiggestellt, syntax-/graphgeprüft, **bewusst noch nicht live** (n8n-Publish-Constraint, siehe Phase 14.3) — Push ist der erste Schritt von Aktivierungsstufe 1. |
-| Feature-Flags (`sql/056`) | 🟢 | Live, alle auf `FALSE`, Fail-Safe-Default bei fehlender Konfiguration ebenfalls `FALSE`. |
+| Feature-Flags (`sql/056`) | 🟡 | **Stand 2026-08-24 nicht mehr aktuell** — live inzwischen `ENABLE_PAPER_TRADING=TRUE`, `DRY_RUN=FALSE` (Stufe 3 erreicht, ohne dokumentierten Stufe-2-Beobachtungszeitraum), `ENABLE_MARKET_SCANNER=FALSE`. Bestätigt beabsichtigt, siehe Nachtrag in `AKTIVIERUNGSPLAN_PAPER_TRADING.md`. Fail-Safe-Default bei fehlender Konfiguration weiterhin `FALSE`. |
 | `09b`-Absicherung (Phase 15) | 🟢 | Bleibt korrekt inaktiv, keine Seiteneffekte durch Welle-1-3-Änderungen. |
 | Idempotenz/Transaktionen (Phase 16) | 🟢 | Alle handelsrelevanten Schreibpfade geprüft, keine kritischen Lücken; 2 niedrigpriore Restfunde dokumentiert. |
 | Testabdeckung (Phase 17) | 🟡 | 35/35 bestanden, aber Node-Nachbildungen, keine echten n8n-End-to-End-Läufe (reale Seiteneffekte verhindern das ohne dedizierte Testumgebung). |
@@ -37,6 +37,12 @@ sind ausnahmslos **Beobachtungslücken durch fehlende reale Betriebsdaten** (0 r
 ## Empfehlung
 
 Siehe `ABSCHLUSSBERICHT_HAERTUNG_WELLE_1_3.md`, Abschnitt 15, für die formale Gesamtempfehlung.
-Kurzfassung: **Paper-Trading-Aktivierung gemäß `AKTIVIERUNGSPLAN_PAPER_TRADING.md`, Stufe 1
-beginnend** — nicht "nur manueller DRY_RUN" (das System ist weiter als das), aber auch nicht
-"sofort voll freigeben" (Stufen 3-5 haben harte, noch nicht erfüllte Voraussetzungen).
+Kurzfassung (Stand 2026-08-02): **Paper-Trading-Aktivierung gemäß `AKTIVIERUNGSPLAN_PAPER_TRADING.md`,
+Stufe 1 beginnend** — nicht "nur manueller DRY_RUN" (das System ist weiter als das), aber auch
+nicht "sofort voll freigeben" (Stufen 3-5 haben harte, noch nicht erfüllte Voraussetzungen).
+
+**Nachtrag 2026-08-24**: diese Empfehlung wurde in der Praxis überholt — Stufe 3 ist live bereits
+gesetzt (`DRY_RUN=FALSE`, `ENABLE_PAPER_TRADING=TRUE`), ohne den hier vorgesehenen Stufe-2-
+Beobachtungszeitraum. Vom Nutzer als beabsichtigt bestätigt, siehe Nachtrag in
+`AKTIVIERUNGSPLAN_PAPER_TRADING.md`. Stufen 4/5 (Out-of-Sample-Verfahren, `09b`) bleiben weiterhin
+offen und ungesetzt.
