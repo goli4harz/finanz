@@ -45,3 +45,16 @@ Vollständige, versionierte Tabelle in `sql/032` — 4 Strategien × 7 Regime-Zu
 - ✅ Umgesetzt: Trend-/Volatilitäts-/Stress-Regime je Region, kombiniertes Regime, versionierte Strategie-Regime-Matrix.
 - 🔴 Bewusst nicht umgesetzt (keine Datenquelle): `breadth_regime`, `liquidity_regime` — Schema vorbereitet (`sql/032`), für Welle 3.
 - 🔴 Nicht live getestet (siehe `docs/TESTPLAN_WELLE_2.md`).
+
+## Nachtrag 2026-08-25 — historische Pilot-Variante in Workflow 17
+
+Bis dahin berechnete die historische Simulation (Workflow `17`) gar kein Marktregime — `is_stress_regime` war im Aufruf der Trading-Engine hart auf `false` verdrahtet, unabhängig vom simulierten Datum. Grund: `17` ist explizit "Pilot ohne Nachrichten", das bezog sich aber nur auf News, nicht auf Regime — die Regime-Berechnung existierte dort schlicht noch nicht.
+
+Für den `probability_estimates`-Producer aus `simulation_trades` (siehe `docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md`-Nachtrag) wurde die obige Regel-Version 1:1 in `17`s Code-Node "Verarbeite Tage-Paket (Engine)" nachgebaut, Point-in-time (aus `barsUpTo(ticker, day)` statt einem Live-FastAPI-Kursabruf), mit einer bewussten Abweichung:
+
+- **Die Markt-/Makro-News-Stress-Bedingung (Punkt 3 oben, `regime-v2`-Folgeauftrag) wurde NICHT übernommen** — nur die ursprüngliche `regime-v1`-Bedingung (Volatilität + `risk_off`-Anteil) bleibt. Grund: `17` ist "ohne Nachrichten", und `historical_news` hat einen offenen, noch unreparierten Zukunftsdatum-Bug.
+- `session_status`/`vorlaeufig` entfällt — historische Tageskerzen sind immer abgeschlossen, keine Intraday-Unterscheidung nötig.
+- EMA200/`ueber_ema200` wird nicht nachgebaut — beeinflusst `combined_regime` auch live nachweislich nicht, nur `inputs_json`-Metadaten.
+- Referenzticker-Universum identisch (7 der 8 Symbole — MDAX wird auch live nicht in der Regime-Formel verwendet), müssen aber erst per Workflow `15` für den jeweils simulierten Zeitraum importiert werden (kein automatischer Import).
+
+`market_regime_at_entry` wird bei jedem neu eröffneten `simulation_trades`-Datensatz aus dem `combined_regime` der zur Trade-Region (Europa/USA) passenden Regionsberechnung gesetzt; bei anderen/fehlenden Regionswerten bleibt es `NULL` statt geraten.

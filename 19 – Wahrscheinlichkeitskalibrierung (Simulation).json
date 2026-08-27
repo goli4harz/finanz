@@ -1,0 +1,182 @@
+{
+  "active": false,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "DB: Pipeline-Config laden (Wahrscheinlichkeit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Wahrscheinlichkeitskalibrierung (taeglich 06:10)": {
+      "main": [
+        [
+          {
+            "node": "DB: Pipeline-Config laden (Wahrscheinlichkeit)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Pipeline-Config laden (Wahrscheinlichkeit)": {
+      "main": [
+        [
+          {
+            "node": "SQL: Aggregation (Simulation)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL: Aggregation (Simulation)": {
+      "main": [
+        [
+          {
+            "node": "Baue Upsert-SQL (Simulation)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Upsert-SQL (Simulation)": {
+      "main": [
+        [
+          {
+            "node": "DB: Schreiben (Wahrscheinlichkeitskalibrierung)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "wwW1V6qB9oeE51rQ",
+  "meta": null,
+  "name": "19 – Wahrscheinlichkeitskalibrierung (Simulation)",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Manueller Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1200,
+        300
+      ],
+      "id": "n-wf19-001"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Trigger: Wahrscheinlichkeitskalibrierung (taeglich 06:10)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        140
+      ],
+      "id": "n-wf19-002",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT value_numeric FROM trading.pipeline_config WHERE config_key = 'PROBABILITY_MIN_SAMPLE_SIZE';",
+        "options": {}
+      },
+      "name": "DB: Pipeline-Config laden (Wahrscheinlichkeit)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -960,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-wf19-003"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT st.strategy AS strategy,\n  CASE st.direction WHEN 'long' THEN 'kauf' WHEN 'short' THEN 'verkauf' ELSE st.direction END AS direction,\n  st.market_regime_at_entry AS market_regime_at_entry,\n  count(*)::int AS sample_size,\n  avg((st.net_pnl > 0)::int)::numeric(6,4) AS p_win,\n  (avg((st.exit_reason = 'target_reached')::int) FILTER (WHERE st.exit_reason IN ('target_reached','stop_loss')))::numeric(6,4) AS p_target_before_stop,\n  avg(st.realized_r_multiple)::numeric(10,4) AS expected_value_r\nFROM trading.simulation_trades st\nJOIN trading.backtest_runs br ON br.id = st.simulation_run_id\nWHERE st.status = 'closed'\n  AND (br.data_category IS NULL OR br.data_category <> 'out_of_sample')\nGROUP BY st.strategy, st.direction, st.market_regime_at_entry;",
+        "options": {}
+      },
+      "name": "SQL: Aggregation (Simulation)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -720,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-wf19-004",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "function pgStr(v) { return v === null || v === undefined ? 'NULL' : `'` + String(v).replace(/'/g, `''`) + `'`; }\nfunction pgNum(v) { return v === null || v === undefined || v === '' || isNaN(Number(v)) ? 'NULL' : Number(v); }\n\n// Wahrscheinlichkeitskalibrierung aus trading.simulation_trades (V1, Nachtrag zu\n// docs/WAHRSCHEINLICHKEITSKALIBRIERUNG.md). segment_risk_bucket/segment_evidence_bucket/\n// segment_time_horizon bleiben NULL - simulation_trades hat keine Entsprechung zu\n// risk_score/evidence_confidence (die existieren nur auf trading.recommendations). Siehe\n// Trading-Entscheidungszentrale.json (\"Baue Query (Liste/Detail)\") fuer den dazu passenden\n// LEFT JOIN LATERAL-Konsumenten-Umbau.\nconst RULE_VERSION = 'wahrscheinlichkeitskalibrierung-simulation-v1';\nconst DATA_SOURCE = 'simulation_trades';\n\nconst rows = $('SQL: Aggregation (Simulation)').all().map(i => i.json);\nconst cfgRows = $('DB: Pipeline-Config laden (Wahrscheinlichkeit)').all().map(i => i.json);\nconst minSampleSize = (cfgRows.length && cfgRows[0].value_numeric != null) ? Number(cfgRows[0].value_numeric) : 30;\n\n// DELETE+INSERT statt ON CONFLICT: Postgres behandelt NULL <> NULL in UNIQUE-Constraints, ein\n// ON CONFLICT auf dem sql/071-Constraint (segment_risk_bucket/segment_evidence_bucket NULL)\n// wuerde bei jedem Lauf Duplikate statt Updates erzeugen. Voller Refresh ist hier unproblematisch,\n// da ohnehin bei jedem Lauf aus dem kompletten simulation_trades-Bestand neu aggregiert wird.\nconst parts = [];\nparts.push(`DELETE FROM trading.probability_estimates WHERE data_source = ${pgStr(DATA_SOURCE)} AND rule_version = ${pgStr(RULE_VERSION)};`);\n\nfor (const r of rows) {\n  const sampleSize = Number(r.sample_size);\n  const status = sampleSize >= minSampleSize ? 'estimated' : 'insufficient_data';\n  parts.push(`INSERT INTO trading.probability_estimates\n    (segment_strategy, segment_direction, segment_market_regime, segment_risk_bucket, segment_evidence_bucket, segment_time_horizon,\n     sample_size, p_win, p_positive_return, p_target_before_stop, expected_value_r, probability_status, min_sample_size_required,\n     rule_version, data_source)\n    VALUES (${pgStr(r.strategy)}, ${pgStr(r.direction)}, ${pgStr(r.market_regime_at_entry)}, NULL, NULL, NULL,\n     ${pgNum(sampleSize)}, ${pgNum(r.p_win)}, ${pgNum(r.p_win)}, ${pgNum(r.p_target_before_stop)}, ${pgNum(r.expected_value_r)}, ${pgStr(status)}, ${pgNum(minSampleSize)},\n     ${pgStr(RULE_VERSION)}, ${pgStr(DATA_SOURCE)});`);\n}\n\nconst sql = `${parts.join('\\n')}`;\nreturn [{ json: { sql, row_count: rows.length, min_sample_size: minSampleSize } }];\n"
+      },
+      "name": "Baue Upsert-SQL (Simulation)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        220
+      ],
+      "id": "n-wf19-005"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.sql }}",
+        "options": {}
+      },
+      "name": "DB: Schreiben (Wahrscheinlichkeitskalibrierung)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -240,
+        220
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      },
+      "id": "n-wf19-006"
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "VTBfUuzQfMZNGYDM",
+    "saveDataSuccessExecution": "all"
+  },
+  "tags": [],
+  "versionId": "3121ac31-1f6e-4af8-b6b2-c38fde9695b8"
+}
