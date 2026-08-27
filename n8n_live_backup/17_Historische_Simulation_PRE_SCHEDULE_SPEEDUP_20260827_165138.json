@@ -1377,8 +1377,7 @@
         "rule": {
           "interval": [
             {
-              "field": "seconds",
-              "secondsInterval": 30
+              "field": "minutes"
             }
           ]
         }
