@@ -922,7 +922,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE trading.backtest_runs SET last_heartbeat = now() WHERE id = {{ $('Pruefe Run-Zustand').all()[0].json.id }} AND (last_heartbeat IS NULL OR last_heartbeat < now() - interval '2 minutes') RETURNING id;",
+        "query": "UPDATE trading.backtest_runs SET last_heartbeat = now() WHERE id = {{ $('Pruefe Run-Zustand').all()[0].json.id }} AND (last_heartbeat IS NULL OR last_heartbeat < now() - interval '15 minutes') RETURNING id;",
         "options": {}
       },
       "id": "sim17-db-lock-beanspruchen",
@@ -1606,5 +1606,5 @@
     "binaryMode": "separate"
   },
   "tags": [],
-  "versionId": "49e4f566-af19-494b-950a-242a9f3f9bea"
+  "versionId": "fec18728-29e3-4858-9470-f0f287ab4a8b"
 }
