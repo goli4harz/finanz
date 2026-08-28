@@ -91,27 +91,41 @@ def evaluate_exit(
     return ExecutionResult(exit=False)
 
 
+# FIX 2026-08-28 (#1, parallel zu WF17 "Verarbeite Tage-Paket"): Strategien mit festem Kursziel
+# bekommen KEINEN mitgezogenen Stop. mean_reversion zielt auf die Rueckkehr zum Mittel; ein
+# im Anfangs-Bounce eng gezogener Stop wird vom normalen Ruecksetzer mitgenommen, bevor das
+# Ziel greift (59% stop_loss / nur 11% take_profit ueber alle Sim-Trades). Trailing bleibt
+# fuer trend_following/breakout ("Gewinner laufen lassen").
+_TRAILING_STRATEGIES = {"trend_following", "breakout"}
+
+
 def update_trailing_stop(trade: Trade, bar: Bar) -> Trade:
     """1:1 aus dem Trailing-Stop-Zweig von "Verarbeite Tage-Paket" (WF17) uebersetzt. Nur fuer
     Long/Short symmetrisch nachziehen, nie gegen die Trail-Distance zurueckziehen (der Vergleich
     `trail_stop > stop`/`trail_stop < stop` verhindert das). Der Aufrufer ist dafuer
     verantwortlich, diese Funktion NICHT aufzurufen, wenn evaluate_exit() fuer denselben Tag
-    bereits `exit=True` zurueckgegeben hat (siehe Modul-Docstring)."""
+    bereits `exit=True` zurueckgegeben hat (siehe Modul-Docstring).
+
+    extreme_price_since_entry wird fuer ALLE Strategien mitgefuehrt (wird persistiert); der Stop
+    wird aber nur fuer _TRAILING_STRATEGIES nachgezogen (siehe Kommentar oben, FIX #1)."""
     is_long = trade.direction == "long"
     extreme_price = trade.extreme_price_since_entry
     stop_price = trade.stop_price_current
+    trailing_erlaubt = trade.strategy in _TRAILING_STRATEGIES
 
     if is_long:
         if bar.high > extreme_price:
             extreme_price = bar.high
-        trail_stop = extreme_price - trade.trail_distance
-        if trail_stop > stop_price:
-            stop_price = trail_stop
+        if trailing_erlaubt:
+            trail_stop = extreme_price - trade.trail_distance
+            if trail_stop > stop_price:
+                stop_price = trail_stop
     else:
         if bar.low < extreme_price:
             extreme_price = bar.low
-        trail_stop = extreme_price + trade.trail_distance
-        if trail_stop < stop_price:
-            stop_price = trail_stop
+        if trailing_erlaubt:
+            trail_stop = extreme_price + trade.trail_distance
+            if trail_stop < stop_price:
+                stop_price = trail_stop
 
     return trade.model_copy(update={"extreme_price_since_entry": extreme_price, "stop_price_current": stop_price})

@@ -1,12 +1,12 @@
 {
-  "trade_count": 114,
-  "winning_trades": 10,
-  "losing_trades": 104,
-  "net_pnl": -5495.83,
-  "total_return_pct": -21.9332,
-  "max_drawdown_pct": 21.9332,
-  "profit_factor": 0.1089,
-  "expectancy_r": -0.9776,
-  "final_equity": 19516.71,
-  "open_trades_at_end": 1
+  "trade_count": 44,
+  "winning_trades": 20,
+  "losing_trades": 24,
+  "net_pnl": 790.23,
+  "total_return_pct": 3.1503,
+  "max_drawdown_pct": 2.3122,
+  "profit_factor": 1.4797,
+  "expectancy_r": 0.0517,
+  "final_equity": 25787.58,
+  "open_trades_at_end": 2
 }

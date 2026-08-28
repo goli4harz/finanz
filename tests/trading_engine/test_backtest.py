@@ -172,8 +172,15 @@ def test_already_open_ticker_not_duplicated_as_new_candidate():
 
 
 def test_new_candidate_generates_order_when_no_open_position():
-    closes = [100.0] * 45 + [130.0]
-    bars = [Bar(ticker="BBB", trading_date=date(2026, 7, 1), open=c, high=c, low=c, close=c, volume=1_000_000) for c in closes]
+    # Ausreichend Historie (>100 Bars fuer den SMA50/100-Trendfilter aus FIX 2026-08-28 #3),
+    # letzter Bar = echter 52W-Hoch-Ausbruch mit erhoehtem Volumen und genug ATR, um nach Kosten
+    # wirtschaftlich zu sein -> breakout-long-Signal -> genau eine Order.
+    closes = [100.0] * 115 + [130.0]
+    bars = [
+        Bar(ticker="BBB", trading_date=date(2026, 7, 1), open=c, high=c, low=c, close=c,
+            volume=2_000_000 if i == len(closes) - 1 else 1_000_000)
+        for i, c in enumerate(closes)
+    ]
     bar_today = bars[-1]
     result = step(
         as_of=date(2026, 8, 19), next_trading_day=date(2026, 8, 20), tickers_today=["BBB"],

@@ -188,21 +188,31 @@ def calculate_signals(bars: list[Bar], rule_version: str) -> list[Signal]:
     ema_dist_pct = abs(aktueller_kurs - ema20) / ema20 if ema20 and ema20 > 0 else 0
     if ema_dist_pct > 0.01:
         mr_score += min(0.25, ema_dist_pct * 5)
-    rsi_ueberdehnt_long = rsi_val < 32
-    rsi_ueberdehnt_short = rsi_val > 68
+    # FIX 2026-08-28 (#3, parallel zu WF17 "Berechne Signale (Batch)"): RSI-Schwellen 32/68
+    # -> 28/72 (extremere Ueberdehnung) + Primaertrend-Filter (SMA50 vs SMA100). MR nur MIT dem
+    # uebergeordneten Trend - Dips im Aufwaertstrend kaufen, Rallyes im Abwaertstrend shorten.
+    # Ohne Filter fing MR fallende Messer im Abwaertstrend (Kern der negativen Sim-Performance).
+    rsi_ueberdehnt_long = rsi_val < 28
+    rsi_ueberdehnt_short = rsi_val > 72
     preis_ueberdehnt_long = kurs_bei_unten or (ema_dist_pct > 0.01 and ema20 is not None and aktueller_kurs < ema20)
     preis_ueberdehnt_short = kurs_bei_oben or (ema_dist_pct > 0.01 and ema20 is not None and aktueller_kurs > ema20)
+    sma50 = sum(closes[-50:]) / 50 if len(closes) >= 50 else None
+    sma100 = sum(closes[-100:]) / 100 if len(closes) >= 100 else None
+    trend_bekannt = sma50 is not None and sma100 is not None
+    primaer_aufwaerts = trend_bekannt and sma50 >= sma100
     mr_direction = "neutral"
-    if rsi_ueberdehnt_long and preis_ueberdehnt_long:
+    if rsi_ueberdehnt_long and preis_ueberdehnt_long and primaer_aufwaerts:
         mr_direction = "long"
-    elif rsi_ueberdehnt_short and preis_ueberdehnt_short:
+    elif rsi_ueberdehnt_short and preis_ueberdehnt_short and trend_bekannt and sma50 < sma100:
         mr_direction = "short"
     mr_entry_low, mr_entry_high, mr_stop, mr_target = _strategy_stop_target_entry("mean_reversion", mr_direction, aktueller_kurs, atr14)
 
     mean_reversion_signal = Signal(
         strategy="mean_reversion", direction=mr_direction, raw_score=round(min(1, mr_score), 2),
         entry_zone_low=mr_entry_low, entry_zone_high=mr_entry_high, stop_price=mr_stop, target_price=mr_target,
-        expected_horizon_days=3, rule_version=rule_version,
+        # FIX 2026-08-28 (#3): 3 -> 8 Handelstage, parallel zu WF17 (Dip-in-Aufwaertstrend
+        # braucht oft 1-2 Wochen zur Mittel-Rueckkehr).
+        expected_horizon_days=8, rule_version=rule_version,
     )
 
     # --- Trend-Following ---

@@ -96,10 +96,27 @@ def test_returns_three_strategy_signals_on_sufficient_history():
         assert 0 <= s.raw_score <= 1
 
 
-def test_mean_reversion_long_on_extreme_oversold_and_lower_band_touch():
-    # Stark fallende Kursreihe mit finalem starken Einbruch -> RSI extrem ueberverkauft
-    # UND Kurs am/unter dem unteren Bollinger-Band -> muss long ausloesen (echtes UND-Kriterium,
-    # Haertung Welle 1-3 Phase 9).
+def test_mean_reversion_long_on_oversold_dip_within_primary_uptrend():
+    # FIX 2026-08-28 (#3): MR-long feuert nur, wenn der Primaertrend (SMA50 >= SMA100) aufwaerts
+    # zeigt. Szenario: langer Aufwaertstrend, dann ein scharfer kurzer Ruecksetzer am Ende ->
+    # RSI < 28 UND Kurs am/unter dem unteren Bollinger-Band, SMA50 weiterhin > SMA100.
+    closes = [100.0]
+    for _ in range(100):
+        closes.append(closes[-1] * 1.004)  # stetiger Aufwaertstrend, SMA50 > SMA100
+    for _ in range(7):
+        closes.append(closes[-1] * 0.965)  # kurzer scharfer Ruecksetzer (dreht 50/100 nicht)
+    bars = make_bars(closes)
+    signals = calculate_signals(bars, "test-v1")
+    mr = next(s for s in signals if s.strategy == "mean_reversion")
+    assert mr.direction == "long"
+    assert mr.stop_price is not None and mr.stop_price < closes[-1]
+    assert mr.target_price is not None and mr.target_price > closes[-1]
+
+
+def test_mean_reversion_neutral_on_oversold_in_primary_downtrend():
+    # FIX 2026-08-28 (#3): dieselbe RSI-/Bollinger-Ueberdehnung, aber im Abwaertstrend
+    # (SMA50 < SMA100) -> KEIN MR-long (kein "fallendes Messer" fangen). Vorher loeste genau
+    # dieses Szenario faelschlich long aus.
     closes = [100.0]
     for _ in range(45):
         closes.append(closes[-1] * 0.995)  # stetiger Abwaertstrend
@@ -107,10 +124,7 @@ def test_mean_reversion_long_on_extreme_oversold_and_lower_band_touch():
     bars = make_bars(closes)
     signals = calculate_signals(bars, "test-v1")
     mr = next(s for s in signals if s.strategy == "mean_reversion")
-    assert mr.direction == "long"
-    assert mr.raw_score >= 0.5  # RSI-Komponente + Bollinger-Komponente muessen beide gegriffen haben
-    assert mr.stop_price is not None and mr.stop_price < closes[-1]
-    assert mr.target_price is not None and mr.target_price > closes[-1]
+    assert mr.direction == "neutral"
 
 
 def test_mean_reversion_neutral_without_price_overextension():

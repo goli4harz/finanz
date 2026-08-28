@@ -43,6 +43,21 @@ from .models import (
     TradePnl,
 )
 from .position_sizing import size_position
+
+
+def _add_trading_days(d: date, n: int) -> date:
+    """FIX 2026-08-28 (#2, parallel zu WF17 nextWeekday-Schleife): expected_horizon_days sind
+    HANDELSTAGE, nicht Kalendertage. Vorher: ``as_of + timedelta(days=n)`` -> bei n=8 und
+    Wochenenden blieben real ~5-6 Handelstage, viel liefen ins time_stop. Ueberspringt nur
+    Sa/So (keine Feiertage - gleiche Naeherung wie der Legacy-Pfad; ein echter Handelskalender
+    waere eine gemeinsame kuenftige Verbesserung fuer beide Pfade)."""
+    result = d
+    added = 0
+    while added < n:
+        result += timedelta(days=1)
+        if result.weekday() < 5:
+            added += 1
+    return result
 from .risk_limits import check_portfolio_limits
 from .signals import calculate_signals
 
@@ -191,11 +206,20 @@ def step(
         candidate_signals = list(signals_today.get(ticker, []))
         if strategy_filter:
             candidate_signals = [s for s in candidate_signals if s.strategy == strategy_filter]
+        # FIX 2026-08-28: nur handelbare Signale in die best-Auswahl. calculate_signals() gibt
+        # IMMER alle 3 Strategien zurueck, auch mit direction="neutral" (anders als WF17s
+        # computeSignals(), das nur gerichtete Signale in die Liste legt). Ohne diesen Filter
+        # konnte ein hoch bewertetes neutrales Signal (raw_score wird richtungsunabhaengig
+        # berechnet) per max() gewinnen und den ganzen Ticker verwerfen, obwohl ein niedriger
+        # bewertetes, aber gueltiges gerichtetes Signal vorlag.
+        candidate_signals = [
+            s for s in candidate_signals
+            if s.direction != "neutral" and s.entry_zone_low is not None and s.entry_zone_high is not None
+            and s.stop_price is not None and s.target_price is not None
+        ]
         if not candidate_signals:
             continue
         best = max(candidate_signals, key=lambda s: s.raw_score)
-        if best.direction == "neutral" or best.entry_zone_low is None or best.entry_zone_high is None or best.stop_price is None or best.target_price is None:
-            continue
         bar = bars_today[ticker]
         sektor = ticker_sektor.get(ticker, "unbekannt")
         region = ticker_region.get(ticker, "global")
@@ -210,7 +234,7 @@ def step(
             ticker=ticker, direction=best.direction, entry_zone_low=best.entry_zone_low, entry_zone_high=best.entry_zone_high,
             stop_price=best.stop_price, target_price=best.target_price, quantity=sizing.quantity,
             intended_execution_date=next_trading_day, strategy=best.strategy, sektor=sektor, region=region,
-            risk_amount=sizing.risk_amount, time_stop_at=as_of + timedelta(days=best.expected_horizon_days),
+            risk_amount=sizing.risk_amount, time_stop_at=_add_trading_days(as_of, best.expected_horizon_days),
             theoretical_quantity=sizing.theoretical_quantity, theoretical_risk_amount=sizing.theoretical_risk_amount,
             clamp_reason=sizing.reason if sizing.clamped else None,
         )

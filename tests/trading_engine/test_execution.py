@@ -21,12 +21,15 @@ def make_order(zone_low=99, zone_high=101, direction="long"):
     )
 
 
-def make_trade(direction="long", stop=95, target=110, time_stop_at=None):
+def make_trade(direction="long", stop=95, target=110, time_stop_at=None, strategy="trend_following"):
+    # Default strategy = trend_following: die Trailing-Stop-Tests pruefen die Trailing-Mechanik,
+    # die seit FIX 2026-08-28 (#1) nur noch fuer trend_following/breakout gilt. evaluate_exit-
+    # Tests sind strategieunabhaengig.
     return Trade(
         trade_id="t1", ticker="TEST", direction=direction, entry_price=100,
         stop_price_current=stop, target_price=target, quantity=10,
         extreme_price_since_entry=100, trail_distance=5, entry_day="2026-08-18",
-        time_stop_at=time_stop_at,
+        time_stop_at=time_stop_at, strategy=strategy,
     )
 
 
@@ -184,6 +187,16 @@ def test_trailing_stop_ratchets_down_for_short():
     updated = update_trailing_stop(trade, bar)
     assert updated.extreme_price_since_entry == 90
     assert updated.stop_price_current == 95  # 90 + trail_distance(5)
+
+
+def test_trailing_stop_disabled_for_mean_reversion():
+    """FIX 2026-08-28 (#1): mean_reversion hat ein festes Kursziel - der Stop wird NICHT
+    nachgezogen (sonst systematisches Ausstoppen vor dem Ziel). extreme_price wird trotzdem
+    mitgefuehrt (persistiert)."""
+    trade = make_trade(direction="long", stop=95, strategy="mean_reversion")
+    updated = update_trailing_stop(trade, make_bar(open_=105, high=110, low=104, close=108))
+    assert updated.extreme_price_since_entry == 110  # weiter mitgefuehrt
+    assert updated.stop_price_current == 95          # unveraendert, kein Trailing
 
 
 def test_trailing_stop_look_ahead_ordering_from_audit_brief():

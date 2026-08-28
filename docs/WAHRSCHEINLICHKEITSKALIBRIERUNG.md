@@ -133,11 +133,29 @@ mean_reversion durchweg Verlust (p_win 0.18–0.24, EV −0.39…−0.54). Zwei 
   Haltedauer. → **Fix**: `for (i<N) timeStopDate = nextWeekday(timeStopDate)` — N echte
   Börsentage. `expected_horizon_days` (5/15/7) selbst unverändert (das wäre #3, Tuning).
 
-**#3 offen (Tuning, bewusst nicht angefasst):** MR-Entry (RSI<32/>68 + Bollinger-Berührung,
-kein Trendfilter) + RRR 1.5 (Target 1.5 ATR / Stop 1.0 ATR, braucht >40 % Trefferquote) —
-`STRATEGY_ATR_MULTIPLIERS` wirken wie generische Vorlage, nicht MR-spezifisch entworfen.
+- **#3 mean_reversion-Tuning (umgesetzt 2026-08-28, Legacy `Berechne Signale (Batch)` +
+  Engine `signals.py`):**
+  - **Primärtrend-Filter** SMA50 vs SMA100: MR-long nur bei `sma50 >= sma100` (Aufwärtstrend),
+    MR-short nur bei `sma50 < sma100`. Ist der Trend mangels Historie (<100 Bars) nicht
+    bestimmbar, kein MR-Trade. Kern-Fix: MR fing vorher fallende Messer im Abwärtstrend.
+  - RSI-Schwellen 32/68 → **28/72** (extremere Überdehnung).
+  - `expected_horizon_days` MR 5 → **8** Handelstage (Engine: 3 → 8).
+  - **Nicht angefasst**: `stop:1.0 / target:1.5` (RRR 1.5) — durch `MIN_REWARD_RISK_RATIO=1.5`
+    (`sizePosition`-Veto, live-Wert bestätigt) nach unten fest. Ein MR-typisches
+    Hoch-Trefferquote/niedrig-RRR-Profil ginge nur mit Änderung dieser Portfolio-Config.
 
-**Wirkung:** Fix #1/#2 ändern die Sim-Ergebnisse. Ein **voller Sim-Neulauf** ist nötig, damit
-`simulation_trades` (und danach WF19 → `probability_estimates`) die neue Logik widerspiegeln.
-Der **Engine-Pfad** (`trading_engine`-Python-Service) hat dieselbe Trailing-/time_stop-Logik
-und braucht die analogen Fixes, bevor `TRADING_ENGINE_STEP_ENABLED` auf `true` geht.
+**Engine-Pfad (`trading_engine/`) auf Stand gebracht 2026-08-28** — dieselben Fixes #1/#2/#3 in
+`execution.py` (`update_trailing_stop`: `_TRAILING_STRATEGIES = {trend_following, breakout}`),
+`backtest.py` (`_add_trading_days()` statt `timedelta(days=…)`), `signals.py` (Trendfilter,
+RSI 28/72, Horizont 8). **Zusätzlicher Bug dabei gefunden+gefixt**: `backtest.step()` wählte
+`best = max(signals, key=raw_score)` OHNE vorher neutrale/ungültige Signale zu filtern —
+`calculate_signals()` liefert immer alle 3 Strategien (auch `direction="neutral"`, anders als
+WF17s `computeSignals()`), ein hoch bewertetes neutrales Signal konnte so den ganzen Ticker
+verwerfen. Jetzt wird vor `max()` gefiltert. Golden-Run-Snapshot neu erzeugt (synthetische
+Random-Walk-Daten, kein Profitabilitätsbeleg): trade_count 114→44, Trefferquote 8,8 %→45 %,
+Return −21,9 %→+3,2 %, max DD 21,9 %→2,3 %, profit_factor 0,11→1,48. 82/82 Engine-Tests grün
+(Signal-/Trailing-/Backtest-Tests an die neue Intention angepasst, nicht "grün geklopft").
+
+**Wirkung:** Fix #1/#2/#3 ändern die Sim-Ergebnisse. Ein **voller Sim-Neulauf** ist nötig,
+damit `simulation_trades` (und danach WF19 → `probability_estimates`) die neue Logik zeigen.
+`TRADING_ENGINE_STEP_ENABLED` bleibt bis zum Engine-vs-Legacy-Vergleichslauf auf `false`.
