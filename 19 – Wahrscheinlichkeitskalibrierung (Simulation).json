@@ -117,7 +117,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT st.strategy AS strategy,\n  CASE st.direction WHEN 'long' THEN 'kauf' WHEN 'short' THEN 'verkauf' ELSE st.direction END AS direction,\n  st.market_regime_at_entry AS market_regime_at_entry,\n  count(*)::int AS sample_size,\n  avg((st.net_pnl > 0)::int)::numeric(6,4) AS p_win,\n  (avg((st.exit_reason = 'target_reached')::int) FILTER (WHERE st.exit_reason IN ('target_reached','stop_loss')))::numeric(6,4) AS p_target_before_stop,\n  avg(st.realized_r_multiple)::numeric(10,4) AS expected_value_r\nFROM trading.simulation_trades st\nJOIN trading.backtest_runs br ON br.id = st.simulation_run_id\nWHERE st.status = 'closed'\n  AND (br.data_category IS NULL OR br.data_category <> 'out_of_sample')\nGROUP BY st.strategy, st.direction, st.market_regime_at_entry;",
+        "query": "-- Wahrscheinlichkeitskalibrierung aus trading.simulation_trades.\n-- FIX 2026-08-28:\n--  (a) p_target_before_stop erkannte nur 'target_reached' - die Simulation schreibt aber\n--      'take_profit' (checkExit in WF17). Vokabular jetzt beidseitig akzeptiert -> p_target\n--      war vorher systematisch 0.\n--  (b) Zusaetzlich zu den regime-spezifischen Segmenten ein regime-agnostisches Rollup je\n--      strategy x direction (segment_market_regime = NULL). Der Konsument (Trading-\n--      Entscheidungszentrale, LATERAL) faellt darauf zurueck, wenn die Empfehlung kein\n--      passendes / nur 'unknown' Regime hat - sonst bleibt die Kalibrierung praktisch\n--      immer ungematcht.\nWITH base AS (\n  SELECT st.strategy,\n    CASE st.direction WHEN 'long' THEN 'kauf' WHEN 'short' THEN 'verkauf' ELSE st.direction END AS direction,\n    st.market_regime_at_entry AS regime,\n    st.net_pnl, st.exit_reason, st.realized_r_multiple\n  FROM trading.simulation_trades st\n  JOIN trading.backtest_runs br ON br.id = st.simulation_run_id\n  WHERE st.status = 'closed'\n    AND (br.data_category IS NULL OR br.data_category <> 'out_of_sample')\n)\nSELECT strategy, direction, regime AS market_regime_at_entry,\n  count(*)::int AS sample_size,\n  avg((net_pnl > 0)::int)::numeric(6,4) AS p_win,\n  (avg((exit_reason IN ('take_profit','target_reached'))::int)\n     FILTER (WHERE exit_reason IN ('take_profit','target_reached','stop_loss')))::numeric(6,4) AS p_target_before_stop,\n  avg(realized_r_multiple)::numeric(10,4) AS expected_value_r\nFROM base\nWHERE regime IS NOT NULL\nGROUP BY strategy, direction, regime\nUNION ALL\nSELECT strategy, direction, NULL::text AS market_regime_at_entry,\n  count(*)::int AS sample_size,\n  avg((net_pnl > 0)::int)::numeric(6,4) AS p_win,\n  (avg((exit_reason IN ('take_profit','target_reached'))::int)\n     FILTER (WHERE exit_reason IN ('take_profit','target_reached','stop_loss')))::numeric(6,4) AS p_target_before_stop,\n  avg(realized_r_multiple)::numeric(10,4) AS expected_value_r\nFROM base\nGROUP BY strategy, direction;\n",
         "options": {}
       },
       "name": "SQL: Aggregation (Simulation)",
@@ -171,12 +171,12 @@
       "id": "n-wf19-006"
     }
   ],
-  "pinData": null,
+  "pinData": {},
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "3121ac31-1f6e-4af8-b6b2-c38fde9695b8"
+  "versionId": "b5e10a0c-4f51-49d0-94f7-c98ca866202a"
 }

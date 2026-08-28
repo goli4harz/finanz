@@ -69,3 +69,53 @@ also bereits überholt. Repo jetzt 1:1 mit Live synchronisiert (nicht andersrum 
 **Weiterhin offen**: Testlauf/Verifikation der `probability_estimates`-Zeilen und der
 LATERAL-Konsumenten-Query gegen eine echte Empfehlung — das war nie der eigentliche Blocker,
 sondern die Repo-Drift selbst.
+
+## Nachtrag 2026-08-28 — Regime-Befüllung repariert, Backfill, Fix D (regime-agnostischer Fallback)
+
+Verifikation von 08-27 ergab: `trading.probability_estimates` war **leer** und alle 237
+geschlossenen `simulation_trades` hatten `market_regime_at_entry = NULL` (bis auf 4). Kette also
+komplett tot.
+
+**Ursache**: die Point-in-time-Regime-Berechnung existierte nur im WF17-Knoten
+`Verarbeite Tage-Paket (Engine)`. `pipeline_config.TRADING_ENGINE_STEP_ENABLED = false`
+(bewusst, bis Vergleichslauf bestätigt) → es lief der Legacy-Knoten `Verarbeite Tage-Paket`,
+der **gar keine Regime-Logik** hatte → `pgStr(undefined)` = `'NULL'`. Nebenbug: `deriveRegion()`
+mappte nur über `stock_instruments.exchange`; `BAS.DE` hatte `exchange = NULL` → `'global'` →
+kein Regime.
+
+**Fixes (live auf `172.16.1.17`, danach ins Repo gezogen):**
+1. **WF17 `Verarbeite Tage-Paket`**: Regime-Helfer (`emaValue/emaSeries/realizedVol20/
+   symbolRegimeContext/regionRegimeHistorical` + `REGIME_SYMBOLS` + `barsUpTo`) 1:1 aus dem
+   Engine-Knoten portiert, in sauberem UTF-8 (der Engine-Knoten hat dort 7× U+FFFD-Mojibake,
+   das nur funktioniert, weil Erzeuger und Vergleich denselben kaputten String nutzen). Der
+   Legacy-Tagesloop berechnet jetzt `europaRegime`/`usaRegime` und schreibt
+   `market_regime_at_entry` in die neue Trade-Zeile — Parität zwischen Legacy- und Engine-Pfad.
+2. **WF17 `deriveRegion(exchange, ticker)`**: Ticker-Suffix-Fallback (`.DE`/`.PA`/`.AS`/… →
+   `'Europa'`), damit fehlendes `exchange` nicht mehr nach `'global'` kippt. Zusätzlich
+   `UPDATE trading.stock_instruments SET exchange='XETRA' WHERE ticker='BAS.DE'`.
+3. **Backfill** der 234 bestehenden NULL-Trades: Regime lokal mit derselben Formel aus
+   `historical_price_data` je `as_of_date` gerechnet und per `UPDATE … FROM (VALUES …)` gesetzt
+   (`AND market_regime_at_entry IS NULL`, die 4 guten Zeilen unangetastet). Gegengeprüft an den
+   4 Engine-Pfad-Trades (2026-01-05/06 → `bull_trend_low_vol`, exakt gleich). Ergebnis:
+   160× `bull_trend_low_vol`, 78× `bear_trend`, 0× NULL.
+4. **WF19 `SQL: Aggregation (Simulation)`**:
+   - `p_target_before_stop` erkannte nur `'target_reached'` — die Simulation schreibt aber
+     `'take_profit'` (`checkExit` in WF17). Beide Vokabeln werden jetzt akzeptiert; der Wert war
+     vorher systematisch 0, jetzt z.B. 0.16–0.38.
+   - **Fix D**: zusätzlich zu den regime-spezifischen Segmenten ein **regime-agnostisches
+     Rollup** je `strategy × direction` (`segment_market_regime = NULL`), via `UNION ALL`.
+5. **Trading-Entscheidungszentrale `Baue Query (Liste/Detail)`** (LATERAL): Regime-Bedingung
+   auf `(pe.segment_market_regime = COALESCE(...) OR pe.segment_market_regime IS NULL)` gelockert,
+   `ORDER BY … , (pe.segment_market_regime IS NOT NULL) DESC` — exakter Regime-Match vor Rollup.
+
+**Verifiziert**: `probability_estimates` hat jetzt 6 Zeilen (4 regime-spezifisch + 2 Rollup),
+5× `estimated`. Die LATERAL-Query matcht 4 der 5 Empfehlungen (alle `mean_reversion`, Regime
+`'unknown'`) über das Rollup; die 5. (`trend_following`) bleibt ohne Match, weil es **keine**
+`trend_following`-Sim-Trades gibt — korrektes, ehrliches Verhalten.
+
+**Noch offen**: (a) warum tragen die Live-`recommendations` Regime `'unknown'`? (Live-02b/06-
+Regimeerkennung, separat). (b) `TRADING_ENGINE_STEP_ENABLED` bleibt `false` — der Legacy-Pfad
+ist jetzt der maßgebliche und regime-fähige; der Engine-Pfad-Vergleichslauf ist davon
+unabhängig. (c) `simulation_trades` schließt nie per `take_profit` mit positivem EV in den
+großen Segmenten — mean_reversion ist in der Sim durchweg Verlust (p_win 0.18–0.24), eigener
+Prüfpunkt für die Strategie-/Exit-Logik.
