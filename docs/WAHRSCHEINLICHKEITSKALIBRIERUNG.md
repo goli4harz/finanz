@@ -116,6 +116,28 @@ kein Regime.
 **Noch offen**: (a) warum tragen die Live-`recommendations` Regime `'unknown'`? (Live-02b/06-
 Regimeerkennung, separat). (b) `TRADING_ENGINE_STEP_ENABLED` bleibt `false` — der Legacy-Pfad
 ist jetzt der maßgebliche und regime-fähige; der Engine-Pfad-Vergleichslauf ist davon
-unabhängig. (c) `simulation_trades` schließt nie per `take_profit` mit positivem EV in den
-großen Segmenten — mean_reversion ist in der Sim durchweg Verlust (p_win 0.18–0.24), eigener
-Prüfpunkt für die Strategie-/Exit-Logik.
+unabhängig.
+
+### Exit-Logik-Review (WF17 `Verarbeite Tage-Paket`) — Fix #1/#2 umgesetzt 2026-08-28
+
+Auslöser: 59 % `stop_loss`, 30 % `time_stop`, nur 11 % `take_profit` über alle 237 Sim-Trades;
+mean_reversion durchweg Verlust (p_win 0.18–0.24, EV −0.39…−0.54). Zwei strukturelle Ursachen:
+
+- **#1 Trailing-Stop galt für ALLE Strategien ab Tag 1.** mean_reversion zielt auf ein festes
+  Kursziel (Rückkehr zum Mittel, +1.5 ATR); ein mitgezogener Stop wird im kleinen Anfangs-Bounce
+  eng gezogen und vom normalen Rücksetzer mitgenommen, bevor das Ziel erreicht ist. → **Fix**:
+  `trailingErlaubt = strategy IN ('trend_following','breakout')`; mean_reversion behält den
+  festen ATR-Anfangsstop. `extreme_price` wird weiterhin für alle mitgeführt (persistiert).
+- **#2 `time_stop_at` rechnete in KALENDERtagen** (`day + expected_horizon_days*24h`). Bei
+  `expected_horizon_days=5` (MR) und einem Wochenende dazwischen blieben real 1–2 Handelstage
+  Haltedauer. → **Fix**: `for (i<N) timeStopDate = nextWeekday(timeStopDate)` — N echte
+  Börsentage. `expected_horizon_days` (5/15/7) selbst unverändert (das wäre #3, Tuning).
+
+**#3 offen (Tuning, bewusst nicht angefasst):** MR-Entry (RSI<32/>68 + Bollinger-Berührung,
+kein Trendfilter) + RRR 1.5 (Target 1.5 ATR / Stop 1.0 ATR, braucht >40 % Trefferquote) —
+`STRATEGY_ATR_MULTIPLIERS` wirken wie generische Vorlage, nicht MR-spezifisch entworfen.
+
+**Wirkung:** Fix #1/#2 ändern die Sim-Ergebnisse. Ein **voller Sim-Neulauf** ist nötig, damit
+`simulation_trades` (und danach WF19 → `probability_estimates`) die neue Logik widerspiegeln.
+Der **Engine-Pfad** (`trading_engine`-Python-Service) hat dieselbe Trailing-/time_stop-Logik
+und braucht die analogen Fixes, bevor `TRADING_ENGINE_STEP_ENABLED` auf `true` geht.
