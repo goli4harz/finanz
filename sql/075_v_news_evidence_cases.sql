@@ -23,7 +23,21 @@
 -- (Audit Kap. 9 hatte das offen gelassen): UNIQUE(region, business_date) in
 -- sql/032 garantiert genau einen Regime-Snapshot je Tag, kein
 -- ueberschreibendes Re-Compute ueber Tage hinweg - der Join liefert also
--- tatsaechlich das Regime zum jeweiligen Ereignisdatum, nicht das aktuelle.
+-- strukturell tatsaechlich das Regime zum jeweiligen Ereignisdatum, nicht
+-- das aktuelle.
+--
+-- ABER (live verifiziert 2026-08-30 direkt nach Deployment): trading.market_regime
+-- hat aktuell nur 15 Zeilen, Zeitraum 2026-08-21..2026-08-28 - keine
+-- historische Rueckrechnung, nur die letzte Woche laufenden Betriebs. Die
+-- 657 vorhandenen historical_news_impact_tracking-Faelle liegen zwischen
+-- 2025-03-14 und 2026-01-10, also komplett ausserhalb dieses Fensters ->
+-- regime_at_event ist fuer praktisch alle heutigen Zeilen NULL (ehrlich,
+-- keine erfundenen Werte - aber die Frage aus Kap. 9 ist damit fuer den
+-- IST-Zustand mit "strukturell ja, faktisch nein" beantwortet, nicht mit
+-- einem klaren Ja wie zunaechst hier vermerkt). Wird sich von selbst fuellen,
+-- sobald 02b weiterlaeuft und/oder ein Backfill fuer market_regime gebaut
+-- wird - fuer den kuenftigen Live-Betrieb (neue Ereignisse ab 2026-08-21)
+-- funktioniert der Join bereits.
 
 BEGIN;
 
