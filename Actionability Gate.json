@@ -1,0 +1,153 @@
+{
+  "active": false,
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Werte Actionability-Regeln aus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Werte Actionability-Regeln aus": {
+      "main": [
+        [
+          {
+            "node": "Protokolliere Entscheidung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Protokolliere Entscheidung": {
+      "main": [
+        [
+          {
+            "node": "Baue Ausgabe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "1168c8jXJfvYLz60",
+  "meta": null,
+  "name": "Actionability Gate",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            },
+            {
+              "name": "news_id"
+            },
+            {
+              "name": "recommendation_id"
+            },
+            {
+              "name": "is_relevant"
+            },
+            {
+              "name": "is_duplicate"
+            },
+            {
+              "name": "data_quality_ok"
+            },
+            {
+              "name": "has_ticker_bezug"
+            },
+            {
+              "name": "evidence_sufficient"
+            },
+            {
+              "name": "evidence_conflicting"
+            },
+            {
+              "name": "hard_veto_active"
+            },
+            {
+              "name": "regime_fit_ok"
+            },
+            {
+              "name": "technical_confirmation"
+            },
+            {
+              "name": "is_cooldown_active"
+            }
+          ]
+        }
+      },
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "ag-0001"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Actionability Gate - Kernlogik (Audit-Konzept 2026-08-24, Kap. 13).\n// Vier Klassen, in dieser Reihenfolge geprueft (jede Stufe ist ein Ausschluss-\n// Filter fuer die naechste, genau wie in Kap. 13 beschrieben):\n//   IGNORE  - irrelevant, Duplikat, oder Datenqualitaet unter Schwelle\n//   INFO    - kein konkreter Tickerbezug (Makro/Markt), ODER Evidenz nicht ausreichend\n//   WATCH   - Rest-Faelle: Relevanz+Ticker+Evidenz da, aber (noch) nicht alarmwuerdig\n//   ALERT   - Tickerbezug + kein hartes Veto + Regime passt + Evidenz widerspricht\n//             nicht klar + ausreichende Evidenzqualitaet + kein Duplikat/Cooldown +\n//             technische Bestaetigung vorhanden\n//\n// WICHTIG (Kap. 18 Schritt 7): \"zunaechst nur INFO/WATCH erzeugend, ALERT noch\n// nicht scharf\" - computed_decision haelt fest, was die Logik ergeben HAETTE,\n// decision ist der tatsaechlich wirksame, gedeckelte Wert. Kap. 18 Schritt 9\n// hebt die Deckelung auf, ohne diese Logik selbst aendern zu muessen.\nfunction bool(v) { return v === true || v === 'true'; }\n\nconst trig = $('Execute Workflow Trigger').first().json;\nconst ticker = String(trig.ticker || '').trim();\nconst newsId = trig.news_id !== undefined && trig.news_id !== '' ? trig.news_id : null;\nconst recommendationId = trig.recommendation_id !== undefined && trig.recommendation_id !== '' ? trig.recommendation_id : null;\n\nconst isRelevant = bool(trig.is_relevant);\nconst isDuplicate = bool(trig.is_duplicate);\nconst dataQualityOk = trig.data_quality_ok === undefined ? true : bool(trig.data_quality_ok);\nconst hasTickerBezug = bool(trig.has_ticker_bezug);\nconst evidenceSufficient = bool(trig.evidence_sufficient);\nconst hardVetoActive = bool(trig.hard_veto_active);\nconst regimeFitOk = trig.regime_fit_ok === undefined ? true : bool(trig.regime_fit_ok);\nconst technicalConfirmation = bool(trig.technical_confirmation);\nconst evidenceConflicting = bool(trig.evidence_conflicting);\nconst isCooldownActive = bool(trig.is_cooldown_active);\n\nlet computedDecision;\nconst reasons = {};\n\nif (!isRelevant || isDuplicate || !dataQualityOk) {\n  computedDecision = 'IGNORE';\n  reasons.ignore_gruende = {\n    nicht_relevant: !isRelevant,\n    duplikat: isDuplicate,\n    datenqualitaet_unzureichend: !dataQualityOk\n  };\n} else if (!hasTickerBezug || !evidenceSufficient) {\n  computedDecision = 'INFO';\n  reasons.info_gruende = {\n    kein_tickerbezug: !hasTickerBezug,\n    evidenz_nicht_ausreichend: !evidenceSufficient\n  };\n} else {\n  const alertConditions = {\n    kein_hartes_veto: !hardVetoActive,\n    regime_passt: regimeFitOk,\n    technische_bestaetigung: technicalConfirmation,\n    evidenz_widerspricht_nicht_klar: !evidenceConflicting,\n    kein_duplikat_cooldown: !isDuplicate && !isCooldownActive\n  };\n  const alleErfuellt = Object.values(alertConditions).every(Boolean);\n  computedDecision = alleErfuellt ? 'ALERT' : 'WATCH';\n  reasons.alert_bedingungen = alertConditions;\n}\n\nconst alertCapped = computedDecision === 'ALERT';\nconst decision = alertCapped ? 'WATCH' : computedDecision;\nif (alertCapped) reasons.hinweis = 'Logik ergaebe ALERT, aber Kap.18 Schritt 7 deckelt auf WATCH bis Schritt 9 (ALERT scharf schalten) erledigt ist.';\n\nreturn [{\n  json: {\n    ticker, news_id: newsId, recommendation_id: recommendationId,\n    computed_decision: computedDecision,\n    decision,\n    alert_capped: alertCapped,\n    reasons_json: reasons\n  }\n}];\n"
+      },
+      "name": "Werte Actionability-Regeln aus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "ag-0002"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO trading.actionability_decisions\n  (news_id, recommendation_id, ticker, computed_decision, decision, alert_capped, reasons_json)\nVALUES\n  ($1, $2, $3, $4, $5, $6, $7::jsonb)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [$json.news_id, $json.recommendation_id, $json.ticker, $json.computed_decision, $json.decision, $json.alert_capped, JSON.stringify($json.reasons_json)] }}"
+        }
+      },
+      "name": "Protokolliere Entscheidung",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "ag-0003",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gibt das Entscheidungsobjekt aus \"Werte Actionability-Regeln aus\" als\n// Rueckgabewert des Subworkflows zurueck - der Insert-Node davor liefert nur\n// {id: ...} des Log-Eintrags (analog Historical Evidence Lookup).\nconst original = $('Werte Actionability-Regeln aus').first().json;\nconst logId = $json.id ?? null;\nreturn [{ json: { ...original, decision_log_id: logId } }];\n"
+      },
+      "name": "Baue Ausgabe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "id": "ag-0004"
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "4a33a081-8c57-4615-ae95-de3e42c4a750"
+}
