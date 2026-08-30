@@ -252,6 +252,11 @@
             "node": "Batch-Bewertung protokollieren (SQL bauen)",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Filter: Relevante mit Ticker (Evidence-Lookup)",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -400,6 +405,28 @@
         [
           {
             "node": "DB: Vorfilter-Stats speichern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Relevante mit Ticker (Evidence-Lookup)": {
+      "main": [
+        [
+          {
+            "node": "Explodiere je Ticker (Evidence-Lookup)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explodiere je Ticker (Evidence-Lookup)": {
+      "main": [
+        [
+          {
+            "node": "Rufe Historical Evidence Lookup auf",
             "type": "main",
             "index": 0
           }
@@ -1181,6 +1208,64 @@
       },
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Historical Evidence Lookup Anbindung (Audit-Konzept 2026-08-24, Kap. 12/18\n// Schritt 6): \"zunaechst nur protokollierend, kein Alert-Effekt\" - dieser Zweig\n// laeuft PARALLEL zur bestehenden Persistierung (Ergebnis persistieren), nicht\n// stattdessen. Sein Ergebnis beeinflusst nichts Bestehendes, er schreibt nur in\n// trading.news_evidence_lookups. Nur relevante News mit mindestens einem\n// bestaetigten Watchlist-Ticker koennen ueberhaupt sinnvoll nachgeschlagen werden\n// (Tier 1/2 der Matching-Hierarchie brauchen einen Ticker).\nreturn $input.all().filter(item => {\n  const j = item.json || {};\n  if (j._action !== 'persist') return false;\n  if (j.relevant !== true) return false;\n  return Array.isArray(j.betroffene_ticker) && j.betroffene_ticker.length > 0;\n});"
+      },
+      "id": "hel-wire-0001",
+      "name": "Filter: Relevante mit Ticker (Evidence-Lookup)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ein Evidence-Lookup-Aufruf pro betroffenem Ticker (eine News kann mehrere\n// Watchlist-Ticker betreffen, die Lookup-Logik ist ticker-spezifisch - Sektor\n// wird vom Subworkflow selbst per Ticker nachgeschlagen).\nconst out = [];\nfor (const item of $input.all()) {\n  const j = item.json || {};\n  for (const ticker of j.betroffene_ticker) {\n    out.push({ json: {\n      ticker: String(ticker).trim(),\n      news_category: j.news_kategorie || 'other',\n      as_of_date: null,\n      news_id: j.news_id ?? null\n    } });\n  }\n}\nreturn out;"
+      },
+      "id": "hel-wire-0002",
+      "name": "Explodiere je Ticker (Evidence-Lookup)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "14tavTv1i5cuTr0U",
+          "mode": "list",
+          "cachedResultName": "Historical Evidence Lookup"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticker": "={{ $json.ticker }}",
+            "news_category": "={{ $json.news_category }}",
+            "as_of_date": "={{ $json.as_of_date }}",
+            "news_id": "={{ $json.news_id }}"
+          }
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "hel-wire-0003",
+      "name": "Rufe Historical Evidence Lookup auf",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1904,
+        480
+      ],
+      "onError": "continueRegularOutput"
     }
   ],
   "pinData": {},
@@ -1191,5 +1276,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "00d131ab-2f54-4ecd-8327-d76cd96d902b"
+  "versionId": "55eead5b-2f23-4cad-952d-16f8df80c242"
 }
