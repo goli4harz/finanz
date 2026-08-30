@@ -87,7 +87,7 @@
       "main": [
         [
           {
-            "node": "Baue POST-Antwort (JSON)",
+            "node": "DB: Jobs laden",
             "type": "main",
             "index": 0
           }
@@ -105,18 +105,7 @@
       "main": [
         [
           {
-            "node": "Baue POST-Antwort (JSON)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue POST-Antwort (JSON)": {
-      "main": [
-        [
-          {
-            "node": "Antwort mit JSON",
+            "node": "DB: Jobs laden",
             "type": "main",
             "index": 0
           }
@@ -640,35 +629,6 @@
         }
       },
       "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "// \"POST: SQL ausfuehren\" (Postgres ohne RETURNING) ersetzt das Item-JSON durch sein eigenes\n// Ergebnis - Antwortfelder deshalb vom SQL-Bauen-Node zurueckholen (gleiche Bugklasse wie in\n// Workflow 15, siehe dortige Kommentare).\nconst original = $('POST: Formular normalisieren + SQL bauen').item.json;\nconst current = $json;\n\nif (original._error) {\n  return { json: { ok: false, error: original._error } };\n}\nif (current.error) {\n  return { json: { ok: false, error: 'Datenbankfehler beim Ausfuehren der Aktion.', action: original.action, job_id: original.job_id } };\n}\nreturn { json: { ok: true, action: original.action, job_id: original.job_id, day_count: original.day_count, dry_run: original.dry_run } };\n"
-      },
-      "id": "imp16-baue-post-antwort",
-      "name": "Baue POST-Antwort (JSON)",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -2400,
-        320
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ $json }}",
-        "options": {}
-      },
-      "id": "imp16-respond-json",
-      "name": "Antwort mit JSON",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "position": [
-        -2208,
-        320
-      ]
     },
     {
       "parameters": {
@@ -1341,5 +1301,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "61cb2553-5ee7-4cbb-876b-cf621eb57149"
+  "versionId": "d85d3f18-fe11-4c38-aba9-9bb0f0975e6c"
 }
