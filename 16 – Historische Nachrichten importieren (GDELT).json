@@ -636,7 +636,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+              "expression": "0 */3 * * * *"
             }
           ]
         }
@@ -1301,5 +1301,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "d85d3f18-fe11-4c38-aba9-9bb0f0975e6c"
+  "versionId": "106f41e1-0567-4067-8ce5-00acbee87e96"
 }
