@@ -1,0 +1,163 @@
+{
+  "active": false,
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Hole komplette Evidenzbasis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hole komplette Evidenzbasis": {
+      "main": [
+        [
+          {
+            "node": "Werte Matching-Hierarchie aus",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Werte Matching-Hierarchie aus": {
+      "main": [
+        [
+          {
+            "node": "Protokolliere Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Protokolliere Lookup": {
+      "main": [
+        [
+          {
+            "node": "Baue Ausgabe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "14tavTv1i5cuTr0U",
+  "meta": null,
+  "name": "Historical Evidence Lookup",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ticker"
+            },
+            {
+              "name": "sektor"
+            },
+            {
+              "name": "news_category"
+            },
+            {
+              "name": "as_of_date"
+            },
+            {
+              "name": "news_id"
+            }
+          ]
+        }
+      },
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -640,
+        0
+      ],
+      "id": "hel-0001"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM trading.v_news_evidence_cases WHERE $1::date IS NULL OR news_date < $1::date;",
+        "options": {
+          "queryReplacement": "={{ [$json.as_of_date || null] }}"
+        }
+      },
+      "name": "Hole komplette Evidenzbasis",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -420,
+        0
+      ],
+      "id": "hel-0002",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Historical Evidence Lookup - Kern-Logik (Audit-Konzept 2026-08-24, Kap. 9).\n// Matching-Hierarchie deterministisch, kein Embedding/KI-Aehnlichkeit:\n//   1. Ticker + news_category   2. Ticker (beliebige Kategorie)\n//   3. Sektor + news_category   4. Sektor (beliebige Kategorie)\n//   5. Gesamter Datenbestand (Fallback, deutlich gekennzeichnet)\n// Erste Stufe mit mindestens 1 nicht-konfundiertem Fall wird verwendet (nicht die\n// erste Stufe, die die volle Mindeststichprobe erreicht - siehe Testplan Kap. 19,\n// \"Nur 1 Vergleichsfall\": wird gezeigt, nicht durch eine breitere, weniger passende\n// Stufe verdraengt). evidence_sufficient markiert ehrlich, ob die Stichprobe die\n// Mindestgroesse erreicht (10 auf Ticker-Ebene, 20 auf Sektor-/Gesamtbestand-Ebene) -\n// unterhalb dessen liefert message woertlich \"Historische Evidenz nicht ausreichend\",\n// nie eine erfundene Quote (Abnahmekriterium Kap. 20).\nfunction safeBool(v) { return v === true || v === 'true'; }\nfunction num(v) { const n = Number(v); return (v === null || v === undefined || v === '' || isNaN(n)) ? null : n; }\nconst HORIZONS = ['d1', 'd3', 'd5', 'd10', 'd20'];\n\nfunction median(arr) {\n  if (!arr.length) return null;\n  const s = [...arr].sort((a, b) => a - b);\n  const mid = Math.floor(s.length / 2);\n  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;\n}\nfunction avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null; }\n\nfunction computeTierStats(tierRows, tierNumber, threshold) {\n  const usable = tierRows.filter(r => !safeBool(r.confounded));\n  const confoundedRows = tierRows.filter(r => safeBool(r.confounded));\n  const horizonStats = {};\n  for (const h of HORIZONS) {\n    const returns = usable.map(r => num(r['return_' + h])).filter(v => v !== null);\n    const abnormal = usable.map(r => num(r['abnormal_return_' + h])).filter(v => v !== null);\n    const hits = usable.map(r => r['direction_correct_' + h]).filter(v => v === true || v === false);\n    horizonStats[h] = {\n      n: returns.length,\n      median_return: median(returns),\n      avg_return: avg(returns),\n      avg_abnormal_return: avg(abnormal),\n      direction_hit_rate: hits.length ? hits.filter(Boolean).length / hits.length : null,\n      direction_hit_n: hits.length\n    };\n  }\n  const sampleSize = usable.length;\n  const evidenceSufficient = sampleSize >= threshold;\n  const notBelastbar = sampleSize === 1;\n  let message = null;\n  if (sampleSize === 0) message = 'Historische Evidenz nicht ausreichend';\n  else if (!evidenceSufficient) message = 'Historische Evidenz nicht ausreichend (n=' + sampleSize + ', unterhalb Mindeststichprobe ' + threshold + ')';\n  else if (notBelastbar) message = 'n=1, nicht belastbar';\n  return {\n    match_tier: tierNumber,\n    sample_size: sampleSize,\n    confounded_count: confoundedRows.length,\n    distinct_ticker_count: new Set(usable.map(r => r.ticker)).size,\n    evidence_sufficient: evidenceSufficient,\n    not_belastbar_single_case: notBelastbar,\n    message,\n    horizon_stats: horizonStats,\n    matched_case_ids: usable.map(r => r.id),\n    confounded_case_ids: confoundedRows.map(r => r.id)\n  };\n}\n\nconst trig = $('Execute Workflow Trigger').first().json;\nconst ticker = String(trig.ticker || '').trim();\nconst sektor = String(trig.sektor || '').trim();\nconst newsCategory = String(trig.news_category || '').trim();\nconst newsId = trig.news_id !== undefined && trig.news_id !== '' ? trig.news_id : null;\nconst asOfDate = trig.as_of_date || null;\n\nconst rows = $input.all().map(i => i.json);\n\nconst tierDefs = [\n  { n: 1, threshold: 10, filter: r => r.ticker === ticker && r.news_category === newsCategory },\n  { n: 2, threshold: 10, filter: r => r.ticker === ticker },\n  { n: 3, threshold: 20, filter: r => r.sektor === sektor && r.news_category === newsCategory },\n  { n: 4, threshold: 20, filter: r => r.sektor === sektor },\n  { n: 5, threshold: 20, filter: () => true }\n];\n\nlet result = null;\nfor (const t of tierDefs) {\n  const tierRows = rows.filter(t.filter);\n  const usableCount = tierRows.filter(r => !safeBool(r.confounded)).length;\n  if (usableCount >= 1) {\n    result = computeTierStats(tierRows, t.n, t.threshold);\n    break;\n  }\n}\nif (!result) {\n  // Selbst Tier 5 (Gesamtbestand) hat keinen einzigen nicht-konfundierten Fall.\n  result = computeTierStats(rows, 5, 20);\n}\n\nreturn [{\n  json: {\n    ticker, sektor, news_category: newsCategory, news_id: newsId, as_of_date: asOfDate,\n    ...result\n  }\n}];\n"
+      },
+      "name": "Werte Matching-Hierarchie aus",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ],
+      "id": "hel-0003"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO trading.news_evidence_lookups\n  (news_id, ticker, news_category, sektor, as_of_date, match_tier, sample_size, confounded_count, distinct_ticker_count, evidence_sufficient, matched_case_ids, confounded_case_ids, stats_json)\nVALUES\n  ($1, $2, $3, $4, $5::date, $6, $7, $8, $9, $10, $11::bigint[], $12::bigint[], $13::jsonb)\nRETURNING id;",
+        "options": {
+          "queryReplacement": "={{ [$json.news_id, $json.ticker, $json.news_category, $json.sektor, $json.as_of_date, $json.match_tier, $json.sample_size, $json.confounded_count, $json.distinct_ticker_count, $json.evidence_sufficient, $json.matched_case_ids, $json.confounded_case_ids, JSON.stringify($json.horizon_stats)] }}"
+        }
+      },
+      "name": "Protokolliere Lookup",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        60,
+        0
+      ],
+      "id": "hel-0004",
+      "credentials": {
+        "postgres": {
+          "id": "NWckNyl8ZfwVVJCd",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gibt das Statistik-Objekt aus \"Werte Matching-Hierarchie aus\" als Rueckgabewert des\n// Subworkflows zurueck - der Insert-Node davor liefert nur {id: ...} des Log-Eintrags,\n// nicht die eigentliche Antwort fuer den Aufrufer (analog \"Stelle Kontext ... wieder\n// her\"-Muster in P9/P10/P11).\nconst original = $('Werte Matching-Hierarchie aus').first().json;\nconst logId = $json.id ?? null;\nreturn [{ json: { ...original, lookup_log_id: logId } }];\n"
+      },
+      "name": "Baue Ausgabe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ],
+      "id": "hel-0005"
+    }
+  ],
+  "pinData": null,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "5f5fc46f-f0b3-4f64-9f1d-394452bfcf96"
+}
