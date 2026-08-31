@@ -872,7 +872,7 @@
       "typeVersion": 1.1,
       "position": [
         -4000,
-        300
+        304
       ],
       "disabled": true
     },
@@ -897,7 +897,7 @@
       "typeVersion": 1.1,
       "position": [
         -4000,
-        500
+        512
       ],
       "id": "n-00000001-0000-4000-8000-0000000000"
     },
@@ -909,7 +909,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3820,
+        -3824,
         400
       ],
       "id": "n-00000002-0000-4000-8000-0000000000"
@@ -939,7 +939,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=SELECT ni.title AS titel, ni.published_at, ni.created_at, v.ticker_json AS betroffene_ticker_json,\n       v.wirkungsebene, v.direction AS wirkungsrichtung, v.effect_level AS wirkung_staerke,\n       v.ticker_begruendung, v.wirkungs_begruendung,\n       v.category AS news_kategorie, v.confidence AS konfidenz, ni.source AS quelle\nFROM trading.v_news_latest_assessment v\nJOIN trading.news_items ni ON ni.id = v.news_id\nWHERE v.relevance = TRUE AND v.effect_level = 'hoch'\n  AND (ni.published_at AT TIME ZONE 'Europe/Berlin')::date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
+        "query": "SELECT ni.title AS titel, ni.published_at, ni.created_at, v.ticker_json AS betroffene_ticker_json,\n       v.wirkungsebene, v.direction AS wirkungsrichtung, v.effect_level AS wirkung_staerke,\n       v.ticker_begruendung, v.wirkungs_begruendung,\n       v.category AS news_kategorie, v.confidence AS konfidenz, ni.source AS quelle\nFROM trading.v_news_latest_assessment v\nJOIN trading.news_items ni ON ni.id = v.news_id\nWHERE v.relevance = TRUE AND v.effect_level = 'hoch'\n  AND (ni.published_at AT TIME ZONE 'Europe/Berlin')::date = (now() AT TIME ZONE 'Europe/Berlin')::date;",
         "options": {}
       },
       "name": "DB: News laden (Empf., trading.*)",
@@ -949,15 +949,15 @@
         -3392,
         416
       ],
-      "onError": "continueRegularOutput",
+      "id": "n-00000003-0000-4000-8000-0000000000",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "id": "n-00000003-0000-4000-8000-0000000000",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1030,7 +1030,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "id": "87b7c5ef-0fc0-49eb-ad43-90666b1b0618",
@@ -1041,14 +1041,14 @@
         -2496,
         160
       ],
-      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1056,7 +1056,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "loose",
+            "version": 1
           },
           "conditions": [
             {
@@ -1085,7 +1086,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "id": "0c360997-ac2e-4cce-b5de-a870e83cc002",
@@ -1094,16 +1095,16 @@
       "typeVersion": 2.5,
       "position": [
         -2272,
-        520
+        528
       ],
-      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1114,7 +1115,7 @@
       "typeVersion": 2,
       "position": [
         -2272,
-        680
+        688
       ],
       "id": "n-00000006-0000-4000-8000-0000000000"
     },
@@ -1136,8 +1137,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1900,
-        500
+        -1904,
+        512
       ],
       "id": "n-00000008-0000-4000-8000-0000000000",
       "alwaysOutputData": true
@@ -1150,8 +1151,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1700,
-        500
+        -1696,
+        512
       ],
       "id": "n-00000009-0000-4000-8000-0000000000"
     },
@@ -1163,8 +1164,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1500,
-        500
+        -1504,
+        512
       ],
       "id": "n-00000010-0000-4000-8000-0000000000"
     },
@@ -1196,8 +1197,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
       "position": [
-        -1300,
-        500
+        -1296,
+        512
       ],
       "credentials": {
         "httpHeaderAuth": {
@@ -1217,17 +1218,17 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -3620,
+        -3616,
         400
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1238,7 +1239,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3420,
+        -3424,
         400
       ]
     },
@@ -1248,7 +1249,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "loose",
+            "version": 1
           },
           "conditions": [
             {
@@ -1270,7 +1272,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -2744,
+        -2752,
         416
       ]
     },
@@ -1284,7 +1286,7 @@
       "typeVersion": 2,
       "position": [
         -2544,
-        316
+        320
       ]
     },
     {
@@ -1294,8 +1296,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1300,
-        700
+        -1296,
+        704
       ],
       "alwaysOutputData": true
     },
@@ -1306,8 +1308,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1100,
-        700
+        -1104,
+        704
       ],
       "alwaysOutputData": true
     },
@@ -1320,8 +1322,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1100,
-        900
+        -1104,
+        912
       ]
     },
     {
@@ -1331,8 +1333,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -900,
-        700
+        -896,
+        704
       ],
       "alwaysOutputData": true
     },
@@ -1345,8 +1347,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -700,
-        700
+        -704,
+        704
       ]
     },
     {
@@ -1358,8 +1360,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2092,
-        520
+        -2096,
+        528
       ]
     },
     {
@@ -1371,7 +1373,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2316,
+        -2320,
         160
       ]
     },
@@ -1384,8 +1386,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2452,
-        520
+        -2448,
+        528
       ]
     },
     {
@@ -1397,7 +1399,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2676,
+        -2672,
         160
       ]
     },
@@ -1412,16 +1414,16 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -3060,
+        -3056,
         416
       ],
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      },
-      "alwaysOutputData": true
+      }
     },
     {
       "parameters": {
@@ -1436,16 +1438,16 @@
         -2224,
         800
       ],
+      "executeOnce": true,
+      "id": "n-welle1-ap5-veto10-000000000001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "executeOnce": true,
-      "onError": "continueRegularOutput",
-      "id": "n-welle1-ap5-veto10-000000000001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1464,7 +1466,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "name": "Veto-Log: schreiben",
@@ -1474,15 +1476,15 @@
         -1856,
         640
       ],
+      "id": "n-welle1-ap5-vetolog-write-0000001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle1-ap5-vetolog-write-0000001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1530,15 +1532,15 @@
         -2224,
         880
       ],
+      "id": "n-welle2-06-dbstrategiesignalela-0001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbstrategiesignalela-0001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1553,15 +1555,15 @@
         -2224,
         960
       ],
+      "id": "n-welle2-06-dbmarktregimeladenem-0001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbmarktregimeladenem-0001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1576,15 +1578,15 @@
         -2224,
         1040
       ],
+      "id": "n-welle2-06-dbregimematrixladene-0001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbregimematrixladene-0001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1599,15 +1601,15 @@
         -2224,
         1120
       ],
+      "id": "n-welle2-06-dbfundamentalhistori-0001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbfundamentalhistori-0001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1622,15 +1624,15 @@
         -2224,
         1200
       ],
+      "id": "n-welle2-06-dbtickerregionladene-0001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-dbtickerregionladene-0001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1642,14 +1644,14 @@
       "typeVersion": 2,
       "position": [
         -2896,
-        460
+        464
       ],
       "id": "n-welle2-06-ne-sql-000000000001"
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
+        "query": "{{ $json.sql }}",
         "options": {}
       },
       "name": "Strategiesignal News-Event: schreiben",
@@ -1657,17 +1659,17 @@
       "typeVersion": 2.5,
       "position": [
         -2720,
-        460
+        464
       ],
+      "id": "n-welle2-06-ne-write-0000000001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle2-06-ne-write-0000000001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1715,15 +1717,15 @@
         -2224,
         1280
       ],
+      "id": "n-welle3-06-status-0000001",
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "onError": "continueRegularOutput",
-      "id": "n-welle3-06-status-0000001",
-      "alwaysOutputData": true
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1733,7 +1735,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3960,
+        -3968,
         816
       ],
       "id": "n-repair-p02-wrap-06-0"
@@ -1746,7 +1748,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3800,
+        -3808,
         816
       ],
       "id": "n-repair-p02-wrap-06-1"
@@ -1759,7 +1761,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3640,
+        -3648,
         816
       ],
       "id": "n-repair-p02-wrap-06-2"
@@ -1772,7 +1774,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3480,
+        -3488,
         816
       ],
       "id": "n-repair-p02-wrap-06-3"
@@ -1785,7 +1787,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3320,
+        -3328,
         816
       ],
       "id": "n-repair-p02-wrap-06-4"
@@ -1798,7 +1800,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3160,
+        -3168,
         816
       ],
       "id": "n-repair-p02-wrap-06-5"
@@ -1811,7 +1813,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3000,
+        -3008,
         816
       ],
       "id": "n-repair-p02-wrap-06-6"
@@ -1822,7 +1824,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3960,
+        -3968,
         976
       ],
       "id": "n-repair-p02-merge-06-0"
@@ -1833,7 +1835,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3800,
+        -3808,
         976
       ],
       "id": "n-repair-p02-merge-06-1"
@@ -1844,7 +1846,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3640,
+        -3648,
         976
       ],
       "id": "n-repair-p02-merge-06-2"
@@ -1855,7 +1857,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3480,
+        -3488,
         976
       ],
       "id": "n-repair-p02-merge-06-3"
@@ -1866,7 +1868,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3320,
+        -3328,
         976
       ],
       "id": "n-repair-p02-merge-06-4"
@@ -1877,7 +1879,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3160,
+        -3168,
         976
       ],
       "id": "n-repair-p02-merge-06-5"
@@ -1888,7 +1890,7 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -3000,
+        -3008,
         976
       ],
       "id": "n-repair-p02-merge-06-6"
@@ -1901,7 +1903,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2840,
+        -2848,
         976
       ],
       "id": "n-repair-p02-collapse-06"
@@ -1914,7 +1916,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1656,
+        -1664,
         640
       ],
       "id": "n-repair-p04-tag-vetolog"
@@ -1927,8 +1929,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2520,
-        460
+        -2528,
+        464
       ],
       "id": "n-repair-p04-tag-newsevent"
     },
@@ -1938,8 +1940,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1400,
-        900
+        -1408,
+        912
       ],
       "id": "n-repair-p04-merge-audit-1"
     },
@@ -1949,8 +1951,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
       "position": [
-        -1100,
-        900
+        -1104,
+        912
       ],
       "id": "n-repair-p04-merge-audit-2"
     },
@@ -1983,7 +1985,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2024,
+        -2032,
         1440
       ],
       "id": "n-welle4-06-weights-002"
@@ -2008,8 +2010,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1904,
-        640
+        -3296,
+        -64
       ]
     },
     {
@@ -2021,13 +2023,12 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2128,
-        640
+        -3072,
+        -64
       ]
     },
     {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "value": "14tavTv1i5cuTr0U",
@@ -2052,8 +2053,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2352,
-        640
+        -2848,
+        -64
       ],
       "onError": "continueRegularOutput"
     },
@@ -2066,13 +2067,12 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2576,
-        640
+        -2624,
+        -64
       ]
     },
     {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "value": "1168c8jXJfvYLz60",
@@ -2106,8 +2106,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2800,
-        640
+        -2400,
+        -64
       ],
       "onError": "continueRegularOutput"
     }
@@ -2123,5 +2123,5 @@
     "availableInMCP": false
   },
   "tags": [],
-  "versionId": "296c9d7e-dc67-49df-b221-713eeec42128"
+  "versionId": "50ea02b1-3c9e-4a90-bb56-94e88c1437ad"
 }

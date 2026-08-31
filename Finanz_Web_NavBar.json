@@ -14,6 +14,7 @@
     }
   },
   "id": "gJfZXvTp8Wv9aApp",
+  "meta": null,
   "name": "Finanz_Web_NavBar",
   "nodes": [
     {
@@ -52,5 +53,7 @@
   "pinData": null,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "tags": [],
+  "versionId": "a2eb45f7-6359-4d3f-9859-602c897b2493"
 }

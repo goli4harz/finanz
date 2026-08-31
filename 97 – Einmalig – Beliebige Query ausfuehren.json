@@ -31,7 +31,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT 1 AS platzhalter;",
+        "query": "SELECT ticker, COUNT(*) AS rows, MIN(trading_date)::text AS min_date, MAX(trading_date)::text AS max_date FROM trading.historical_price_data WHERE ticker IN ('^GDAXI','^STOXX50E','^IXIC','^GSPC','EURUSD=X','CL=F','GC=F') GROUP BY ticker ORDER BY ticker;",
         "options": {}
       },
       "id": "30000000-0000-4000-8000-000000000002",
@@ -57,5 +57,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "cfebe936-641a-4aee-97bc-315e4dbf8a02"
+  "versionId": "5852d306-1295-4283-a466-0e35f9817655"
 }

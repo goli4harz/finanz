@@ -339,7 +339,7 @@
       }
     }
   ],
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",

@@ -29,6 +29,8 @@
       ]
     }
   },
+  "id": "VTBfUuzQfMZNGYDM",
+  "meta": null,
   "name": "11 – Zentraler Error-Handler",
   "nodes": [
     {
@@ -121,5 +123,7 @@
   "settings": {
     "executionOrder": "v1",
     "saveDataSuccessExecution": "all"
-  }
+  },
+  "tags": [],
+  "versionId": "d4748d5c-b05e-4ed1-8dbb-b564c98cbcbc"
 }

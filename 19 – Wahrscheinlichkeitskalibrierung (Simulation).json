@@ -171,12 +171,12 @@
       "id": "n-wf19-006"
     }
   ],
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "b5e10a0c-4f51-49d0-94f7-c98ca866202a"
+  "versionId": "9b2e9c9b-2e35-42fb-9126-9dcf457191b8"
 }

@@ -264,7 +264,7 @@
       }
     }
   ],
-  "pinData": {},
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "executionTimeout": 30,

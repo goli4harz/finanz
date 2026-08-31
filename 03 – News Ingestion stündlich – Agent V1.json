@@ -1084,13 +1084,13 @@
       ],
       "id": "rss-sources-db-03-news",
       "alwaysOutputData": true,
+      "executeOnce": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
-      },
-      "executeOnce": true
+      }
     },
     {
       "parameters": {
@@ -1104,7 +1104,7 @@
       "typeVersion": 2.5,
       "position": [
         -5008,
-        2420
+        2432
       ],
       "credentials": {
         "postgres": {
@@ -1122,8 +1122,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2808,
-        1706
+        -2816,
+        1712
       ]
     },
     {
@@ -1138,7 +1138,7 @@
       "typeVersion": 2.5,
       "position": [
         -2608,
-        1706
+        1712
       ],
       "credentials": {
         "postgres": {
@@ -1156,8 +1156,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2408,
-        1706
+        -2416,
+        1712
       ]
     },
     {
@@ -1168,45 +1168,45 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4808,
-        2420
+        -4816,
+        2432
       ],
       "id": "n-repair-p02-sync-watchlist-ki"
     },
     {
+      "parameters": {
+        "jsCode": "// Nur Summenzahlen aus \"RSS-Feeds laden & filtern\" - siehe sql/073. Eigener,\n// nicht angebundener Nebenzweig, beeinflusst die eigentliche Speicher-Pipeline nicht.\nconst stats = $('RSS-Feeds laden & filtern').first().json.vorfilterStats;\nfunction n(v) { return (v === null || v === undefined) ? 'NULL' : Number(v); }\nconst sql = stats\n  ? `INSERT INTO trading.news_prefilter_runs\n      (feeds_ok, feeds_fehler, total_artikel_geprueft, total_durchgelassen, total_hart_ausgeschlossen, total_soft_noise_ausgeschlossen, total_kein_treffer)\n    VALUES (${n(stats.feeds_ok)}, ${n(stats.feeds_fehler)}, ${n(stats.total_artikel_geprueft)}, ${n(stats.total_durchgelassen)}, ${n(stats.total_hart_ausgeschlossen)}, ${n(stats.total_soft_noise_ausgeschlossen)}, ${n(stats.total_kein_treffer)});`\n  : `SELECT 1;`;\nreturn [{ json: { sql } }];\n"
+      },
       "id": "wf03-vorfilter-stats-sql",
       "name": "Baue Vorfilter-Stats SQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -200,
-        900
-      ],
-      "parameters": {
-        "jsCode": "// Nur Summenzahlen aus \"RSS-Feeds laden & filtern\" - siehe sql/073. Eigener,\n// nicht angebundener Nebenzweig, beeinflusst die eigentliche Speicher-Pipeline nicht.\nconst stats = $('RSS-Feeds laden & filtern').first().json.vorfilterStats;\nfunction n(v) { return (v === null || v === undefined) ? 'NULL' : Number(v); }\nconst sql = stats\n  ? `INSERT INTO trading.news_prefilter_runs\n      (feeds_ok, feeds_fehler, total_artikel_geprueft, total_durchgelassen, total_hart_ausgeschlossen, total_soft_noise_ausgeschlossen, total_kein_treffer)\n    VALUES (${n(stats.feeds_ok)}, ${n(stats.feeds_fehler)}, ${n(stats.total_artikel_geprueft)}, ${n(stats.total_durchgelassen)}, ${n(stats.total_hart_ausgeschlossen)}, ${n(stats.total_soft_noise_ausgeschlossen)}, ${n(stats.total_kein_treffer)});`\n  : `SELECT 1;`;\nreturn [{ json: { sql } }];\n"
-      }
+        -5008,
+        1392
+      ]
     },
     {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "{{ $json.sql }}",
+        "options": {}
+      },
       "id": "wf03-vorfilter-stats-exec",
       "name": "DB: Vorfilter-Stats speichern",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        0,
-        900
+        -4800,
+        1392
       ],
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "={{ $json.sql }}",
-        "options": {}
-      },
+      "alwaysOutputData": true,
       "credentials": {
         "postgres": {
           "id": "NWckNyl8ZfwVVJCd",
           "name": "Postgres account"
         }
       },
-      "alwaysOutputData": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -1218,8 +1218,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
-        480
+        -3344,
+        960
       ]
     },
     {
@@ -1231,13 +1231,12 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1680,
-        480
+        -3120,
+        960
       ]
     },
     {
       "parameters": {
-        "source": "database",
         "workflowId": {
           "__rl": true,
           "value": "14tavTv1i5cuTr0U",
@@ -1262,8 +1261,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        1904,
-        480
+        -2896,
+        960
       ],
       "onError": "continueRegularOutput"
     }
@@ -1276,5 +1275,5 @@
     "saveDataSuccessExecution": "all"
   },
   "tags": [],
-  "versionId": "55eead5b-2f23-4cad-952d-16f8df80c242"
+  "versionId": "5fb3a2d7-e45a-4ed0-9a64-db3e5a8857e0"
 }
