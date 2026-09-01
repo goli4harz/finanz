@@ -1,6 +1,37 @@
 # Offene Aufgaben
 
-Stand: 2026-08-30 (siehe neuen Abschnitt unten für 2026-08-24 bis 2026-08-30; alles davor unverändert erhalten)
+Stand: 2026-09-01 (siehe neuen Abschnitt unten für Human-in-the-Loop Phase 4; alles davor unverändert erhalten)
+
+## Human-in-the-Loop Phase 4 — Tests + Abschlussdokumente (2026-09-01)
+
+Letzter offener Punkt der Human-in-the-Loop-Initiative (7 Module, live seit 2026-08-21) formal
+abgeschlossen. Ursprünglicher Auftragstext (17 nummerierte Tests/18 Abschlussfragen) nicht mehr im
+Repo auffindbar — Nutzer hat entschieden, einen eigenen, inhaltlich gleichwertigen Testplan
+entwerfen zu lassen statt zu raten. Drei neue Dokumente: `HUMAN_IN_THE_LOOP_CHANGELOG.md`,
+`HUMAN_IN_THE_LOOP_TEST_REPORT.md`, `HUMAN_IN_THE_LOOP_FINAL_REVIEW.md`.
+
+**Live gegen die produktive Instanz getestet** (12 von 14 Punkten bestanden, 0 fehlgeschlagen, 2
+strukturell nicht testbar — kein Codefehler). **Wichtigster Befund**: `trading.
+recommendation_decisions` hat seit Live-Gang (2026-08-17) immer noch 0 Zeilen — nicht weil der
+Schreibpfad kaputt ist (Status-Gate + optimistisches Locking live bestätigt korrekt funktionierend,
+inkl. eines eigenen anfänglichen Testfehlers mit falschen Feldnamen, der aufgeklärt wurde), sondern
+weil **alle 5 seit Systemstart erzeugten Empfehlungen `status='portfolio_blocked'` haben**
+(Sektor-/Einzelpositionslimit überschritten) und nie `status='offen'` erreichten — die
+Voraussetzung, die "Heute Handeln" zum Anzeigen und den POST-Schreibpfad zum Schreiben verlangt.
+Damit bleibt der komplette Kreislauf Accept→Paper-Trade-öffnet→Review→Performance-Vergleich seit
+elf Tagen strukturell ungetestet, nicht wegen eines Bugs, sondern weil er nie ausgelöst wurde.
+
+⬜ **Sobald künftig eine Empfehlung real `status='offen'` erreicht**: bewusst einmal durch die
+Trading-Entscheidungszentrale klicken, um diesen letzten Kernpfad live zu schließen.
+
+⬜ **Fachliche Frage, nicht in dieser Session beantwortet**: ist es erwartet, dass seit 2026-08-17
+jede einzelne Empfehlung am Portfolio-Risiko-Gate scheitert, oder sind die Limits (Sektor 15%,
+Einzelposition 8%) für die aktuelle Portfoliokonfiguration/Testphase zu eng?
+
+Kleinerer Nebenbefund (kosmetisch, kein Sicherheitsproblem — Backend verweigert das Schreiben
+korrekt): die Detailansicht zeigt das Entscheidungsformular auch bei `portfolio_blocked`-
+Empfehlungen an, nicht nur bei `offen`. Könnte in einer künftigen Session auf `status==='offen'`
+beschränkt werden.
 
 ## KI-Trading-Analyst Audit + Historical Evidence Engine (2026-08-24 bis 2026-08-30)
 
