@@ -313,10 +313,12 @@ Scopes dieser Migration.
   `sql/080` (Sizing-Audit-Spalten) — live ausgeführt via WF97, verifiziert.
 - ✅ Phase 2 (n8n-Verdrahtung, dual-gated wie WF17) — live deployed, **dormant** (beide Flags
   `FALSE`), Struktur per frischem GET verifiziert, alter Pfad byte-identisch unverändert.
-- ⬜ Server-Update nötig, BEVOR ein Dry-Run möglich ist: `~/Documents/finanz/trading_engine/`
-  (inkl. Phase-0-Änderungen) UND `~/Downloads/trading_engine_router.py` nach
-  `/opt/trading-data-service/` hochladen, `systemctl restart trading-data-service` (kein
-  SSH-Zugriff für Claude).
+- ✅ Server-Update — Nutzer hat hochgeladen+neugestartet, per echtem HTTP-Aufruf gegen
+  `172.16.1.14:8099` verifiziert: `/engine/portfolio/check-and-size` liefert `clamped:true,
+  reason:"SECTOR_LIMIT", approved:true` fürs Sektor-Limit-Beispiel; `/engine/execution/
+  process-trades` liefert einen gefüllten Trade mit gesetztem `trail_distance`/
+  `extreme_price_since_entry` fürs Fill-Beispiel — beide Stichproben aus Abschnitt "Server-
+  Deployment" bestanden gegen den echten Server, nicht nur lokal.
 - ⬜ Phase 3 (Dry-Run-Vergleich je Flag, dann kurzer schreibender Vergleichslauf, dann
   dauerhaft TRUE) — noch nicht begonnen. WF14 kann (anders als WF17) keinen Tag zweimal
   nachstellen — Vergleichsmethode: alten Pfad einmal regulär laufen lassen, Ergebnis notieren,
