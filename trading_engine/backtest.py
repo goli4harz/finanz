@@ -2,11 +2,17 @@
 
 step() ersetzt den Kontrollfluss von "Verarbeite Tage-Paket" (WF17) fuer EINEN Simulationstag,
 zusammengesetzt aus den bereits getesteten Bausteinen dieses Packages: pending Orders fuellen
-(execution.simulate_entry) -> Exits pruefen (execution.evaluate_exit, MIT dem alten Stop-Stand,
-siehe P17-6-Invariant) -> Trailing-Stop nachziehen NUR fuer ueberlebende Positionen
-(execution.update_trailing_stop) -> PnL/Cash bei Exit (portfolio.calculate_trade_pnl, P17-1-fix
-beachten) -> neue Kandidaten pruefen (signals.calculate_signals -> position_sizing.size_position
--> risk_limits.check_portfolio_limits) -> Tages-Equity (portfolio.calculate_portfolio_equity).
+(execution.fill_order, kapselt simulate_entry + 10%-Hard-Stop-Cap + trail_distance-Ableitung) ->
+Exits/Trailing-Stop fuer offene Trades (execution.process_open_trade, kapselt evaluate_exit MIT
+dem alten Stop-Stand + update_trailing_stop NUR bei Nicht-Exit + PnL/Cash, siehe P17-1/P17-6-Fixe)
+-> neue Kandidaten pruefen (signals.calculate_signals -> position_sizing.size_position ->
+risk_limits.check_portfolio_limits) -> Tages-Equity (portfolio.calculate_portfolio_equity).
+
+fill_order()/process_open_trade() wurden in Phase 0 der WF14-Migration (TRADING_ENGINE_MIGRATION.md
+Abschnitt 7) aus dieser Funktion nach execution.py extrahiert, damit Workflow 14 (Live-Paper-
+Trading) dieselbe Fill-/Exit-/Trailing-Stop-Logik ueber eigene, schlankere Endpunkte wiederverwenden
+kann, statt eine dritte, unabhaengig driftende Implementierung zu bekommen - reiner Refactor, siehe
+tests/trading_engine/test_execution.py fuer die direkte Abdeckung, Golden Run bleibt unveraendert.
 
 BEWUSST NICHT UEBERNOMMEN gegenueber dem echten WF17-Code (Scope-Entscheidungen fuer diese
 erste Implementierung, nicht stillschweigend anders):
@@ -30,7 +36,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from .execution import evaluate_exit, simulate_entry, update_trailing_stop
+from .execution import fill_order, process_open_trade
 from .models import (
     Bar,
     ExecutionResult,
@@ -123,6 +129,10 @@ def step(
     open_positions_view = [_trade_to_position(t, ticker_currency.get(t.ticker, "EUR")) for t in open_trades]
 
     # --- 1. Pending Orders mit faelliger Ausfuehrung pruefen ---
+    # Phase 0 der WF14-Migration (TRADING_ENGINE_MIGRATION.md Abschnitt 7): die eigentliche
+    # Fill-Simulation lebt jetzt in execution.fill_order(), damit Workflow 14 dieselbe Logik
+    # (inkl. 10%-Hard-Stop-Cap + trail_distance-Ableitung) ueber die neuen Endpunkte wiederverwenden
+    # kann, statt eine dritte, unabhaengig driftende Implementierung zu bekommen.
     still_pending: list[Order] = []
     new_trades: list[Trade] = []
     for order in pending_orders:
@@ -133,31 +143,21 @@ def step(
         if bar is None:
             still_pending.append(order)  # Feiertag fuer dieses Instrument
             continue
-        fill = simulate_entry(order, bar)
-        if not fill.filled:
+        outcome = fill_order(order, bar, fee_model, as_of)
+        if not outcome.fill.filled:
             continue  # not_filled_price - siehe Modul-Docstring: keine Persistenz-Zeile hier
-        hard_stop_price = fill.price * 0.9 if order.direction == "long" else fill.price * 1.1
-        capped_stop_price = max(order.stop_price, hard_stop_price) if order.direction == "long" else min(order.stop_price, hard_stop_price)
-        position_value = fill.price * order.quantity
-        entry_fee = position_value * (fee_model.mini_future_spread_pct or 0.0) / 100 / 2 if fee_model.kind == "mini_future" else position_value * (fee_model.fee_bps or 0.0) / 10000
-        cash -= (position_value + entry_fee)
-        trade = Trade(
-            trade_id=f"trd-{order.ticker}-{as_of.isoformat()}", ticker=order.ticker, direction=order.direction,
-            entry_price=fill.price, stop_price_current=capped_stop_price, target_price=order.target_price,
-            quantity=order.quantity, extreme_price_since_entry=fill.price, trail_distance=abs(fill.price - capped_stop_price),
-            entry_day=as_of, time_stop_at=order.time_stop_at, strategy=order.strategy, sektor=order.sektor,
-            region=order.region, risk_amount=order.risk_amount,
-            theoretical_quantity=order.theoretical_quantity, theoretical_risk_amount=order.theoretical_risk_amount,
-            clamp_reason=order.clamp_reason,
-        )
-        new_trades.append(trade)
-        open_positions_view.append(_trade_to_position(trade, ticker_currency.get(order.ticker, "EUR")))
+        cash += outcome.cash_delta
+        new_trades.append(outcome.trade)
+        open_positions_view.append(_trade_to_position(outcome.trade, ticker_currency.get(order.ticker, "EUR")))
     pending_orders_result = still_pending
 
     # --- 2. Signale fuer heute berechnen (neue Kandidaten + opposite_signal-Exit-Check) ---
     signals_today = {ticker: calculate_signals(bars_history.get(ticker, []), rule_version) for ticker in tickers_today}
 
     # --- 3. Exits fuer offene Trades pruefen (inkl. heute frisch gefuellte) ---
+    # Phase 0 der WF14-Migration: der P17-6-Invariant (evaluate_exit() VOR update_trailing_stop())
+    # und die Exit-PnL/Cash-Berechnung leben jetzt in execution.process_open_trade(), aus
+    # demselben Grund wie bei fill_order() oben.
     still_open: list[Trade] = []
     exited: list[ExitedTrade] = []
     open_ticker_set: set[str] = set()
@@ -169,19 +169,13 @@ def step(
             continue
         candidate_signals = signals_today.get(trade.ticker, [])
         opposite_signal_today = any(s.strategy == trade.strategy and s.direction != trade.direction and s.direction != "neutral" for s in candidate_signals)
-        exit_result = evaluate_exit(trade, bar, as_of, "conservative_stop_first", opposite_signal_today)
-        if not exit_result.exit:
-            trade = update_trailing_stop(trade, bar)
-            still_open.append(trade)
+        outcome = process_open_trade(trade, bar, as_of, "conservative_stop_first", opposite_signal_today, fee_model)
+        if not outcome.exit_result.exit:
+            still_open.append(outcome.updated_trade)
             open_ticker_set.add(trade.ticker)
             continue
-        pnl = _calculate_trade_pnl(trade, exit_result, fee_model, as_of)
-        exit_notional = exit_result.price * trade.quantity
-        # P17-1-Fix (siehe portfolio.py-Docstring): Short-Cash-Zufluss ist Margin+grossPnl,
-        # NICHT die reine Exit-Notional. Formel entspricht 2*entry_value - exit_notional.
-        exit_cash_inflow = exit_notional if trade.direction == "long" else (2 * trade.entry_price * trade.quantity - exit_notional)
-        cash += exit_cash_inflow - pnl.exit_fee - pnl.exit_slippage - pnl.financing_cost
-        exited.append(ExitedTrade(trade=trade, exit_result=exit_result, pnl=pnl))
+        cash += outcome.cash_delta
+        exited.append(ExitedTrade(trade=outcome.updated_trade, exit_result=outcome.exit_result, pnl=outcome.pnl))
     open_trades_result = still_open
 
     open_positions_view = [_trade_to_position(t, ticker_currency.get(t.ticker, "EUR")) for t in open_trades_result]
@@ -252,11 +246,6 @@ def step(
         cash=cash,
         portfolio=portfolio,
     )
-
-
-def _calculate_trade_pnl(trade: Trade, exit_result: ExecutionResult, fee_model: FeeModel, exit_date: date) -> TradePnl:
-    from .portfolio import calculate_trade_pnl
-    return calculate_trade_pnl(trade, exit_result, fee_model, exit_date)
 
 
 def _calculate_portfolio_equity(cash: float, open_positions: list[Position], bars_today: dict[str, Bar], previous_peak_equity: float) -> PortfolioState:

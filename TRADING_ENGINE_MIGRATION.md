@@ -220,3 +220,111 @@ fuer Claude, siehe [[finanz-trading-data-service-infra]]):
 `TRADING_ENGINE_STEP_ENABLED=FALSE` schaltet sofort auf den alten Pfad zurück, ohne Redeploy. Der
 alte Node bleibt unverändert im Workflow erhalten. `n8n_live_backup/` hält zusätzlich den
 Workflow-Stand vor jeder strukturellen Änderung fest.
+
+---
+
+# 7. Workflow 14 — Live-Paper-Trading (2026-09-02)
+
+Anders als Workflow 17 lässt sich Workflow 14 **nicht** 1:1 nach demselben Muster migrieren:
+WF17 lässt die Engine selbst Handelssignale aus Kursdaten erzeugen
+(`POST /engine/simulation/step`), WF14 Job A bekommt dagegen fertige, von Workflow 06 bereits
+generierte Empfehlungen **ohne Kursdaten** und braucht nur Portfolio-Prüfung+Sizing; Job B führt
+bereits vollständig spezifizierte Orders/Trades gegen den heutigen Tages-Bar aus, ohne selbst
+Signale zu erzeugen. `/simulation/step`s Request-Schema erzwingt `bars_history` und ruft immer
+`calculate_signals()` intern auf — es gibt kein Feld, um einen fertigen Kandidaten einzuschleusen.
+
+**Deshalb zwei neue, schlankere Endpunkte** (`~/Downloads/trading_engine_router.py`):
+- `POST /engine/portfolio/check-and-size` (Job A) — ein Aufruf pro Kandidat (Job A prüft
+  sequenziell, jede Freigabe fließt sofort in die nächste Prüfung ein). Wrappt
+  `size_position()` + `check_portfolio_limits()`.
+- `POST /engine/execution/process-trades` (Job B) — ein Batch-Aufruf für alle Trades des Tages.
+  Wrappt die neuen `execution.py`-Bausteine `fill_order()`/`process_open_trade()` (Phase 0,
+  aus `backtest.py::step()` extrahiert, damit WF14 dieselbe Fill-/Exit-/Trailing-Stop-Logik
+  bekommt wie WF17, ohne eine dritte, unabhängig driftende Implementierung).
+
+## Drei bewusste Verhaltensänderungen (Nutzerentscheidungen 2026-09-02)
+
+1. **Kappen statt Verwerfen** (`sizing_mode="clamp"`, wie WF17). Job A prüfte bisher nur
+   Portfolio-Exposition gegen WF06s bereits fertig gesizte Werte (`empf.theoretical_quantity`/
+   `risk_amount`/`position_value`) und verwarf den ganzen Kandidaten bei Limitüberschreitung.
+   Jetzt reduziert die Engine die Größe auf das gerade noch zulässige Maß — der Trade entsteht
+   trotzdem, nur kleiner. Weich werden dadurch: `TOTAL_RISK_LIMIT`/`SECTOR_LIMIT`/
+   `REGION_LIMIT`/`SINGLE_POSITION_LIMIT`. Hart bleiben (unverändert Vetos, nicht kappbar):
+   `MAX_OPEN_POSITIONS`/`DIRECTIONAL_LIMIT`/`DRAWDOWN_LIMIT`/`CORRELATION_LIMIT`/
+   `CURRENCY_LIMIT`. **Vierte, bisher unbemerkte Änderung**: `size_position()`s Clamp-Pfad hat
+   zusätzlich 5 harte Vetos, die Job A vorher nie kannte (`STOP_WRONG_SIDE`/
+   `STOP_TARGET_INVALID`/`QUANTITY_TOO_SMALL`/`UNECONOMICAL_AFTER_COSTS`/`RRR_TOO_LOW`) — ob
+   diese in der Praxis Kandidaten betreffen, die WF06 nicht schon selbst ausschließt, muss der
+   Dry-Run-Vergleich zeigen (WF06s eigener Code wurde in dieser Session nicht gelesen).
+2. **Mini-Future-Kostenmodell statt Gebühren-Basispunkte** (Job B). `fee_bps`/`slippage_bps`
+   bleiben trotzdem im `FeeModel` gesetzt (aus `DEFAULT_FEES_BPS`/`DEFAULT_SLIPPAGE_BPS`,
+   dieselben Config-Keys wie bisher) — nur für den `UNECONOMICAL_AFTER_COSTS`-Veto, der sie
+   unabhängig von `kind` liest (siehe Abschnitt 1.1 oben, dieselbe Kompatibilitätslogik wie WF17).
+3. **Trailing-Stop, erstmals für Live-Paper-Trading** (Job B). `paper_trades` hatte bisher keine
+   Trailing-Stop-Felder — `sql/079` ergänzt `extreme_price_since_entry`/`trail_distance`
+   (analog `simulation_trades`, sql/059/060), inkl. einmaligem Backfill für damals offene Trades
+   (betraf 0 Zeilen — aktuell existiert keine einzige offene/vorgeschlagene Position, siehe
+   [[finanz-human-in-the-loop-phase4-closed-2026-09-01]]). Gilt nur für
+   `trend_following`/`breakout` (`execution.py::_TRAILING_STRATEGIES`), `mean_reversion`
+   bewusst ausgenommen. `sql/080` ergänzt zusätzlich `theoretical_risk_amount`/`clamp_reason`
+   auf `paper_trades` (Sizing-Audit-Trail für Änderung 1, analog sql/060 für WF17).
+
+## Neuer Schreibpfad in Dispatcher B: `trailing_stop_update`
+
+Für eine offene, nicht ausgestoppte Position gab es im alten Pfad **keinen** Grund,
+`stop_price_current` neu zu schreiben (der Stop änderte sich dort nie intraday) — entsprechend
+gab es dafür auch keinen `_typ`. Der Trailing-Stop braucht das jetzt jeden Tag, auch wenn sich
+nichts bewegt hat. Neuer, rein additiver `_typ` in `SQL bauen (Dispatcher B)`, wird vom alten
+Job B nie erzeugt. `fill_cluster` bekam zusätzlich `extreme_price_since_entry`/`trail_distance`
+in seiner UPDATE-Klausel — für den alten Pfad bleiben diese Felder `undefined` → `NULL`, kein
+Verhaltensunterschied.
+
+## Bekannte, noch nicht geschlossene Lücke: `thesis_expired` für bereits offene Trades
+
+Der alte Job B prüft für eine **bereits offene** Position zusätzlich zu Stop/Ziel/Zeitstop auch
+`thesis_expires_at` (eigener Exit-Grund `thesis_expired`). `execution.py::evaluate_exit()` kennt
+nur `time_stop_at`, keinen separaten `thesis_expires_at`-Check für offene Trades (nur für noch
+nicht gefüllte `proposed`-Orders, dort clientseitig in n8n unverändert nachgebildet). Eine
+bereits offene Position mit abgelaufener These würde über den Engine-Pfad also **nicht** mehr
+automatisch geschlossen, bis eines der anderen Kriterien greift. Bewusst nicht "schnell gefixt"
+in dieser Session (ein clientseitiger Vorab-Check hätte die Priorität stop/target vor
+thesis_expired verletzt, wenn er naiv vor dem Engine-Aufruf eingebaut wird) — als offener Punkt
+dokumentiert, der Dry-Run-Vergleich sollte gezielt einen Trade mit bald ablaufender
+`thesis_expires_at` beobachten.
+
+## n8n-seitig vs. Engine-seitig (Zusammenfassung)
+
+Bleibt in n8n, unverändert: `STRATEGY_DEACTIVATED`-Vorfilter (Job A, kein Engine-Äquivalent),
+alle DB-Loads, `DRY_RUN`-Guard, Dead-Letter-Eskalation (`MAX_PORTFOLIO_CHECK_ATTEMPTS`),
+`data_error`-Retry-Zustandsmaschine (Job B), `session_incomplete`-Filterung,
+`thesis_expires_at`-Ablauf für **unfilled** Orders, MFE/MAE- und Gap/Execution-Quality-
+Audit-Felder, komplette Dispatcher-A/B-SQL-Logik (bis auf die additiven Erweiterungen oben).
+Job C ("Stressszenarien berechnen") ist bestätigt unabhängig von Job A/B (andere Inputs, andere
+Zieltabelle `trading.stress_scenarios`, von keinem der beiden gelesen) und bewusst außerhalb des
+Scopes dieser Migration.
+
+## Rollout-Status (Stand 2026-09-02)
+
+- ✅ Phase 0 (Python-Refactor `fill_order()`/`process_open_trade()`) + Unit-Tests — fertig,
+  94/94 Tests grün (82 bestehend + 12 neu), Golden Run unverändert.
+- ✅ Phase 1 (zwei neue Endpunkte) — fertig, lokal funktional verifiziert (Sektor-Kappung +
+  Trailing-Stop-Felder korrekt gesetzt).
+- ✅ `sql/078` (zwei Flags, Default FALSE), `sql/079` (Trailing-Stop-Spalten + Backfill),
+  `sql/080` (Sizing-Audit-Spalten) — live ausgeführt via WF97, verifiziert.
+- ✅ Phase 2 (n8n-Verdrahtung, dual-gated wie WF17) — live deployed, **dormant** (beide Flags
+  `FALSE`), Struktur per frischem GET verifiziert, alter Pfad byte-identisch unverändert.
+- ⬜ Server-Update nötig, BEVOR ein Dry-Run möglich ist: `~/Documents/finanz/trading_engine/`
+  (inkl. Phase-0-Änderungen) UND `~/Downloads/trading_engine_router.py` nach
+  `/opt/trading-data-service/` hochladen, `systemctl restart trading-data-service` (kein
+  SSH-Zugriff für Claude).
+- ⬜ Phase 3 (Dry-Run-Vergleich je Flag, dann kurzer schreibender Vergleichslauf, dann
+  dauerhaft TRUE) — noch nicht begonnen. WF14 kann (anders als WF17) keinen Tag zweimal
+  nachstellen — Vergleichsmethode: alten Pfad einmal regulär laufen lassen, Ergebnis notieren,
+  dann Flag TRUE + `DRY_RUN` erzwungen für denselben Tag, Ergebnisse manuell gegenlesen,
+  insbesondere ob die Engine-`theoretical_quantity` bei nicht gekappten Kandidaten mit WF06s
+  gespeichertem Wert übereinstimmt (Sanity-Check gegen den `entry_price_estimate`-Ankerpunkt,
+  Mittelpunkt der Entry-Zone — offene Designentscheidung, noch nicht gegen WF06s eigene Formel
+  verifiziert).
+- ⬜ Nächster natürlicher Trigger: `Trigger: Portfolio+Paper-Trading (18:15 Werktage)` — die
+  erste echte Ausführung nach diesem Deploy bestätigt den unveränderten Altpfad "in freier
+  Wildbahn" (Flags stehen auf FALSE, keine Aktion nötig, nur beobachten).

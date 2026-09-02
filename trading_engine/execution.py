@@ -27,7 +27,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from .models import AmbiguousBarPolicy, Bar, ExecutionResult, Order, Trade
+from pydantic import BaseModel
+
+from .models import AmbiguousBarPolicy, Bar, ExecutionResult, FeeModel, Order, Trade, TradePnl
 
 
 def simulate_entry(order: Order, bar: Bar) -> ExecutionResult:
@@ -129,3 +131,94 @@ def update_trailing_stop(trade: Trade, bar: Bar) -> Trade:
                 stop_price = trail_stop
 
     return trade.model_copy(update={"extreme_price_since_entry": extreme_price, "stop_price_current": stop_price})
+
+
+class FillOutcome(BaseModel):
+    """Rueckgabe von fill_order(). `trade`/`entry_fee`/`cash_delta` sind nur gesetzt, wenn
+    `fill.filled` True ist."""
+
+    fill: ExecutionResult
+    trade: Trade | None = None
+    entry_fee: float = 0.0
+    cash_delta: float = 0.0
+
+
+def fill_order(order: Order, bar: Bar, fee_model: FeeModel, as_of: date) -> FillOutcome:
+    """Phase 0 der WF14-Migration (TRADING_ENGINE_MIGRATION.md Abschnitt 7): extrahiert 1:1 aus
+    backtest.step() Schritt 1 (Zone-Touch-Fill, 10%-Hard-Stop-Cap, trail_distance-Ableitung,
+    Entry-Fee, Cash-Delta) - reine Fill-Simulation fuer EINE Order an EINEM Tag, ohne Kenntnis von
+    anderen Orders/Cash-Historie. Der Aufrufer (backtest.step() fuer WF17, oder ein externer
+    API-Consumer wie Workflow 14 ueber /engine/portfolio/... bzw. /engine/execution/...) bleibt
+    zustaendig fuer: pending-Order-Vorfilterung (intended_execution_date/fehlender Bar), das
+    Fortschreiben von cash ueber mehrere Orders eines Tages hinweg, und still-pending-Buchfuehrung.
+
+    Der 10%-Hard-Stop-Cap gilt bewusst nur HIER, beim Fill (siehe backtest.step()s Original-
+    Kommentar) - nicht erneut in update_trailing_stop() auf Folgetagen."""
+    fill = simulate_entry(order, bar)
+    if not fill.filled:
+        return FillOutcome(fill=fill)
+    hard_stop_price = fill.price * 0.9 if order.direction == "long" else fill.price * 1.1
+    capped_stop_price = (
+        max(order.stop_price, hard_stop_price)
+        if order.direction == "long"
+        else min(order.stop_price, hard_stop_price)
+    )
+    position_value = fill.price * order.quantity
+    entry_fee = (
+        position_value * (fee_model.mini_future_spread_pct or 0.0) / 100 / 2
+        if fee_model.kind == "mini_future"
+        else position_value * (fee_model.fee_bps or 0.0) / 10000
+    )
+    trade = Trade(
+        trade_id=f"trd-{order.ticker}-{as_of.isoformat()}", ticker=order.ticker, direction=order.direction,
+        entry_price=fill.price, stop_price_current=capped_stop_price, target_price=order.target_price,
+        quantity=order.quantity, extreme_price_since_entry=fill.price, trail_distance=abs(fill.price - capped_stop_price),
+        entry_day=as_of, time_stop_at=order.time_stop_at, strategy=order.strategy, sektor=order.sektor,
+        region=order.region, risk_amount=order.risk_amount,
+        theoretical_quantity=order.theoretical_quantity, theoretical_risk_amount=order.theoretical_risk_amount,
+        clamp_reason=order.clamp_reason,
+    )
+    return FillOutcome(fill=fill, trade=trade, entry_fee=entry_fee, cash_delta=-(position_value + entry_fee))
+
+
+class TradeStepOutcome(BaseModel):
+    """Rueckgabe von process_open_trade(). `pnl`/`cash_delta` sind nur gesetzt, wenn
+    `exit_result.exit` True ist; `updated_trade` traegt sonst den nachgezogenen Trailing-Stop."""
+
+    exit_result: ExecutionResult
+    updated_trade: Trade
+    pnl: TradePnl | None = None
+    cash_delta: float | None = None
+
+
+def process_open_trade(
+    trade: Trade,
+    bar: Bar,
+    as_of: date,
+    ambiguous_bar_policy: AmbiguousBarPolicy,
+    opposite_signal_today: bool,
+    fee_model: FeeModel,
+) -> TradeStepOutcome:
+    """Phase 0 der WF14-Migration (TRADING_ENGINE_MIGRATION.md Abschnitt 7): extrahiert 1:1 aus
+    backtest.step() Schritt 3 den Koerper der Pro-Trade-Schleife. Erzwingt den P17-6-Invariant
+    (evaluate_exit() MIT dem alten Stop-Stand VOR jeder update_trailing_stop()-Nachfuehrung, siehe
+    Modul-Docstring) INNERHALB der Engine, statt jeden Aufrufer (n8n-Code fuer WF17 heute, ein
+    externer API-Consumer wie Workflow 14 morgen) auf die richtige Reihenfolge zu verlassen. Der
+    Aufrufer bleibt zustaendig fuer: fehlender-Bar-Handling (Feiertag fuer dieses Instrument -
+    diese Funktion NICHT aufrufen, Trade unveraendert als weiter offen fuehren), das Ermitteln von
+    `opposite_signal_today` aus der eigenen Signalquelle, und das Fortschreiben von cash."""
+    exit_result = evaluate_exit(trade, bar, as_of, ambiguous_bar_policy, opposite_signal_today)
+    if not exit_result.exit:
+        updated_trade = update_trailing_stop(trade, bar)
+        return TradeStepOutcome(exit_result=exit_result, updated_trade=updated_trade)
+    from .portfolio import calculate_trade_pnl
+
+    pnl = calculate_trade_pnl(trade, exit_result, fee_model, as_of)
+    exit_notional = exit_result.price * trade.quantity
+    # P17-1-Fix (siehe portfolio.py-Docstring): Short-Cash-Zufluss ist Margin+grossPnl, NICHT die
+    # reine Exit-Notional. Formel entspricht 2*entry_value - exit_notional.
+    exit_cash_inflow = (
+        exit_notional if trade.direction == "long" else (2 * trade.entry_price * trade.quantity - exit_notional)
+    )
+    cash_delta = exit_cash_inflow - pnl.exit_fee - pnl.exit_slippage - pnl.financing_cost
+    return TradeStepOutcome(exit_result=exit_result, updated_trade=trade, pnl=pnl, cash_delta=cash_delta)
