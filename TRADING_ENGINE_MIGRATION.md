@@ -327,6 +327,57 @@ Scopes dieser Migration.
   gespeichertem Wert übereinstimmt (Sanity-Check gegen den `entry_price_estimate`-Ankerpunkt,
   Mittelpunkt der Entry-Zone — offene Designentscheidung, noch nicht gegen WF06s eigene Formel
   verifiziert).
-- ⬜ Nächster natürlicher Trigger: `Trigger: Portfolio+Paper-Trading (18:15 Werktage)` — die
-  erste echte Ausführung nach diesem Deploy bestätigt den unveränderten Altpfad "in freier
-  Wildbahn" (Flags stehen auf FALSE, keine Aktion nötig, nur beobachten).
+- ✅ Nächster natürlicher Trigger — zwei manuelle Testläufe direkt nach Deploy (Flags noch
+  FALSE) liefen fehlerfrei über den unveränderten Altpfad, bestätigt "in freier Wildbahn".
+
+## Dry-Run-Vergleich Job A — durchgeführt 2026-09-02, zwei echte Bugs gefunden+behoben
+
+Test-Datensatz-Methode (Option "aktiv, jetzt"): eine synthetische Empfehlung (SAP.DE, Long,
+Entry-Zone 180-182, Stop 176, Ziel 189 → unclamped risikobasierte Größe 200 Stück/36.200€,
+gegen `MAX_SINGLE_POSITION_PCT=8%` bei leerem Portfolio ≈ nur 44 Stück zulässig) in
+`trading.recommendations` eingefügt, `DRY_RUN` temporär auf `TRUE` gesetzt, dann abwechselnd
+mit Flag FALSE/TRUE laufen lassen.
+
+**Ergebnis Altpfad** (Erwartung bestätigt): `portfolio_approved:false`, zwei Blocker
+(SECTOR_LIMIT + SINGLE_POSITION_LIMIT), `status='blocked'`, volle angeforderte Größe (200)
+unverändert protokolliert.
+
+**Bug 1 (im ersten Engine-Testlauf gefunden, HTTP 422)**: `offenePaperTrades` (`DB: Offene
+Paper-Trades laden`) liefert bei 0 echten Treffern ein Phantom-Item (`{}`,
+`alwaysOutputData`-Verhalten, dasselbe Muster wie beim ALLRIS-P12-Fund vom selben Tag). Der
+Altpfad toleriert das stillschweigend (leere Werte tragen 0 zu lokalen Summen bei), aber der
+Engine-Pfad serialisiert `offenePaperTrades` direkt als `open_positions` an die Engine — ein
+Item ohne `ticker`/`direction` verletzt dort die Pydantic-Validierung. **Fix**: `.filter(t => t
+&& t.ticker != null)` direkt nach dem Laden, analog zum bereits bestehenden Filter auf
+`neueEmpfehlungen`. Gleicher defensiver Filter zusätzlich in Job B (Engine) ergänzt, dort strukturell
+schon durch die bestehende `status==='open'/'proposed'`-Prüfung abgefangen, aber jetzt auch
+explizit.
+
+**Bug 2 (im zweiten Engine-Testlauf gefunden, kein Fehler — falscher Wert!)**: `paper_trades`
+hat trotz des Namens **keine separate Spalte für die tatsächlich zu handelnde Stückzahl** —
+`theoretical_quantity` ist die Spalte, die Job B tatsächlich als auszuführende Menge liest
+(`const qty = num(t.theoretical_quantity)`). Der erste Fix-Versuch schrieb dort
+`sizing.theoretical_quantity` (die UNGEKAPPTE Engine-Zielgröße, 200) statt `sizing.quantity`
+(die tatsächlich gekappte Größe, 44) — hätte die gesamte Kappung wirkungslos gemacht, Job B
+hätte die volle ungekappte Menge gehandelt. **Fix**: `theoretical_quantity: finalQuantity`
+(die bereits vorhandene, korrekt berechnete Variable). Der `theoretical_risk_amount`-Wert
+(sql/080, Audit-Spur) bleibt korrekt die ungekappte Engine-Zielgröße.
+
+**Nach beiden Fixes, dritter Testlauf, korrekt**: `theoretical_quantity:44`, `risk_amount:220`,
+`position_value:7964`, `theoretical_risk_amount:1000`, `clamp_reason:"SINGLE_POSITION_LIMIT"`,
+`status:'proposed'`, `open_positions_before:0` — exakt wie von Hand vorausberechnet.
+
+**Bug 3, unabhängig vom Engine-Pfad gefunden (pre-existing, NICHT gefixt)**: beim Aufräumen des
+Testlaufs fiel auf, dass trotz `DRY_RUN=TRUE` eine ECHTE `paper_trades`-Zeile vom Altpfad-Lauf
+entstanden war. `SQL bauen (Dispatcher A)` prüft zwar `if (j._dry_run === true) {
+console.warn(...); }`, aber **ohne `return`** — die Funktion baut das echte INSERT danach
+trotzdem. `DRY_RUN` schützt in Job A faktisch **gar nicht**, obwohl der Code-Kommentar
+"Verteidigung in der Tiefe" das genau verspricht. Bewusst NICHT in dieser Session gefixt (außerhalb
+des WF14-Migrations-Scopes, betrifft den Altpfad genauso wie den neuen) — als eigener, wichtiger
+Folgeauftrag zu behandeln, siehe [[finanz-wf14-engine-migration-phase2-2026-09-02]].
+Test-Datensatz (Empfehlung + die dadurch real entstandene `paper_trades`-Zeile +
+`portfolio_risk_checks`-Zeile) vollständig manuell bereinigt, beide Flags + `DRY_RUN` zurück
+auf `FALSE`.
+
+**Noch offen**: Job B (Engine) — braucht einen Test-Trade mit `status='proposed'`, gleiche
+Methode, nächste Session.
