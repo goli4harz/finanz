@@ -112,6 +112,17 @@
           }
         ]
       ]
+    },
+    "Trigger: Eigenstaendig (alle 15 Min)": {
+      "main": [
+        [
+          {
+            "node": "DB: Unbewertete historische News laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "id": "tnk4o1ZMpxXfPFI9",
@@ -123,7 +134,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH cfg AS (\n  SELECT\n    COALESCE(\n      (SELECT value_text::jsonb FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_UNSAFE_EXCLUSION_PHRASES'),\n      '[]'::jsonb\n    ) AS unsafe_phrases_json,\n    COALESCE(\n      (SELECT jsonb_agg(jsonb_build_object('ticker', ticker, 'name', name, 'aliases', aliases_json))\n       FROM trading.stock_instruments WHERE aktiv = TRUE),\n      '[]'::jsonb\n    ) AS instruments_json,\n    COALESCE(\n      (SELECT value_numeric::integer FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_ASSESSMENT_MAX_ATTEMPTS'),\n      3\n    ) AS max_attempts\n), candidates AS (\n  SELECT hn.id\n  FROM trading.historical_news hn\n  CROSS JOIN cfg\n  WHERE NOT EXISTS (\n      SELECT 1 FROM trading.historical_news_assessments hna WHERE hna.news_id = hn.id\n    )\n    AND (hn.ticker_match_status IN ('matched', 'ambiguous') OR hn.is_general_market = TRUE)\n    AND (\n      hn.assessment_status = 'pending'\n      OR (hn.assessment_status = 'retry' AND COALESCE(hn.assessment_next_retry_at, '-infinity'::timestamptz) <= now())\n      OR (hn.assessment_status = 'processing' AND COALESCE(hn.assessment_claimed_at, '-infinity'::timestamptz) < now() - interval '30 minutes')\n    )\n    AND hn.assessment_attempt < cfg.max_attempts\n  ORDER BY hn.id\n  FOR UPDATE OF hn SKIP LOCKED\n  LIMIT 10\n), claimed AS (\n  UPDATE trading.historical_news hn\n  SET assessment_status = 'processing',\n      assessment_claimed_at = now(),\n      assessment_claim_token = '{{ $execution.id }}',\n      assessment_attempt = hn.assessment_attempt + 1,\n      assessment_last_error = NULL\n  FROM candidates c\n  WHERE hn.id = c.id\n  RETURNING hn.id, hn.title, hn.raw_content, hn.linked_tickers_json,\n            hn.ambiguous_candidates_json, hn.is_general_market, hn.has_full_text,\n            hn.assessment_claim_token, hn.assessment_attempt\n)\nSELECT claimed.*, cfg.unsafe_phrases_json, cfg.instruments_json, cfg.max_attempts\nFROM claimed CROSS JOIN cfg\nORDER BY claimed.id;",
+        "query": "WITH cfg AS (\n  SELECT\n    COALESCE(\n      (SELECT value_text::jsonb FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_UNSAFE_EXCLUSION_PHRASES'),\n      '[]'::jsonb\n    ) AS unsafe_phrases_json,\n    COALESCE(\n      (SELECT jsonb_agg(jsonb_build_object('ticker', ticker, 'name', name, 'aliases', aliases_json))\n       FROM trading.stock_instruments WHERE aktiv = TRUE),\n      '[]'::jsonb\n    ) AS instruments_json,\n    COALESCE(\n      (SELECT value_numeric::integer FROM trading.pipeline_config\n       WHERE config_key = 'HISTORICAL_NEWS_ASSESSMENT_MAX_ATTEMPTS'),\n      3\n    ) AS max_attempts\n), candidates AS (\n  SELECT hn.id\n  FROM trading.historical_news hn\n  CROSS JOIN cfg\n  WHERE NOT EXISTS (\n      SELECT 1 FROM trading.historical_news_assessments hna WHERE hna.news_id = hn.id\n    )\n    AND (hn.ticker_match_status IN ('matched', 'ambiguous') OR hn.is_general_market = TRUE)\n    AND (\n      hn.assessment_status = 'pending'\n      OR (hn.assessment_status = 'retry' AND COALESCE(hn.assessment_next_retry_at, '-infinity'::timestamptz) <= now())\n      OR (hn.assessment_status = 'processing' AND COALESCE(hn.assessment_claimed_at, '-infinity'::timestamptz) < now() - interval '30 minutes')\n    )\n    AND hn.assessment_attempt < cfg.max_attempts\n  ORDER BY hn.id\n  FOR UPDATE OF hn SKIP LOCKED\n  LIMIT 20\n), claimed AS (\n  UPDATE trading.historical_news hn\n  SET assessment_status = 'processing',\n      assessment_claimed_at = now(),\n      assessment_claim_token = '{{ $execution.id }}',\n      assessment_attempt = hn.assessment_attempt + 1,\n      assessment_last_error = NULL\n  FROM candidates c\n  WHERE hn.id = c.id\n  RETURNING hn.id, hn.title, hn.raw_content, hn.linked_tickers_json,\n            hn.ambiguous_candidates_json, hn.is_general_market, hn.has_full_text,\n            hn.assessment_claim_token, hn.assessment_attempt\n)\nSELECT claimed.*, cfg.unsafe_phrases_json, cfg.instruments_json, cfg.max_attempts\nFROM claimed CROSS JOIN cfg\nORDER BY claimed.id;",
         "options": {}
       },
       "id": "imp16b-db-unbewertete-laden",
@@ -327,6 +338,26 @@
         -4400,
         2016
       ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "50000000-0000-4000-8000-000000000001",
+      "name": "Trigger: Eigenstaendig (alle 15 Min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -400,
+        200
+      ]
     }
   ],
   "pinData": {},
@@ -338,5 +369,5 @@
     "errorWorkflow": "VTBfUuzQfMZNGYDM"
   },
   "tags": [],
-  "versionId": "114ae983-dd66-4e61-83e3-fd4a25044eb3"
+  "versionId": "72446025-101d-4649-9b5f-e37335c925ae"
 }
