@@ -1,6 +1,26 @@
 # Offene Aufgaben
 
-Stand: 2026-09-01 (siehe neuen Abschnitt unten für Human-in-the-Loop Phase 4; alles davor unverändert erhalten)
+Stand: 2026-09-03 (siehe neuen Abschnitt unten für Dispatcher-A-DRY_RUN-Fix; alles davor unverändert erhalten)
+
+## Dispatcher-A DRY_RUN-Guard hatte kein `return` (gefixt 2026-09-03)
+
+Bei der WF14-Engine-Migration am 2026-09-02 gefunden ([[finanz-wf14-engine-migration-phase2-2026-09-02]]),
+bewusst zurückgestellt: `SQL bauen (Dispatcher A)`s `DRY_RUN`-Pruefung
+(`if (j._dry_run === true) { console.warn(...); }`) hatte **kein `return`** — die Funktion baute
+trotz aktivem `DRY_RUN` das echte INSERT/UPDATE-Statement weiter und gab es zurueck. Der
+Kommentar im Code ("B6-Verteidigung in der Tiefe") behauptete Schutz, den es tatsaechlich nicht
+gab. Betraf nur Job A (Portfoliopruefung/Trade-Anlage) — Job B/C taggen `_dry_run` nicht und
+waren nie betroffen.
+
+✅ **Fix**: ein `return { json: { ...j, sql } };` direkt nach dem `console.warn(...)` eingefuegt —
+nutzt den bereits vorhandenen No-Op-Default `sql = 'SELECT 1;'` und ueberspringt damit alle
+`_typ`-Zweige komplett. Backup vor dem Push: `n8n_live_backup/14 – Portfolio-Risiko und
+Paper-Trading_PRE_DISPATCHERA_DRYRUN_FIX_20260903.json`.
+
+**Verifiziert per isoliertem Unit-Test** (ueber den `97`-Diagnose-Webhook, exakte Kopie des
+gefixten Codes in einem eigenen Code-Node, keine Datenbank beruehrt): `_dry_run:true` liefert
+jetzt `sql:"SELECT 1;"`, `_dry_run:false` baut weiterhin das normale INSERT — Regressionsfrei
+bestaetigt, `97` danach wieder in den urspruenglichen 2-Node-Leerlaufzustand zurueckgesetzt.
 
 ## Human-in-the-Loop Phase 4 — Tests + Abschlussdokumente (2026-09-01)
 
