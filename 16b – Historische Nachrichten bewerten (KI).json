@@ -363,7 +363,6 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
     "executionTimeout": 480,
     "saveDataSuccessExecution": "all",
     "errorWorkflow": "VTBfUuzQfMZNGYDM"

@@ -562,8 +562,7 @@
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
-    "saveDataSuccessExecution": "all",
-    "binaryMode": "separate"
+    "saveDataSuccessExecution": "all"
   },
   "tags": [],
   "versionId": "4b4f1d21-ff8c-49e3-828f-1d82f7cdd036"

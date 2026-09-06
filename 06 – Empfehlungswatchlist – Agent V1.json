@@ -2115,12 +2115,11 @@
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
-    "binaryMode": "separate",
     "timeSavedMode": "fixed",
     "saveDataSuccessExecution": "all",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
   },
   "tags": [],
-  "versionId": "c0fa73de-47a5-4fd9-83c0-68c61e6571ed"
+  "versionId": "8037cc88-0471-46e9-b047-d6b9d07264a8"
 }

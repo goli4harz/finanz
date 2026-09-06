@@ -1291,7 +1291,6 @@
   "pinData": {},
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
     "executionTimeout": 540,
     "timeSavedMode": "fixed",
     "saveDataSuccessExecution": "none",
