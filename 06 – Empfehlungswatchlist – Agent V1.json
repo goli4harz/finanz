@@ -1,4 +1,858 @@
 {
+  "active": true,
+  "connections": {
+    "Trigger: Empfehlungswatchlist (18:10)": {
+      "main": [
+        [
+          {
+            "node": "Trigger-Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Trigger-Eingabe normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger-Eingabe normalisieren": {
+      "main": [
+        [
+          {
+            "node": "Config: DRY_RUN+REQUIRE_CONFIRMATION laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Envelope: Guard-Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Technische Signale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "DB: News laden (Empf., trading.*)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: News laden (Empf., trading.*)": {
+      "main": [
+        [
+          {
+            "node": "DB: Bestehende Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Bestehende Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empfehlungen: Abgleich berechnen": {
+      "main": [
+        [
+          {
+            "node": "IF: DRY_RUN aktiv?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter: Oeffnungs-Kandidaten (Actionability Gate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Aktion = schließen?": {
+      "main": [
+        [
+          {
+            "node": "Schliessen: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Bestaetigung erforderlich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Bestaetigung erforderlich?": {
+      "main": [
+        [
+          {
+            "node": "Als Vorschlag markieren (kein Write)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Oeffnen: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlung schließen": {
+      "main": [
+        [
+          {
+            "node": "Schliessen: _aktion ergaenzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Empfehlung öffnen": {
+      "main": [
+        [
+          {
+            "node": "Oeffnen: _aktion ergaenzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schreibergebnisse zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege dazu mergen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Als Vorschlag markieren (kein Write)": {
+      "main": [
+        [
+          {
+            "node": "Vorschlaege dazu mergen",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Vorschlaege dazu mergen": {
+      "main": [
+        [
+          {
+            "node": "Schreiberfolg verifizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schreiberfolg verifizieren": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Zusammenfassung bauen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Envelope: Real-Pfad zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Empfehlungs-Update senden": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Real-Pfad zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Envelope: Real-Pfad zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simulationsergebnis aufbauen": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Envelope: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Guard zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envelope: Guard-Trigger": {
+      "main": [
+        [
+          {
+            "node": "Envelope: Guard zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Envelope: Guard zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Matrix: Zusammenfassung bauen": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Empfehlungs-Update senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config: DRY_RUN+REQUIRE_CONFIRMATION laden": {
+      "main": [
+        [
+          {
+            "node": "Kontext ergaenzen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontext ergaenzen": {
+      "main": [
+        [
+          {
+            "node": "DB: Technische Signale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktkontext heute (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Regime-Matrix laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Fundamental-Historie laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ticker-Region laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategie-Status laden (Empf.)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Aktive Gewichte laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: DRY_RUN aktiv?": {
+      "main": [
+        [
+          {
+            "node": "Simulationsergebnis aufbauen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Aktion = strategy_signal_news_event?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oeffnen: _aktion ergaenzen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schliessen: _aktion ergaenzen": {
+      "main": [
+        [
+          {
+            "node": "Schreibergebnisse zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oeffnen: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung öffnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schliessen: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "DB: Empfehlung schließen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Trend-Signale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungen: Abgleich berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veto-Log: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Veto-Log: schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Aktion = veto_log?": {
+      "main": [
+        [
+          {
+            "node": "Veto-Log: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Aktion = schließen?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategiesignal News-Event: SQL bauen": {
+      "main": [
+        [
+          {
+            "node": "Strategiesignal News-Event: schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Aktion = strategy_signal_news_event?": {
+      "main": [
+        [
+          {
+            "node": "Strategiesignal News-Event: SQL bauen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF: Aktion = veto_log?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategiesignale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategiesignale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktregime laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktregime laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Regime-Matrix laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Regime-Matrix laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Fundamental-Historie laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Fundamental-Historie laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ticker-Region laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Ticker-Region laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktkontext heute (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktkontext heute (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategie-Status laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategie-Status laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-1": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-2": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Regime-Matrix laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-3": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Fundamental-Historie laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-4": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ticker-Region laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-5": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktkontext heute (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-6": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategie-Status laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-7": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync: Empfehlungen-Kontext vollstaendig (1 Item)": {
+      "main": [
+        [
+          {
+            "node": "DB: Trend-Signale laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veto-Log: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Tag: Veto-Log Audit-Writeback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Strategiesignal News-Event: schreiben": {
+      "main": [
+        [
+          {
+            "node": "Tag: Strategiesignal News-Event Audit-Writeback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag: Veto-Log Audit-Writeback": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tag: Strategiesignal News-Event Audit-Writeback": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Audit-Writeback 1": {
+      "main": [
+        [
+          {
+            "node": "Merge Audit-Writeback 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Audit-Writeback 2": {
+      "main": [
+        [
+          {
+            "node": "Abschluss-Ergebnis bauen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Aktive Gewichte laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Aktive Gewichte laden (Empf.)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Aktive Gewichte laden (Empf.)": {
+      "main": [
+        [
+          {
+            "node": "Merge Sync 06-8",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Sync 06-8": {
+      "main": [
+        [
+          {
+            "node": "Sync: Empfehlungen-Kontext vollstaendig (1 Item)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Oeffnungs-Kandidaten (Actionability Gate)": {
+      "main": [
+        [
+          {
+            "node": "Bereite Evidence-Lookup vor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bereite Evidence-Lookup vor": {
+      "main": [
+        [
+          {
+            "node": "Rufe Historical Evidence Lookup auf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rufe Historical Evidence Lookup auf": {
+      "main": [
+        [
+          {
+            "node": "Leite Actionability-Gate-Eingaben ab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leite Actionability-Gate-Eingaben ab": {
+      "main": [
+        [
+          {
+            "node": "Rufe Actionability Gate auf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "aguWZUolRizBnsj4",
+  "meta": null,
   "name": "06 – Empfehlungswatchlist – Agent V1",
   "nodes": [
     {
@@ -1261,857 +2115,7 @@
       "onError": "continueRegularOutput"
     }
   ],
-  "connections": {
-    "Trigger: Empfehlungswatchlist (18:10)": {
-      "main": [
-        [
-          {
-            "node": "Trigger-Eingabe normalisieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "Trigger-Eingabe normalisieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger-Eingabe normalisieren": {
-      "main": [
-        [
-          {
-            "node": "Config: DRY_RUN+REQUIRE_CONFIRMATION laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Envelope: Guard-Trigger",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Technische Signale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "DB: News laden (Empf., trading.*)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: News laden (Empf., trading.*)": {
-      "main": [
-        [
-          {
-            "node": "DB: Bestehende Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Bestehende Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Empfehlungen: Abgleich berechnen": {
-      "main": [
-        [
-          {
-            "node": "IF: DRY_RUN aktiv?",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Filter: Oeffnungs-Kandidaten (Actionability Gate)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Aktion = schließen?": {
-      "main": [
-        [
-          {
-            "node": "Schliessen: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Bestaetigung erforderlich?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Bestaetigung erforderlich?": {
-      "main": [
-        [
-          {
-            "node": "Als Vorschlag markieren (kein Write)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Oeffnen: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Empfehlung schließen": {
-      "main": [
-        [
-          {
-            "node": "Schliessen: _aktion ergaenzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Empfehlung öffnen": {
-      "main": [
-        [
-          {
-            "node": "Oeffnen: _aktion ergaenzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schreibergebnisse zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege dazu mergen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Als Vorschlag markieren (kein Write)": {
-      "main": [
-        [
-          {
-            "node": "Vorschlaege dazu mergen",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Vorschlaege dazu mergen": {
-      "main": [
-        [
-          {
-            "node": "Schreiberfolg verifizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schreiberfolg verifizieren": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Zusammenfassung bauen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Envelope: Real-Pfad zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Matrix: Empfehlungs-Update senden": {
-      "main": [
-        [
-          {
-            "node": "Envelope: Real-Pfad zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Envelope: Real-Pfad zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Envelope: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Simulationsergebnis aufbauen": {
-      "main": [
-        [
-          {
-            "node": "Envelope: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Envelope: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Envelope: Guard zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envelope: Guard-Trigger": {
-      "main": [
-        [
-          {
-            "node": "Envelope: Guard zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Envelope: Guard zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Merge Audit-Writeback 2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Matrix: Zusammenfassung bauen": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Empfehlungs-Update senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Config: DRY_RUN+REQUIRE_CONFIRMATION laden": {
-      "main": [
-        [
-          {
-            "node": "Kontext ergaenzen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Kontext ergaenzen": {
-      "main": [
-        [
-          {
-            "node": "DB: Technische Signale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktkontext heute (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategiesignale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Regime-Matrix laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Fundamental-Historie laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Ticker-Region laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategie-Status laden (Empf.)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Aktive Gewichte laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: DRY_RUN aktiv?": {
-      "main": [
-        [
-          {
-            "node": "Simulationsergebnis aufbauen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Aktion = strategy_signal_news_event?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Oeffnen: _aktion ergaenzen": {
-      "main": [
-        [
-          {
-            "node": "Schreibergebnisse zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Schliessen: _aktion ergaenzen": {
-      "main": [
-        [
-          {
-            "node": "Schreibergebnisse zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Oeffnen: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlung öffnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schliessen: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "DB: Empfehlung schließen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Trend-Signale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Empfehlungen: Abgleich berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Veto-Log: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "Veto-Log: schreiben",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Aktion = veto_log?": {
-      "main": [
-        [
-          {
-            "node": "Veto-Log: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Aktion = schließen?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Strategiesignal News-Event: SQL bauen": {
-      "main": [
-        [
-          {
-            "node": "Strategiesignal News-Event: schreiben",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Aktion = strategy_signal_news_event?": {
-      "main": [
-        [
-          {
-            "node": "Strategiesignal News-Event: SQL bauen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "IF: Aktion = veto_log?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Strategiesignale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Strategiesignale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktregime laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Marktregime laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Regime-Matrix laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Regime-Matrix laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Fundamental-Historie laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Fundamental-Historie laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Ticker-Region laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Ticker-Region laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktkontext heute (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Marktkontext heute (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Strategie-Status laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Strategie-Status laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Strategiesignale laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-1": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Marktregime laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-2": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Regime-Matrix laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-3",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-3": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-4",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Fundamental-Historie laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-4",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-4": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Ticker-Region laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-5",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-5": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-6",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Marktkontext heute (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-6",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-6": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-7",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Strategie-Status laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-7",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-7": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-8",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sync: Empfehlungen-Kontext vollstaendig (1 Item)": {
-      "main": [
-        [
-          {
-            "node": "DB: Trend-Signale laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Veto-Log: schreiben": {
-      "main": [
-        [
-          {
-            "node": "Tag: Veto-Log Audit-Writeback",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Strategiesignal News-Event: schreiben": {
-      "main": [
-        [
-          {
-            "node": "Tag: Strategiesignal News-Event Audit-Writeback",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tag: Veto-Log Audit-Writeback": {
-      "main": [
-        [
-          {
-            "node": "Merge Audit-Writeback 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tag: Strategiesignal News-Event Audit-Writeback": {
-      "main": [
-        [
-          {
-            "node": "Merge Audit-Writeback 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Audit-Writeback 1": {
-      "main": [
-        [
-          {
-            "node": "Merge Audit-Writeback 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge Audit-Writeback 2": {
-      "main": [
-        [
-          {
-            "node": "Abschluss-Ergebnis bauen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Aktive Gewichte laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Aktive Gewichte laden (Empf.)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Aktive Gewichte laden (Empf.)": {
-      "main": [
-        [
-          {
-            "node": "Merge Sync 06-8",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge Sync 06-8": {
-      "main": [
-        [
-          {
-            "node": "Sync: Empfehlungen-Kontext vollstaendig (1 Item)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter: Oeffnungs-Kandidaten (Actionability Gate)": {
-      "main": [
-        [
-          {
-            "node": "Bereite Evidence-Lookup vor",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Bereite Evidence-Lookup vor": {
-      "main": [
-        [
-          {
-            "node": "Rufe Historical Evidence Lookup auf",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rufe Historical Evidence Lookup auf": {
-      "main": [
-        [
-          {
-            "node": "Leite Actionability-Gate-Eingaben ab",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Leite Actionability-Gate-Eingaben ab": {
-      "main": [
-        [
-          {
-            "node": "Rufe Actionability Gate auf",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": {},
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
@@ -2119,5 +2123,7 @@
     "saveDataSuccessExecution": "all",
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": false
-  }
+  },
+  "tags": [],
+  "versionId": "2b93aae6-4205-4ecb-819a-cfc1e2895e3f"
 }

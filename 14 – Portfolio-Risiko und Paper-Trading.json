@@ -1,4 +1,829 @@
 {
+  "active": true,
+  "connections": {
+    "Manueller Start": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige neue Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Portfolio)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Korrelation)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategie-Status laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ticker-Region-Waehrung laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger: Portfolio+Paper-Trading (18:15 Werktage)": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige neue Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Portfolio)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Korrelation)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategie-Status laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ticker-Region-Waehrung laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Portfolio-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Portfolio-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Heutige neue Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Heutige neue Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 1": {
+      "main": [
+        [
+          {
+            "node": "Merge A 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 2": {
+      "main": [
+        [
+          {
+            "node": "Merge A 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Geschlossene Paper-Trades laden (Drawdown)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 3": {
+      "main": [
+        [
+          {
+            "node": "Merge A 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Marktregime laden (Portfolio)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Marktregime laden (Portfolio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 4": {
+      "main": [
+        [
+          {
+            "node": "Merge A 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Kursverlauf laden (Korrelation)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Kursverlauf laden (Korrelation)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 5": {
+      "main": [
+        [
+          {
+            "node": "Merge A 6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategie-Status laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategie-Status laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 6": {
+      "main": [
+        [
+          {
+            "node": "Merge A 7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job A: Portfoliopruefung + Trade-Anlage": {
+      "main": [
+        [
+          {
+            "node": "SQL bauen (Dispatcher A)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter: Portfolio-Status (Actionability Gate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL bauen (Dispatcher A)": {
+      "main": [
+        [
+          {
+            "node": "SQL ausfuehren (A)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL ausfuehren (A)": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden (Exec)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ausstehende/offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige Kerzen laden (Exec)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategiesignale heute laden (Exec)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Portfolio-Konfiguration laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Portfolio-Konfiguration laden (Exec)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ausstehende/offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Ausstehende/offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge B 1": {
+      "main": [
+        [
+          {
+            "node": "Merge B 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Heutige Kerzen laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Heutige Kerzen laden (Exec)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge B 2": {
+      "main": [
+        [
+          {
+            "node": "Merge B 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Strategiesignale heute laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Strategiesignale heute laden (Exec)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge B 3": {
+      "main": [
+        [
+          {
+            "node": "DB: Engine-Flag laden (Job B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job B: Ausfuehrung/Exit simulieren": {
+      "main": [
+        [
+          {
+            "node": "SQL bauen (Dispatcher B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL bauen (Dispatcher B)": {
+      "main": [
+        [
+          {
+            "node": "SQL ausfuehren (B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL ausfuehren (B)": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden (Stress)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Offene Paper-Trades laden (Stress)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Portfolio-Konfiguration laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Portfolio-Konfiguration laden (Stress)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Offene Paper-Trades laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Offene Paper-Trades laden (Stress)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge C 1": {
+      "main": [
+        [
+          {
+            "node": "Job C: Stressszenarien berechnen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job C: Stressszenarien berechnen": {
+      "main": [
+        [
+          {
+            "node": "SQL bauen (Dispatcher C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL bauen (Dispatcher C)": {
+      "main": [
+        [
+          {
+            "node": "SQL ausfuehren (C)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Ticker-Region-Waehrung laden": {
+      "main": [
+        [
+          {
+            "node": "Wrap: DB: Ticker-Region-Waehrung laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge A 7": {
+      "main": [
+        [
+          {
+            "node": "DB: Engine-Flag laden (Job A)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Heutige neue Empfehlungen laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Marktregime laden (Portfolio)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Kursverlauf laden (Korrelation)": {
+      "main": [
+        [
+          {
+            "node": "Merge A 5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategie-Status laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ticker-Region-Waehrung laden": {
+      "main": [
+        [
+          {
+            "node": "Merge A 7",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Ausstehende/offene Paper-Trades laden": {
+      "main": [
+        [
+          {
+            "node": "Merge B 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Heutige Kerzen laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Strategiesignale heute laden (Exec)": {
+      "main": [
+        [
+          {
+            "node": "Merge B 3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Portfolio-Konfiguration laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Merge C 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap: DB: Offene Paper-Trades laden (Stress)": {
+      "main": [
+        [
+          {
+            "node": "Merge C 1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "DB: Portfolio-Konfiguration laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige neue Empfehlungen laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Offene Paper-Trades laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Marktregime laden (Portfolio)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Kursverlauf laden (Korrelation)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Strategie-Status laden",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Ticker-Region-Waehrung laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SQL ausfuehren (C)": {
+      "main": [
+        [
+          {
+            "node": "Endergebnis fuer Aufrufer aufbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Portfolio-Status (Actionability Gate)": {
+      "main": [
+        [
+          {
+            "node": "Bereite Evidence-Lookup vor (14)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bereite Evidence-Lookup vor (14)": {
+      "main": [
+        [
+          {
+            "node": "Rufe Historical Evidence Lookup auf (14)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rufe Historical Evidence Lookup auf (14)": {
+      "main": [
+        [
+          {
+            "node": "Leite Actionability-Gate-Eingaben ab (14)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leite Actionability-Gate-Eingaben ab (14)": {
+      "main": [
+        [
+          {
+            "node": "Rufe Actionability Gate auf (14)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Engine-Flag laden (Job A)": {
+      "main": [
+        [
+          {
+            "node": "IF: Engine-Pfad nutzen? (Job A)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Engine-Pfad nutzen? (Job A)": {
+      "main": [
+        [
+          {
+            "node": "Job A: Portfoliopruefung + Trade-Anlage (Engine)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Job A: Portfoliopruefung + Trade-Anlage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job A: Portfoliopruefung + Trade-Anlage (Engine)": {
+      "main": [
+        [
+          {
+            "node": "SQL bauen (Dispatcher A)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter: Portfolio-Status (Actionability Gate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Engine-Flag laden (Job B)": {
+      "main": [
+        [
+          {
+            "node": "IF: Engine-Pfad nutzen? (Job B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Engine-Pfad nutzen? (Job B)": {
+      "main": [
+        [
+          {
+            "node": "Job B: Ausfuehrung/Exit simulieren (Engine)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Job B: Ausfuehrung/Exit simulieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Job B: Ausfuehrung/Exit simulieren (Engine)": {
+      "main": [
+        [
+          {
+            "node": "SQL bauen (Dispatcher B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "H0iZrWQy1HQi6iro",
+  "meta": null,
   "name": "14 – Portfolio-Risiko und Paper-Trading",
   "nodes": [
     {
@@ -1138,831 +1963,12 @@
       "alwaysOutputData": true
     }
   ],
-  "connections": {
-    "Manueller Start": {
-      "main": [
-        [
-          {
-            "node": "DB: Portfolio-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Heutige neue Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Portfolio)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Korrelation)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategie-Status laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Ticker-Region-Waehrung laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Trigger: Portfolio+Paper-Trading (18:15 Werktage)": {
-      "main": [
-        [
-          {
-            "node": "DB: Portfolio-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Heutige neue Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Portfolio)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Korrelation)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategie-Status laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Ticker-Region-Waehrung laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Portfolio-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Portfolio-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Heutige neue Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Heutige neue Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 1": {
-      "main": [
-        [
-          {
-            "node": "Merge A 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Offene Paper-Trades laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 2": {
-      "main": [
-        [
-          {
-            "node": "Merge A 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Geschlossene Paper-Trades laden (Drawdown)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 3": {
-      "main": [
-        [
-          {
-            "node": "Merge A 4",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Marktregime laden (Portfolio)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Marktregime laden (Portfolio)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 4": {
-      "main": [
-        [
-          {
-            "node": "Merge A 5",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Kursverlauf laden (Korrelation)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Kursverlauf laden (Korrelation)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 5": {
-      "main": [
-        [
-          {
-            "node": "Merge A 6",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Strategie-Status laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Strategie-Status laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 6": {
-      "main": [
-        [
-          {
-            "node": "Merge A 7",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Job A: Portfoliopruefung + Trade-Anlage": {
-      "main": [
-        [
-          {
-            "node": "SQL bauen (Dispatcher A)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Filter: Portfolio-Status (Actionability Gate)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL bauen (Dispatcher A)": {
-      "main": [
-        [
-          {
-            "node": "SQL ausfuehren (A)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL ausfuehren (A)": {
-      "main": [
-        [
-          {
-            "node": "DB: Portfolio-Konfiguration laden (Exec)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Ausstehende/offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Heutige Kerzen laden (Exec)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategiesignale heute laden (Exec)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Portfolio-Konfiguration laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Portfolio-Konfiguration laden (Exec)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Ausstehende/offene Paper-Trades laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Ausstehende/offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge B 1": {
-      "main": [
-        [
-          {
-            "node": "Merge B 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Heutige Kerzen laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Heutige Kerzen laden (Exec)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge B 2": {
-      "main": [
-        [
-          {
-            "node": "Merge B 3",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Strategiesignale heute laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Strategiesignale heute laden (Exec)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge B 3": {
-      "main": [
-        [
-          {
-            "node": "DB: Engine-Flag laden (Job B)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Job B: Ausfuehrung/Exit simulieren": {
-      "main": [
-        [
-          {
-            "node": "SQL bauen (Dispatcher B)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL bauen (Dispatcher B)": {
-      "main": [
-        [
-          {
-            "node": "SQL ausfuehren (B)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL ausfuehren (B)": {
-      "main": [
-        [
-          {
-            "node": "DB: Portfolio-Konfiguration laden (Stress)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Offene Paper-Trades laden (Stress)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Portfolio-Konfiguration laden (Stress)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Portfolio-Konfiguration laden (Stress)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Offene Paper-Trades laden (Stress)": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Offene Paper-Trades laden (Stress)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge C 1": {
-      "main": [
-        [
-          {
-            "node": "Job C: Stressszenarien berechnen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Job C: Stressszenarien berechnen": {
-      "main": [
-        [
-          {
-            "node": "SQL bauen (Dispatcher C)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL bauen (Dispatcher C)": {
-      "main": [
-        [
-          {
-            "node": "SQL ausfuehren (C)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Ticker-Region-Waehrung laden": {
-      "main": [
-        [
-          {
-            "node": "Wrap: DB: Ticker-Region-Waehrung laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge A 7": {
-      "main": [
-        [
-          {
-            "node": "DB: Engine-Flag laden (Job A)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Portfolio-Konfiguration laden": {
-      "main": [
-        [
-          {
-            "node": "Merge A 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Heutige neue Empfehlungen laden": {
-      "main": [
-        [
-          {
-            "node": "Merge A 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Offene Paper-Trades laden": {
-      "main": [
-        [
-          {
-            "node": "Merge A 2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Geschlossene Paper-Trades laden (Drawdown)": {
-      "main": [
-        [
-          {
-            "node": "Merge A 3",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Marktregime laden (Portfolio)": {
-      "main": [
-        [
-          {
-            "node": "Merge A 4",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Kursverlauf laden (Korrelation)": {
-      "main": [
-        [
-          {
-            "node": "Merge A 5",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Strategie-Status laden": {
-      "main": [
-        [
-          {
-            "node": "Merge A 6",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Ticker-Region-Waehrung laden": {
-      "main": [
-        [
-          {
-            "node": "Merge A 7",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Portfolio-Konfiguration laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Merge B 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Ausstehende/offene Paper-Trades laden": {
-      "main": [
-        [
-          {
-            "node": "Merge B 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Heutige Kerzen laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Merge B 2",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Strategiesignale heute laden (Exec)": {
-      "main": [
-        [
-          {
-            "node": "Merge B 3",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Portfolio-Konfiguration laden (Stress)": {
-      "main": [
-        [
-          {
-            "node": "Merge C 1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wrap: DB: Offene Paper-Trades laden (Stress)": {
-      "main": [
-        [
-          {
-            "node": "Merge C 1",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "DB: Portfolio-Konfiguration laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Heutige neue Empfehlungen laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Offene Paper-Trades laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Geschlossene Paper-Trades laden (Drawdown)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Marktregime laden (Portfolio)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Kursverlauf laden (Korrelation)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Strategie-Status laden",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Ticker-Region-Waehrung laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SQL ausfuehren (C)": {
-      "main": [
-        [
-          {
-            "node": "Endergebnis fuer Aufrufer aufbereiten",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Filter: Portfolio-Status (Actionability Gate)": {
-      "main": [
-        [
-          {
-            "node": "Bereite Evidence-Lookup vor (14)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Bereite Evidence-Lookup vor (14)": {
-      "main": [
-        [
-          {
-            "node": "Rufe Historical Evidence Lookup auf (14)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Rufe Historical Evidence Lookup auf (14)": {
-      "main": [
-        [
-          {
-            "node": "Leite Actionability-Gate-Eingaben ab (14)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Leite Actionability-Gate-Eingaben ab (14)": {
-      "main": [
-        [
-          {
-            "node": "Rufe Actionability Gate auf (14)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Engine-Flag laden (Job A)": {
-      "main": [
-        [
-          {
-            "node": "IF: Engine-Pfad nutzen? (Job A)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Engine-Pfad nutzen? (Job A)": {
-      "main": [
-        [
-          {
-            "node": "Job A: Portfoliopruefung + Trade-Anlage (Engine)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Job A: Portfoliopruefung + Trade-Anlage",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Job A: Portfoliopruefung + Trade-Anlage (Engine)": {
-      "main": [
-        [
-          {
-            "node": "SQL bauen (Dispatcher A)",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Filter: Portfolio-Status (Actionability Gate)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Engine-Flag laden (Job B)": {
-      "main": [
-        [
-          {
-            "node": "IF: Engine-Pfad nutzen? (Job B)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Engine-Pfad nutzen? (Job B)": {
-      "main": [
-        [
-          {
-            "node": "Job B: Ausfuehrung/Exit simulieren (Engine)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Job B: Ausfuehrung/Exit simulieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Job B: Ausfuehrung/Exit simulieren (Engine)": {
-      "main": [
-        [
-          {
-            "node": "SQL bauen (Dispatcher B)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": {},
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
     "saveDataSuccessExecution": "all"
-  }
+  },
+  "tags": [],
+  "versionId": "7e0ccf52-0dbc-4384-9f5e-e92fdddd1eb5"
 }

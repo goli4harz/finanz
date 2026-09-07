@@ -1,4 +1,717 @@
 {
+  "active": true,
+  "connections": {
+    "Trigger: Tagesabschluss (17:50 Werktage)": {
+      "main": [
+        [
+          {
+            "node": "Run-ID erzeugen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run-ID erzeugen": {
+      "main": [
+        [
+          {
+            "node": "Config: DRY_RUN laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Marktumfeld (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Marktumfeld (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marktumfeld: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Marktumfeld: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Marktumfeld (02b)": {
+      "main": [
+        [
+          {
+            "node": "Marktumfeld: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marktumfeld: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Marktumfeld: Ergebnis entduplizieren": {
+      "main": [
+        [
+          {
+            "node": "Log Marktumfeld (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Marktumfeld (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Marktumfeld ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Marktumfeld ok?": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Technische Signale (02)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Technische Signale (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Technische Signale (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Technische Signale: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Technische Signale: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Technische Signale (02)": {
+      "main": [
+        [
+          {
+            "node": "Technische Signale: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Technische Signale: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Technische Signale: Ergebnis entduplizieren": {
+      "main": [
+        [
+          {
+            "node": "Log Technische Signale (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Technische Signale (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Technische Signale ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Technische Signale ok?": {
+      "main": [
+        [
+          {
+            "node": "DB: Heutige Signale zaehlen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DB: Heutige News zaehlen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Heutige Signale zaehlen": {
+      "main": [
+        [
+          {
+            "node": "Merge: Datenqualitaet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB: Heutige News zaehlen": {
+      "main": [
+        [
+          {
+            "node": "Merge: Datenqualitaet",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge: Datenqualitaet": {
+      "main": [
+        [
+          {
+            "node": "Pruefe Datenqualitaet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Datenqualitaet (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Datenqualitaet (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pruefe Datenqualitaet": {
+      "main": [
+        [
+          {
+            "node": "Log Datenqualitaet (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Datenqualitaet (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Datenqualitaet ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Datenqualitaet ok?": {
+      "main": [
+        [
+          {
+            "node": "IF: Markt-Screener (13) aktiviert?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Empfehlungswatchlist (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Empfehlungswatchlist (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Empfehlungswatchlist: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Empfehlungswatchlist (06)": {
+      "main": [
+        [
+          {
+            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Empfehlungswatchlist: Ergebnis entduplizieren": {
+      "main": [
+        [
+          {
+            "node": "Log Empfehlungswatchlist (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Empfehlungswatchlist (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Empfehlungswatchlist ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Empfehlungswatchlist ok?": {
+      "main": [
+        [
+          {
+            "node": "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Report-Pruef-Agent (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Report-Pruef-Agent (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report-Pruef-Agent: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Report- und Pruefagent (10)": {
+      "main": [
+        [
+          {
+            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Report-Pruef-Agent: Ergebnis entduplizieren": {
+      "main": [
+        [
+          {
+            "node": "Log Report-Pruef-Agent (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Report-Pruef-Agent (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Freigegeben?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Freigegeben?": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Tagesreport-Versand (05)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Versand (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Versand (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Versand: Zweige zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Versand: Ergebnis entduplizieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Tagesreport-Versand (05)": {
+      "main": [
+        [
+          {
+            "node": "Versand: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Versand: Zweige zusammenfuehren",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Versand: Ergebnis entduplizieren": {
+      "main": [
+        [
+          {
+            "node": "Log Versand (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Versand (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "IF: Versand ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Versand ok?": {
+      "main": [
+        [
+          {
+            "node": "Sammle Teilstatus (Erfolg)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue technische Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue technische Warnung": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Technische Warnung senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix: Technische Warnung senden": {
+      "main": [
+        [
+          {
+            "node": "Matrix-Warnung pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matrix-Warnung pruefen (sonst werfen)": {
+      "main": [
+        [
+          {
+            "node": "Lauf abschliessen (Warnung/Fehler)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Gesamtlauf abgeschlossen (ausfuehren)": {
+      "main": [
+        [
+          {
+            "node": "Log Gesamtlauf pruefen (sonst werfen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Gesamtlauf abgeschlossen (SQL bauen)": {
+      "main": [
+        [
+          {
+            "node": "Log Gesamtlauf abgeschlossen (ausfuehren)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lauf abschliessen (Erfolg)": {
+      "main": [
+        [
+          {
+            "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lauf abschliessen (Warnung/Fehler)": {
+      "main": [
+        [
+          {
+            "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config: DRY_RUN laden": {
+      "main": [
+        [
+          {
+            "node": "Kontext zusammenfuehren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kontext zusammenfuehren": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Marktumfeld (02b)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sammle Teilstatus (Erfolg)": {
+      "main": [
+        [
+          {
+            "node": "IF: Teilausfall trotz Erfolg?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Teilausfall trotz Erfolg?": {
+      "main": [
+        [
+          {
+            "node": "Lauf abschliessen (Erfolg)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baue Teilausfall-Warnung",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baue Teilausfall-Warnung": {
+      "main": [
+        [
+          {
+            "node": "Matrix: Technische Warnung senden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Markt-Screener (13) aktiviert?": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Markt-Screener (13)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ausfuehren: Empfehlungswatchlist (06)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ausfuehren: Report- und Pruefagent (10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Markt-Screener (13)": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Empfehlungswatchlist (06)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)": {
+      "main": [
+        [
+          {
+            "node": "Ausfuehren: Report- und Pruefagent (10)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "id": "ncMZzkqDHpSiDGPm",
+  "meta": null,
   "name": "00 – Tagesabschluss-Orchestrator",
   "nodes": [
     {
@@ -1143,719 +1856,12 @@
       "onError": "continueRegularOutput"
     }
   ],
-  "connections": {
-    "Trigger: Tagesabschluss (17:50 Werktage)": {
-      "main": [
-        [
-          {
-            "node": "Run-ID erzeugen",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Run-ID erzeugen": {
-      "main": [
-        [
-          {
-            "node": "Config: DRY_RUN laden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Marktumfeld (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Marktumfeld (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Marktumfeld: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Marktumfeld: Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Marktumfeld (02b)": {
-      "main": [
-        [
-          {
-            "node": "Marktumfeld: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Marktumfeld: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Marktumfeld: Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Marktumfeld (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Marktumfeld (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Marktumfeld ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Marktumfeld ok?": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Technische Signale (02)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Technische Signale (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Technische Signale (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Technische Signale: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Technische Signale: Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Technische Signale (02)": {
-      "main": [
-        [
-          {
-            "node": "Technische Signale: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Technische Signale: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Technische Signale: Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Technische Signale (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Technische Signale (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Technische Signale ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Technische Signale ok?": {
-      "main": [
-        [
-          {
-            "node": "DB: Heutige Signale zaehlen",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "DB: Heutige News zaehlen",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Heutige Signale zaehlen": {
-      "main": [
-        [
-          {
-            "node": "Merge: Datenqualitaet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "DB: Heutige News zaehlen": {
-      "main": [
-        [
-          {
-            "node": "Merge: Datenqualitaet",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Merge: Datenqualitaet": {
-      "main": [
-        [
-          {
-            "node": "Pruefe Datenqualitaet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Datenqualitaet (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Datenqualitaet (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Pruefe Datenqualitaet": {
-      "main": [
-        [
-          {
-            "node": "Log Datenqualitaet (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Datenqualitaet (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Datenqualitaet ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Datenqualitaet ok?": {
-      "main": [
-        [
-          {
-            "node": "IF: Markt-Screener (13) aktiviert?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Empfehlungswatchlist (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Empfehlungswatchlist (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Empfehlungswatchlist: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Empfehlungswatchlist: Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Empfehlungswatchlist (06)": {
-      "main": [
-        [
-          {
-            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Empfehlungswatchlist: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Empfehlungswatchlist: Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Empfehlungswatchlist (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Empfehlungswatchlist (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Empfehlungswatchlist ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Empfehlungswatchlist ok?": {
-      "main": [
-        [
-          {
-            "node": "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Report-Pruef-Agent (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Report-Pruef-Agent (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Report-Pruef-Agent: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Report-Pruef-Agent: Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Report- und Pruefagent (10)": {
-      "main": [
-        [
-          {
-            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Report-Pruef-Agent: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Report-Pruef-Agent: Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Report-Pruef-Agent (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Report-Pruef-Agent (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Freigegeben?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Freigegeben?": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Tagesreport-Versand (05)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Versand (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Versand (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Versand: Zweige zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Versand: Ergebnis entduplizieren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Tagesreport-Versand (05)": {
-      "main": [
-        [
-          {
-            "node": "Versand: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Versand: Zweige zusammenfuehren",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Versand: Ergebnis entduplizieren": {
-      "main": [
-        [
-          {
-            "node": "Log Versand (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Versand (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "IF: Versand ok?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Versand ok?": {
-      "main": [
-        [
-          {
-            "node": "Sammle Teilstatus (Erfolg)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue technische Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue technische Warnung": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Technische Warnung senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Matrix: Technische Warnung senden": {
-      "main": [
-        [
-          {
-            "node": "Matrix-Warnung pruefen (sonst werfen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Matrix-Warnung pruefen (sonst werfen)": {
-      "main": [
-        [
-          {
-            "node": "Lauf abschliessen (Warnung/Fehler)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Gesamtlauf abgeschlossen (ausfuehren)": {
-      "main": [
-        [
-          {
-            "node": "Log Gesamtlauf pruefen (sonst werfen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log Gesamtlauf abgeschlossen (SQL bauen)": {
-      "main": [
-        [
-          {
-            "node": "Log Gesamtlauf abgeschlossen (ausfuehren)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lauf abschliessen (Erfolg)": {
-      "main": [
-        [
-          {
-            "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lauf abschliessen (Warnung/Fehler)": {
-      "main": [
-        [
-          {
-            "node": "Log Gesamtlauf abgeschlossen (SQL bauen)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Config: DRY_RUN laden": {
-      "main": [
-        [
-          {
-            "node": "Kontext zusammenfuehren",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Kontext zusammenfuehren": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Marktumfeld (02b)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sammle Teilstatus (Erfolg)": {
-      "main": [
-        [
-          {
-            "node": "IF: Teilausfall trotz Erfolg?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Teilausfall trotz Erfolg?": {
-      "main": [
-        [
-          {
-            "node": "Lauf abschliessen (Erfolg)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Baue Teilausfall-Warnung",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Baue Teilausfall-Warnung": {
-      "main": [
-        [
-          {
-            "node": "Matrix: Technische Warnung senden",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Markt-Screener (13) aktiviert?": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Markt-Screener (13)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Ausfuehren: Empfehlungswatchlist (06)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "IF: Portfolio-Risiko und Paper-Trading (14) aktiviert?": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Ausfuehren: Report- und Pruefagent (10)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Markt-Screener (13)": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Empfehlungswatchlist (06)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Ausfuehren: Portfolio-Risiko und Paper-Trading (14)": {
-      "main": [
-        [
-          {
-            "node": "Ausfuehren: Report- und Pruefagent (10)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
-  },
+  "pinData": null,
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "VTBfUuzQfMZNGYDM",
     "saveDataSuccessExecution": "all"
-  }
+  },
+  "tags": [],
+  "versionId": "c78c6b5a-70a6-4824-90a0-c883f459bbef"
 }
