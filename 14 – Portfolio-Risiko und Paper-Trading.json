@@ -975,7 +975,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT symbol, trading_date, close FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date >= (now() AT TIME ZONE 'Europe/Berlin')::date - 70 ORDER BY symbol, trading_date;",
+        "query": "WITH ranked AS (SELECT symbol, trading_date, close, ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY trading_date DESC) AS rn FROM trading.stock_price_history WHERE valid_to IS NULL AND trading_date <= (now() AT TIME ZONE 'Europe/Berlin')::date) SELECT symbol, trading_date, close FROM ranked WHERE rn <= COALESCE((SELECT value_numeric::int + 1 FROM trading.pipeline_config WHERE config_key = 'CORRELATION_LOOKBACK_DAYS'), 61) ORDER BY symbol, trading_date;",
         "options": {}
       },
       "name": "DB: Kursverlauf laden (Korrelation)",
