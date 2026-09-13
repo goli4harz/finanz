@@ -1071,7 +1071,8 @@
           "name": "Postgres account"
         }
       },
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -1093,7 +1094,8 @@
           "name": "Postgres account"
         }
       },
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "executeOnce": true
     }
   ],
   "connections": {
